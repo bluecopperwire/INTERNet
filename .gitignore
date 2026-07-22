@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Environment and Secrets (applies to root, backend, frontend, and nested subdirectories)
+.env
+.env.*
+!.env.example
+*.local
+
+# Logs
+*.log
+
+# IDE & OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Project Memory
+Project_Memory.md
