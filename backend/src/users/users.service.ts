@@ -23,7 +23,7 @@ export class UsersService {
     hashedRefreshToken: string | null,
   ): Promise<void> {
     await this.userRepository.update(userId, {
-      hashedRefreshToken: hashedRefreshToken || undefined,
+      hashedRefreshToken,
     });
   }
 

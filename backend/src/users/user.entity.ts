@@ -44,8 +44,8 @@ export class User {
   })
   accountStatus: AccountStatus;
 
-  @Column({ nullable: true, name: 'hashed_refresh_token' })
-  hashedRefreshToken?: string;
+  @Column({ nullable: true, name: 'hashed_refresh_token', type: 'varchar' })
+  hashedRefreshToken: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
