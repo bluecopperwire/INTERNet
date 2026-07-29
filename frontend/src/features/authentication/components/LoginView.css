@@ -1,0 +1,302 @@
+/* Login Layout Structure */
+.login-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: var(--color-bg-page);
+}
+
+/* Left Hero Visual Pane */
+.login-hero-pane {
+  flex: 0 0 44%;
+  max-width: 44%;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-primary);
+}
+
+.hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+/* Right Form Pane */
+.login-form-pane {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  overflow-y: auto;
+}
+
+.login-form-card {
+  width: 100%;
+  max-width: 380px;
+  margin: auto;
+}
+
+/* Role Switcher Tabs (Centered & Scaled) */
+.role-switcher {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.role-tab {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background-color: transparent;
+  border-radius: 4px;
+  transition: var(--transition-fast);
+  user-select: none;
+}
+
+.role-tab:hover:not(.role-tab-active) {
+  background-color: rgba(213, 225, 255, 0.4);
+}
+
+.role-tab-active {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  box-shadow: 0 1px 2px rgba(21, 10, 107, 0.05);
+}
+
+/* Header Section (Centered & Scaled) */
+.login-title {
+  text-align: center;
+  color: var(--color-primary);
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  margin-bottom: 1.25rem;
+  line-height: 1.3;
+}
+
+/* OAuth Button (Scaled) */
+.btn-oauth {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 0.65rem 1rem;
+  background-color: var(--color-surface);
+  border: 1px solid #D2D5E8;
+  border-radius: 4px;
+  color: var(--color-primary);
+  font-size: 0.875rem;
+  font-weight: 700;
+  transition: var(--transition-fast);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.btn-oauth:hover {
+  background-color: #F8FAFC;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.btn-oauth:active {
+  transform: translateY(0);
+}
+
+.google-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+/* Divider (Scaled) */
+.login-divider {
+  display: flex;
+  align-items: center;
+  margin: 1.25rem 0;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: #E2E8F0;
+}
+
+.divider-text {
+  padding: 0 0.85rem;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+/* Form Controls (Scaled) */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.form-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4A5568;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: #1E293B;
+  background-color: var(--color-surface);
+  transition: var(--transition-fast);
+}
+
+.form-input::placeholder {
+  color: #94A3B8;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-border-focus);
+  box-shadow: var(--shadow-input-focus);
+}
+
+/* Options Row (Remember Me & Forgot Password - Scaled) */
+.form-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.15rem;
+  margin-bottom: 0.35rem;
+}
+
+.remember-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-custom {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 4px;
+  background-color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  position: relative;
+}
+
+.checkbox-custom:checked {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.checkbox-custom:checked::after {
+  content: '✓';
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  position: absolute;
+}
+
+.checkbox-custom:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.remember-label {
+  font-size: 0.85rem;
+  color: #64748B;
+  cursor: pointer;
+}
+
+.forgot-link {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: underline;
+  transition: var(--transition-fast);
+}
+
+.forgot-link:hover {
+  color: var(--color-primary-hover);
+  text-decoration-thickness: 2px;
+}
+
+/* Submit Action (Scaled) */
+.btn-submit {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: var(--color-primary);
+  color: #FFFFFF;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 4px;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-fast);
+  margin-top: 0.25rem;
+}
+
+.btn-submit:hover {
+  background-color: var(--color-primary-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.btn-submit:active {
+  background-color: var(--color-primary-active);
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 960px) {
+  .login-hero-pane {
+    display: none;
+  }
+
+  .login-form-pane {
+    padding: 2rem 1.25rem;
+  }
+
+  .login-form-card {
+    max-width: 380px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-title {
+    font-size: 1.55rem;
+  }
+
+  .role-tab {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+  }
+}
