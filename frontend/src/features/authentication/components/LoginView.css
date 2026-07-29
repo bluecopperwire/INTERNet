@@ -275,7 +275,6 @@
   box-shadow: var(--shadow-sm);
 }
 
-/* Responsive Breakpoints */
 @media (max-width: 960px) {
   .login-hero-pane {
     display: none;

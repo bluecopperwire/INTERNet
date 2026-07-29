@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from './components/LandingPage';
+import { LoginView } from './features/authentication/components/LoginView';
 
 const App: React.FC = () => {
   // will replace this local state with your JWT auth state logic 
@@ -21,7 +22,9 @@ const App: React.FC = () => {
         </div>
 
         <Routes>
-          <Route path="/" element={<LandingPage isLoggedIn={isAuthenticated} />} />
+          <Route path="/" element={!isAuthenticated ? <LoginView /> : <Navigate to="/home" />} />
+          <Route path="/login" element={<LoginView />} />
+          <Route path="/home" element={<LandingPage isLoggedIn={isAuthenticated} />} />
         </Routes>
       </div>
     </Router>
