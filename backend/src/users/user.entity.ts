@@ -18,6 +18,11 @@ export enum AccountStatus {
   ARCHIVED = 'archived',
 }
 
+export enum AuthProvider {
+  LOCAL = 'local',
+  GOOGLE = 'google',
+}
+
 @Entity('user')
 export class User {
   @PrimaryGeneratedColumn({ name: 'userId' })
@@ -46,6 +51,19 @@ export class User {
 
   @Column({ nullable: true, name: 'hashed_refresh_token', type: 'varchar' })
   hashedRefreshToken: string | null;
+
+  @Column({ nullable: true, name: 'refresh_token_family', type: 'varchar' })
+  refreshTokenFamily: string | null;
+
+  @Column({
+    type: 'enum',
+    enum: AuthProvider,
+    default: AuthProvider.LOCAL,
+  })
+  authProvider: AuthProvider;
+
+  @Column({ nullable: true, unique: true, name: 'google_id', type: 'varchar' })
+  googleId: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

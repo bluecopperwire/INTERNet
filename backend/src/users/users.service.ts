@@ -18,12 +18,25 @@ export class UsersService {
     return this.userRepository.findOne({ where: { userId } });
   }
 
+  async findByGoogleId(googleId: string): Promise<User | null> {
+    return this.userRepository.findOne({ where: { googleId } });
+  }
+
   async updateRefreshToken(
     userId: number,
     hashedRefreshToken: string | null,
   ): Promise<void> {
     await this.userRepository.update(userId, {
       hashedRefreshToken,
+    });
+  }
+
+  async updateRefreshTokenFamily(
+    userId: number,
+    refreshTokenFamily: string | null,
+  ): Promise<void> {
+    await this.userRepository.update(userId, {
+      refreshTokenFamily,
     });
   }
 
