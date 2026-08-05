@@ -10,10 +10,7 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (req: Request) => {
-          if (req?.body?.refreshToken) {
-            return req.body.refreshToken;
-          }
-          return ExtractJwt.fromAuthHeaderAsBearerToken()(req);
+          return req?.cookies?.refresh_token || null;
         },
       ]),
       ignoreExpiration: false,
@@ -23,7 +20,7 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
   }
 
   async validate(req: Request, payload: any) {
-    const refreshToken = req.body?.refreshToken || ExtractJwt.fromAuthHeaderAsBearerToken()(req);
+    const refreshToken = req?.cookies?.refresh_token;
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh token is missing');
     }

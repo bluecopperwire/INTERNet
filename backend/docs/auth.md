@@ -2,21 +2,28 @@
 
 ## Overview
 
-The Authentication Module provides secure, stateless JWT-based authentication integrated with Passport.js for the INTERNet application. It supports user login, refresh token rotation, session logout, profile retrieval, and role-based access control (RBAC).
+The Authentication Module provides secure JWT-based authentication integrated with Passport.js for the INTERNet application. It supports user signup, password login, Google OAuth 2.0 sign-in/signup, HttpOnly cookie-based refresh token rotation with automatic token family revocation, session logout, profile retrieval, and role-based access control (RBAC).
 
 ---
 
 ## Technical Specifications & Security Measures
 
 - **Password Security**: Passwords are standardly hashed using `bcrypt` (salt rounds: 10). Plaintext passwords are never logged or stored.
-- **Token Strategy**:
+- **Token Strategy & HttpOnly Cookie Storage**:
   - **Access Token**: Short-lived stateless JWT (`15m` default), passed via `Authorization: Bearer <accessToken>`.
-  - **Refresh Token**: Long-lived JWT (`7d` default), hashed with `bcrypt` before storage in PostgreSQL (`hashed_refresh_token` column).
-  - **Refresh Token Rotation**: Each call to `/auth/refresh` revokes the old refresh token and issues a new pair.
+  - **Refresh Token**: Long-lived JWT (`7d` default), hashed with `bcrypt` before storage in PostgreSQL (`hashed_refresh_token` column). Returned to client exclusively via `Set-Cookie` header (`refresh_token` cookie) configured as `HttpOnly; Secure; SameSite=Strict/Lax; Path=/auth`.
+- **Automatic Token Family Revocation (Reuse Detection)**:
+  - Each login or signup generates a unique token family UUID (`refresh_token_family` column).
+  - Upon calling `/auth/refresh`, if an old, invalidated, or replayed refresh token cookie is presented (detected via bcrypt hash mismatch), the system immediately revokes the entire token family (`hashed_refresh_token = null` & `refresh_token_family = null`), invalidating all active sessions.
+- **Google OAuth 2.0 Integration**:
+  - Authenticates via Google consent workflow (`/auth/google` and `/auth/google/callback`).
+  - Google's OAuth tokens are ephemeral and used only during the Passport handshake. Upon profile verification, the backend issues its own JWT access token and HttpOnly refresh token cookie.
+  - Accounts registered via Google (`authProvider = google`) are strictly blocked from using local password authentication (`POST /auth/login`).
 - **Account Enums**:
-  - **Roles**: `student`, `admin`, `employer`
+  - **Roles**: `student`, `admin`, `employer` (Signup defaults to `student`).
   - **Account Status**: `active`, `inactive`, `archived` (Only `active` accounts can authenticate).
-- **Rate Limiting**: `POST /auth/login` is rate-limited via `@nestjs/throttler` (max 5 requests per 60 seconds) to prevent brute-force attacks.
+  - **Auth Provider**: `local`, `google`.
+- **Rate Limiting**: `POST /auth/login` (5 req/min) and `POST /auth/signup` (3 req/min) are rate-limited via `@nestjs/throttler` to prevent brute-force attacks.
 
 ---
 
@@ -24,18 +31,71 @@ The Authentication Module provides secure, stateless JWT-based authentication in
 
 | Method | Endpoint | Protection / Guards | Rate Limited | Description |
 |---|---|---|---|---|
-| `POST` | `/auth/login` | `LocalAuthGuard` | Yes (5 req/min) | Authenticates credentials and returns token pair. |
-| `POST` | `/auth/refresh` | `JwtRefreshAuthGuard` | No | Validates refresh token & issues new rotated token pair. |
-| `POST` | `/auth/logout` | `JwtAuthGuard` | No | Revokes active refresh token for authenticated user. |
+| `POST` | `/auth/signup` | None | Yes (3 req/min) | Registers a new student account and sets refresh token cookie. |
+| `POST` | `/auth/login` | `LocalAuthGuard` | Yes (5 req/min) | Authenticates credentials, issues access token & sets refresh token cookie. |
+| `POST` | `/auth/refresh` | `JwtRefreshAuthGuard` | No | Validates refresh token cookie & issues new rotated token & cookie. |
+| `POST` | `/auth/logout` | `JwtAuthGuard` | No | Revokes active refresh token and clears cookie. |
+| `GET` | `/auth/google` | `GoogleAuthGuard` | No | Redirects user to Google OAuth 2.0 consent page. |
+| `GET` | `/auth/google/callback` | `GoogleAuthGuard` | No | Handles Google callback, logs in/registers user, & sets cookie. |
 | `GET` | `/auth/me` | `JwtAuthGuard` | No | Returns profile of currently authenticated user. |
 
 ---
 
 ## Endpoint Details
 
-### 1. User Login
+### 1. User Signup
 
-Authenticates user credentials, verifies active account status, generates access & refresh tokens, hashes the refresh token, and stores it in PostgreSQL.
+Registers a new user account with role `student` and status `active`. Returns an access token in the JSON body and sets the refresh token as an HttpOnly cookie.
+
+- **Endpoint**: `POST /auth/signup`
+- **Guards**: None
+- **Rate Limit**: 3 requests per minute
+
+#### Request Headers
+```http
+Content-Type: application/json
+```
+
+#### Request Body (`SignupDto`)
+| Parameter | Type | Required | Description | Validation |
+|---|---|---|---|---|
+| `email` | `string` | Yes | User account email address | Must be a valid email string |
+| `password` | `string` | Yes | Plaintext user password | Minimum 6 characters |
+
+```json
+{
+  "email": "newstudent@example.com",
+  "password": "Password123!"
+}
+```
+
+#### Responses
+
+##### `201 Created` — Registration Successful
+```http
+HTTP/1.1 201 Created
+Set-Cookie: refresh_token=eyJhbGciOiJIUzI1Ni...; Path=/auth; HttpOnly; Secure; SameSite=Strict
+Content-Type: application/json
+
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+##### `409 Conflict` — Email Already Registered
+```json
+{
+  "statusCode": 409,
+  "message": "Email already in use",
+  "error": "Conflict"
+}
+```
+
+---
+
+### 2. User Login
+
+Authenticates local user credentials, verifies active status, issues an access token in body and refresh token in HttpOnly cookie.
 
 - **Endpoint**: `POST /auth/login`
 - **Guards**: `LocalAuthGuard` (Passport Local)
@@ -62,14 +122,17 @@ Content-Type: application/json
 #### Responses
 
 ##### `200 OK` — Authentication Successful
-```json
+```http
+HTTP/1.1 200 OK
+Set-Cookie: refresh_token=eyJhbGciOiJIUzI1Ni...; Path=/auth; HttpOnly; Secure; SameSite=Strict
+Content-Type: application/json
+
 {
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoic3R1ZGVudEBleGFtcGxlLmNvbSIsInJvbGUiOiJzdHVkZW50IiwiaWF0IjoxNzUzMTYwMDAwLCJleHAiOjE3NTMxNjA5MDB9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoic3R1ZGVudEBleGFtcGxlLmNvbSIsInJvbGUiOiJzdHVkZW50IiwiaWF0IjoxNzUzMTYwMDAwLCJleHAiOjE3NTM3NjQ4MDB9..."
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
 
-##### `401 Unauthorized` — Invalid Credentials or Inactive Account
+##### `401 Unauthorized` — Invalid Credentials or Inactive Account / Google Account
 ```json
 {
   "statusCode": 401,
@@ -88,53 +151,48 @@ Content-Type: application/json
 
 ---
 
-### 2. Refresh Token Rotation
+### 3. Refresh Token Rotation & Family Revocation
 
-Validates an existing refresh token, verifies the hashed token match in PostgreSQL, issues a new token pair, and replaces the stored hash.
+Validates the `refresh_token` cookie. If valid, rotates tokens and sets a new cookie. If reuse of an invalidated/old token is detected, revokes all sessions.
 
 - **Endpoint**: `POST /auth/refresh`
-- **Guards**: `JwtRefreshAuthGuard` (Passport JWT Refresh)
+- **Guards**: `JwtRefreshAuthGuard` (Passport JWT Refresh — cookie extractor)
 
-#### Request Headers
+#### Request Headers / Cookie
 ```http
-Content-Type: application/json
+Cookie: refresh_token=eyJhbGciOiJIUzI1Ni...
 ```
 
-#### Request Body (`RefreshTokenDto`)
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| `refreshToken` | `string` | Yes | Active refresh token issued during login or last refresh |
-
-```json
-{
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
+#### Request Body
+None required.
 
 #### Responses
 
 ##### `200 OK` — Tokens Successfully Rotated
-```json
+```http
+HTTP/1.1 200 OK
+Set-Cookie: refresh_token=eyJhbGciOiJIUzI1...; Path=/auth; HttpOnly; Secure; SameSite=Strict
+Content-Type: application/json
+
 {
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
 
-##### `401 Unauthorized` — Invalid or Revoked Refresh Token
+##### `401 Unauthorized` — Token Reuse Detected (All Sessions Revoked)
 ```json
 {
   "statusCode": 401,
-  "message": "Access Denied",
+  "message": "Refresh token reuse detected. All sessions revoked.",
   "error": "Unauthorized"
 }
 ```
 
 ---
 
-### 3. User Logout
+### 4. User Logout
 
-Invalidates the user's active session by nullifying `hashedRefreshToken` in PostgreSQL.
+Invalidates user session by clearing `hashed_refresh_token` & `refresh_token_family` in PostgreSQL, and clearing the `refresh_token` cookie.
 
 - **Endpoint**: `POST /auth/logout`
 - **Guards**: `JwtAuthGuard` (Passport JWT)
@@ -144,31 +202,48 @@ Invalidates the user's active session by nullifying `hashedRefreshToken` in Post
 Authorization: Bearer <accessToken>
 ```
 
-#### Request Body
-None required.
-
 #### Responses
 
 ##### `200 OK` — Logged Out Successfully
-```json
+```http
+HTTP/1.1 200 OK
+Set-Cookie: refresh_token=; Path=/auth; Max-Age=0; HttpOnly
+Content-Type: application/json
+
 {
   "message": "Successfully logged out"
 }
 ```
 
-##### `401 Unauthorized` — Missing or Expired Access Token
-```json
+---
+
+### 5. Google OAuth 2.0 Sign-In / Signup
+
+Initiates Google OAuth 2.0 authentication flow or handles the OAuth callback.
+
+- **Endpoints**:
+  - `GET /auth/google` (Redirects to Google consent)
+  - `GET /auth/google/callback` (OAuth Callback)
+- **Guards**: `GoogleAuthGuard` (Passport Google OAuth 2.0)
+
+#### Responses (`GET /auth/google/callback`)
+
+##### `200 OK` — Google Authentication Successful
+```http
+HTTP/1.1 200 OK
+Set-Cookie: refresh_token=eyJhbGciOiJIUzI1Ni...; Path=/auth; HttpOnly; Secure; SameSite=Strict
+Content-Type: application/json
+
 {
-  "statusCode": 401,
-  "message": "Unauthorized"
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
 
 ---
 
-### 4. Current User Profile
+### 6. Current User Profile
 
-Retrieves profile data of the currently authenticated user. Sensitive fields (`password`, `hashedRefreshToken`) are automatically omitted.
+Retrieves profile data of the currently authenticated user. Sensitive fields (`password`, `hashedRefreshToken`, `refreshTokenFamily`) are automatically omitted.
 
 - **Endpoint**: `GET /auth/me`
 - **Guards**: `JwtAuthGuard` (Passport JWT)
@@ -177,9 +252,6 @@ Retrieves profile data of the currently authenticated user. Sensitive fields (`p
 ```http
 Authorization: Bearer <accessToken>
 ```
-
-#### Request Body
-None.
 
 #### Responses
 
@@ -190,16 +262,10 @@ None.
   "email": "student@example.com",
   "role": "student",
   "accountStatus": "active",
+  "authProvider": "local",
+  "googleId": null,
   "createdAt": "2026-07-22T02:37:00.000Z",
   "updatedAt": "2026-07-22T02:37:00.000Z"
-}
-```
-
-##### `401 Unauthorized` — Missing or Invalid Access Token
-```json
-{
-  "statusCode": 401,
-  "message": "Unauthorized"
 }
 ```
 
@@ -207,7 +273,7 @@ None.
 
 ## Authorization & Role Guards Infrastructure
 
-Future backend modules can restrict route access using `@UseGuards(JwtAuthGuard, RolesGuard)` and the `@Roles(...)` metadata decorator.
+Future backend modules can restrict route access using `@UseGuards(JwtAuthGuard, RolesGuard)` and `@Roles(...)`.
 
 ### Example Usage in Controllers
 
@@ -221,31 +287,11 @@ import { UserRole } from '../users/user.entity';
 @Controller('reports')
 export class ReportsController {
   
-  // Accessible only by users with 'admin' role
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @Get('admin-summary')
   getAdminSummary() {
     return { data: 'Confidential summary data' };
   }
-
-  // Accessible by both 'admin' and 'employer' roles
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.EMPLOYER)
-  @Get('company-reports')
-  getCompanyReports() {
-    return { data: 'Employer report data' };
-  }
-}
-```
-
-#### Expected Error for Unauthorized Roles
-
-##### `403 Forbidden` — Insufficient Permissions
-```json
-{
-  "statusCode": 403,
-  "message": "Access denied: Insufficient permissions",
-  "error": "Forbidden"
 }
 ```
