@@ -1,251 +1,90 @@
-# Authentication Module Documentation (`auth.md`)
+# Authentication API (Database V3)
 
-## Overview
+The authentication module uses `user_account` for account identity,
+`oauth_identity` for Google linkage, and `auth_session` for hashed refresh-token
+state. PostgreSQL permits one non-revoked session per account. Google provider
+access and refresh tokens are never stored.
 
-The Authentication Module provides secure, stateless JWT-based authentication integrated with Passport.js for the INTERNet application. It supports user login, refresh token rotation, session logout, profile retrieval, and role-based access control (RBAC).
+## Account values
 
----
+- Roles: `student`, `company`, `peso_personnel`, `admin`
+- Statuses: `active`, `suspended`, `archived`
+- Only active accounts authenticate.
+- A student may use a local password, Google, or both. Other roles require a
+  password and cannot link Google in V3.
 
-## Technical Specifications & Security Measures
+## Routes
 
-- **Password Security**: Passwords are standardly hashed using `bcrypt` (salt rounds: 10). Plaintext passwords are never logged or stored.
-- **Token Strategy**:
-  - **Access Token**: Short-lived stateless JWT (`15m` default), passed via `Authorization: Bearer <accessToken>`.
-  - **Refresh Token**: Long-lived JWT (`7d` default), hashed with `bcrypt` before storage in PostgreSQL (`hashed_refresh_token` column).
-  - **Refresh Token Rotation**: Each call to `/auth/refresh` revokes the old refresh token and issues a new pair.
-- **Account Enums**:
-  - **Roles**: `student`, `admin`, `employer`
-  - **Account Status**: `active`, `inactive`, `archived` (Only `active` accounts can authenticate).
-- **Rate Limiting**: `POST /auth/login` is rate-limited via `@nestjs/throttler` (max 5 requests per 60 seconds) to prevent brute-force attacks.
+### `POST /auth/signup`
 
----
+Creates an active student account and required student profile in one
+transaction, establishes the single active session, returns
+`{ accessToken, refreshToken }`, and sets the refresh token in an HTTP-only
+cookie scoped to `/auth`.
 
-## Summary of Endpoints
+Required account fields are `email` and `password`. Required profile fields are
+`firstName`, `lastName`, `sex`, `birthDate`, `contactNumber`, `addressLine`,
+`addressBarangay`, `addressDistrict`, `addressCity`, and `inquiryMethod`.
+`contactEmail` is optional and defaults to the normalized account email.
 
-| Method | Endpoint | Protection / Guards | Rate Limited | Description |
-|---|---|---|---|---|
-| `POST` | `/auth/login` | `LocalAuthGuard` | Yes (5 req/min) | Authenticates credentials and returns token pair. |
-| `POST` | `/auth/refresh` | `JwtRefreshAuthGuard` | No | Validates refresh token & issues new rotated token pair. |
-| `POST` | `/auth/logout` | `JwtAuthGuard` | No | Revokes active refresh token for authenticated user. |
-| `GET` | `/auth/me` | `JwtAuthGuard` | No | Returns profile of currently authenticated user. |
+### `POST /auth/login`
 
----
+Preserves the existing email/password contract and token response. A successful
+login revokes the prior active session and creates its replacement. A
+Google-only student receives the same generic invalid-credentials response as
+any other invalid local login.
 
-## Endpoint Details
+### `POST /auth/refresh`
 
-### 1. User Login
+Accepts the refresh token from the `refreshToken` body field or HTTP-only
+cookie. Rotation preserves the token family while replacing the stored bcrypt
+hash. A mismatch or reused token revokes the active family and returns `401`.
 
-Authenticates user credentials, verifies active account status, generates access & refresh tokens, hashes the refresh token, and stores it in PostgreSQL.
+### `POST /auth/logout`
 
-- **Endpoint**: `POST /auth/login`
-- **Guards**: `LocalAuthGuard` (Passport Local)
-- **Rate Limit**: 5 requests per minute
+Requires an access token, revokes the current active session, clears the
+refresh cookie, and returns `{ "message": "Successfully logged out" }`.
 
-#### Request Headers
-```http
-Content-Type: application/json
-```
+### `GET /auth/me`
 
-#### Request Body (`LoginDto`)
-| Parameter | Type | Required | Description | Validation |
-|---|---|---|---|---|
-| `email` | `string` | Yes | User account email address | Must be a valid email string |
-| `password` | `string` | Yes | Plaintext user password | Minimum 6 characters |
+Returns `userAccountId`, `email`, `userRole`, `accountStatus`, and a small
+role-specific `profile`. Student profiles include identifiers and basic names;
+company profiles include identifier/name/logo; PESO profiles include identifier,
+employee ID, and basic names; admin profiles are `null`. No auth secret is
+returned.
 
-```json
-{
-  "email": "student@example.com",
-  "password": "Password123!"
-}
-```
+### `GET /auth/google` and `GET /auth/google/callback`
 
-#### Responses
+Google callback profiles must explicitly report a verified email. Existing
+links resolve by Google subject. A verified email may auto-link only to an
+active student without a conflicting Google identity, preserving any password.
 
-##### `200 OK` — Authentication Successful
-```json
-{
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoic3R1ZGVudEBleGFtcGxlLmNvbSIsInJvbGUiOiJzdHVkZW50IiwiaWF0IjoxNzUzMTYwMDAwLCJleHAiOjE3NTMxNjA5MDB9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoic3R1ZGVudEBleGFtcGxlLmNvbSIsInJvbGUiOiJzdHVkZW50IiwiaWF0IjoxNzUzMTYwMDAwLCJleHAiOjE3NTM3NjQ4MDB9..."
-}
-```
-
-##### `401 Unauthorized` — Invalid Credentials or Inactive Account
-```json
-{
-  "statusCode": 401,
-  "message": "Invalid credentials or account is inactive/archived",
-  "error": "Unauthorized"
-}
-```
-
-##### `429 Too Many Requests` — Rate Limit Exceeded
-```json
-{
-  "statusCode": 429,
-  "message": "ThrottlerException: Too Many Requests"
-}
-```
-
----
-
-### 2. Refresh Token Rotation
-
-Validates an existing refresh token, verifies the hashed token match in PostgreSQL, issues a new token pair, and replaces the stored hash.
-
-- **Endpoint**: `POST /auth/refresh`
-- **Guards**: `JwtRefreshAuthGuard` (Passport JWT Refresh)
-
-#### Request Headers
-```http
-Content-Type: application/json
-```
-
-#### Request Body (`RefreshTokenDto`)
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| `refreshToken` | `string` | Yes | Active refresh token issued during login or last refresh |
+For a brand-new email, the callback creates no database row and returns:
 
 ```json
 {
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "requiresProfileCompletion": true,
+  "pendingRegistrationToken": "signed-short-lived-jwt",
+  "email": "verified@example.com"
 }
 ```
 
-#### Responses
+### `POST /auth/google/complete-signup`
 
-##### `200 OK` — Tokens Successfully Rotated
-```json
-{
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
+Accepts `pendingRegistrationToken` plus the required student profile fields.
+The verified email and Google subject come only from the signed token. The
+endpoint creates `user_account`, `student`, and `oauth_identity` atomically with
+`password_hash = null`, then establishes the normal session.
 
-##### `401 Unauthorized` — Invalid or Revoked Refresh Token
-```json
-{
-  "statusCode": 401,
-  "message": "Access Denied",
-  "error": "Unauthorized"
-}
-```
+## JWT and cookie configuration
 
----
+Access-token claims remain `sub`, `email`, and `role` (with internal family/JTI
+claims used for session rotation). Relevant environment variables are:
 
-### 3. User Logout
+- `JWT_ACCESS_SECRET`, `JWT_ACCESS_EXPIRES`
+- `JWT_REFRESH_SECRET`, `JWT_REFRESH_EXPIRES`
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`
+- `GOOGLE_PENDING_REGISTRATION_SECRET`, `GOOGLE_PENDING_REGISTRATION_EXPIRES`
+- `COOKIE_DOMAIN`, `COOKIE_SAMESITE`
 
-Invalidates the user's active session by nullifying `hashedRefreshToken` in PostgreSQL.
-
-- **Endpoint**: `POST /auth/logout`
-- **Guards**: `JwtAuthGuard` (Passport JWT)
-
-#### Request Headers
-```http
-Authorization: Bearer <accessToken>
-```
-
-#### Request Body
-None required.
-
-#### Responses
-
-##### `200 OK` — Logged Out Successfully
-```json
-{
-  "message": "Successfully logged out"
-}
-```
-
-##### `401 Unauthorized` — Missing or Expired Access Token
-```json
-{
-  "statusCode": 401,
-  "message": "Unauthorized"
-}
-```
-
----
-
-### 4. Current User Profile
-
-Retrieves profile data of the currently authenticated user. Sensitive fields (`password`, `hashedRefreshToken`) are automatically omitted.
-
-- **Endpoint**: `GET /auth/me`
-- **Guards**: `JwtAuthGuard` (Passport JWT)
-
-#### Request Headers
-```http
-Authorization: Bearer <accessToken>
-```
-
-#### Request Body
-None.
-
-#### Responses
-
-##### `200 OK` — Profile Returned
-```json
-{
-  "userId": 1,
-  "email": "student@example.com",
-  "role": "student",
-  "accountStatus": "active",
-  "createdAt": "2026-07-22T02:37:00.000Z",
-  "updatedAt": "2026-07-22T02:37:00.000Z"
-}
-```
-
-##### `401 Unauthorized` — Missing or Invalid Access Token
-```json
-{
-  "statusCode": 401,
-  "message": "Unauthorized"
-}
-```
-
----
-
-## Authorization & Role Guards Infrastructure
-
-Future backend modules can restrict route access using `@UseGuards(JwtAuthGuard, RolesGuard)` and the `@Roles(...)` metadata decorator.
-
-### Example Usage in Controllers
-
-```typescript
-import { Controller, Get, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '../users/user.entity';
-
-@Controller('reports')
-export class ReportsController {
-  
-  // Accessible only by users with 'admin' role
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @Get('admin-summary')
-  getAdminSummary() {
-    return { data: 'Confidential summary data' };
-  }
-
-  // Accessible by both 'admin' and 'employer' roles
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.EMPLOYER)
-  @Get('company-reports')
-  getCompanyReports() {
-    return { data: 'Employer report data' };
-  }
-}
-```
-
-#### Expected Error for Unauthorized Roles
-
-##### `403 Forbidden` — Insufficient Permissions
-```json
-{
-  "statusCode": 403,
-  "message": "Access denied: Insufficient permissions",
-  "error": "Forbidden"
-}
-```
+TypeORM `synchronize` remains disabled. Apply schema changes with migrations.

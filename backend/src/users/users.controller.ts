@@ -3,7 +3,7 @@ import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from './user.entity';
+import { UserRole } from './user-account.entity';
 
 @Controller('users')
 export class UsersController {

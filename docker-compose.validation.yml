@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${VALIDATION_DATABASE_USER:-postgres}
+      POSTGRES_PASSWORD: ${VALIDATION_DATABASE_PASSWORD:-validation_password}
+      POSTGRES_DB: ${VALIDATION_DATABASE_NAME:-internet_v3_validation}
+    ports:
+      - "${VALIDATION_DATABASE_PORT:-55433}:5432"
+    volumes:
+      - validation_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${VALIDATION_DATABASE_USER:-postgres} -d ${VALIDATION_DATABASE_NAME:-internet_v3_validation}",
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+volumes:
+  validation_pgdata:
+    driver: local
