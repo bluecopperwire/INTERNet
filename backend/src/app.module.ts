@@ -7,6 +7,7 @@ import { APP_GUARD } from '@nestjs/core';
 import databaseConfig from './config/database.config';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { UsersModule } from './users/users.module';
     ]),
     AuthModule,
     UsersModule,
+    StorageModule,
   ],
   providers: [
     {

@@ -17,7 +17,16 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "typeorm": "typeorm-ts-node-commonjs -d src/config/data-source.ts",
+    "migration:show": "npm run typeorm -- migration:show",
+    "migration:run": "npm run typeorm -- migration:run --transaction none",
+    "migration:revert": "npm run typeorm -- migration:revert --transaction none",
+    "database:validate": "node test/database/initial-schema.validation.cjs",
+    "database:validate-seeds": "node test/database/development-seed.validation.cjs",
+    "bootstrap:admin": "ts-node src/config/database-tasks.ts bootstrap:admin",
+    "seed:reference": "ts-node src/config/database-tasks.ts seed:reference",
+    "seed:dev": "ts-node src/config/database-tasks.ts seed:dev"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -32,6 +41,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "cookie-parser": "^1.4.7",
+    "dotenv": "^17.4.1",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",

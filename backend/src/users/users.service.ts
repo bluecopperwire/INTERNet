@@ -1,47 +1,109 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from './user.entity';
+import { IsNull, Repository } from 'typeorm';
+import {
+  AuthenticationProvider,
+  AuthenticationSession,
+  ExternalAuthenticationIdentity,
+  LocalAuthenticationCredential,
+  PersonnelVerificationStatus,
+  PesoPersonnel,
+  UserAccount,
+  UserRole,
+} from './entities/account.entities';
 
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    @InjectRepository(UserAccount)
+    private readonly accounts: Repository<UserAccount>,
+    @InjectRepository(LocalAuthenticationCredential)
+    private readonly credentials: Repository<LocalAuthenticationCredential>,
+    @InjectRepository(ExternalAuthenticationIdentity)
+    private readonly identities: Repository<ExternalAuthenticationIdentity>,
+    @InjectRepository(AuthenticationSession)
+    private readonly sessions: Repository<AuthenticationSession>,
+    @InjectRepository(PesoPersonnel)
+    private readonly personnel: Repository<PesoPersonnel>,
   ) {}
 
-  async findByEmail(email: string): Promise<User | null> {
-    return this.userRepository.findOne({ where: { email } });
+  findByEmail(email: string): Promise<UserAccount | null> {
+    return this.accounts
+      .createQueryBuilder('account')
+      .where('lower(account.email) = lower(:email)', { email: email.trim() })
+      .getOne();
   }
 
-  async findById(userId: number): Promise<User | null> {
-    return this.userRepository.findOne({ where: { userId } });
+  findById(userAccountId: number): Promise<UserAccount | null> {
+    return this.accounts.findOne({ where: { userAccountId } });
   }
 
-  async findByGoogleId(googleId: string): Promise<User | null> {
-    return this.userRepository.findOne({ where: { googleId } });
+  findLocalCredential(
+    userAccountId: number,
+  ): Promise<LocalAuthenticationCredential | null> {
+    return this.credentials
+      .createQueryBuilder('credential')
+      .addSelect('credential.passwordHash')
+      .where('credential.userAccountId = :userAccountId', { userAccountId })
+      .getOne();
   }
 
-  async updateRefreshToken(
-    userId: number,
-    hashedRefreshToken: string | null,
-  ): Promise<void> {
-    await this.userRepository.update(userId, {
-      hashedRefreshToken,
+  findGoogleIdentity(
+    providerSubject: string,
+  ): Promise<ExternalAuthenticationIdentity | null> {
+    return this.identities.findOne({
+      where: {
+        authenticationProvider: AuthenticationProvider.GOOGLE,
+        providerSubject,
+      },
     });
   }
 
-  async updateRefreshTokenFamily(
-    userId: number,
-    refreshTokenFamily: string | null,
-  ): Promise<void> {
-    await this.userRepository.update(userId, {
-      refreshTokenFamily,
+  findGoogleIdentityForAccount(
+    userAccountId: number,
+  ): Promise<ExternalAuthenticationIdentity | null> {
+    return this.identities.findOne({
+      where: {
+        userAccountId,
+        authenticationProvider: AuthenticationProvider.GOOGLE,
+      },
     });
   }
 
-  async create(userData: Partial<User>): Promise<User> {
-    const user = this.userRepository.create(userData);
-    return this.userRepository.save(user);
+  findSession(tokenFamilyId: string): Promise<AuthenticationSession | null> {
+    return this.sessions
+      .createQueryBuilder('session')
+      .addSelect('session.refreshTokenHash')
+      .where('session.tokenFamilyId = :tokenFamilyId', { tokenFamilyId })
+      .getOne();
+  }
+
+  async getCurrentAccount(userAccountId: number): Promise<{
+    account: UserAccount;
+    verificationStatus: PersonnelVerificationStatus | null;
+  } | null> {
+    const account = await this.findById(userAccountId);
+    if (!account) return null;
+    let verificationStatus: PersonnelVerificationStatus | null = null;
+    if (account.userRole === UserRole.PESO_PERSONNEL) {
+      verificationStatus =
+        (await this.personnel.findOne({ where: { userAccountId } }))
+          ?.verificationStatus ?? null;
+    }
+    return { account, verificationStatus };
+  }
+
+  async revokeSession(tokenFamilyId: string): Promise<void> {
+    await this.sessions.update(
+      { tokenFamilyId, revokedAt: IsNull() },
+      { revokedAt: new Date() },
+    );
+  }
+
+  async revokeAllSessions(userAccountId: number): Promise<void> {
+    await this.sessions.update(
+      { userAccountId, revokedAt: IsNull() },
+      { revokedAt: new Date() },
+    );
   }
 }

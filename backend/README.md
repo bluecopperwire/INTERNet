@@ -25,6 +25,8 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+Database synchronization is disabled. Apply the canonical PostgreSQL migration with `npm run migration:run`; see `docs/auth.md` for authentication routes, explicit bootstrap/seed commands, and the frontend redirect contract.
+
 ## Project setup
 
 ```bash
