@@ -1,31 +1,30 @@
-import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import LandingPage from './components/LandingPage';
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import LoginPage from './features/authentication/components/LoginPage'
+import SignUpPage from './features/authentication/components/SignUpPage'
+import InternSeekerLayout from './features/intern-seeker/components/InternSeekerLayout'
+import EmptyInternSeekerPage from './features/intern-seeker/pages/EmptyInternSeekerPage'
+import InternshipPortalPage from './features/intern-seeker/pages/InternshipPortalPage'
+import DigiCVPage from './features/intern-seeker/pages/DigiCVPage'
+import InternshipSearchPage from './features/intern-seeker/pages/InternshipSearchPage'
 
-const App: React.FC = () => {
-  // will replace this local state with your JWT auth state logic 
-  // managed by Passport / NestJS via Context or Redux later
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-
+function App() {
   return (
-    <Router>
-      <div style={{ fontFamily: 'Inter, sans-serif' }}>
-        {/* Quick toggle purely for local testing of the navbar auth state */}
-        <div style={{ position: 'fixed', bottom: 10, right: 10, zIndex: 999 }}>
-          <button 
-            onClick={() => setIsAuthenticated(!isAuthenticated)}
-            style={{ padding: '8px 16px', background: '#cc0001', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-          >
-            Toggle Auth State (Current: {isAuthenticated ? 'Logged In' : 'Logged Out'})
-          </button>
-        </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<LoginPage />} />
+        <Route path="/sign-up/:role" element={<SignUpPage />} />
+        <Route path="/intern-seeker" element={<InternSeekerLayout />}>
+          <Route index element={<InternshipPortalPage />} />
+          <Route path="search" element={<InternshipSearchPage />} />
+          <Route path="profile" element={<EmptyInternSeekerPage />} />
+          <Route path="digicv" element={<DigiCVPage />} />
+          <Route path="requirements" element={<EmptyInternSeekerPage />} />
+        </Route>
+        <Route path="/terms-of-service" element={<main aria-label="Terms of Service" />} />
+        <Route path="/privacy-policy" element={<main aria-label="Privacy Policy" />} />
+      </Routes>
+    </BrowserRouter>
+  )
+}
 
-        <Routes>
-          <Route path="/" element={<LandingPage isLoggedIn={isAuthenticated} />} />
-        </Routes>
-      </div>
-    </Router>
-  );
-};
-
-export default App;
+export default App

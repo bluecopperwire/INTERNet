@@ -1,0 +1,253 @@
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 40;
+  display: flex;
+  width: min(280px, calc(100vw - 24px));
+  flex-direction: column;
+  padding: 20px 16px 18px;
+  overflow-y: auto;
+  color: #ffffff;
+  background: #21167b;
+  box-shadow: 12px 0 32px rgba(9, 7, 31, 0.24);
+  transform: translateX(-110%);
+  visibility: hidden;
+  transition: transform 220ms ease, visibility 220ms;
+}
+
+.sidebar.open {
+  transform: translateX(0);
+  visibility: visible;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.logoBox {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #ffffff;
+}
+
+.logoBox img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.headerActions {
+  display: flex;
+  gap: 2px;
+}
+
+.headerActions button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 0;
+  border-radius: 5px;
+  color: #ffffff;
+  background: transparent;
+  cursor: pointer;
+}
+
+.headerActions button:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.headerActions svg {
+  width: 18px;
+  height: 18px;
+}
+
+.searchLabel {
+  display: block;
+  margin: 25px 0 19px;
+}
+
+.searchLabel input {
+  width: 100%;
+  height: 39px;
+  padding: 0 13px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 5px;
+  color: #ffffff;
+  background: transparent;
+  outline: none;
+}
+
+.searchLabel input::placeholder {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.searchLabel input:focus {
+  border-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.16);
+}
+
+.searchLabel input::-webkit-search-cancel-button {
+  filter: invert(1);
+}
+
+.navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.navItem {
+  display: flex;
+  min-height: 39px;
+  align-items: center;
+  gap: 13px;
+  padding: 8px 13px;
+  border-radius: 5px;
+  color: #ffffff;
+  font-size: 14px;
+  text-decoration: none;
+  transition: color 150ms ease, background 150ms ease;
+}
+
+.navItem:hover {
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.navItem.active {
+  color: #21167b;
+  background: #ffffff;
+  box-shadow: 0 3px 10px rgba(9, 7, 31, 0.08);
+}
+
+.navItem svg {
+  width: 19px;
+  height: 19px;
+  flex: none;
+  stroke-width: 1.8;
+}
+
+.noResults {
+  margin: 12px 13px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+}
+
+.userSummary {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 17px;
+  align-items: center;
+  gap: 9px;
+  margin: auto 7px 0;
+  padding-top: 40px;
+}
+
+.avatar {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  border-radius: 50%;
+  color: #21167b;
+  background: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.userText {
+  min-width: 0;
+}
+
+.userText strong,
+.userText small {
+  display: block;
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 11px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.userText strong {
+  font-weight: 600;
+}
+
+.userText small {
+  color: rgba(255, 255, 255, 0.82);
+  font-weight: 400;
+}
+
+.userSummary > svg {
+  width: 16px;
+  height: 16px;
+}
+
+.logout {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 14px 9px 0;
+  padding: 7px 0;
+  border: 0;
+  color: #ffffff;
+  background: transparent;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.logout:hover span {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.logout svg {
+  width: 19px;
+  height: 19px;
+}
+
+.headerActions button:focus-visible,
+.navItem:focus-visible,
+.logout:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.42);
+  outline-offset: 2px;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-height: 520px) {
+  .userSummary {
+    margin-top: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .navItem {
+    transition: none;
+  }
+}

@@ -1,0 +1,32 @@
+.detailPanel { padding: 34px 42px 48px; color: #21167b; background: #fbfcfc; }
+.detailHeader { display: flex; justify-content: space-between; gap: 24px; }
+.detailCompany { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+.companyDot { display: inline-block; width: 20px; height: 20px; flex: none; border-radius: 50%; background: #dfe1e5; }
+.detailHeader h1 { margin: 13px 0 4px; font-size: 23px; }
+.detailHeader p { margin: 0; font-size: 13px; }
+.applyButton { display: flex; min-width: 142px; height: 39px; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 999px; color: #21167b; background: #ffd514; font-weight: 600; cursor: pointer; }
+.applyButton svg { width: 19px; height: 19px; }
+.quickFacts { margin: 58px 0 48px; font-size: 13px; }
+.quickFacts div { display: flex; gap: 5px; margin: 8px 0; }
+.quickFacts dt { font-weight: 700; }
+.quickFacts dd { margin: 0; }
+.detailTabs { display: flex; gap: 45px; border-bottom: 1px solid #dfe2e6; }
+.detailTabs button { padding: 0 0 9px; border: 0; color: #9a9da5; background: transparent; font-size: 14px; font-weight: 600; cursor: pointer; }
+.detailTabs .activeTab { border-bottom: 2px solid #21167b; color: #21167b; }
+.detailSection { padding: 27px 0 32px; border-bottom: 1px solid #dfe2e6; }
+.detailSection h2 { margin: 0 0 24px; font-size: 21px; }
+.detailSection strong, .detailSection li { font-size: 13px; line-height: 1.7; }
+.detailSection ul { margin: 14px 0 0; padding-left: 18px; }
+.overviewGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 45px; }
+.overviewGrid div { display: grid; grid-template-columns: 75px 1fr; gap: 8px; font-size: 13px; }
+.overviewGrid dt { font-weight: 700; }
+.overviewGrid dd { margin: 0; }
+@media (max-width: 700px) {
+  .detailPanel { padding: 25px 18px 36px; }
+  .detailHeader { flex-direction: column; }
+  .applyButton { align-self: flex-start; }
+  .quickFacts div { display: block; }
+  .quickFacts dd { margin-top: 2px; }
+  .detailTabs { gap: 20px; overflow-x: auto; }
+  .overviewGrid { grid-template-columns: 1fr; }
+}
