@@ -1,0 +1,30 @@
+/* src/features/intern-seeker/components/OnboardingModal.module.css */
+.overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal { background: #ffffff; border-radius: 4px; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); font-family: 'Inter', system-ui, sans-serif; display: flex; flex-direction: column; }
+
+.header { display: flex; justify-content: space-between; align-items: center; padding: 24px 24px 0 24px; }
+.title { font-size: 1rem; font-family: 'Poppins', sans-serif; font-weight: 700; color: #160e6f; margin: 0; }
+.closeBtn { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #160e6f; padding: 0; font-weight: bold; }
+
+.content { padding: 24px 32px 32px 32px; text-align: center; }
+.welcomeText { font-size: 1.4rem; font-family: 'Poppins', sans-serif; font-weight: 700; color: #160e6f; margin: 0 0 12px 0; }
+.subtitle { color: #160e6f; font-family: 'Inter', sans-serif; font-size: 0.85rem; line-height: 1.5; margin: 0 auto 32px auto; font-weight: 500; }
+
+.stepList { list-style: none; padding: 0; margin: 0 0 32px 0; text-align: left; }
+.stepList li { display: flex; align-items: flex-start; margin-bottom: 24px; }
+.iconContainer { flex-shrink: 0; margin-right: 16px; color: #160e6f; display: flex; align-items: center; justify-content: center; margin-top: 2px; }
+
+.trackIconWrapper { display: flex; align-items: flex-end; position: relative; }
+.trackBars { display: flex; align-items: flex-end; gap: 2px; margin-left: 2px; height: 14px; position: absolute; left: 4px; bottom: -10px; }
+.bar1 { width: 2px; height: 6px; background: #160e6f; }
+.bar2 { width: 2px; height: 10px; background: #160e6f; }
+.bar3 { width: 2px; height: 14px; background: #160e6f; }
+
+.stepText strong { display: block; font-size: 0.9rem; font-family: 'Poppins', sans-serif; color: #160e6f; margin-bottom: 2px; font-weight: 700; }
+.stepText p { margin: 0; color: #160e6f; font-family: 'Inter', sans-serif; font-size: 0.8rem; line-height: 1.4; opacity: 0.9; }
+
+.actions { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.startBtn { background: #160e6f; color: #ffffff; border: none; padding: 12px 32px; border-radius: 24px; font-family: 'Poppins', sans-serif; font-weight: 600; cursor: pointer; transition: opacity 0.2s; font-size: 0.9rem; width: 200px; }
+.startBtn:hover { opacity: 0.9; }
+.laterBtn { background: transparent; color: #160e6f; border: none; font-family: 'Poppins', sans-serif; font-weight: 600; cursor: pointer; padding: 8px; font-size: 0.85rem; transition: opacity 0.2s; }
+.laterBtn:hover { opacity: 0.7; }

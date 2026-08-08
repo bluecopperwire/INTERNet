@@ -6,6 +6,8 @@ import EmptyInternSeekerPage from './features/intern-seeker/pages/EmptyInternSee
 import InternshipPortalPage from './features/intern-seeker/pages/InternshipPortalPage'
 import DigiCVPage from './features/intern-seeker/pages/DigiCVPage'
 import InternshipSearchPage from './features/intern-seeker/pages/InternshipSearchPage'
+import { DashboardPage } from './features/intern-seeker/pages/DashboardPage'
+import { ProfileEditorPage } from './features/intern-seeker/pages/ProfileEditorPage'
 
 function App() {
   return (
@@ -13,13 +15,18 @@ function App() {
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/sign-up/:role" element={<SignUpPage />} />
+        
         <Route path="/intern-seeker" element={<InternSeekerLayout />}>
           <Route index element={<InternshipPortalPage />} />
           <Route path="search" element={<InternshipSearchPage />} />
-          <Route path="profile" element={<EmptyInternSeekerPage />} />
+          
+          <Route path="profile" element={<DashboardPage />} />
+          <Route path="profile/edit" element={<ProfileEditorPage />} />
+          
           <Route path="digicv" element={<DigiCVPage />} />
           <Route path="requirements" element={<EmptyInternSeekerPage />} />
         </Route>
+        
         <Route path="/terms-of-service" element={<main aria-label="Terms of Service" />} />
         <Route path="/privacy-policy" element={<main aria-label="Privacy Policy" />} />
       </Routes>

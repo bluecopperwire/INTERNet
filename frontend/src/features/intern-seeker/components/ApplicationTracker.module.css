@@ -1,0 +1,58 @@
+.overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal { background: #ffffff; width: 100%; max-width: 400px; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); font-family: 'Inter', system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden; }
+
+.header { display: flex; justify-content: space-between; align-items: center; padding: 24px 24px 16px 24px; }
+.title { margin: 0; font-size: 1rem; font-family: 'Poppins', sans-serif; font-weight: 700; color: #160e6f; }
+.closeBtn { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #160e6f; padding: 0; font-weight: bold; }
+
+.appInfo { margin-bottom: 24px; text-align: center; }
+.appInfo h4 { margin: 0 0 4px 0; font-size: 1.2rem; font-family: 'Poppins', sans-serif; color: #160e6f; font-weight: 700; }
+.appInfo p { margin: 0; color: #160e6f; font-family: 'Inter', sans-serif; font-size: 0.95rem; font-weight: 500; }
+
+.stepper { display: flex; flex-direction: column; padding: 0 32px 32px 32px; }
+.step { display: flex; min-height: 70px; }
+.indicatorWrapper { display: flex; flex-direction: column; align-items: center; margin-right: 20px; }
+
+.indicator { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 2; position: relative; }
+
+.stepPast .indicator { background: #ffffff; border: 2px solid #22c55e; } /* Using a bright green */
+.check { color: #22c55e; display: flex; align-items: center; justify-content: center; }
+
+.stepCurrent .indicator { background: #160e6f; border: 2px solid #160e6f; }
+.dotWhite { width: 4px; height: 4px; background: #ffffff; border-radius: 50%; }
+
+.stepFuture .indicator { background: #ffffff; border: 2px solid #a0a0a0; }
+.dotGrey { width: 4px; height: 4px; background: #a0a0a0; border-radius: 50%; }
+
+.line { width: 2px; flex: 1; margin: 4px 0; }
+.lineGreen { background: #22c55e; }
+.lineGrey { background: #a0a0a0; }
+
+.content { flex: 1; display: flex; flex-direction: column; padding-bottom: 24px; margin-top: 1px; }
+.stageName { font-weight: 700; font-family: 'Poppins', sans-serif; color: #160e6f; margin-bottom: 2px; font-size: 0.9rem; }
+.timestamp { font-size: 0.75rem; font-family: 'Inter', sans-serif; color: #160e6f; font-weight: 500; opacity: 0.9; }
+.pendingText { font-size: 0.75rem; font-family: 'Inter', sans-serif; color: #160e6f; opacity: 0.7; }
+.notes { font-size: 0.7rem; font-family: 'Inter', sans-serif; color: #160e6f; margin: 4px 0 0 0; opacity: 0.8; line-height: 1.4; }
+
+.footerBanner { 
+  display: flex; 
+  align-items: center; 
+  gap: 12px; 
+  background: #fdd116; 
+  padding: 16px 24px; 
+  margin: 0 24px 24px 24px;
+  border-radius: 8px;
+  color: #ffffff; 
+}
+.infoIconWrapper { 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+}
+.footerBanner p { 
+  margin: 0; 
+  font-size: 0.85rem; 
+  font-family: 'Inter', sans-serif; 
+  font-weight: 600; 
+  line-height: 1.3; 
+}

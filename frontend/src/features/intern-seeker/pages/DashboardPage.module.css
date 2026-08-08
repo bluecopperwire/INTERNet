@@ -1,0 +1,503 @@
+
+
+.pageWrapper {
+  background-color: #160e6f;
+  padding: 32px;
+  min-height: 100vh;
+  font-family: 'Inter', system-ui, sans-serif;
+  display: flex;
+  justify-content: center;
+}
+
+.mainContainer {
+  background-color: #ffffff;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 950px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.banner {
+  background: linear-gradient(110deg, #fdd116 0%, #8a6c82 45%, #160e6f 100%);
+  border-radius: 8px;
+  padding: 32px 40px;
+  position: relative;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 240px;
+}
+
+.editProfileBtn {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  background-color: #ffffff;
+  color: #160e6f;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.asterisk {
+  color: #cc0001;
+  margin-left: 2px;
+}
+
+.bannerContent {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.avatarContainer {
+  position: relative;
+  width: 90px;
+  height: 90px;
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
+  background-color: #ffffff;
+  border-radius: 50%;
+  border: 1px solid #e0e0e0;
+}
+
+.avatarEditBadge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background-color: #ffffff;
+  color: #160e6f;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border: 1px solid #eee;
+  cursor: pointer;
+}
+
+.bannerInfo h2 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 1.6rem;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.2px;
+}
+
+.bannerInfo p {
+  font-family: 'Inter', sans-serif;
+  margin: 0 0 2px 0;
+  font-size: 0.85rem;
+  opacity: 0.95;
+}
+
+
+.contentArea {
+  padding: 16px 28px 40px 28px;
+}
+
+.tabsContainer {
+  border-bottom: 1px solid rgba(22, 14, 111, 0.2);
+  margin-bottom: 32px;
+}
+
+.tabs {
+  display: flex;
+  gap: 32px;
+}
+
+.tab {
+  background: none;
+  border: none;
+  padding: 12px 0;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #160e6f;
+  cursor: pointer;
+  position: relative;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.tab:hover {
+  opacity: 0.8;
+}
+
+.tab.active {
+  opacity: 1;
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #160e6f;
+}
+
+
+.sectionBlock {
+  animation: fadeIn 0.3s ease-in-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.sectionHeader {
+  margin-bottom: 32px;
+}
+
+.sectionHeader h3, .sectionTitle {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: #160e6f;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.headerEditIcon {
+  color: #160e6f;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  margin-left: 4px;
+}
+
+.subtitle {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  color: #160e6f;
+  margin: 0;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid rgba(22, 14, 111, 0.1);
+  margin: 0;
+}
+
+.sectionFooter {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 0 0 0;
+  flex-direction: column;
+}
+
+.showAllBtn {
+  background: none;
+  border: none;
+  color: #160e6f;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  align-self: flex-end;
+  padding: 12px 0 0 0;
+}
+
+.aboutGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.infoItem label {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #160e6f;
+}
+
+.infoItem span {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #160e6f;
+}
+
+.resumeList {
+  margin-bottom: 16px;
+}
+
+.resumeCard {
+  border: 1px solid rgba(22, 14, 111, 0.3);
+  border-radius: 4px;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.resumeInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.resumeIcon {
+  color: #160e6f;
+  display: flex;
+  align-items: center;
+}
+
+.resumeText {
+  display: flex;
+  flex-direction: column;
+}
+
+.resumeName {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #160e6f;
+}
+
+.resumeDate {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 0.65rem;
+  color: #160e6f;
+}
+
+.resumeAction {
+  color: #160e6f;
+  font-weight: bold;
+  letter-spacing: 2px;
+  cursor: pointer;
+}
+
+.addMoreBtn {
+  background: none;
+  border: none;
+  color: #160e6f;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 24px;
+}
+
+
+.appGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.appCard {
+  border: 1px solid rgba(22, 14, 111, 0.3);
+  border-radius: 4px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.appCard:hover {
+  box-shadow: 0 4px 12px rgba(22, 14, 111, 0.08);
+}
+
+.appHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.companyMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.companyLogoPlaceholder {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #d9d9d9;
+}
+
+.companyName {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: #160e6f;
+}
+
+.bookmarkWrapper {
+  color: #160e6f;
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.bookmarkWrapper:hover {
+  background-color: rgba(22, 14, 111, 0.05);
+}
+
+.bookmarkWrapper:active {
+  transform: scale(0.95);
+}
+
+.appBody {
+  margin-bottom: 24px;
+}
+
+.appPosition {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
+  color: #160e6f;
+  margin: 0 0 4px 0;
+}
+
+.appLocation {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 0.75rem;
+  color: #160e6f;
+  margin: 0;
+}
+
+.appFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: auto;
+}
+
+.appliedBadge {
+  background-color: #160e6f;
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 0.7rem;
+  padding: 4px 16px;
+  border-radius: 12px;
+}
+
+.timeAgo {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: #160e6f;
+}
+
+.resumeActionWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.resumeActionBtn {
+  background: none;
+  border: none;
+  color: #160e6f;
+  font-weight: 800;
+  letter-spacing: 2px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.resumeActionBtn:hover, .resumeActionBtn:focus {
+  background: rgba(22, 14, 111, 0.05);
+}
+
+.resumeMenu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: #ffffff;
+  border: 1px solid rgba(22, 14, 111, 0.1);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  min-width: 140px;
+  z-index: 10;
+  overflow: hidden;
+}
+
+.resumeMenu button {
+  background: none;
+  border: none;
+  padding: 12px 16px;
+  text-align: left;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  transition: background 0.2s;
+  border-bottom: 1px solid rgba(22, 14, 111, 0.05);
+}
+
+.resumeMenu button:last-child {
+  border-bottom: none;
+}
+
+.resumeMenu button:hover {
+  background: rgba(22, 14, 111, 0.05);
+}
+
+.resumeMenu button.deleteOption {
+  color: #cc0001;
+}
+
+.resumeMenu button.deleteOption:hover {
+  background: rgba(204, 0, 1, 0.05);
+}
+
+.emptyText {
+  font-family: 'Inter', sans-serif;
+  color: #666;
+  font-size: 0.9rem;
+  font-style: italic;
+  margin-bottom: 16px;
+}

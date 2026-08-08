@@ -1,12 +1,19 @@
-import { MOCK_INTERNSHIP_PORTAL_DATA } from '../mocks/internship-portal.mock'
+import { MOCK_INTERNSHIP_PORTAL_DATA, MOCK_USER_PROFILE, MOCK_RESUMES, MOCK_APPLICATIONS } from '../mocks/internship-portal.mock'
 import type {
   InternshipPortalData,
   OpportunitySearchParams,
+  UserProfile,
+  Resume,
+  UserApplication
 } from '../types/internship.types'
 
 export interface InternshipPortalService {
   getPortalData(): Promise<InternshipPortalData>
   searchOpportunities(params: OpportunitySearchParams): Promise<InternshipPortalData>
+  getUserProfile(): Promise<UserProfile>
+  updateUserProfile(profile: Partial<UserProfile>): Promise<UserProfile>
+  getUserResumes(): Promise<Resume[]>
+  getUserApplications(): Promise<UserApplication[]>
 }
 
 const clonePortalData = (): InternshipPortalData => ({
@@ -36,4 +43,22 @@ export const internshipPortalService: InternshipPortalService = {
       }),
     })
   },
+
+  async getUserProfile() {
+    return new Promise((resolve) => setTimeout(() => resolve({ ...MOCK_USER_PROFILE }), 400))
+  },
+
+  async updateUserProfile(profileUpdates) {
+    return new Promise((resolve) => setTimeout(() => {
+      resolve({ ...MOCK_USER_PROFILE, ...profileUpdates })
+    }, 600))
+  },
+
+  async getUserResumes() {
+    return new Promise((resolve) => setTimeout(() => resolve([...MOCK_RESUMES]), 400))
+  },
+
+  async getUserApplications() {
+    return new Promise((resolve) => setTimeout(() => resolve([...MOCK_APPLICATIONS]), 400))
+  }
 }
