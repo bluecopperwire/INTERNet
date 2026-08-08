@@ -1,0 +1,356 @@
+.page {
+  display: grid;
+  grid-template-columns: 44.27% 1fr;
+  height: 100vh;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.artPanel {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.artPanel img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: left center;
+}
+
+.formPanel {
+  display: flex;
+  height: 100vh;
+  flex-direction: column;
+  align-items: center;
+  padding: 80px;
+  overflow-y: auto;
+  scrollbar-color: #aaaec0 transparent;
+  scrollbar-width: thin;
+}
+
+.content {
+  flex: none;
+  width: min(100%, 408px);
+  margin-block: auto;
+  color: #17116f;
+}
+
+.profileContent {
+  width: min(100%, 408px);
+}
+
+.roleTabs {
+  display: flex;
+  justify-content: center;
+}
+
+.roleButton,
+.activeRole {
+  min-height: 40px;
+  padding: 9px 13px;
+  border: 0;
+  color: #17116f;
+  background: transparent;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.activeRole {
+  background: #dce3ff;
+}
+
+.roleButton:hover {
+  background: #f0f2ff;
+}
+
+.content > h1 {
+  margin: 21px 0 18px;
+  font-size: 34px;
+  line-height: 1.3;
+  letter-spacing: -0.7px;
+  text-align: center;
+}
+
+.googleButton {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 51px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  overflow: hidden;
+  border: 1px solid #cdd3f9;
+  color: #17116f;
+  background: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.googleButton::after {
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 70%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(220, 227, 255, 0.65), transparent);
+  content: '';
+  transform: skewX(-18deg);
+  transition: left 450ms ease;
+}
+
+.googleButton:hover {
+  border-color: #aeb8ef;
+  box-shadow: 0 7px 18px rgba(33, 22, 123, 0.12);
+  transform: translateY(-2px);
+}
+
+.googleButton:hover::after {
+  left: 145%;
+}
+
+.googleButton:active {
+  transform: translateY(0);
+}
+
+.googleButton img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 28px 0 31px;
+  color: #8a8a91;
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.divider::before,
+.divider::after {
+  width: 100%;
+  height: 1px;
+  background: #d3d7e8;
+  content: '';
+}
+
+.loginPrompt {
+  margin: 0 0 29px;
+  color: #61687b;
+  font-size: 15px;
+}
+
+.loginPrompt a,
+.legalNotice a {
+  color: #17116f;
+  font-weight: 600;
+  text-underline-offset: 2px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  color: #586176;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.field label span {
+  color: #fa4057;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  height: 51px;
+  padding: 0 15px;
+  border: 1px solid #d3d8ea;
+  border-radius: 0;
+  color: #20243a;
+  background: #ffffff;
+  outline: none;
+}
+
+.field select {
+  padding-right: 44px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23586176' d='M1.41.59 6 5.17 10.59.59 12 2l-6 6-6-6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 10px 7px;
+}
+
+.field input::placeholder,
+.field input.placeholderControl,
+.field select.placeholderControl {
+  color: #adb3c2;
+  -webkit-text-fill-color: #adb3c2;
+}
+
+.field input[type='date'].placeholderControl::-webkit-datetime-edit {
+  color: #adb3c2;
+}
+
+.field input[type='date']::-webkit-calendar-picker-indicator {
+  opacity: 0.55;
+}
+
+.field input:focus,
+.field select:focus {
+  border-color: #211880;
+  box-shadow: 0 0 0 3px rgba(33, 24, 128, 0.1);
+}
+
+.fileControl {
+  display: flex;
+  width: 100%;
+  height: 51px;
+  align-items: center;
+  padding: 0 15px;
+  overflow: hidden;
+  border: 1px solid #d3d8ea;
+  color: #adb3c2 !important;
+  background: #ffffff;
+  font-weight: 400 !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.fileControl:hover {
+  border-color: #aeb8ef;
+}
+
+.field:has(.fileInput:focus-visible) .fileControl {
+  border-color: #211880;
+  box-shadow: 0 0 0 3px rgba(33, 24, 128, 0.1);
+}
+
+.fileControl.hasFile {
+  color: #20243a !important;
+}
+
+.fileInput {
+  position: absolute;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.primaryButton {
+  width: 100%;
+  height: 51px;
+  margin-top: 1px;
+  border: 0;
+  color: #ffffff;
+  background: #21167b;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.primaryButton:hover {
+  background: #17105f;
+}
+
+.primaryButton:active {
+  transform: translateY(1px);
+}
+
+.roleButton:focus-visible,
+.activeRole:focus-visible,
+.googleButton:focus-visible,
+.primaryButton:focus-visible,
+.loginPrompt a:focus-visible,
+.legalNotice a:focus-visible {
+  outline: 3px solid rgba(33, 24, 128, 0.25);
+  outline-offset: 2px;
+}
+
+.stepHeader {
+  margin-bottom: 17px;
+  text-align: center;
+}
+
+.stepHeader h1 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.25;
+}
+
+.stepHeader p {
+  margin: 0;
+  font-size: 17px;
+}
+
+.pageNumber {
+  margin: 1px 0 0;
+  font-size: 13px;
+  text-align: center;
+}
+
+.error {
+  margin: -3px 0 0;
+  color: #b42318;
+  font-size: 12px;
+}
+
+.legalNotice {
+  margin: 18px 7px 0;
+  color: #777d8d;
+  font-size: 10px;
+  line-height: 1.55;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .googleButton,
+  .googleButton::after,
+  .primaryButton {
+    transition: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .page {
+    display: block;
+  }
+
+  .artPanel {
+    display: none;
+  }
+
+  .formPanel {
+    padding: 48px 24px;
+  }
+}
+
+@media (max-width: 420px) {
+  .formPanel {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  .content > h1 {
+    font-size: 28px;
+  }
+}
