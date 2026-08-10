@@ -1,4 +1,4 @@
-import type { InternshipPortalData, UserProfile, Resume, UserApplication } from '../types/internship.types'
+import type { InternshipPortalData, UserProfile, Resume } from '../types/internship.types'
 
 const DEFAULT_DETAILS = {
   workplace: 'Quezon City',
@@ -74,35 +74,3 @@ export const MOCK_RESUMES: Resume[] = [
   { id: 'res-1', fileName: 'Filip Resume.Pdf', dateAdded: 'July 20, 2026', url: '#' }
 ]
 
-export const MOCK_APPLICATIONS: UserApplication[] = [
-  {
-    id: 'app-1',
-    companyName: 'ABC Company',
-    position: 'IT Intern',
-    location: 'Quezon City',
-    status: 'Applied',
-    appliedDate: 'July 20, 2026 11:15 am',
-    progress: [
-      { stage: 'Application Submitted', status: 'Completed', timestamp: 'July 20, 2026 11:15 am' },
-      { stage: 'For Review (QC PESO)', status: 'Completed', timestamp: 'July 22, 2026 10:30 am', notes: 'Your application has been reviewed by QC PESO' },
-      { stage: 'Endorsed to Company', status: 'Completed', timestamp: 'July 22, 2026 1:30 pm', notes: 'Your application has been endorsed to company' },
-      { stage: 'Company Review', status: 'Pending' },
-      { stage: 'Final Decision', status: 'Pending' }
-    ]
-  },
-  {
-    id: 'app-2',
-    companyName: 'Amazon Company',
-    position: 'Product Designer',
-    location: 'Porto, Portugal (On Site)',
-    status: 'Applied',
-    appliedDate: '1d',
-    progress: [
-      { stage: 'Application Submitted', status: 'Completed', timestamp: 'July 19, 2026 09:00 am' },
-      { stage: 'For Review (QC PESO)', status: 'Pending' },
-      { stage: 'Endorsed to Company', status: 'Pending' },
-      { stage: 'Company Review', status: 'Pending' },
-      { stage: 'Final Decision', status: 'Pending' }
-    ]
-  }
-]

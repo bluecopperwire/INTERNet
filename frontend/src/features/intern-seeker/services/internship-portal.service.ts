@@ -1,4 +1,5 @@
-import { MOCK_INTERNSHIP_PORTAL_DATA, MOCK_USER_PROFILE, MOCK_RESUMES, MOCK_APPLICATIONS } from '../mocks/internship-portal.mock'
+import { MOCK_INTERNSHIP_PORTAL_DATA, MOCK_USER_PROFILE, MOCK_RESUMES } from '../mocks/internship-portal.mock'
+import { MOCK_APPLICATIONS } from '../mocks/applications.mock'
 import type {
   InternshipPortalData,
   OpportunitySearchParams,

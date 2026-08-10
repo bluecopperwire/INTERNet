@@ -1,0 +1,327 @@
+﻿.page {
+  --tracking-purple: #21167b;
+  --tracking-yellow: #f1c400;
+  --tracking-content-width: 1280px;
+
+  min-height: 100vh;
+  color: var(--tracking-purple);
+  background: #ffffff;
+}
+
+.trackingContent {
+  padding: 56px max(4vw, 32px) 64px;
+}
+
+.requirementsPanel {
+  max-width: var(--tracking-content-width);
+  margin: 0 auto;
+  padding: 18px 24px 28px;
+  border: 1.5px solid var(--tracking-purple);
+  border-radius: 10px;
+}
+.panelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 40px;
+  margin-bottom: 22px;
+}
+.panelHeader h2 {
+  margin: 0 0 3px;
+  font-size: 21px;
+}
+.panelHeader p {
+  margin: 0;
+  font-size: 13px;
+}
+.progressSummary {
+  width: min(100%, 345px);
+  flex: none;
+}
+.progressSummary strong {
+  display: block;
+  margin-bottom: 9px;
+  font-size: 16px;
+}
+.progressRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.progressRow progress {
+  width: 100%;
+  height: 6px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: #b9bebd;
+  appearance: none;
+}
+.progressRow progress::-webkit-progress-bar {
+  background: #b9bebd;
+}
+.progressRow progress::-webkit-progress-value {
+  border-radius: 999px;
+  background: #21167b;
+}
+.progressRow progress::-moz-progress-bar {
+  border-radius: 999px;
+  background: #21167b;
+}
+.progressRow span {
+  font-size: 12px;
+  font-weight: 600;
+}
+.table {
+  overflow: hidden;
+  border: 1.5px solid #21167b;
+  border-radius: 9px;
+}
+.tableHeader, .requirementRow {
+  display: grid;
+  grid-template-columns: 2.2fr 0.72fr 1.05fr 0.58fr;
+  align-items: center;
+}
+.tableHeader {
+  min-height: 68px;
+  color: #ffffff;
+  background: #21167b;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+}
+.requirementRow {
+  min-height: 92px;
+  border-bottom: 1.5px solid #21167b;
+}
+.requirementRow:last-child {
+  border-bottom: 0;
+}
+.requirementRow > div {
+  padding: 14px 18px;
+}
+.requirementRow > [role='cell']:not(.requirementDetails) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.requirementDetails h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+.requirementDetails p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.recipient {
+  display: flex;
+  flex-direction: column;
+  margin-top: 11px;
+  font-size: 12px;
+}
+.recipientName {
+  font-weight: 700;
+}
+.status {
+  display: inline-block;
+  padding: 6px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.submitted {
+  color: #34cba7;
+  background: #eaf9f5;
+}
+.pending {
+  color: #ffa518;
+  background: #fff4e6;
+}
+.lastUpdated {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+.actionCell {
+  text-align: center;
+}
+.actionCell button, .uploadButton {
+  display: inline-grid;
+  min-width: 94px;
+  height: 36px;
+  place-items: center;
+  padding: 0 16px;
+  border: 1px solid #21167b;
+  border-radius: 5px;
+  color: #21167b;
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.actionCell button:hover, .uploadButton:hover {
+  color: #ffffff;
+  background: #21167b;
+}
+.actionCell input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+}
+.mobileLabel {
+  display: none;
+}
+.error {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: 5px;
+  color: #a51d1d;
+  background: #fff0f0;
+  font-size: 13px;
+}
+.feedback {
+  padding: 35px;
+  text-align: center;
+}
+.modalBackdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(9, 7, 31, 0.66);
+}
+.documentModal {
+  width: min(100%, 540px);
+  padding: 34px;
+  color: #21167b;
+  background: #ffffff;
+  box-shadow: 0 22px 60px rgba(6, 4, 33, 0.34);
+}
+.documentModal h2 {
+  margin: 0 0 24px;
+  font-size: 24px;
+}
+.documentModal dl {
+  margin: 0;
+}
+.documentModal dl div {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #e4e6eb;
+}
+.documentModal dt {
+  font-weight: 700;
+}
+.documentModal dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.documentModal a {
+  display: inline-block;
+  margin-top: 22px;
+  padding: 10px 15px;
+  border-radius: 4px;
+  color: #ffffff;
+  background: #21167b;
+  font-weight: 600;
+  text-decoration: none;
+}
+.documentModal > p {
+  margin: 20px 0 0;
+  color: #747b8d;
+  font-size: 11px;
+}
+
+@media (max-width: 900px) {
+  .panelHeader {
+    flex-direction: column;
+  }
+  .progressSummary {
+    width: 100%;
+  }
+  .tableHeader, .requirementRow {
+    grid-template-columns: 1.8fr 0.75fr 1fr 0.65fr;
+  }
+  .requirementRow > div {
+    padding: 14px 12px;
+  }
+  .requirementDetails h3 {
+    font-size: 17px;
+  }
+  .requirementDetails p, .recipient, .lastUpdated {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 700px) {
+  .trackingContent {
+    padding: 45px 16px 55px;
+  }
+  .requirementsPanel {
+    padding: 18px 14px 20px;
+  }
+  .panelHeader h2 {
+    font-size: 22px;
+  }
+  .table {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+  }
+  .tableHeader {
+    display: none;
+  }
+  .requirementRow {
+    display: grid;
+    min-height: 0;
+    grid-template-columns: 105px 1fr;
+    gap: 8px 10px;
+    margin-bottom: 16px;
+    padding: 18px;
+    border: 1px solid #21167b;
+    border-radius: 7px;
+  }
+  .requirementRow:last-child {
+    border-bottom: 1px solid #21167b;
+  }
+  .requirementRow > div {
+    padding: 0;
+  }
+  .requirementRow > [role='cell']:not(.requirementDetails) {
+    display: block;
+    text-align: left;
+  }
+  .requirementDetails {
+    grid-column: 1 / -1;
+    margin-bottom: 10px;
+  }
+  .mobileLabel {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .lastUpdated, .actionCell {
+    text-align: left;
+  }
+  .actionCell button, .uploadButton {
+    min-width: 92px;
+    height: 36px;
+  }
+  .documentModal {
+    padding: 26px 20px;
+  }
+  .documentModal dl div {
+    grid-template-columns: 90px minmax(0, 1fr);
+    font-size: 13px;
+  }
+}
