@@ -1,4 +1,5 @@
 import {
+  IsDateString,
   IsEmail,
   IsIn,
   IsInt,
@@ -50,4 +51,28 @@ export class CorrectPesoPersonnelDto {
   @IsIn(['image/jpeg', 'image/png', 'application/pdf'])
   employeeIdFileMimeType?: string;
   @IsOptional() @IsString() employeeIdFileName?: string;
+}
+
+export class CreatePesoPersonnelAccountDto {
+  @IsEmail() email: string;
+  @IsString() @MinLength(8) password: string;
+  @IsString() @IsNotEmpty() firstName: string;
+  @IsOptional() @IsString() middleName?: string;
+  @IsString() @IsNotEmpty() lastName: string;
+  @IsOptional() @IsString() extensionName?: string;
+  @IsString() @IsNotEmpty() sex: string;
+  @IsDateString() birthDate: string;
+  @IsString() @IsNotEmpty() addressLine: string;
+  @IsString() @IsNotEmpty() addressBarangay: string;
+  @IsString() @IsNotEmpty() addressDistrict: string;
+  @IsString() @IsNotEmpty() addressCity: string;
+  @IsString() @IsNotEmpty() contactNumber: string;
+  @IsString() @IsNotEmpty() employeeId: string;
+  @IsString() @IsNotEmpty() position: string;
+  @IsString() @IsNotEmpty() department: string;
+  @IsString() @IsNotEmpty() employeeIdFileBase64: string;
+  @IsIn(['image/jpeg', 'image/png', 'application/pdf'])
+  employeeIdFileMimeType: string;
+  @IsOptional() @IsString() employeeIdFileName?: string;
+  @IsOptional() @IsString() photoFilePath?: string;
 }

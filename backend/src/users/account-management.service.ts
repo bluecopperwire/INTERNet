@@ -21,6 +21,7 @@ import {
 import {
   CorrectPesoPersonnelDto,
   CreateCompanyAccountDto,
+  CreatePesoPersonnelAccountDto,
 } from './dto/account-management.dto';
 
 @Injectable()
@@ -224,6 +225,79 @@ export class AccountManagementService {
       throw error;
     } finally {
       await runner.release();
+    }
+  }
+
+  async createPesoPersonnel(
+    dto: CreatePesoPersonnelAccountDto,
+    adminAccountId: number,
+  ): Promise<{ userAccountId: number; pesoPersonnelId: number }> {
+    const fileKey = await this.storage.storeEmployeeId({
+      data: Buffer.from(dto.employeeIdFileBase64, 'base64'),
+      mimeType: dto.employeeIdFileMimeType,
+      originalName: dto.employeeIdFileName,
+    });
+    try {
+      return await this.dataSource.transaction(async (manager) => {
+        const existing = await manager
+          .getRepository(UserAccount)
+          .createQueryBuilder('a')
+          .where('lower(a.email)=lower(:email)', { email: dto.email })
+          .getOne();
+        if (existing) throw new ConflictException('Email already in use');
+
+        const account = await manager.save(
+          UserAccount,
+          manager.create(UserAccount, {
+            email: dto.email.trim().toLowerCase(),
+            userRole: UserRole.PESO_PERSONNEL,
+            accountStatus: AccountStatus.ACTIVE,
+            deletedAt: null,
+          }),
+        );
+        await manager.save(
+          LocalAuthenticationCredential,
+          manager.create(LocalAuthenticationCredential, {
+            userAccountId: account.userAccountId,
+            passwordHash: await bcrypt.hash(dto.password, 10),
+            passwordChangedAt: new Date(),
+          }),
+        );
+        const personnel = await manager.save(
+          PesoPersonnel,
+          manager.create(PesoPersonnel, {
+            userAccountId: account.userAccountId,
+            firstName: dto.firstName,
+            middleName: dto.middleName ?? null,
+            lastName: dto.lastName,
+            extensionName: dto.extensionName ?? null,
+            sex: dto.sex,
+            birthDate: dto.birthDate,
+            addressLine: dto.addressLine,
+            addressBarangay: dto.addressBarangay,
+            addressDistrict: dto.addressDistrict,
+            addressCity: dto.addressCity,
+            contactNumber: dto.contactNumber,
+            contactEmail: account.email,
+            employeeId: dto.employeeId,
+            position: dto.position,
+            department: dto.department,
+            employeeIdFilePath: fileKey,
+            photoFilePath: dto.photoFilePath ?? null,
+            verificationStatus: PersonnelVerificationStatus.APPROVED,
+            reviewedAt: new Date(),
+            reviewedByUserAccountId: adminAccountId,
+            verificationRemark: null,
+          }),
+        );
+        return {
+          userAccountId: account.userAccountId,
+          pesoPersonnelId: personnel.pesoPersonnelId,
+        };
+      });
+    } catch (error) {
+      await this.storage.delete(fileKey);
+      throw error;
     }
   }
 }

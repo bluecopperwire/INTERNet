@@ -20,6 +20,7 @@ import { AccountManagementService } from './account-management.service';
 import {
   CorrectPesoPersonnelDto,
   CreateCompanyAccountDto,
+  CreatePesoPersonnelAccountDto,
   VerificationDecisionDto,
 } from './dto/account-management.dto';
 
@@ -32,6 +33,15 @@ export class UsersController {
   @Post('companies')
   createCompany(@Body() dto: CreateCompanyAccountDto) {
     return this.accounts.createCompany(dto);
+  }
+
+  @Roles(UserRole.ADMIN)
+  @Post('peso-personnel')
+  createPesoPersonnel(
+    @CurrentUser('userAccountId') adminId: number,
+    @Body() dto: CreatePesoPersonnelAccountDto,
+  ) {
+    return this.accounts.createPesoPersonnel(dto, adminId);
   }
 
   @Roles(UserRole.PESO_PERSONNEL)
