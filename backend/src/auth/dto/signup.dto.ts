@@ -1,12 +1,68 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import {
+  IsDateString,
+  IsEmail,
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MinLength,
+} from 'class-validator';
 
-export class SignupDto {
-  @IsEmail({}, { message: 'Invalid email format' })
-  @IsNotEmpty({ message: 'Email is required' })
-  email: string;
+export class StudentProfileDto {
+  @IsString() @IsNotEmpty() firstName: string;
+  @IsOptional() @IsString() middleName?: string;
+  @IsString() @IsNotEmpty() lastName: string;
+  @IsOptional() @IsString() extensionName?: string;
+  @IsString() @IsNotEmpty() sex: string;
+  @IsDateString() birthDate: string;
+  @IsString() @IsNotEmpty() contactNumber: string;
+  @IsOptional() @IsString() linkedinUrl?: string;
+  @IsString() @IsNotEmpty() addressLine: string;
+  @IsString() @IsNotEmpty() addressBarangay: string;
+  @IsString() @IsNotEmpty() addressDistrict: string;
+  @IsString() @IsNotEmpty() addressCity: string;
+  @IsIn(['walk_in', 'online', 'phone_call', 'school']) inquiryMethod: string;
+  @IsOptional() @IsString() photoFilePath?: string;
+}
 
-  @IsString()
-  @IsNotEmpty({ message: 'Password is required' })
-  @MinLength(6, { message: 'Password must be at least 6 characters' })
-  password: string;
+export class SignupDto extends StudentProfileDto {
+  @IsEmail() email: string;
+  @IsString() @MinLength(8) password: string;
+}
+
+export class GoogleStudentCompletionDto extends StudentProfileDto {}
+
+<<<<<<< HEAD
+=======
+export class PesoRegistrationDto {
+  @IsEmail() email: string;
+  @IsString() @MinLength(8) password: string;
+  @IsString() @IsNotEmpty() firstName: string;
+  @IsOptional() @IsString() middleName?: string;
+  @IsString() @IsNotEmpty() lastName: string;
+  @IsOptional() @IsString() extensionName?: string;
+  @IsString() @IsNotEmpty() sex: string;
+  @IsDateString() birthDate: string;
+  @IsString() @IsNotEmpty() addressLine: string;
+  @IsString() @IsNotEmpty() addressBarangay: string;
+  @IsString() @IsNotEmpty() addressDistrict: string;
+  @IsString() @IsNotEmpty() addressCity: string;
+  @IsString() @IsNotEmpty() contactNumber: string;
+  @IsString() @IsNotEmpty() employeeId: string;
+  @IsString() @IsNotEmpty() position: string;
+  @IsString() @IsNotEmpty() department: string;
+  @IsString() @IsNotEmpty() employeeIdFileBase64: string;
+  @IsIn(['image/jpeg', 'image/png', 'application/pdf'])
+  employeeIdFileMimeType: string;
+  @IsOptional() @IsString() employeeIdFileName?: string;
+  @IsOptional() @IsString() photoFilePath?: string;
+}
+
+>>>>>>> 356f4ea08d5cd2e67b211deecbbf4c69488c9fdd
+export class PasswordDto {
+  @IsString() @MinLength(8) password: string;
+}
+
+export class ChangePasswordDto extends PasswordDto {
+  @IsString() @MinLength(8) currentPassword: string;
 }
