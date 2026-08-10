@@ -32,8 +32,7 @@ export class SignupDto extends StudentProfileDto {
 
 export class GoogleStudentCompletionDto extends StudentProfileDto {}
 
-<<<<<<< HEAD
-=======
+
 export class PesoRegistrationDto {
   @IsEmail() email: string;
   @IsString() @MinLength(8) password: string;
@@ -58,7 +57,6 @@ export class PesoRegistrationDto {
   @IsOptional() @IsString() photoFilePath?: string;
 }
 
->>>>>>> 356f4ea08d5cd2e67b211deecbbf4c69488c9fdd
 export class PasswordDto {
   @IsString() @MinLength(8) password: string;
 }

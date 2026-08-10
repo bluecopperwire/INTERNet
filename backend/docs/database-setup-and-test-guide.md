@@ -1,8 +1,14 @@
 # INTERNet Database Setup Guide
 
-# 1. Create the local `.env`
+# 1. Install dependencies and create the local `.env`
 
 From `backend/`:
+
+```powershell
+npm install
+```
+
+Then create the local environment file:
 
 ```powershell
 Copy-Item .env.example .env
@@ -24,11 +30,22 @@ DATABASE_PASSWORD=<local-development-password>
 DATABASE_NAME=internet_db
 ```
 
+The `.env.example` ships with `DATABASE_PASSWORD=your_secure_password` as the default. If you keep this default, the Docker container will use the same password automatically. If you change it, see the note in section 2 below.
+
+The JWT secrets are also required. The `.env.example` ships them empty on purpose. Fill in any non-empty values for local development:
+
+```env
+JWT_ACCESS_SECRET=<any-non-empty-string>
+JWT_REFRESH_SECRET=<any-non-empty-string>
+```
+
+Without these, the backend will start but login requests will fail at runtime with an internal error.
+
 ---
 
 # 2. Start PostgreSQL through Docker
 
-Run this from the directory containing the repository's `docker-compose.yml`:
+Run this from the **repository root** (the directory containing `docker-compose.yml`, one level above `backend/`):
 
 ```powershell
 docker compose up -d postgres
@@ -51,6 +68,17 @@ The expected normal mapping is:
 ```text
 localhost:5433 -> postgres container:5432
 ```
+
+**Important: database password and Docker.** The `docker-compose.yml` reads its own `.env` from the repository root, not from `backend/.env`. If there is no `.env` in the repository root it falls back to `your_secure_password`. This means:
+
+- If you kept the default `DATABASE_PASSWORD=your_secure_password` in `backend/.env`, everything matches automatically.
+- If you changed `DATABASE_PASSWORD` in `backend/.env`, you must also pass the same password to Docker. The simplest way is to create a one-line `.env` in the repository root:
+
+```env
+DATABASE_PASSWORD=<same-value-as-backend/.env>
+```
+
+If the passwords do not match you will see `FATAL: password authentication failed for user "postgres"` when the backend tries to connect.
 
 ---
 
@@ -425,6 +453,11 @@ TestPassword123
 ```
 
 is used.
+
+**Rate-limiter warning.** The login endpoint enforces a limit of **5 requests per 60 seconds**. Sections 8 and 9 together contain six login calls, so running them all back-to-back will cause the last request to return `429 Too Many Requests` instead of the expected result. To avoid this, either:
+
+- Wait at least one minute between section 8 and section 9, or
+- Restart the backend between the two sections (the throttle counter resets on restart).
 
 ## 8.1 Admin login
 

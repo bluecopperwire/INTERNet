@@ -26,10 +26,7 @@ import {
   ChangePasswordDto,
   GoogleStudentCompletionDto,
   PasswordDto,
-<<<<<<< HEAD
-=======
   PesoRegistrationDto,
->>>>>>> 356f4ea08d5cd2e67b211deecbbf4c69488c9fdd
   SignupDto,
 } from './dto/signup.dto';
 import { UsersService } from '../users/users.service';
@@ -72,8 +69,6 @@ export class AuthController {
     return { accessToken: tokens.accessToken };
   }
 
-<<<<<<< HEAD
-=======
   @Throttle({ default: { limit: 3, ttl: 60_000 } })
   @Post('register/peso')
   async registerPeso(
@@ -85,7 +80,7 @@ export class AuthController {
     return { accessToken: tokens.accessToken, verificationStatus: 'pending' };
   }
 
->>>>>>> 356f4ea08d5cd2e67b211deecbbf4c69488c9fdd
+
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @UseGuards(LocalAuthGuard)
   @HttpCode(HttpStatus.OK)

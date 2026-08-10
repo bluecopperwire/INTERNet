@@ -20,10 +20,7 @@ import { AccountManagementService } from './account-management.service';
 import {
   CorrectPesoPersonnelDto,
   CreateCompanyAccountDto,
-<<<<<<< HEAD
   CreatePesoPersonnelAccountDto,
-=======
->>>>>>> 356f4ea08d5cd2e67b211deecbbf4c69488c9fdd
   VerificationDecisionDto,
 } from './dto/account-management.dto';
 
@@ -38,7 +35,6 @@ export class UsersController {
     return this.accounts.createCompany(dto);
   }
 
-<<<<<<< HEAD
   @Roles(UserRole.ADMIN)
   @Post('peso-personnel')
   createPesoPersonnel(
@@ -48,8 +44,6 @@ export class UsersController {
     return this.accounts.createPesoPersonnel(dto, adminId);
   }
 
-=======
->>>>>>> 356f4ea08d5cd2e67b211deecbbf4c69488c9fdd
   @Roles(UserRole.PESO_PERSONNEL)
   @Get('peso/verification-status')
   async verificationStatus(@CurrentUser('userAccountId') id: number) {

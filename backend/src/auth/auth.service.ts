@@ -26,17 +26,11 @@ import {
 } from '../users/entities/account.entities';
 import {
   GoogleStudentCompletionDto,
-<<<<<<< HEAD
-  SignupDto,
-  StudentProfileDto,
-} from './dto/signup.dto';
-=======
   PesoRegistrationDto,
   SignupDto,
   StudentProfileDto,
 } from './dto/signup.dto';
 import { StorageService } from '../storage/private-file-storage';
->>>>>>> 356f4ea08d5cd2e67b211deecbbf4c69488c9fdd
 
 export interface Tokens {
   accessToken: string;
@@ -68,10 +62,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly dataSource: DataSource,
-<<<<<<< HEAD
-=======
     private readonly storage: StorageService,
->>>>>>> 356f4ea08d5cd2e67b211deecbbf4c69488c9fdd
   ) {}
 
   private required(name: string): string {
@@ -207,8 +198,6 @@ export class AuthService {
     });
   }
 
-<<<<<<< HEAD
-=======
   async registerPeso(dto: PesoRegistrationDto): Promise<Tokens> {
     await this.ensureEmailAvailable(dto.email);
     const fileKey = await this.storage.storeEmployeeId({
@@ -270,7 +259,6 @@ export class AuthService {
     }
   }
 
->>>>>>> 356f4ea08d5cd2e67b211deecbbf4c69488c9fdd
   async beginGoogleSignup(
     profile: GoogleProfile,
   ): Promise<{ onboardingToken: string }> {
