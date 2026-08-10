@@ -1,5 +1,8 @@
 import {
+<<<<<<< HEAD
   IsDateString,
+=======
+>>>>>>> 356f4ea08d5cd2e67b211deecbbf4c69488c9fdd
   IsEmail,
   IsIn,
   IsInt,
@@ -52,6 +55,7 @@ export class CorrectPesoPersonnelDto {
   employeeIdFileMimeType?: string;
   @IsOptional() @IsString() employeeIdFileName?: string;
 }
+<<<<<<< HEAD
 
 export class CreatePesoPersonnelAccountDto {
   @IsEmail() email: string;
@@ -76,3 +80,5 @@ export class CreatePesoPersonnelAccountDto {
   @IsOptional() @IsString() employeeIdFileName?: string;
   @IsOptional() @IsString() photoFilePath?: string;
 }
+=======
+>>>>>>> 356f4ea08d5cd2e67b211deecbbf4c69488c9fdd

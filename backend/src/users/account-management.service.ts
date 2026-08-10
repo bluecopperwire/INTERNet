@@ -21,7 +21,10 @@ import {
 import {
   CorrectPesoPersonnelDto,
   CreateCompanyAccountDto,
+<<<<<<< HEAD
   CreatePesoPersonnelAccountDto,
+=======
+>>>>>>> 356f4ea08d5cd2e67b211deecbbf4c69488c9fdd
 } from './dto/account-management.dto';
 
 @Injectable()
@@ -227,6 +230,7 @@ export class AccountManagementService {
       await runner.release();
     }
   }
+<<<<<<< HEAD
 
   async createPesoPersonnel(
     dto: CreatePesoPersonnelAccountDto,
@@ -300,4 +304,6 @@ export class AccountManagementService {
       throw error;
     }
   }
+=======
+>>>>>>> 356f4ea08d5cd2e67b211deecbbf4c69488c9fdd
 }

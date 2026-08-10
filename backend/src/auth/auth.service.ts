@@ -26,9 +26,17 @@ import {
 } from '../users/entities/account.entities';
 import {
   GoogleStudentCompletionDto,
+<<<<<<< HEAD
   SignupDto,
   StudentProfileDto,
 } from './dto/signup.dto';
+=======
+  PesoRegistrationDto,
+  SignupDto,
+  StudentProfileDto,
+} from './dto/signup.dto';
+import { StorageService } from '../storage/private-file-storage';
+>>>>>>> 356f4ea08d5cd2e67b211deecbbf4c69488c9fdd
 
 export interface Tokens {
   accessToken: string;
@@ -60,6 +68,10 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly dataSource: DataSource,
+<<<<<<< HEAD
+=======
+    private readonly storage: StorageService,
+>>>>>>> 356f4ea08d5cd2e67b211deecbbf4c69488c9fdd
   ) {}
 
   private required(name: string): string {
@@ -195,6 +207,70 @@ export class AuthService {
     });
   }
 
+<<<<<<< HEAD
+=======
+  async registerPeso(dto: PesoRegistrationDto): Promise<Tokens> {
+    await this.ensureEmailAvailable(dto.email);
+    const fileKey = await this.storage.storeEmployeeId({
+      data: Buffer.from(dto.employeeIdFileBase64, 'base64'),
+      mimeType: dto.employeeIdFileMimeType,
+      originalName: dto.employeeIdFileName,
+    });
+    try {
+      return await this.dataSource.transaction(async (manager) => {
+        const account = await manager.save(
+          UserAccount,
+          manager.create(UserAccount, {
+            email: dto.email.trim().toLowerCase(),
+            userRole: UserRole.PESO_PERSONNEL,
+            accountStatus: AccountStatus.ACTIVE,
+            deletedAt: null,
+          }),
+        );
+        await manager.save(
+          LocalAuthenticationCredential,
+          manager.create(LocalAuthenticationCredential, {
+            userAccountId: account.userAccountId,
+            passwordHash: await bcrypt.hash(dto.password, 10),
+            passwordChangedAt: new Date(),
+          }),
+        );
+        await manager.save(
+          PesoPersonnel,
+          manager.create(PesoPersonnel, {
+            userAccountId: account.userAccountId,
+            firstName: dto.firstName,
+            middleName: dto.middleName ?? null,
+            lastName: dto.lastName,
+            extensionName: dto.extensionName ?? null,
+            sex: dto.sex,
+            birthDate: dto.birthDate,
+            addressLine: dto.addressLine,
+            addressBarangay: dto.addressBarangay,
+            addressDistrict: dto.addressDistrict,
+            addressCity: dto.addressCity,
+            contactNumber: dto.contactNumber,
+            contactEmail: account.email,
+            employeeId: dto.employeeId,
+            position: dto.position,
+            department: dto.department,
+            employeeIdFilePath: fileKey,
+            photoFilePath: dto.photoFilePath ?? null,
+            verificationStatus: PersonnelVerificationStatus.PENDING,
+            reviewedAt: null,
+            reviewedByUserAccountId: null,
+            verificationRemark: null,
+          }),
+        );
+        return this.createSession(manager, account);
+      });
+    } catch (error) {
+      await this.storage.delete(fileKey);
+      throw error;
+    }
+  }
+
+>>>>>>> 356f4ea08d5cd2e67b211deecbbf4c69488c9fdd
   async beginGoogleSignup(
     profile: GoogleProfile,
   ): Promise<{ onboardingToken: string }> {

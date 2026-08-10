@@ -7,11 +7,19 @@ This backend uses PostgreSQL `user_account`, optional local credentials, optiona
 | Role           | Public local signup | Google signup | Creation                                 |
 | -------------- | ------------------: | ------------: | ---------------------------------------- |
 | student        |                 yes |           yes | complete self-registration               |
+<<<<<<< HEAD
 | peso_personnel |                 no |            no | active admin creates account and profile |
 | company        |                  no |            no | active admin creates account and profile |
 | admin          |                  no |            no | explicit `npm run bootstrap:admin`       |
 
 `POST /auth/signup` is the compatibility route for complete manual student registration; it no longer accepts an account-only payload. All required student profile fields are committed atomically with the account, credential, and first session. QC PESO personnel accounts are provisioned directly by an active admin (`POST /users/peso-personnel`), committing a complete profile starting as `pending`.
+=======
+| peso_personnel |                 yes |            no | complete signup, then admin verification |
+| company        |                  no |            no | active admin creates account and profile |
+| admin          |                  no |            no | explicit `npm run bootstrap:admin`       |
+
+`POST /auth/signup` is the compatibility route for complete manual student registration; it no longer accepts an account-only payload. All required student profile fields are committed atomically with the account, credential, and first session. QC PESO registration also commits a complete profile and begins as `pending`.
+>>>>>>> 356f4ea08d5cd2e67b211deecbbf4c69488c9fdd
 
 ## Cookies and tokens
 
@@ -30,7 +38,11 @@ JWT and Google secrets have no code fallback. Missing JWT secrets fail authentic
 | Method and path                                    | Authorization                   | Request / result                                                                                                              |
 | -------------------------------------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `POST /auth/signup`                                | public                          | Email, password, and complete student fields; returns access token and refresh cookie.                                        |
+<<<<<<< HEAD
 | `POST /users/peso-personnel`                       | active admin                    | Credentials, complete PESO fields, and base64 JPEG/PNG/PDF employee ID; returns pending status, access token, refresh cookie. |
+=======
+| `POST /auth/register/peso`                         | public                          | Credentials, complete PESO fields, and base64 JPEG/PNG/PDF employee ID; returns pending status, access token, refresh cookie. |
+>>>>>>> 356f4ea08d5cd2e67b211deecbbf4c69488c9fdd
 | `POST /auth/login`                                 | public/local                    | Email/password; local credential may coexist with Google.                                                                     |
 | `POST /auth/refresh`                               | refresh cookie                  | Rotates the same family; reuse revokes only that family.                                                                      |
 | `POST /auth/logout`                                | access token                    | Revokes current family and clears cookie.                                                                                     |
