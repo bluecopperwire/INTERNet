@@ -1,10 +1,16 @@
 import { useMemo, useState } from 'react'
 import {
   Bell,
+  ChevronDown,
+  ChevronRight,
+  Clock,
   ExternalLink,
+  Grid2X2,
   LogOut,
   Menu,
-  UserCheck,
+  Search,
+  Settings,
+  User,
   Users,
 } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
@@ -16,11 +22,6 @@ interface QCPesoSidebarProps {
   onClose: () => void
 }
 
-const NAVIGATION = [
-  { label: 'Monitor Referrals', path: '/qcpeso/monitor/referrals', icon: UserCheck },
-  { label: 'Monitor Interns', path: '/qcpeso/monitor/interns', icon: Users },
-]
-
 const MOCK_USER = {
   name: 'Kyle Ethan Porciuncula',
   email: 'flowforgestd@gmail.com',
@@ -29,18 +30,18 @@ const MOCK_USER = {
 
 function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
   const [search, setSearch] = useState('')
+  const [manageUsersOpen, setManageUsersOpen] = useState(true)
+  const [monitorUsersOpen, setMonitorUsersOpen] = useState(true)
   const navigate = useNavigate()
-
-  const filteredNavigation = useMemo(() => {
-    const query = search.trim().toLowerCase()
-    return query
-      ? NAVIGATION.filter((item) => item.label.toLowerCase().includes(query))
-      : NAVIGATION
-  }, [search])
 
   const logout = () => {
     onClose()
     navigate('/')
+  }
+
+  const matchesSearch = (text: string) => {
+    if (!search.trim()) return true
+    return text.toLowerCase().includes(search.trim().toLowerCase())
   }
 
   return (
@@ -49,18 +50,27 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
       id="qcpeso-sidebar"
       aria-hidden={!isOpen}
     >
+      {/* Brand Header */}
       <div className={styles.header}>
         <div className={styles.brand}>
-          <span className={styles.logoBox}><img src={internetLogo} alt="" /></span>
-          <span>INTERNet</span>
+          <span className={styles.logoBox}>
+            <img src={internetLogo} alt="INTERNet Logo" />
+          </span>
+          <span className={styles.brandName}>INTERNet</span>
         </div>
         <div className={styles.headerActions}>
-          <button type="button" aria-label="Notifications"><Bell /></button>
-          <button type="button" aria-label="Close navigation" onClick={onClose}><Menu /></button>
+          <button type="button" aria-label="Notifications">
+            <Bell size={18} />
+          </button>
+          <button type="button" aria-label="Close navigation" onClick={onClose}>
+            <Menu size={18} />
+          </button>
         </div>
       </div>
 
+      {/* Search Input Box */}
       <label className={styles.searchLabel}>
+        <Search size={18} aria-hidden="true" />
         <span className={styles.srOnly}>Search navigation</span>
         <input
           type="search"
@@ -71,40 +81,173 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
         />
       </label>
 
+      {/* Navigation List */}
       <nav className={styles.navigation} aria-label="QC PESO navigation">
-        {filteredNavigation.map(({ label, path, icon: Icon }) => (
+        {/* Dashboard */}
+        {matchesSearch('Dashboard') && (
           <NavLink
             className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
-            key={path}
-            to={path}
+            to="/qcpeso/monitor/referrals"
             onClick={onClose}
             tabIndex={isOpen ? 0 : -1}
           >
-            <Icon aria-hidden="true" />
-            <span>{label}</span>
+            <Grid2X2 size={20} aria-hidden="true" />
+            <span>Dashboard</span>
           </NavLink>
-        ))}
-        {filteredNavigation.length === 0 && <p className={styles.noResults}>No pages found</p>}
+        )}
+
+        {/* Manage Users Dropdown Group */}
+        {(matchesSearch('Manage Users') ||
+          matchesSearch('Manage Applications') ||
+          matchesSearch('Manage Employers')) && (
+          <div>
+            <div
+              className={styles.navGroupHeader}
+              onClick={() => setManageUsersOpen((prev) => !prev)}
+            >
+              <div className={styles.navGroupTitle}>
+                <User size={20} aria-hidden="true" />
+                <span>Manage Users</span>
+              </div>
+              {manageUsersOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+            </div>
+
+            {manageUsersOpen && (
+              <div className={styles.navSubList}>
+                {matchesSearch('Manage Applications') && (
+                  <NavLink
+                    className={styles.subNavItem}
+                    to="/qcpeso/monitor/referrals"
+                    onClick={onClose}
+                    tabIndex={isOpen ? 0 : -1}
+                  >
+                    <span>Manage Applications</span>
+                  </NavLink>
+                )}
+                {matchesSearch('Manage Employers') && (
+                  <NavLink
+                    className={styles.subNavItem}
+                    to="/qcpeso/monitor/referrals"
+                    onClick={onClose}
+                    tabIndex={isOpen ? 0 : -1}
+                  >
+                    <span>Manage Employers</span>
+                  </NavLink>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Monitor Users Dropdown Group */}
+        {(matchesSearch('Monitor Users') ||
+          matchesSearch('Monitor Referrals') ||
+          matchesSearch('Monitor Interns') ||
+          matchesSearch('Monitor Attendance')) && (
+          <div>
+            <div
+              className={styles.navGroupHeader}
+              onClick={() => setMonitorUsersOpen((prev) => !prev)}
+            >
+              <div className={styles.navGroupTitle}>
+                <Users size={20} aria-hidden="true" />
+                <span>Monitor Users</span>
+              </div>
+              {monitorUsersOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+            </div>
+
+            {monitorUsersOpen && (
+              <div className={styles.navSubList}>
+                {matchesSearch('Monitor Referrals') && (
+                  <NavLink
+                    className={({ isActive }) =>
+                      `${styles.subNavItem} ${isActive ? styles.active : ''}`
+                    }
+                    to="/qcpeso/monitor/referrals"
+                    onClick={onClose}
+                    tabIndex={isOpen ? 0 : -1}
+                  >
+                    <span>Monitor Referrals</span>
+                  </NavLink>
+                )}
+                {matchesSearch('Monitor Interns') && (
+                  <NavLink
+                    className={({ isActive }) =>
+                      `${styles.subNavItem} ${isActive ? styles.active : ''}`
+                    }
+                    to="/qcpeso/monitor/interns"
+                    onClick={onClose}
+                    tabIndex={isOpen ? 0 : -1}
+                  >
+                    <span>Monitor Interns</span>
+                  </NavLink>
+                )}
+                {matchesSearch('Monitor Attendance') && (
+                  <NavLink
+                    className={styles.subNavItem}
+                    to="/qcpeso/monitor/referrals"
+                    onClick={onClose}
+                    tabIndex={isOpen ? 0 : -1}
+                  >
+                    <span>Monitor Attendance</span>
+                  </NavLink>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Reports and Documents */}
+        {matchesSearch('Reports and Documents') && (
+          <NavLink
+            className={styles.navItem}
+            to="/qcpeso/monitor/referrals"
+            onClick={onClose}
+            tabIndex={isOpen ? 0 : -1}
+          >
+            <Clock size={20} aria-hidden="true" />
+            <span>Reports and Documents</span>
+          </NavLink>
+        )}
+
+        {/* Settings */}
+        {matchesSearch('Settings') && (
+          <NavLink
+            className={styles.navItem}
+            to="/qcpeso/monitor/referrals"
+            onClick={onClose}
+            tabIndex={isOpen ? 0 : -1}
+          >
+            <Settings size={20} aria-hidden="true" />
+            <span>Settings</span>
+          </NavLink>
+        )}
+
+        {/* Log out */}
+        <button
+          className={styles.logoutBtn}
+          type="button"
+          onClick={logout}
+          tabIndex={isOpen ? 0 : -1}
+        >
+          <LogOut size={20} aria-hidden="true" />
+          <span>Log out</span>
+        </button>
       </nav>
 
+      {/* User Profile Summary at bottom */}
       <div className={styles.userSummary}>
-        <span className={styles.avatar} aria-hidden="true">{MOCK_USER.initials}</span>
-        <span className={styles.userText}>
-          <strong>{MOCK_USER.name}</strong>
-          <small>{MOCK_USER.email}</small>
-        </span>
-        <ExternalLink aria-hidden="true" />
+        <div className={styles.userLeft}>
+          <span className={styles.avatar} aria-hidden="true">
+            {MOCK_USER.initials}
+          </span>
+          <div className={styles.userText}>
+            <span className={styles.userName}>{MOCK_USER.name}</span>
+            <span className={styles.userEmail}>{MOCK_USER.email}</span>
+          </div>
+        </div>
+        <ExternalLink size={16} color="#ffffff" aria-hidden="true" />
       </div>
-
-      <button
-        className={styles.logout}
-        type="button"
-        onClick={logout}
-        tabIndex={isOpen ? 0 : -1}
-      >
-        <LogOut aria-hidden="true" />
-        <span>Log out</span>
-      </button>
     </aside>
   )
 }
