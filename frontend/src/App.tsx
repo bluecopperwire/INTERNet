@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import LoginPage from './features/authentication/components/LoginPage'
 import SignUpPage from './features/authentication/components/SignUpPage'
 import InternSeekerLayout from './features/intern-seeker/components/InternSeekerLayout'
@@ -10,6 +10,9 @@ import { DashboardPage } from './features/intern-seeker/pages/DashboardPage'
 import { ProfileEditorPage } from './features/intern-seeker/pages/ProfileEditorPage'
 import ApplicationStatusPage from './features/intern-seeker/pages/ApplicationStatusPage'
 import AttendancePage from './features/intern-seeker/pages/AttendancePage'
+import QCPesoLayout from './features/qcpeso/components/QCPesoLayout'
+import MonitorReferralsPage from './features/qcpeso/pages/MonitorReferralsPage'
+import MonitorInternsPage from './features/qcpeso/pages/MonitorInternsPage'
 
 function App() {
   return (
@@ -33,6 +36,13 @@ function App() {
         
         <Route path="/terms-of-service" element={<main aria-label="Terms of Service" />} />
         <Route path="/privacy-policy" element={<main aria-label="Privacy Policy" />} />
+
+        {/* QCPESO Admin & Monitor Routes */}
+        <Route path="/qcpeso" element={<QCPesoLayout />}>
+          <Route index element={<Navigate to="/qcpeso/monitor/referrals" replace />} />
+          <Route path="monitor/referrals" element={<MonitorReferralsPage />} />
+          <Route path="monitor/interns" element={<MonitorInternsPage />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   )
