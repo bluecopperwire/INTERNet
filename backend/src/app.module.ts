@@ -8,6 +8,8 @@ import databaseConfig from './config/database.config';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { StorageModule } from './storage/storage.module';
+import { ApplicationsModule } from './applications/applications.module';
+import { StudentsModule } from './students/students.module';
 
 @Module({
   imports: [
@@ -31,6 +33,8 @@ import { StorageModule } from './storage/storage.module';
     AuthModule,
     UsersModule,
     StorageModule,
+    ApplicationsModule,
+    StudentsModule
   ],
   providers: [
     {
