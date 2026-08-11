@@ -42,6 +42,7 @@ function App() {
           <Route index element={<Navigate to="/qcpeso/monitor/referrals" replace />} />
           <Route path="monitor/referrals" element={<MonitorReferralsPage />} />
           <Route path="monitor/interns" element={<MonitorInternsPage />} />
+          <Route path="*" element={<Navigate to="/qcpeso/monitor/referrals" replace />} />
         </Route>
       </Routes>
     </BrowserRouter>
