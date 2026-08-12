@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import {
   Bell,
   ChevronDown,
@@ -119,8 +119,10 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
               <div className={styles.navSubList}>
                 {matchesSearch('Manage Applications') && (
                   <NavLink
-                    className={styles.subNavItem}
-                    to="/qcpeso/monitor/referrals"
+                    className={({ isActive }) =>
+                      `${styles.subNavItem} ${isActive ? styles.active : ''}`
+                    }
+                    to="/qcpeso/manage/applications"
                     onClick={onClose}
                     tabIndex={isOpen ? 0 : -1}
                   >
@@ -129,8 +131,10 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
                 )}
                 {matchesSearch('Manage Employers') && (
                   <NavLink
-                    className={styles.subNavItem}
-                    to="/qcpeso/monitor/referrals"
+                    className={({ isActive }) =>
+                      `${styles.subNavItem} ${isActive ? styles.active : ''}`
+                    }
+                    to="/qcpeso/manage/employers"
                     onClick={onClose}
                     tabIndex={isOpen ? 0 : -1}
                   >

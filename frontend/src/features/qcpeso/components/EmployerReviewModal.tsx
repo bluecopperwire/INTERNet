@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import styles from './EmployerReviewModal.module.css'
 import type { EmployerOpportunity } from '../types/qcpeso.types'
 
@@ -6,14 +6,25 @@ interface EmployerReviewModalProps {
   isOpen: boolean
   onClose: () => void
   employer: EmployerOpportunity | null
+  onApprove?: (id: string) => void
+  onReject?: (id: string) => void
 }
 
-export const EmployerReviewModal: React.FC<EmployerReviewModalProps> = ({ isOpen, onClose, employer }) => {
+export const EmployerReviewModal: React.FC<EmployerReviewModalProps> = ({ isOpen, onClose, employer, onApprove, onReject }) => {
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
   if (!isOpen || !employer) return null
 
   return (
-    <div className={styles.overlay}>
-      <div className={styles.modal}>
+    <div className={styles.overlay} onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         
         <div className={styles.header}>
           <div className={styles.companyInfo}>
@@ -58,7 +69,7 @@ export const EmployerReviewModal: React.FC<EmployerReviewModalProps> = ({ isOpen
             <div className={`${styles.card} ${styles.fullHeightCard}`}>
               <h3>OPPORTUNITIES<br/>OFFERED</h3>
               <div className={styles.opportunitiesList}>
-                {employer.opportunitiesOffered.map((opp, idx) => (
+                {employer.opportunitiesOffered?.map((opp, idx) => (
                   <p key={idx}>{opp}</p>
                 ))}
               </div>
@@ -67,11 +78,11 @@ export const EmployerReviewModal: React.FC<EmployerReviewModalProps> = ({ isOpen
         </div>
 
         <div className={styles.actions}>
-          <button className={styles.btnApprove}>Approve</button>
-          <button className={styles.btnReject}>Reject</button>
+          <button className={styles.btnApprove} onClick={() => onApprove?.(employer.id)}>Approve</button>
+          <button className={styles.btnReject} onClick={() => onReject?.(employer.id)}>Reject</button>
         </div>
         
       </div>
     </div>
   )
-}
+}

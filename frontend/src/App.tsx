@@ -12,6 +12,8 @@ import ApplicationStatusPage from './features/intern-seeker/pages/ApplicationSta
 import AttendancePage from './features/intern-seeker/pages/AttendancePage'
 import QCPesoLayout from './features/qcpeso/components/QCPesoLayout'
 import MonitorReferralsPage from './features/qcpeso/pages/MonitorReferralsPage'
+import ManageApplicationsPage from './features/qcpeso/pages/ManageApplicationsPage'
+import ManageEmployersPage from './features/qcpeso/pages/ManageEmployersPage'
 import MonitorInternsPage from './features/qcpeso/pages/MonitorInternsPage'
 import { QCPesoDashboardPage } from './features/qcpeso/pages/QCPesoDashboardPage'
 import { QCPesoProfilePage } from './features/qcpeso/pages/QCPesoProfilePage'
@@ -47,6 +49,9 @@ function App() {
           
           {/* Profile Route */}
           <Route path="profile" element={<QCPesoProfilePage />} />
+          
+          <Route path="manage/applications" element={<ManageApplicationsPage />} />
+          <Route path="manage/employers" element={<ManageEmployersPage />} />
           
           {/* Monitor Routes */}
           <Route path="monitor/referrals" element={<MonitorReferralsPage />} />

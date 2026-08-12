@@ -69,6 +69,65 @@
   margin: 0 auto;
 }
 
+/* ── Stats Cards Row ── */
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  width: 100%;
+}
+
+.summaryCard {
+  position: relative;
+  padding: 24px 32px;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.cardBlue {
+  background-color: #160e6f;
+}
+
+.cardTitle {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ffffff;
+  z-index: 2;
+  position: relative;
+}
+
+.cardValue {
+  margin: 4px 0 0 0;
+  font-family: 'Poppins', sans-serif;
+  font-size: 3rem;
+  font-weight: 700;
+  color: #ffffff;
+  z-index: 2;
+  position: relative;
+  line-height: 1;
+}
+
+.bgIcon {
+  position: absolute;
+  right: 20px;
+  bottom: -10px;
+  width: 100px;
+  height: 100px;
+  z-index: 1;
+}
+
+.bgIconBlue {
+  color: #ffffff;
+  opacity: 0.15;
+}
+
+/* ── Toolbar ── */
 .toolbarRow {
   display: flex;
   flex-wrap: wrap;
@@ -189,9 +248,10 @@
   cursor: not-allowed;
 }
 
+/* ── Table ── */
 .tableCard {
   width: 100%;
-  min-height: 500px;
+  min-height: 400px;
   background: #ffffff;
   border: 1px solid #160e6f;
   border-radius: 8px;
@@ -236,13 +296,18 @@
   font-weight: 700;
 }
 
-.statusPill.completed {
+.statusPill.statusActive {
   background: #16a34a;
   color: #ffffff;
 }
 
-.statusPill.paused {
-  background: #94a3b8;
+.statusPill.statusSuspended {
+  background: #f59e0b;
+  color: #ffffff;
+}
+
+.statusPill.statusRejected {
+  background: #cc0001;
   color: #ffffff;
 }
 
@@ -266,11 +331,6 @@
   color: #ffffff;
 }
 
-.hoursText {
-  font-weight: 600;
-  color: #160e6f;
-}
-
 .noData {
   padding: 48px;
   text-align: center;
@@ -285,6 +345,9 @@
   }
   .mainContent {
     padding: 20px;
+  }
+  .statsRow {
+    grid-template-columns: 1fr;
   }
   .toolbarRow {
     flex-direction: column;

@@ -44,6 +44,36 @@ export interface InternItem {
   school?: string
 }
 
+export type ApplicationStatus = 'Pending' | 'Verified' | 'Rejected' | 'Flagged'
+
+export interface ApplicationItem {
+  id: string
+  studentName: string
+  email: string
+  phone: string
+  school: string
+  program: string
+  dateSubmitted: string
+  gwa: string
+  verificationStatus: ApplicationStatus
+  submittedDocuments: string[]
+  appliedFor: string
+}
+
+export type EmployerStatus = 'Active' | 'Pending' | 'Suspended' | 'Rejected'
+
+export interface EmployerItem {
+  id: string
+  companyName: string
+  email: string
+  phone: string
+  representativeName: string
+  opportunitiesOffered: string[]
+  activeOpportunities: number
+  accountStatus: EmployerStatus
+  createdOn: string
+}
+
 export interface PaginationState {
   currentPage: number
   itemsPerPage: number
@@ -57,15 +87,7 @@ export interface QCPesoDashboardSummary {
   availableOpportunities: number;
 }
 
-export interface QCPesoProfile {
-  id: string;
-  fullName: string;
-  role: string;
-  location: string;
-  department: string;
-  qcpesoPosition: string;
-  city: string;
-}
+
 
 export interface StudentApplication {
   id: string;
