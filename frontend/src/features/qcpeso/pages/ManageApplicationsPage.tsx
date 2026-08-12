@@ -1,6 +1,8 @@
 import { useMemo, useState, useEffect } from 'react'
-import { Briefcase, ChevronLeft, ChevronRight, Eye, Search } from 'lucide-react'
-import headerImage from '../../../assets/requirements-header-image.png'
+import { ChevronLeft, ChevronRight, Eye, Search } from 'lucide-react'
+import QCPesoHero from '../components/QCPesoHero'
+import documentIcon from '../../../assets/docu.svg'
+import suitcaseIcon from '../../../assets/suitcase-2.svg'
 import { StudentReviewModal } from '../components/StudentReviewModal'
 import { qcpesoService } from '../services/qcpeso.service'
 import type { StudentApplication } from '../types/qcpeso.types'
@@ -97,53 +99,13 @@ export function ManageApplicationsPage() {
     )
   }
 
-  const BriefcaseBgIcon = ({ isWhite = false }: { isWhite?: boolean }) => (
-    <svg 
-      className={`${styles.bgIcon} ${isWhite ? styles.bgIconWhite : styles.bgIconBlue}`} 
-      viewBox="0 0 64 64" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="3" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    >
-      <rect x="10" y="24" width="44" height="30" rx="4" ry="4" />
-      <path d="M42 24V14a2 2 0 0 0-2-2H24a2 2 0 0 0-2 2v10" />
-      <line x1="10" y1="40" x2="54" y2="40" />
-      <circle cx="32" cy="40" r="3" fill={isWhite ? "#ffffff" : "currentColor"} />
-    </svg>
-  )
-
-  const DocumentsBgIcon = ({ isWhite = false }: { isWhite?: boolean }) => (
-    <svg 
-      className={`${styles.bgIcon} ${isWhite ? styles.bgIconWhite : styles.bgIconBlue}`} 
-      viewBox="0 0 64 64" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="3" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    >
-      <path d="M40 56H22a4 4 0 0 1-4-4V16a4 4 0 0 1 4-4h12l10 10v30a4 4 0 0 1-4 4z" />
-      <path d="M26 40h12" />
-      <path d="M26 48h12" />
-      <path d="M52 56h-8V26l-10-10H30V12a4 4 0 0 1 4-4h12l10 10v34a4 4 0 0 1-4 4z" />
-      <path d="M38 32h12" />
-      <path d="M38 40h12" />
-    </svg>
-  )
-
   return (
     <main className={styles.pageContainer}>
-      {/* Hero Header */}
-      <header className={styles.heroHeader}>
-        <img src={headerImage} alt="" className={styles.heroBgImage} />
-        <div className={styles.heroOverlay} />
-        <div className={styles.heroContent}>
-          <h1 className={styles.heroTitle}>User Management</h1>
-          <p className={styles.heroSubtitle}>QCPESO Student Application Management</p>
-        </div>
-      </header>
+      <QCPesoHero
+        title="User Management"
+        subtitle="QCPESO Student Application Management"
+        comfortableSpacing
+      />
 
       {/* Main Section */}
       <section className={styles.mainContent}>
@@ -152,23 +114,23 @@ export function ManageApplicationsPage() {
           <div className={`${styles.summaryCard} ${styles.cardBlue}`}>
             <h3 className={styles.cardTitle}>Pending Applications</h3>
             <p className={styles.cardValue}>{pendingCount}</p>
-            <BriefcaseBgIcon isWhite={false} />
+            <img className={`${styles.summaryIcon} ${styles.suitcaseIcon}`} src={suitcaseIcon} alt="" />
           </div>
           <div className={`${styles.summaryCard} ${styles.cardBlue}`}>
             <h3 className={styles.cardTitle}>Verified Requirements</h3>
             <p className={styles.cardValue}>{verifiedCount}</p>
-            <DocumentsBgIcon isWhite={false} />
+            <img className={styles.summaryIcon} src={documentIcon} alt="" />
           </div>
           <div className={`${styles.summaryCard} ${styles.cardBlue}`}>
             <h3 className={styles.cardTitle}>Rejected Submissions</h3>
             <p className={styles.cardValue}>{rejectedCount}</p>
-            <DocumentsBgIcon isWhite={false} />
+            <img className={styles.summaryIcon} src={documentIcon} alt="" />
           </div>
         </div>
 
         {/* Search + Filter Toolbar */}
         <div className={styles.toolbarRow}>
-          <div className={styles.filterGroup}>
+          <div className={`${styles.filterGroup} ${styles.searchGroup}`}>
             <div className={styles.searchBox}>
               <Search size={16} color="#160e6f" />
               <input
@@ -183,7 +145,7 @@ export function ManageApplicationsPage() {
             </div>
           </div>
 
-          <div className={styles.filterGroup}>
+          <div className={`${styles.filterGroup} ${styles.statusFilterGroup}`}>
             <select
               className={styles.filterSelect}
               value={selectedStatus}

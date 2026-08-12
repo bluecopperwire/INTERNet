@@ -59,17 +59,37 @@ export function ReferralDetailModal({
           <X size={20} />
         </button>
 
-        {/* Submitted Documents Section */}
-        <div className={styles.sectionGroup}>
-          <span className={styles.sectionLabel}>SUBMITTED DOCUMENTS</span>
-          <div className={styles.documentPills}>
-            {referral.submittedDocuments.map((doc, idx) => (
-              <div key={idx} className={styles.docPill} title={`View ${doc}`}>
-                <FileText size={14} />
-                <span>{doc}</span>
-              </div>
-            ))}
+        {/* Candidate Information */}
+        <div className={styles.candidateInfo}>
+          <h2 id="referral-modal-title" className={styles.candidateName}>
+            {referral.studentName}
+          </h2>
+          <p className={styles.candidateDetail}>{referral.email}</p>
+          <p className={styles.candidateDetail}>{referral.phone}</p>
+        </div>
+
+        {/* Referral Details */}
+        <div className={styles.metaGrid}>
+          <div className={styles.metaItem}>
+            <span className={styles.metaLabel}>Target Employer</span>
+            <span>{referral.targetEmployer}</span>
           </div>
+          {referral.school && (
+            <div className={styles.metaItem}>
+              <span className={styles.metaLabel}>School</span>
+              <span>{referral.school}</span>
+            </div>
+          )}
+          <div className={styles.metaItem}>
+            <span className={styles.metaLabel}>Position</span>
+            <span>{referral.position}</span>
+          </div>
+          {referral.course && (
+            <div className={styles.metaItem}>
+              <span className={styles.metaLabel}>Course</span>
+              <span>{referral.course}</span>
+            </div>
+          )}
         </div>
 
         {/* Referral Status Section */}
@@ -80,33 +100,17 @@ export function ReferralDetailModal({
           </div>
         </div>
 
-        {/* Candidate Information */}
-        <div className={styles.candidateInfo}>
-          <h2 id="referral-modal-title" className={styles.candidateName}>
-            {referral.studentName}
-          </h2>
-          <p className={styles.candidateDetail}>{referral.email}</p>
-          <p className={styles.candidateDetail}>{referral.phone}</p>
-        </div>
-
-        {/* Extra Metadata */}
-        <div className={styles.metaGrid}>
-          <div>
-            <strong>Target Employer:</strong> {referral.targetEmployer}
+        {/* Submitted Documents Section */}
+        <div className={styles.sectionGroup}>
+          <span className={styles.sectionLabel}>Submitted Documents</span>
+          <div className={styles.documentPills}>
+            {referral.submittedDocuments.map((doc) => (
+              <div key={doc} className={styles.docPill} title={`View ${doc}`}>
+                <FileText size={14} />
+                <span>{doc}</span>
+              </div>
+            ))}
           </div>
-          <div>
-            <strong>Position:</strong> {referral.position}
-          </div>
-          {referral.school && (
-            <div>
-              <strong>School:</strong> {referral.school}
-            </div>
-          )}
-          {referral.course && (
-            <div>
-              <strong>Course:</strong> {referral.course}
-            </div>
-          )}
         </div>
 
         {/* Action Buttons */}

@@ -6,7 +6,7 @@
   width: min(280px, calc(100vw - 24px));
   flex-direction: column;
   padding: 20px 16px 18px;
-  overflow-y: auto;
+  overflow: hidden;
   color: #ffffff;
   background: #21167b;
   box-shadow: 12px 0 32px rgba(9, 7, 31, 0.24);
@@ -107,8 +107,22 @@
 
 .navigation {
   display: flex;
+  min-height: 0;
+  flex: 1;
   flex-direction: column;
   gap: 5px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.38) transparent;
+}
+
+.navigation::-webkit-scrollbar {
+  width: 4px;
+}
+
+.navigation::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.38);
 }
 
 .navItem {
@@ -152,8 +166,9 @@
   grid-template-columns: 38px minmax(0, 1fr) 17px;
   align-items: center;
   gap: 9px;
-  margin: auto 7px 0;
-  padding-top: 40px;
+  flex: none;
+  margin: 16px 7px 0;
+  padding-top: 0;
 }
 
 .avatar {
@@ -237,12 +252,6 @@
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
-}
-
-@media (max-height: 520px) {
-  .userSummary {
-    margin-top: 28px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

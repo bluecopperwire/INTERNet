@@ -15,6 +15,9 @@ import MonitorReferralsPage from './features/qcpeso/pages/MonitorReferralsPage'
 import ManageApplicationsPage from './features/qcpeso/pages/ManageApplicationsPage'
 import ManageEmployersPage from './features/qcpeso/pages/ManageEmployersPage'
 import MonitorInternsPage from './features/qcpeso/pages/MonitorInternsPage'
+import MonitorAttendancePage from './features/qcpeso/pages/MonitorAttendancePage'
+import ReportsDocumentsPage from './features/qcpeso/pages/ReportsDocumentsPage'
+import QCPesoSettingsPage from './features/qcpeso/pages/QCPesoSettingsPage'
 import { QCPesoDashboardPage } from './features/qcpeso/pages/QCPesoDashboardPage'
 import { QCPesoProfilePage } from './features/qcpeso/pages/QCPesoProfilePage'
 
@@ -56,6 +59,9 @@ function App() {
           {/* Monitor Routes */}
           <Route path="monitor/referrals" element={<MonitorReferralsPage />} />
           <Route path="monitor/interns" element={<MonitorInternsPage />} />
+          <Route path="monitor/attendance" element={<MonitorAttendancePage />} />
+          <Route path="reports-documents" element={<ReportsDocumentsPage />} />
+          <Route path="settings" element={<QCPesoSettingsPage />} />
           
           {/* Fallback to dashboard */}
           <Route path="*" element={<Navigate to="/qcpeso/dashboard" replace />} />
