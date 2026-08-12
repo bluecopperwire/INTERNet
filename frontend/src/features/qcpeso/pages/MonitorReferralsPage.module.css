@@ -110,6 +110,7 @@
   color: #160e6f;
   outline: none;
   cursor: pointer;
+  padding-right: 24px;
 }
 
 .perPageLabel {
@@ -125,7 +126,7 @@
 }
 
 .filterSelect {
-  padding: 8px 12px;
+  padding: 8px 32px 8px 12px;
   border: 1px solid #160e6f;
   border-radius: 6px;
   font-size: 14px;

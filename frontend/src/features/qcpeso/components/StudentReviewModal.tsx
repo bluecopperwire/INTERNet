@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import styles from './StudentReviewModal.module.css'
 import type { StudentApplication } from '../types/qcpeso.types'
 
@@ -6,14 +6,26 @@ interface StudentReviewModalProps {
   isOpen: boolean
   onClose: () => void
   student: StudentApplication | null
+  onApprove?: (id: string) => void
+  onFlag?: (id: string) => void
+  onReject?: (id: string) => void
 }
 
-export const StudentReviewModal: React.FC<StudentReviewModalProps> = ({ isOpen, onClose, student }) => {
+export const StudentReviewModal: React.FC<StudentReviewModalProps> = ({ isOpen, onClose, student, onApprove, onFlag, onReject }) => {
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
   if (!isOpen || !student) return null
 
   return (
-    <div className={styles.overlay}>
-      <div className={styles.modal}>
+    <div className={styles.overlay} onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         
         <div className={styles.header}>
           <div className={styles.studentInfo}>
@@ -60,7 +72,7 @@ export const StudentReviewModal: React.FC<StudentReviewModalProps> = ({ isOpen, 
           <div className={styles.docsSection}>
             <h4>SUBMITTED DOCUMENTS</h4>
             <div className={styles.pillGroup}>
-              {student.submittedDocuments.map((doc, idx) => (
+              {student.submittedDocuments?.map((doc, idx) => (
                 <span key={idx} className={styles.docPill}>{doc}</span>
               ))}
             </div>
@@ -72,12 +84,12 @@ export const StudentReviewModal: React.FC<StudentReviewModalProps> = ({ isOpen, 
         </div>
 
         <div className={styles.actions}>
-          <button className={styles.btnApprove}>Approve</button>
-          <button className={styles.btnFlag}>Flag for Review</button>
-          <button className={styles.btnReject}>Reject</button>
+          <button className={styles.btnApprove} onClick={() => onApprove?.(student.id)}>Approve</button>
+          <button className={styles.btnFlag} onClick={() => onFlag?.(student.id)}>Flag for Review</button>
+          <button className={styles.btnReject} onClick={() => onReject?.(student.id)}>Reject</button>
         </div>
         
       </div>
     </div>
   )
-}
+}

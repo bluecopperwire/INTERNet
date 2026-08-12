@@ -1,18 +1,26 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight, Eye, Search } from 'lucide-react'
 import headerImage from '../../../assets/requirements-header-image.png'
 import ReferralDetailModal from '../components/ReferralDetailModal'
-import { MOCK_REFERRALS } from '../mocks/qcpeso.mock'
+import { qcpesoService } from '../services/qcpeso.service'
 import type { ReferralItem, ReferralStatus } from '../types/qcpeso.types'
 import styles from './MonitorReferralsPage.module.css'
 
 export function MonitorReferralsPage() {
-  const [referrals, setReferrals] = useState<ReferralItem[]>(MOCK_REFERRALS)
+  const [referrals, setReferrals] = useState<ReferralItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [itemsPerPage, setItemsPerPage] = useState<number>(7)
   const [currentPage, setCurrentPage] = useState<number>(1)
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [selectedStatus, setSelectedStatus] = useState<string>('All')
   const [selectedReferral, setSelectedReferral] = useState<ReferralItem | null>(null)
+
+  useEffect(() => {
+    qcpesoService.getReferrals().then((data) => {
+      setReferrals(data)
+      setIsLoading(false)
+    })
+  }, [])
 
   // Filtering
   const filteredReferrals = useMemo(() => {
@@ -70,6 +78,14 @@ export function MonitorReferralsPage() {
       default:
         return ''
     }
+  }
+
+  if (isLoading) {
+    return (
+      <main className={styles.pageContainer}>
+        <div style={{ padding: '2rem', textAlign: 'center' }}>Loading Referrals...</div>
+      </main>
+    )
   }
 
   return (

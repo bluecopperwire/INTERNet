@@ -1,18 +1,26 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight, Eye, Search } from 'lucide-react'
 import headerImage from '../../../assets/requirements-header-image.png'
 import InternDetailModal from '../components/InternDetailModal'
-import { MOCK_INTERNS } from '../mocks/qcpeso.mock'
+import { qcpesoService } from '../services/qcpeso.service'
 import type { InternItem } from '../types/qcpeso.types'
 import styles from './MonitorInternsPage.module.css'
 
 export function MonitorInternsPage() {
-  const [interns] = useState<InternItem[]>(MOCK_INTERNS)
+  const [interns, setInterns] = useState<InternItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [itemsPerPage, setItemsPerPage] = useState<number>(7)
   const [currentPage, setCurrentPage] = useState<number>(1)
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [selectedStatus, setSelectedStatus] = useState<string>('All')
   const [selectedIntern, setSelectedIntern] = useState<InternItem | null>(null)
+
+  useEffect(() => {
+    qcpesoService.getInterns().then((data) => {
+      setInterns(data)
+      setIsLoading(false)
+    })
+  }, [])
 
   // Filtering
   const filteredInterns = useMemo(() => {
@@ -46,6 +54,14 @@ export function MonitorInternsPage() {
       default:
         return ''
     }
+  }
+
+  if (isLoading) {
+    return (
+      <main className={styles.pageContainer}>
+        <div style={{ padding: '2rem', textAlign: 'center' }}>Loading Interns...</div>
+      </main>
+    )
   }
 
   return (

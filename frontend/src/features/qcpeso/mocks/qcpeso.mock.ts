@@ -1,10 +1,12 @@
-import type { 
-  InternItem, 
+import type {
+  InternItem,
   ReferralItem,
-  QCPesoDashboardSummary, 
-  QCPesoProfile, 
-  StudentApplication, 
-  EmployerOpportunity 
+  QCPesoDashboardSummary,
+  QCPesoProfile,
+  StudentApplication,
+  EmployerOpportunity,
+  ApplicationItem,
+  EmployerItem
 } from '../types/qcpeso.types'
 
 export const MOCK_REFERRALS: ReferralItem[] = [
@@ -80,12 +82,12 @@ export const MOCK_QCPESO_PROFILE: QCPesoProfile = {
 }
 
 export const MOCK_STUDENTS: StudentApplication[] = [
-  { 
-    id: '1', 
-    name: 'Kyle Ethan Porciuncula', 
-    school: 'Polytechnic University of the Philippines', 
-    program: 'BS Computer Science', 
-    date: 'July 1, 2026', 
+  {
+    id: '1',
+    name: 'Kyle Ethan Porciuncula',
+    school: 'Polytechnic University of the Philippines',
+    program: 'BS Computer Science',
+    date: 'July 1, 2026',
     status: 'Pending',
     email: 'kyleporciuncula@gmail.com',
     phone: '09123456789',
@@ -93,12 +95,12 @@ export const MOCK_STUDENTS: StudentApplication[] = [
     submittedDocuments: ['Curriculum Vitae', 'Lorem Ipsum'],
     appliedFor: 'Lorem Ipsum'
   },
-  { 
-    id: '2', 
-    name: 'Juan Dela Cruz', 
-    school: 'Quezon City University', 
-    program: 'BS Information Technology', 
-    date: 'July 2, 2026', 
+  {
+    id: '2',
+    name: 'Juan Dela Cruz',
+    school: 'Quezon City University',
+    program: 'BS Information Technology',
+    date: 'July 2, 2026',
     status: 'Verified',
     email: 'juandelacruz@gmail.com',
     phone: '09171234567',
@@ -108,12 +110,12 @@ export const MOCK_STUDENTS: StudentApplication[] = [
   }
 ]
 
-export const MOCK_EMPLOYERS: EmployerOpportunity[] = [
-  { 
-    id: '1', 
-    name: 'ABC Company', 
-    rep: 'Polytechnic University of the Philippines', 
-    opportunities: 5, 
+export const MOCK_EMPLOYER_OPPORTUNITIES: EmployerOpportunity[] = [
+  {
+    id: '1',
+    name: 'ABC Company',
+    rep: 'Polytechnic University of the Philippines',
+    opportunities: 5,
     status: 'Active',
     email: 'ABCcompany@gmail.com',
     phone: '09123456789',
@@ -128,11 +130,11 @@ export const MOCK_EMPLOYERS: EmployerOpportunity[] = [
       'Lorem ipsum dolor sit amet'
     ]
   },
-  { 
-    id: '2', 
-    name: 'Meta Company', 
-    rep: 'John Doe', 
-    opportunities: 12, 
+  {
+    id: '2',
+    name: 'Meta Company',
+    rep: 'John Doe',
+    opportunities: 12,
     status: 'Pending Review',
     email: 'contact@meta.com',
     phone: '09181112222',
@@ -143,11 +145,11 @@ export const MOCK_EMPLOYERS: EmployerOpportunity[] = [
       'UI/UX Researcher'
     ]
   },
-  { 
-    id: '3', 
-    name: 'Innovate Tech', 
-    rep: 'Mark Reyes', 
-    opportunities: 2, 
+  {
+    id: '3',
+    name: 'Innovate Tech',
+    rep: 'Mark Reyes',
+    opportunities: 2,
     status: 'Inactive',
     email: 'careers@innovatetech.ph',
     phone: '09199998888',
@@ -157,5 +159,288 @@ export const MOCK_EMPLOYERS: EmployerOpportunity[] = [
       'QA Tester Intern',
       'Data Encoder'
     ]
+  }
+]
+
+export const MOCK_APPLICATIONS: ApplicationItem[] = [
+  {
+    id: 'APP-2026-001',
+    studentName: 'Kyle Ethan Porciuncula',
+    email: 'kyleporciuncula@gmail.com',
+    phone: '09123456789',
+    school: 'Polytechnic University of the Philippines',
+    program: 'BS Computer Science',
+    dateSubmitted: 'July 1, 2026',
+    gwa: '1.25',
+    verificationStatus: 'Pending',
+    submittedDocuments: ['Curriculum Vitae', 'Proof of Residency'],
+    appliedFor: 'Full Stack Web Developer Intern',
+  },
+  {
+    id: 'APP-2026-002',
+    studentName: 'Maria Santos',
+    email: 'maria.santos@gmail.com',
+    phone: '09171234567',
+    school: 'Quezon City University',
+    program: 'BS Information Technology',
+    dateSubmitted: 'July 3, 2026',
+    gwa: '1.50',
+    verificationStatus: 'Verified',
+    submittedDocuments: ['Curriculum Vitae', 'COR / Credentials', 'Letter of Intent'],
+    appliedFor: 'UI/UX Design Intern',
+  },
+  {
+    id: 'APP-2026-003',
+    studentName: 'Juan Dela Cruz',
+    email: 'juan.delacruz@gmail.com',
+    phone: '09189876543',
+    school: 'University of the Philippines Diliman',
+    program: 'BS Computer Science',
+    dateSubmitted: 'July 5, 2026',
+    gwa: '1.75',
+    verificationStatus: 'Pending',
+    submittedDocuments: ['Curriculum Vitae', 'Proof of Residency', 'Letter of Intent'],
+    appliedFor: 'Data Analyst Intern',
+  },
+  {
+    id: 'APP-2026-004',
+    studentName: 'Angelica Reyes',
+    email: 'angelica.reyes@gmail.com',
+    phone: '09223334455',
+    school: 'Far Eastern University',
+    program: 'BS Information Systems',
+    dateSubmitted: 'July 8, 2026',
+    gwa: '1.30',
+    verificationStatus: 'Rejected',
+    submittedDocuments: ['Curriculum Vitae'],
+    appliedFor: 'Software Quality Assurance Intern',
+  },
+  {
+    id: 'APP-2026-005',
+    studentName: 'Christian Garcia',
+    email: 'christian.garcia@gmail.com',
+    phone: '09334445566',
+    school: 'Technological Institute of the Philippines',
+    program: 'BS Industrial Engineering',
+    dateSubmitted: 'July 10, 2026',
+    gwa: '2.00',
+    verificationStatus: 'Pending',
+    submittedDocuments: ['Curriculum Vitae', 'Proof of Residency'],
+    appliedFor: 'Operations & IT Intern',
+  },
+  {
+    id: 'APP-2026-006',
+    studentName: 'Sofia Gomez',
+    email: 'sofia.gomez@gmail.com',
+    phone: '09445556677',
+    school: 'Miriam College',
+    program: 'BS Business Administration',
+    dateSubmitted: 'July 12, 2026',
+    gwa: '1.45',
+    verificationStatus: 'Flagged',
+    submittedDocuments: ['Curriculum Vitae', 'Letter of Intent'],
+    appliedFor: 'Digital Marketing Intern',
+  },
+  {
+    id: 'APP-2026-007',
+    studentName: 'Joshua Mendoza',
+    email: 'joshua.mendoza@gmail.com',
+    phone: '09556667788',
+    school: 'National University',
+    program: 'BS Information Technology',
+    dateSubmitted: 'July 15, 2026',
+    gwa: '1.80',
+    verificationStatus: 'Pending',
+    submittedDocuments: ['Curriculum Vitae', 'COR / Credentials'],
+    appliedFor: 'IT Helpdesk & Infrastructure Intern',
+  },
+  {
+    id: 'APP-2026-008',
+    studentName: 'Beatrice Alonzo',
+    email: 'beatrice.alonzo@gmail.com',
+    phone: '09667778899',
+    school: 'Ateneo de Manila University',
+    program: 'BS Computer Science',
+    dateSubmitted: 'July 18, 2026',
+    gwa: '1.10',
+    verificationStatus: 'Verified',
+    submittedDocuments: ['Curriculum Vitae', 'Proof of Residency', 'COR / Credentials'],
+    appliedFor: 'Cybersecurity Intern',
+  },
+  {
+    id: 'APP-2026-009',
+    studentName: 'Daniel Villanueva',
+    email: 'daniel.villanueva@gmail.com',
+    phone: '09778889900',
+    school: 'De La Salle University',
+    program: 'BS Computer Engineering',
+    dateSubmitted: 'July 20, 2026',
+    gwa: '1.60',
+    verificationStatus: 'Pending',
+    submittedDocuments: ['Curriculum Vitae', 'Letter of Intent'],
+    appliedFor: 'Network Engineering Intern',
+  },
+  {
+    id: 'APP-2026-010',
+    studentName: 'Patricia Lim',
+    email: 'patricia.lim@gmail.com',
+    phone: '09889990011',
+    school: 'University of Santo Tomas',
+    program: 'BS Information Technology',
+    dateSubmitted: 'July 22, 2026',
+    gwa: '1.35',
+    verificationStatus: 'Verified',
+    submittedDocuments: ['Curriculum Vitae', 'Proof of Residency', 'Letter of Recommendation'],
+    appliedFor: 'Frontend Developer Intern',
+  },
+]
+
+export const MOCK_EMPLOYERS: EmployerItem[] = [
+  {
+    id: 'EMP-2026-001',
+    companyName: 'Metropolitan Tech Solutions',
+    email: 'hr@metrotechsolutions.com',
+    phone: '09123456789',
+    representativeName: 'Engr. Ricardo Lim',
+    opportunitiesOffered: [
+      'Full Stack Web Developer Intern',
+      'Backend Engineer Intern',
+      'DevOps Intern',
+    ],
+    activeOpportunities: 3,
+    accountStatus: 'Active',
+    createdOn: 'July 1, 2026',
+  },
+  {
+    id: 'EMP-2026-002',
+    companyName: 'Quezon City IT Department',
+    email: 'careers@qcitdept.gov.ph',
+    phone: '09171234567',
+    representativeName: 'Dir. Anna Cruz',
+    opportunitiesOffered: [
+      'UI/UX Design Intern',
+      'IT Support Intern',
+    ],
+    activeOpportunities: 2,
+    accountStatus: 'Active',
+    createdOn: 'June 15, 2026',
+  },
+  {
+    id: 'EMP-2026-003',
+    companyName: 'InnovateX Labs',
+    email: 'talent@innovatexlabs.com',
+    phone: '09189876543',
+    representativeName: 'Ms. Camille Santos',
+    opportunitiesOffered: [
+      'Software QA Intern',
+      'Data Science Intern',
+      'Mobile App Developer Intern',
+      'Cloud Infrastructure Intern',
+    ],
+    activeOpportunities: 4,
+    accountStatus: 'Active',
+    createdOn: 'May 20, 2026',
+  },
+  {
+    id: 'EMP-2026-004',
+    companyName: 'Global City Logistics',
+    email: 'hr@globalcitylogistics.com',
+    phone: '09223334455',
+    representativeName: 'Mr. Paolo Reyes',
+    opportunitiesOffered: [
+      'Operations & IT Intern',
+      'Supply Chain Analyst Intern',
+    ],
+    activeOpportunities: 2,
+    accountStatus: 'Pending',
+    createdOn: 'July 25, 2026',
+  },
+  {
+    id: 'EMP-2026-005',
+    companyName: 'BrightMind Education Network',
+    email: 'partnerships@brightmind.edu',
+    phone: '09334445566',
+    representativeName: 'Dr. Elena Garcia',
+    opportunitiesOffered: [
+      'Digital Marketing Intern',
+      'Content Writer Intern',
+      'EdTech Developer Intern',
+    ],
+    activeOpportunities: 3,
+    accountStatus: 'Active',
+    createdOn: 'June 1, 2026',
+  },
+  {
+    id: 'EMP-2026-006',
+    companyName: 'Metro Health Systems',
+    email: 'recruitment@metrohealth.ph',
+    phone: '09445556677',
+    representativeName: 'Ms. Joy Mendoza',
+    opportunitiesOffered: [
+      'IT Helpdesk Intern',
+      'Health Informatics Intern',
+    ],
+    activeOpportunities: 2,
+    accountStatus: 'Suspended',
+    createdOn: 'April 10, 2026',
+  },
+  {
+    id: 'EMP-2026-007',
+    companyName: 'QC Smart City Ventures',
+    email: 'hr@qcsmartcity.com',
+    phone: '09556667788',
+    representativeName: 'Engr. Mark Alonzo',
+    opportunitiesOffered: [
+      'Cybersecurity Intern',
+      'IoT Engineer Intern',
+      'AI/ML Research Intern',
+    ],
+    activeOpportunities: 3,
+    accountStatus: 'Active',
+    createdOn: 'June 20, 2026',
+  },
+  {
+    id: 'EMP-2026-008',
+    companyName: 'Stellar Creative Agency',
+    email: 'jobs@stellarcreative.ph',
+    phone: '09667778899',
+    representativeName: 'Mr. Jason Villanueva',
+    opportunitiesOffered: [
+      'Graphic Design Intern',
+      'Video Production Intern',
+    ],
+    activeOpportunities: 2,
+    accountStatus: 'Pending',
+    createdOn: 'August 1, 2026',
+  },
+  {
+    id: 'EMP-2026-009',
+    companyName: 'PhilFinance Corp',
+    email: 'careers@philfinance.com',
+    phone: '09778889900',
+    representativeName: 'Atty. Maria Lim',
+    opportunitiesOffered: [
+      'Financial Analyst Intern',
+      'Accounting Intern',
+      'Compliance Intern',
+    ],
+    activeOpportunities: 3,
+    accountStatus: 'Active',
+    createdOn: 'May 5, 2026',
+  },
+
+  {
+    id: 'EMP-2026-010',
+    companyName: 'GreenBuild Construction',
+    email: 'hr@greenbuild.ph',
+    phone: '09889990011',
+    representativeName: 'Engr. Roberto Tan',
+    opportunitiesOffered: [
+      'Civil Engineering Intern',
+      'Project Management Intern',
+    ],
+    activeOpportunities: 2,
+    accountStatus: 'Rejected',
+    createdOn: 'July 15, 2026',
   }
 ]
