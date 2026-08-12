@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Application } from './application.entity';
@@ -11,11 +11,16 @@ export class ApplicationsService {
   ) {}
 
   async findByStudentId(studentId: number): Promise<Application[]> {
-    return this.applicationRepo
-      .createQueryBuilder('application')
-      .leftJoinAndSelect('application.student', 'student')
-      .where('student.studentId = :id', { id: studentId })
-      .orderBy('application.created_at', 'DESC')
-      .getMany();
+    try {
+      return await this.applicationRepo
+        .createQueryBuilder('application')
+        .leftJoinAndSelect('application.student', 'student')
+        .where('student.student_id = :id', { id: studentId })
+        .orderBy('application.updated_at', 'DESC')
+        .getMany();
+    } catch (error) {
+      Logger.error('Error in ApplicationsService.findByStudentId', error as any);
+      throw error;
+    }
   }
 }

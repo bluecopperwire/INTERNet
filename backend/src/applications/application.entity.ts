@@ -11,7 +11,7 @@ import { StudentResponse } from '../common/enums/student-response.enum';
 
 @Entity('application')
 export class Application {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({ name: 'application_id' })
   applicationId: number;
 
   @ManyToOne(() => Student, student => student.applications)

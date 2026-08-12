@@ -31,8 +31,7 @@ export class StudentsController {
     const student = await this.studentsService.findById(id);
     if (!student) throw new NotFoundException('Student not found');
 
-    // Allow admins or the user linked to this student
-    if (currentUser?.role !== 'admin' && student.studentId !== currentUser?.userId) {
+    if (currentUser?.role !== 'admin' && student.userAccountId !== currentUser?.userAccountId) {
       throw new ForbiddenException('Not authorized to view this');
     }
 
