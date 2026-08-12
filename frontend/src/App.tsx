@@ -13,6 +13,8 @@ import AttendancePage from './features/intern-seeker/pages/AttendancePage'
 import QCPesoLayout from './features/qcpeso/components/QCPesoLayout'
 import MonitorReferralsPage from './features/qcpeso/pages/MonitorReferralsPage'
 import MonitorInternsPage from './features/qcpeso/pages/MonitorInternsPage'
+import { QCPesoDashboardPage } from './features/qcpeso/pages/QCPesoDashboardPage'
+import { QCPesoProfilePage } from './features/qcpeso/pages/QCPesoProfilePage'
 
 function App() {
   return (
@@ -21,6 +23,7 @@ function App() {
         <Route path="/" element={<LoginPage />} />
         <Route path="/sign-up/:role" element={<SignUpPage />} />
         
+        {/* Intern Seeker Routes */}
         <Route path="/intern-seeker" element={<InternSeekerLayout />}>
           <Route index element={<InternshipPortalPage />} />
           <Route path="search" element={<InternshipSearchPage />} />
@@ -39,10 +42,18 @@ function App() {
 
         {/* QCPESO Admin & Monitor Routes */}
         <Route path="/qcpeso" element={<QCPesoLayout />}>
-          <Route index element={<Navigate to="/qcpeso/monitor/referrals" replace />} />
+          <Route index element={<QCPesoDashboardPage />} />
+          <Route path="dashboard" element={<QCPesoDashboardPage />} />
+          
+          {/* Profile Route */}
+          <Route path="profile" element={<QCPesoProfilePage />} />
+          
+          {/* Monitor Routes */}
           <Route path="monitor/referrals" element={<MonitorReferralsPage />} />
           <Route path="monitor/interns" element={<MonitorInternsPage />} />
-          <Route path="*" element={<Navigate to="/qcpeso/monitor/referrals" replace />} />
+          
+          {/* Fallback to dashboard */}
+          <Route path="*" element={<Navigate to="/qcpeso/dashboard" replace />} />
         </Route>
       </Routes>
     </BrowserRouter>

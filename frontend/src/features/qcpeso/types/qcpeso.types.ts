@@ -49,3 +49,63 @@ export interface PaginationState {
   itemsPerPage: number
   totalItems: number
 }
+
+export interface QCPesoDashboardSummary {
+  pendingApplications: number;
+  activeEmployers: number;
+  verifiedRequirements: number;
+  availableOpportunities: number;
+}
+
+export interface QCPesoProfile {
+  id: string;
+  fullName: string;
+  role: string;
+  location: string;
+  department: string;
+  qcpesoPosition: string;
+  city: string;
+}
+
+export interface StudentApplication {
+  id: string;
+  name: string;
+  school: string;
+  program: string;
+  date: string;
+  status: string;
+  email: string;
+  phone: string;
+  gwa: string;
+  submittedDocuments: string[];
+  appliedFor: string;
+}
+
+export interface EmployerOpportunity {
+  id: string;
+  name: string;
+  rep: string;
+  opportunities: number;
+  status: string;
+  email: string;
+  phone: string;
+  employerStatus: string;
+  createdOn: string;
+  opportunitiesOffered: string[];
+}
+
+export interface QCPesoProfile {
+  id: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  birthdate: string;
+  employeeIdNumber: string;
+  position: string;
+  department: string;
+  fullName: string;
+  role: string;
+  location: string;
+  qcpesoPosition: string;
+  city: string;
+}

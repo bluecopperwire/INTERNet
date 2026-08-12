@@ -13,7 +13,7 @@ import {
   User,
   Users,
 } from 'lucide-react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import internetLogo from '../../../assets/internet-logo.svg'
 import styles from './QCPesoSidebar.module.css'
 
@@ -33,10 +33,16 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
   const [manageUsersOpen, setManageUsersOpen] = useState(true)
   const [monitorUsersOpen, setMonitorUsersOpen] = useState(true)
   const navigate = useNavigate()
+  const location = useLocation()
 
   const logout = () => {
     onClose()
     navigate('/')
+  }
+
+  const navigateToProfile = () => {
+    onClose()
+    navigate('/qcpeso/profile')
   }
 
   const matchesSearch = (text: string) => {
@@ -44,13 +50,14 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
     return text.toLowerCase().includes(search.trim().toLowerCase())
   }
 
+  const isProfileActive = location.pathname === '/qcpeso/profile'
+
   return (
     <aside
       className={`${styles.sidebar} ${isOpen ? styles.open : ''}`}
       id="qcpeso-sidebar"
       aria-hidden={!isOpen}
     >
-      {/* Brand Header */}
       <div className={styles.header}>
         <div className={styles.brand}>
           <span className={styles.logoBox}>
@@ -68,7 +75,6 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
         </div>
       </div>
 
-      {/* Search Input Box */}
       <label className={styles.searchLabel}>
         <Search size={18} aria-hidden="true" />
         <span className={styles.srOnly}>Search navigation</span>
@@ -81,13 +87,11 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
         />
       </label>
 
-      {/* Navigation List */}
       <nav className={styles.navigation} aria-label="QC PESO navigation">
-        {/* Dashboard */}
         {matchesSearch('Dashboard') && (
           <NavLink
             className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
-            to="/qcpeso/monitor/referrals"
+            to="/qcpeso/dashboard"
             onClick={onClose}
             tabIndex={isOpen ? 0 : -1}
           >
@@ -96,7 +100,6 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
           </NavLink>
         )}
 
-        {/* Manage Users Dropdown Group */}
         {(matchesSearch('Manage Users') ||
           matchesSearch('Manage Applications') ||
           matchesSearch('Manage Employers')) && (
@@ -139,7 +142,6 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
           </div>
         )}
 
-        {/* Monitor Users Dropdown Group */}
         {(matchesSearch('Monitor Users') ||
           matchesSearch('Monitor Referrals') ||
           matchesSearch('Monitor Interns') ||
@@ -197,7 +199,6 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
           </div>
         )}
 
-        {/* Reports and Documents */}
         {matchesSearch('Reports and Documents') && (
           <NavLink
             className={styles.navItem}
@@ -210,7 +211,6 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
           </NavLink>
         )}
 
-        {/* Settings */}
         {matchesSearch('Settings') && (
           <NavLink
             className={styles.navItem}
@@ -223,7 +223,6 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
           </NavLink>
         )}
 
-        {/* Log out */}
         <button
           className={styles.logoutBtn}
           type="button"
@@ -235,8 +234,13 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
         </button>
       </nav>
 
-      {/* User Profile Summary at bottom */}
-      <div className={styles.userSummary}>
+      <div 
+        className={`${styles.userSummary} ${isProfileActive ? styles.userSummaryActive : ''}`} 
+        onClick={navigateToProfile} 
+        style={{ cursor: 'pointer' }}
+        role="button"
+        tabIndex={0}
+      >
         <div className={styles.userLeft}>
           <span className={styles.avatar} aria-hidden="true">
             {MOCK_USER.initials}
@@ -246,7 +250,7 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
             <span className={styles.userEmail}>{MOCK_USER.email}</span>
           </div>
         </div>
-        <ExternalLink size={16} color="#ffffff" aria-hidden="true" />
+        <ExternalLink size={16} aria-hidden="true" className={styles.externalIcon} />
       </div>
     </aside>
   )

@@ -1,4 +1,11 @@
-import type { InternItem, ReferralItem } from '../types/qcpeso.types'
+import type { 
+  InternItem, 
+  ReferralItem,
+  QCPesoDashboardSummary, 
+  QCPesoProfile, 
+  StudentApplication, 
+  EmployerOpportunity 
+} from '../types/qcpeso.types'
 
 export const MOCK_REFERRALS: ReferralItem[] = [
   {
@@ -27,85 +34,7 @@ export const MOCK_REFERRALS: ReferralItem[] = [
     submittedDocuments: ['Curriculum vitae', 'Proof of Residency', 'Letter of Recommendation'],
     course: 'BS Information Technology',
     school: 'Polytechnic University of the Philippines',
-  },
-  {
-    id: 'REF-2026-003',
-    studentName: 'Juan Dela Cruz',
-    email: 'juan.delacruz@gmail.com',
-    phone: '09189876543',
-    targetEmployer: 'QC Public Employment Office',
-    position: 'Data Analyst Intern',
-    dateForwarded: '2026-08-03',
-    status: 'Under Review',
-    submittedDocuments: ['Curriculum vitae', 'COR / Credentials', 'Letter of Intent'],
-    course: 'BS Computer Science',
-    school: 'University of the Philippines Diliman',
-  },
-  {
-    id: 'REF-2026-004',
-    studentName: 'Angelica Reyes',
-    email: 'angelica.reyes@gmail.com',
-    phone: '09223334455',
-    targetEmployer: 'InnovateX Labs',
-    position: 'Software Quality Assurance Intern',
-    dateForwarded: '2026-08-04',
-    status: 'Approved',
-    submittedDocuments: ['Curriculum vitae', 'Proof of Residency', 'COR / Credentials'],
-    course: 'BS Information Systems',
-    school: 'Far Eastern University',
-  },
-  {
-    id: 'REF-2026-005',
-    studentName: 'Christian Garcia',
-    email: 'christian.garcia@gmail.com',
-    phone: '09334445566',
-    targetEmployer: 'Global City Logistics',
-    position: 'Operations & IT Intern',
-    dateForwarded: '2026-08-05',
-    status: 'Pending',
-    submittedDocuments: ['Curriculum vitae'],
-    course: 'BS Industrial Engineering',
-    school: 'Technological Institute of the Philippines',
-  },
-  {
-    id: 'REF-2026-006',
-    studentName: 'Sofia Gomez',
-    email: 'sofia.gomez@gmail.com',
-    phone: '09445556677',
-    targetEmployer: 'BrightMind Education Network',
-    position: 'Digital Marketing Intern',
-    dateForwarded: '2026-08-06',
-    status: 'Under Review',
-    submittedDocuments: ['Curriculum vitae', 'Proof of Residency', 'Letter of Intent'],
-    course: 'BS Business Administration',
-    school: 'Miriam College',
-  },
-  {
-    id: 'REF-2026-007',
-    studentName: 'Joshua Mendoza',
-    email: 'joshua.mendoza@gmail.com',
-    phone: '09556667788',
-    targetEmployer: 'Metro Health Systems',
-    position: 'IT Helpdesk & Infrastructure Intern',
-    dateForwarded: '2026-08-07',
-    status: 'Rejected',
-    submittedDocuments: ['Curriculum vitae'],
-    course: 'BS Information Technology',
-    school: 'National University',
-  },
-  {
-    id: 'REF-2026-008',
-    studentName: 'Beatrice Alonzo',
-    email: 'beatrice.alonzo@gmail.com',
-    phone: '09667778899',
-    targetEmployer: 'QC Smart City Ventures',
-    position: 'Cybersecurity Intern',
-    dateForwarded: '2026-08-08',
-    status: 'Under Review',
-    submittedDocuments: ['Curriculum vitae', 'COR / Credentials', 'Proof of Residency'],
-    course: 'BS Computer Science',
-    school: 'Ateneo de Manila University',
-  },
+  }
 ]
 
 export const MOCK_INTERNS: InternItem[] = [
@@ -123,81 +52,110 @@ export const MOCK_INTERNS: InternItem[] = [
     targetHours: 200,
     course: 'BS Computer Science',
     school: 'Quezon City University',
-    dtrLogs: [
-      { id: '1', date: '2026-08-01', timeIn: '08:58 AM', timeOut: '05:02 PM', hoursRendered: 8, status: 'Present' },
-      { id: '2', date: '2026-08-04', timeIn: '09:05 AM', timeOut: '05:00 PM', hoursRendered: 8, status: 'Late', remarks: '5 mins late - Heavy traffic' },
-      { id: '3', date: '2026-08-05', timeIn: '08:55 AM', timeOut: '05:00 PM', hoursRendered: 8, status: 'Present' },
-      { id: '4', date: '2026-08-06', timeIn: '08:50 AM', timeOut: '05:15 PM', hoursRendered: 8, status: 'Present' },
-      { id: '5', date: '2026-08-07', timeIn: '08:59 AM', timeOut: '05:01 PM', hoursRendered: 8, status: 'Present' },
-    ],
+    dtrLogs: []
+  }
+]
+
+export const MOCK_QCPESO_SUMMARY: QCPesoDashboardSummary = {
+  pendingApplications: 1291,
+  activeEmployers: 100,
+  verifiedRequirements: 1200,
+  availableOpportunities: 522
+}
+
+export const MOCK_QCPESO_PROFILE: QCPesoProfile = {
+  id: 'qcp-1',
+  firstName: 'Kyle Ethan',
+  middleName: 'Santos',
+  lastName: 'Porciuncula',
+  birthdate: '2004-05-15',
+  employeeIdNumber: 'QCPESO-2026-089',
+  position: 'UI/UX Designer',
+  department: 'Information Technology Division',
+  fullName: 'Kyle Ethan Santos Porciuncula',
+  role: 'UI/UX Designer',
+  location: 'Quezon City, Philippines',
+  qcpesoPosition: 'UI/UX Designer',
+  city: 'Quezon City'
+}
+
+export const MOCK_STUDENTS: StudentApplication[] = [
+  { 
+    id: '1', 
+    name: 'Kyle Ethan Porciuncula', 
+    school: 'Polytechnic University of the Philippines', 
+    program: 'BS Computer Science', 
+    date: 'July 1, 2026', 
+    status: 'Pending',
+    email: 'kyleporciuncula@gmail.com',
+    phone: '09123456789',
+    gwa: '1.25',
+    submittedDocuments: ['Curriculum Vitae', 'Lorem Ipsum'],
+    appliedFor: 'Lorem Ipsum'
   },
-  {
-    id: 'INT-2026-002',
-    studentName: 'Maria Santos',
-    email: 'maria.santos@gmail.com',
+  { 
+    id: '2', 
+    name: 'Juan Dela Cruz', 
+    school: 'Quezon City University', 
+    program: 'BS Information Technology', 
+    date: 'July 2, 2026', 
+    status: 'Verified',
+    email: 'juandelacruz@gmail.com',
     phone: '09171234567',
-    matchedEmployer: 'Quezon City IT Department',
-    acceptedRole: 'UI/UX Design Intern',
-    dateOfPlacement: '2026-07-10',
-    status: 'Ongoing',
-    submittedDocuments: ['Curriculum vitae', 'Proof of Residency', 'Letter of Recommendation'],
-    renderedHours: 160,
-    targetHours: 200,
-    course: 'BS Information Technology',
-    school: 'Polytechnic University of the Philippines',
-    dtrLogs: [
-      { id: '101', date: '2026-08-01', timeIn: '09:00 AM', timeOut: '05:00 PM', hoursRendered: 8, status: 'Present' },
-      { id: '102', date: '2026-08-04', timeIn: '08:52 AM', timeOut: '05:05 PM', hoursRendered: 8, status: 'Present' },
-    ],
+    gwa: '1.50',
+    submittedDocuments: ['Curriculum Vitae', 'Proof of Residency'],
+    appliedFor: 'Software Engineer Intern'
+  }
+]
+
+export const MOCK_EMPLOYERS: EmployerOpportunity[] = [
+  { 
+    id: '1', 
+    name: 'ABC Company', 
+    rep: 'Polytechnic University of the Philippines', 
+    opportunities: 5, 
+    status: 'Active',
+    email: 'ABCcompany@gmail.com',
+    phone: '09123456789',
+    employerStatus: 'Ongoing',
+    createdOn: 'July 1, 2026',
+    opportunitiesOffered: [
+      'Lorem ipsum dolor sit amet',
+      'Lorem ipsum dolor sit amet',
+      'Lorem ipsum dolor sit amet',
+      'Lorem ipsum dolor sit amet',
+      'Lorem ipsum dolor sit amet',
+      'Lorem ipsum dolor sit amet'
+    ]
   },
-  {
-    id: 'INT-2026-003',
-    studentName: 'Angelica Reyes',
-    email: 'angelica.reyes@gmail.com',
-    phone: '09223334455',
-    matchedEmployer: 'InnovateX Labs',
-    acceptedRole: 'Software Quality Assurance Intern',
-    dateOfPlacement: '2026-06-01',
-    status: 'Completed',
-    submittedDocuments: ['Curriculum vitae', 'Proof of Residency', 'COR / Credentials'],
-    renderedHours: 200,
-    targetHours: 200,
-    course: 'BS Information Systems',
-    school: 'Far Eastern University',
-    dtrLogs: [
-      { id: '201', date: '2026-07-30', timeIn: '08:50 AM', timeOut: '05:00 PM', hoursRendered: 8, status: 'Present' },
-    ],
+  { 
+    id: '2', 
+    name: 'Meta Company', 
+    rep: 'John Doe', 
+    opportunities: 12, 
+    status: 'Pending Review',
+    email: 'contact@meta.com',
+    phone: '09181112222',
+    employerStatus: 'Under Review',
+    createdOn: 'July 5, 2026',
+    opportunitiesOffered: [
+      'Frontend Developer Intern',
+      'UI/UX Researcher'
+    ]
   },
-  {
-    id: 'INT-2026-004',
-    studentName: 'Sofia Gomez',
-    email: 'sofia.gomez@gmail.com',
-    phone: '09445556677',
-    matchedEmployer: 'BrightMind Education Network',
-    acceptedRole: 'Digital Marketing Intern',
-    dateOfPlacement: '2026-07-20',
-    status: 'Ongoing',
-    submittedDocuments: ['Curriculum vitae', 'Proof of Residency', 'Letter of Intent'],
-    renderedHours: 95,
-    targetHours: 180,
-    course: 'BS Business Administration',
-    school: 'Miriam College',
-    dtrLogs: [],
-  },
-  {
-    id: 'INT-2026-005',
-    studentName: 'Beatrice Alonzo',
-    email: 'beatrice.alonzo@gmail.com',
-    phone: '09667778899',
-    matchedEmployer: 'QC Smart City Ventures',
-    acceptedRole: 'Cybersecurity Intern',
-    dateOfPlacement: '2026-08-01',
-    status: 'Ongoing',
-    submittedDocuments: ['Curriculum vitae', 'COR / Credentials', 'Proof of Residency'],
-    renderedHours: 40,
-    targetHours: 200,
-    course: 'BS Computer Science',
-    school: 'Ateneo de Manila University',
-    dtrLogs: [],
-  },
+  { 
+    id: '3', 
+    name: 'Innovate Tech', 
+    rep: 'Mark Reyes', 
+    opportunities: 2, 
+    status: 'Inactive',
+    email: 'careers@innovatetech.ph',
+    phone: '09199998888',
+    employerStatus: 'Paused',
+    createdOn: 'June 15, 2026',
+    opportunitiesOffered: [
+      'QA Tester Intern',
+      'Data Encoder'
+    ]
+  }
 ]
