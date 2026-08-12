@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight, Eye, Search } from 'lucide-react'
-import headerImage from '../../../assets/requirements-header-image.png'
+import QCPesoHero from '../components/QCPesoHero'
 import InternDetailModal from '../components/InternDetailModal'
 import { qcpesoService } from '../services/qcpeso.service'
 import type { InternItem } from '../types/qcpeso.types'
@@ -66,56 +66,13 @@ export function MonitorInternsPage() {
 
   return (
     <main className={styles.pageContainer}>
-      {/* Hero Header matching design spec */}
-      <header className={styles.heroHeader}>
-        <img src={headerImage} alt="" className={styles.heroBgImage} />
-        <div className={styles.heroOverlay} />
-        <div className={styles.heroContent}>
-          <h1 className={styles.heroTitle}>Monitor User</h1>
-          <p className={styles.heroSubtitle}>QCPESO Intern Monitoring</p>
-        </div>
-      </header>
+      <QCPesoHero title="Monitor User" subtitle="QCPESO Intern Monitoring" />
 
       {/* Main Section */}
       <section className={styles.mainContent}>
-        {/* Controls Toolbar */}
+        {/* Search and status filters */}
         <div className={styles.toolbarRow}>
-          <div className={styles.leftControls}>
-            <span className={styles.viewLabel}>View</span>
-            <div className={styles.viewSelectBox}>
-              <select
-                className={styles.viewSelect}
-                value={itemsPerPage}
-                onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value))
-                  setCurrentPage(1)
-                }}
-              >
-                <option value={7}>7</option>
-                <option value={10}>10</option>
-                <option value={15}>15</option>
-              </select>
-            </div>
-            <span className={styles.perPageLabel}>Students per page</span>
-
-            <div className={styles.filterGroup}>
-              <select
-                className={styles.filterSelect}
-                value={selectedStatus}
-                onChange={(e) => {
-                  setSelectedStatus(e.target.value)
-                  setCurrentPage(1)
-                }}
-              >
-                <option value="All">All Statuses</option>
-                <option value="Ongoing">Ongoing</option>
-                <option value="Completed">Completed</option>
-                <option value="Paused">Paused</option>
-              </select>
-            </div>
-          </div>
-
-          <div className={styles.filterGroup}>
+          <div className={`${styles.filterGroup} ${styles.searchGroup}`}>
             <div className={styles.searchBox}>
               <Search size={16} color="#160e6f" />
               <input
@@ -128,40 +85,15 @@ export function MonitorInternsPage() {
                 }}
               />
             </div>
+          </div>
 
-            {/* Pagination controls */}
-            <div className={styles.pagination}>
-              <button
-                type="button"
-                className={styles.pageBtn}
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                aria-label="Previous Page"
-              >
-                <ChevronLeft size={18} />
-              </button>
-
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-                <button
-                  key={pageNum}
-                  type="button"
-                  className={`${styles.pageBtn} ${pageNum === currentPage ? styles.active : ''}`}
-                  onClick={() => setCurrentPage(pageNum)}
-                >
-                  {pageNum}
-                </button>
-              ))}
-
-              <button
-                type="button"
-                className={styles.pageBtn}
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                aria-label="Next Page"
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
+          <div className={`${styles.filterGroup} ${styles.statusFilterGroup}`}>
+            <select className={styles.filterSelect} value={selectedStatus} onChange={(e) => { setSelectedStatus(e.target.value); setCurrentPage(1) }}>
+              <option value="All">All Statuses</option>
+              <option value="Ongoing">Ongoing</option>
+              <option value="Completed">Completed</option>
+              <option value="Paused">Paused</option>
+            </select>
           </div>
         </div>
 
@@ -179,7 +111,6 @@ export function MonitorInternsPage() {
                   <th>Matched Employer</th>
                   <th>Accepted Role</th>
                   <th>Placement Date</th>
-                  <th>Rendered Hours</th>
                   <th>Internship Status</th>
                   <th>Action</th>
                 </tr>
@@ -189,17 +120,10 @@ export function MonitorInternsPage() {
                   <tr key={item.id}>
                     <td>
                       <strong style={{ color: '#160e6f' }}>{item.studentName}</strong>
-                      <br />
-                      <small style={{ color: '#64748b' }}>{item.email}</small>
                     </td>
                     <td>{item.matchedEmployer}</td>
                     <td>{item.acceptedRole}</td>
                     <td>{item.dateOfPlacement}</td>
-                    <td>
-                      <span className={styles.hoursText}>
-                        {item.renderedHours} / {item.targetHours} hrs
-                      </span>
-                    </td>
                     <td>
                       <span className={`${styles.statusPill} ${getStatusPillClass(item.status)}`}>
                         {item.status}
@@ -212,7 +136,7 @@ export function MonitorInternsPage() {
                         onClick={() => setSelectedIntern(item)}
                       >
                         <Eye size={14} />
-                        <span>View Details</span>
+                        <span>Review</span>
                       </button>
                     </td>
                   </tr>
@@ -220,6 +144,29 @@ export function MonitorInternsPage() {
               </tbody>
             </table>
           )}
+        </div>
+
+        {/* Page size and navigation */}
+        <div className={styles.toolbarRow}>
+          <div className={styles.leftControls}>
+            <span className={styles.viewLabel}>View</span>
+            <div className={styles.viewSelectBox}>
+              <select className={styles.viewSelect} value={itemsPerPage} onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1) }}>
+                <option value={7}>7</option>
+                <option value={10}>10</option>
+                <option value={15}>15</option>
+              </select>
+            </div>
+            <span className={styles.perPageLabel}>Students per page</span>
+          </div>
+
+          <div className={styles.pagination}>
+            <button type="button" className={styles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} aria-label="Previous Page"><ChevronLeft size={18} /></button>
+            {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
+              <button key={pageNumber} type="button" className={`${styles.pageBtn} ${pageNumber === currentPage ? styles.active : ''}`} onClick={() => setCurrentPage(pageNumber)}>{pageNumber}</button>
+            ))}
+            <button type="button" className={styles.pageBtn} disabled={currentPage === totalPages} onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} aria-label="Next Page"><ChevronRight size={18} /></button>
+          </div>
         </div>
       </section>
 

@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Eye, ChevronRight } from 'lucide-react'
-import headerImage from '../../../assets/requirements-header-image.png'
+import QCPesoHero from '../components/QCPesoHero'
+import twoDocumentIcon from '../../../assets/two-docu.svg'
+import suitcaseIcon from '../../../assets/suitcase.svg'
 import styles from './QCPesoDashboardPage.module.css'
 import { useQCPeso } from '../hooks/useQCPeso'
 import { StudentReviewModal } from '../components/StudentReviewModal'
@@ -17,42 +19,6 @@ export const QCPesoDashboardPage: React.FC = () => {
 
   if (isLoading || !summary) return <div className={styles.loading}>Loading Dashboard...</div>
 
-  const DocumentsBgIcon = ({ isWhite = false }: { isWhite?: boolean }) => (
-    <svg 
-      className={`${styles.bgIcon} ${isWhite ? styles.bgIconWhite : styles.bgIconBlue}`} 
-      viewBox="0 0 64 64" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="3" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    >
-      <path d="M40 56H22a4 4 0 0 1-4-4V16a4 4 0 0 1 4-4h12l10 10v30a4 4 0 0 1-4 4z" />
-      <path d="M26 40h12" />
-      <path d="M26 48h12" />
-      <path d="M52 56h-8V26l-10-10H30V12a4 4 0 0 1 4-4h12l10 10v34a4 4 0 0 1-4 4z" />
-      <path d="M38 32h12" />
-      <path d="M38 40h12" />
-    </svg>
-  )
-
-  const BriefcaseBgIcon = ({ isWhite = false }: { isWhite?: boolean }) => (
-    <svg 
-      className={`${styles.bgIcon} ${isWhite ? styles.bgIconWhite : styles.bgIconBlue}`} 
-      viewBox="0 0 64 64" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="3" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    >
-      <rect x="10" y="24" width="44" height="30" rx="4" ry="4" />
-      <path d="M42 24V14a2 2 0 0 0-2-2H24a2 2 0 0 0-2 2v10" />
-      <line x1="10" y1="40" x2="54" y2="40" />
-      <circle cx="32" cy="40" r="3" fill={isWhite ? "#ffffff" : "currentColor"} />
-    </svg>
-  )
-
   return (
     <main className={styles.pageContainer}>
       <StudentReviewModal 
@@ -67,39 +33,32 @@ export const QCPesoDashboardPage: React.FC = () => {
         employer={selectedEmployer} 
       />
 
-      <header className={styles.heroHeader}>
-        <img src={headerImage} alt="" className={styles.heroBgImage} />
-        <div className={styles.heroOverlay} />
-        <div className={styles.heroContent}>
-          <h1 className={styles.heroTitle}>Main Dashboard</h1>
-          <p className={styles.heroSubtitle}>QCPESO Information Summary</p>
-        </div>
-      </header>
+      <QCPesoHero title="Main Dashboard" subtitle="QCPESO Information Summary" />
 
       <section className={styles.mainContent}>
         <div className={styles.summaryGrid}>
           <div className={`${styles.summaryCard} ${styles.cardBlue}`}>
             <h3 className={styles.cardTitle}>Total Pending Student Applications</h3>
             <p className={styles.cardValue}>{summary.pendingApplications}</p>
-            <DocumentsBgIcon isWhite={false} />
+            <img className={styles.summaryIcon} src={twoDocumentIcon} alt="" />
           </div>
 
           <div className={`${styles.summaryCard} ${styles.cardGradient}`}>
             <h3 className={styles.cardTitleDark}>Total Verified Requirements</h3>
             <p className={styles.cardValueDark}>{summary.verifiedRequirements}</p>
-            <DocumentsBgIcon isWhite={true} />
+            <img className={styles.summaryIcon} src={twoDocumentIcon} alt="" />
           </div>
 
           <div className={`${styles.summaryCard} ${styles.cardGradient}`}>
             <h3 className={styles.cardTitleDark}>Total Active Employers</h3>
             <p className={styles.cardValueDark}>{summary.activeEmployers}</p>
-            <BriefcaseBgIcon isWhite={true} />
+            <img className={`${styles.summaryIcon} ${styles.suitcaseIcon}`} src={suitcaseIcon} alt="" />
           </div>
 
           <div className={`${styles.summaryCard} ${styles.cardBlue}`}>
             <h3 className={styles.cardTitle}>Total Available Opportunities</h3>
             <p className={styles.cardValue}>{summary.availableOpportunities}</p>
-            <BriefcaseBgIcon isWhite={false} />
+            <img className={`${styles.summaryIcon} ${styles.suitcaseIcon}`} src={suitcaseIcon} alt="" />
           </div>
         </div>
 

@@ -82,41 +82,44 @@
 .leftControls {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
 }
 
 .viewLabel {
-  font-size: 16px;
-  font-weight: 500;
-  color: #160e6f;
+  color: #625d7d;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .viewSelectBox {
   display: flex;
+  width: 76px;
+  height: 42px;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 8px 16px;
+  padding: 0 6px 0 10px;
+  border: 1px solid rgba(22, 14, 111, 0.42);
+  border-radius: 6px;
   background: #ffffff;
-  border: 1px solid #160e6f;
-  border-radius: 4px;
 }
 
 .viewSelect {
+  width: 100%;
+  height: 100%;
+  padding: 0 22px 0 3px;
   border: 0;
-  background: transparent;
-  font-size: 16px;
-  font-weight: 500;
   color: #160e6f;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
   outline: none;
   cursor: pointer;
-  padding-right: 24px;
 }
 
 .perPageLabel {
-  font-size: 16px;
+  color: #625d7d;
+  font-size: 13px;
   font-weight: 500;
-  color: #160e6f;
 }
 
 .filterGroup {
@@ -125,8 +128,19 @@
   gap: 12px;
 }
 
+.searchGroup {
+  min-width: 0;
+  flex: 1;
+}
+
+.statusFilterGroup {
+  flex: none;
+}
+
 .filterSelect {
-  padding: 8px 32px 8px 12px;
+  min-width: 210px;
+  height: 42px;
+  padding: 8px 38px 8px 14px;
   border: 1px solid #160e6f;
   border-radius: 6px;
   font-size: 14px;
@@ -138,6 +152,8 @@
 
 .searchBox {
   display: flex;
+  width: 100%;
+  height: 42px;
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
@@ -147,6 +163,8 @@
 }
 
 .searchBox input {
+  width: 100%;
+  min-width: 0;
   border: 0;
   outline: none;
   font-size: 14px;
@@ -156,22 +174,25 @@
 .pagination {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
 }
 
 .pageBtn {
-  display: flex;
+  display: grid;
+  width: 42px;
+  height: 42px;
   align-items: center;
   justify-content: center;
-  padding: 8px 14px;
-  border: 1px solid #160e6f;
-  border-radius: 8px;
-  background: #ffffff;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(22, 14, 111, 0.42);
+  border-radius: 6px;
   color: #160e6f;
-  font-size: 16px;
+  background: #ffffff;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 150ms;
+  transition: color 150ms ease, background 150ms ease, border-color 150ms ease;
 }
 
 .pageBtn.active {
@@ -185,15 +206,16 @@
 }
 
 .pageBtn:disabled {
-  opacity: 0.4;
+  color: #aaa6c3;
+  border-color: #d8d6e3;
+  opacity: 1;
   cursor: not-allowed;
 }
 
 .tableCard {
   width: 100%;
-  min-height: 500px;
   background: #ffffff;
-  border: 1px solid #160e6f;
+  border: 1px solid rgba(22, 14, 111, 0.2);
   border-radius: 8px;
   overflow-x: auto;
   box-shadow: 0 4px 12px rgba(22, 14, 111, 0.05);
@@ -212,6 +234,7 @@
   color: #160e6f;
   background: #f8fafc;
   border-bottom: 2px solid #160e6f;
+  white-space: nowrap;
 }
 
 .table td {
@@ -228,27 +251,28 @@
 .statusPill {
   display: inline-flex;
   align-items: center;
-  padding: 6px 14px;
-  border-radius: 9999px;
-  background: #fdd116;
-  color: #160e6f;
+  padding: 6px 11px;
+  border-radius: 999px;
+  color: #ffa518;
+  background: #fff4e6;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .statusPill.endorsed {
-  background: #2563eb;
-  color: #ffffff;
+  color: #6557a8;
+  background: #f0eef9;
 }
 
 .statusPill.approved {
-  background: #16a34a;
-  color: #ffffff;
+  color: #34cba7;
+  background: #eaf9f5;
 }
 
 .statusPill.rejected {
-  background: #cc0001;
-  color: #ffffff;
+  color: #e25555;
+  background: #fff0ef;
 }
 
 .actionBtn {
@@ -289,5 +313,11 @@
   .toolbarRow {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .searchGroup,
+  .statusFilterGroup,
+  .filterSelect {
+    width: 100%;
   }
 }

@@ -55,10 +55,49 @@ export function InternDetailModal({ intern, onClose }: InternDetailModalProps) {
           <X size={20} />
         </button>
 
+        {/* Candidate Information */}
+        <div className={styles.candidateInfo}>
+          <h2 id="intern-modal-title" className={styles.candidateName}>
+            {intern.studentName}
+          </h2>
+          <p className={styles.candidateDetail}>{intern.email}</p>
+          <p className={styles.candidateDetail}>{intern.phone}</p>
+        </div>
+
+        {/* Placement Details */}
+        <div className={styles.metaGrid}>
+          <div className={styles.metaItem}>
+            <span className={styles.metaLabel}>Matched Employer</span>
+            <span>{intern.matchedEmployer}</span>
+          </div>
+          <div className={styles.metaItem}>
+            <span className={styles.metaLabel}>Accepted Role</span>
+            <span>{intern.acceptedRole}</span>
+          </div>
+          <div className={styles.metaItem}>
+            <span className={styles.metaLabel}>Placement Date</span>
+            <span>{intern.dateOfPlacement}</span>
+          </div>
+          {intern.school && (
+            <div className={styles.metaItem}>
+              <span className={styles.metaLabel}>School</span>
+              <span>{intern.school}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Internship Status Section */}
+        <div className={styles.sectionGroup}>
+          <span className={styles.sectionLabel}>Internship Status</span>
+          <div className={`${styles.statusPill} ${getStatusClass(intern.status)}`}>
+            <span>{intern.status}</span>
+          </div>
+        </div>
+
         {/* DTR / Attendance Summary Visual Box */}
         <div className={styles.dtrSummaryBox}>
           <div className={styles.dtrHeaderRow}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div className={styles.dtrHeading}>
               <Clock size={18} color="#160e6f" />
               <span className={styles.dtrTitle}>Daily Time Record (DTR) Overview</span>
             </div>
@@ -89,50 +128,15 @@ export function InternDetailModal({ intern, onClose }: InternDetailModalProps) {
 
         {/* Submitted Documents Section */}
         <div className={styles.sectionGroup}>
-          <span className={styles.sectionLabel}>SUBMITTED DOCUMENTS</span>
+          <span className={styles.sectionLabel}>Submitted Documents</span>
           <div className={styles.documentPills}>
-            {intern.submittedDocuments.map((doc, idx) => (
-              <div key={idx} className={styles.docPill} title={`View ${doc}`}>
+            {intern.submittedDocuments.map((doc) => (
+              <div key={doc} className={styles.docPill} title={`View ${doc}`}>
                 <FileText size={14} />
                 <span>{doc}</span>
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Internship Status Section */}
-        <div className={styles.sectionGroup}>
-          <span className={styles.sectionLabel}>Internship Status</span>
-          <div className={`${styles.statusPill} ${getStatusClass(intern.status)}`}>
-            <span>{intern.status}</span>
-          </div>
-        </div>
-
-        {/* Candidate Information */}
-        <div className={styles.candidateInfo}>
-          <h2 id="intern-modal-title" className={styles.candidateName}>
-            {intern.studentName}
-          </h2>
-          <p className={styles.candidateDetail}>{intern.email}</p>
-          <p className={styles.candidateDetail}>{intern.phone}</p>
-        </div>
-
-        {/* Extra Metadata */}
-        <div className={styles.metaGrid}>
-          <div>
-            <strong>Matched Employer:</strong> {intern.matchedEmployer}
-          </div>
-          <div>
-            <strong>Accepted Role:</strong> {intern.acceptedRole}
-          </div>
-          <div>
-            <strong>Placement Date:</strong> {intern.dateOfPlacement}
-          </div>
-          {intern.school && (
-            <div>
-              <strong>School:</strong> {intern.school}
-            </div>
-          )}
         </div>
       </div>
     </div>

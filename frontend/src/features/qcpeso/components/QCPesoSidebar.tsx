@@ -8,7 +8,6 @@ import {
   Grid2X2,
   LogOut,
   Menu,
-  Search,
   Settings,
   User,
   Users,
@@ -30,8 +29,8 @@ const MOCK_USER = {
 
 function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
   const [search, setSearch] = useState('')
-  const [manageUsersOpen, setManageUsersOpen] = useState(true)
-  const [monitorUsersOpen, setMonitorUsersOpen] = useState(true)
+  const [manageUsersOpen, setManageUsersOpen] = useState(false)
+  const [monitorUsersOpen, setMonitorUsersOpen] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -76,7 +75,6 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
       </div>
 
       <label className={styles.searchLabel}>
-        <Search size={18} aria-hidden="true" />
         <span className={styles.srOnly}>Search navigation</span>
         <input
           type="search"
@@ -104,16 +102,18 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
           matchesSearch('Manage Applications') ||
           matchesSearch('Manage Employers')) && (
           <div>
-            <div
+            <button
+              type="button"
               className={styles.navGroupHeader}
               onClick={() => setManageUsersOpen((prev) => !prev)}
+              aria-expanded={manageUsersOpen}
             >
               <div className={styles.navGroupTitle}>
                 <User size={20} aria-hidden="true" />
                 <span>Manage Users</span>
               </div>
               {manageUsersOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-            </div>
+            </button>
 
             {manageUsersOpen && (
               <div className={styles.navSubList}>
@@ -151,16 +151,18 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
           matchesSearch('Monitor Interns') ||
           matchesSearch('Monitor Attendance')) && (
           <div>
-            <div
+            <button
+              type="button"
               className={styles.navGroupHeader}
               onClick={() => setMonitorUsersOpen((prev) => !prev)}
+              aria-expanded={monitorUsersOpen}
             >
               <div className={styles.navGroupTitle}>
                 <Users size={20} aria-hidden="true" />
                 <span>Monitor Users</span>
               </div>
               {monitorUsersOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-            </div>
+            </button>
 
             {monitorUsersOpen && (
               <div className={styles.navSubList}>
@@ -190,8 +192,10 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
                 )}
                 {matchesSearch('Monitor Attendance') && (
                   <NavLink
-                    className={styles.subNavItem}
-                    to="/qcpeso/monitor/referrals"
+                    className={({ isActive }) =>
+                      `${styles.subNavItem} ${isActive ? styles.active : ''}`
+                    }
+                    to="/qcpeso/monitor/attendance"
                     onClick={onClose}
                     tabIndex={isOpen ? 0 : -1}
                   >
@@ -205,8 +209,10 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
 
         {matchesSearch('Reports and Documents') && (
           <NavLink
-            className={styles.navItem}
-            to="/qcpeso/monitor/referrals"
+            className={({ isActive }) =>
+              `${styles.navItem} ${isActive ? styles.active : ''}`
+            }
+            to="/qcpeso/reports-documents"
             onClick={onClose}
             tabIndex={isOpen ? 0 : -1}
           >
@@ -217,8 +223,10 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
 
         {matchesSearch('Settings') && (
           <NavLink
-            className={styles.navItem}
-            to="/qcpeso/monitor/referrals"
+            className={({ isActive }) =>
+              `${styles.navItem} ${isActive ? styles.active : ''}`
+            }
+            to="/qcpeso/settings"
             onClick={onClose}
             tabIndex={isOpen ? 0 : -1}
           >
@@ -227,15 +235,6 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
           </NavLink>
         )}
 
-        <button
-          className={styles.logoutBtn}
-          type="button"
-          onClick={logout}
-          tabIndex={isOpen ? 0 : -1}
-        >
-          <LogOut size={20} aria-hidden="true" />
-          <span>Log out</span>
-        </button>
       </nav>
 
       <div 
@@ -256,6 +255,16 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
         </div>
         <ExternalLink size={16} aria-hidden="true" className={styles.externalIcon} />
       </div>
+
+      <button
+        className={styles.logoutBtn}
+        type="button"
+        onClick={logout}
+        tabIndex={isOpen ? 0 : -1}
+      >
+        <LogOut size={20} aria-hidden="true" />
+        <span>Log out</span>
+      </button>
     </aside>
   )
 }
