@@ -1,0 +1,368 @@
+.pageWrapper {
+  background-color: #160e6f;
+  padding: 32px;
+  min-height: 100vh;
+  font-family: 'Inter', system-ui, sans-serif;
+  display: flex;
+  justify-content: center;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-size: 1.1rem;
+}
+
+.mainContainer {
+  background-color: #ffffff;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 950px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.banner {
+  background: linear-gradient(110deg, #fdd116 0%, #8a6c82 45%, #160e6f 100%);
+  border-radius: 8px;
+  padding: 32px 40px;
+  position: relative;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 240px;
+}
+
+.editProfileBtn {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  background-color: #ffffff;
+  color: #160e6f;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  transition: opacity 0.2s;
+}
+
+.editProfileBtn:hover {
+  opacity: 0.9;
+}
+
+.asterisk {
+  color: #cc0001;
+  margin-left: 2px;
+}
+
+.bannerContent {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.avatarContainer {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  cursor: pointer;
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
+  background-color: #ffffff;
+  border-radius: 50%;
+  border: 1px solid #e0e0e0;
+}
+
+.avatarEditBadge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background-color: #ffffff;
+  color: #160e6f;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border: 1px solid #eee;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.avatarContainer:hover .avatarEditBadge {
+  transform: scale(1.1);
+}
+
+.bannerInfo h2 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 1.6rem;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.2px;
+}
+
+.bannerInfo p {
+  font-family: 'Inter', sans-serif;
+  margin: 0 0 2px 0;
+  font-size: 0.85rem;
+  opacity: 0.95;
+}
+
+.contentArea {
+  padding: 16px 28px 40px 28px;
+}
+
+.tabsContainer {
+  border-bottom: 1px solid rgba(22, 14, 111, 0.2);
+  margin-bottom: 32px;
+}
+
+.tabs {
+  display: flex;
+  gap: 32px;
+}
+
+.tab {
+  background: none;
+  border: none;
+  padding: 12px 0;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #160e6f;
+  cursor: pointer;
+  position: relative;
+  opacity: 0.6;
+}
+
+.tab.active {
+  opacity: 1;
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #160e6f;
+}
+
+.sectionBlock {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.sectionHeader {
+  margin-bottom: 32px;
+}
+
+.sectionHeader h3 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: #160e6f;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.headerEditIcon {
+  color: #160e6f;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  margin-left: 4px;
+}
+
+.subtitle {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  color: #160e6f;
+  margin: 0;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid rgba(22, 14, 111, 0.1);
+  margin: 32px 0 0 0;
+}
+
+.aboutGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.infoItem label {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #160e6f;
+}
+
+.infoItem span {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #160e6f;
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(22, 14, 111, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+}
+
+.modalContent {
+  background: #ffffff;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 650px;
+  padding: 32px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.modalHeader h3 {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  color: #160e6f;
+  font-size: 1.4rem;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #160e6f;
+  cursor: pointer;
+}
+
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formGroup label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #160e6f;
+  font-family: 'Poppins', sans-serif;
+}
+
+.formGroup input {
+  padding: 10px 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-family: 'Inter', sans-serif;
+  color: #333;
+  outline: none;
+}
+
+.formGroup input:focus {
+  border-color: #160e6f;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.cancelBtn, .saveBtn {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancelBtn {
+  background: #ffffff;
+  border: 1px solid #160e6f;
+  color: #160e6f;
+}
+
+.cancelBtn:hover {
+  background: #f8f9fa;
+}
+
+.saveBtn {
+  background: #160e6f;
+  border: 1px solid #160e6f;
+  color: #ffffff;
+}
+
+.saveBtn:hover {
+  background: #0f0a4f;
+}
+
+@media (max-width: 600px) {
+  .aboutGrid {
+    grid-template-columns: 1fr;
+  }
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}

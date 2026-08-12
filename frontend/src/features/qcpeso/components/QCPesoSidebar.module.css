@@ -170,11 +170,18 @@
   font-size: 15px;
   font-weight: 400;
   text-decoration: none;
-  transition: background 150ms, color 150ms;
+  transition: all 150ms ease;
 }
 
 .navItem:hover {
   background: rgba(255, 255, 255, 0.12);
+}
+
+.navItem.active {
+  background: #ffffff;
+  color: #160e6f;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .subNavItem {
@@ -208,8 +215,20 @@
   justify-content: space-between;
   gap: 12px;
   margin-top: auto;
-  padding: 12px 4px 4px;
+  padding: 12px;
   width: 100%;
+  border-radius: 8px;
+  transition: all 150ms ease;
+}
+
+.userSummary:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.userSummaryActive {
+  background: #ffffff;
+  color: #160e6f;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .userLeft {
@@ -232,6 +251,13 @@
   font-weight: 700;
   flex-shrink: 0;
   border: 2px solid rgba(255, 255, 255, 0.8);
+  transition: all 150ms ease;
+}
+
+.userSummaryActive .avatar {
+  color: #ffffff;
+  background: #160e6f;
+  border-color: #160e6f;
 }
 
 .userText {
@@ -247,6 +273,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: color 150ms ease;
+}
+
+.userSummaryActive .userName {
+  color: #160e6f;
+  font-weight: 600;
 }
 
 .userEmail {
@@ -256,6 +288,20 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: color 150ms ease;
+}
+
+.userSummaryActive .userEmail {
+  color: rgba(22, 14, 111, 0.7);
+}
+
+.externalIcon {
+  color: #ffffff;
+  transition: color 150ms ease;
+}
+
+.userSummaryActive .externalIcon {
+  color: #160e6f;
 }
 
 .logoutBtn {
