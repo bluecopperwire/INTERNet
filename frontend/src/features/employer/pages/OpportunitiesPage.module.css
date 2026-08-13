@@ -1,0 +1,293 @@
+.pageContainer {
+  min-height: 100vh;
+  background-color: #f7f9fc; /* Standard off-white background */
+  font-family: 'Poppins', sans-serif;
+  color: #160e6f;
+}
+
+.mainContent {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 48px;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.filterWrapper {
+  position: relative;
+}
+
+.filterBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: auto;
+  height: 48px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid #160e6f;
+  background-color: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filterBtnText {
+  color: #160e6f;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.filterBtn:hover {
+  background-color: rgba(22, 14, 111, 0.05);
+}
+
+.filterMenuRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 16px;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.filterItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filterLabel {
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #160e6f;
+}
+
+.filterSelect {
+  border: 1px solid #160e6f;
+  border-radius: 4px;
+  padding: 6px 10px;
+  color: #160e6f;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  background: #ffffff;
+  outline: none;
+  cursor: pointer;
+}
+
+.createBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #160e6f;
+  color: #ffffff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.createBtn:hover {
+  opacity: 0.9;
+}
+
+.cardsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.noData {
+  text-align: center;
+  padding: 48px;
+  color: #666;
+  font-size: 16px;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #160e6f;
+}
+
+.opportunityCard {
+  background: #ffffff;
+  border: 1px solid #160e6f;
+  border-radius: 8px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.leftCol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.title {
+  margin: 0 0 4px 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #160e6f;
+}
+
+.detail {
+  margin: 0;
+  font-size: 16px;
+  color: #160e6f;
+}
+
+.label {
+  font-weight: 700;
+}
+
+.rightCol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: right;
+}
+
+.statusText,
+.applicantsText {
+  margin: 0;
+  font-size: 16px;
+  color: #160e6f;
+}
+
+.cardActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.actionBtn {
+  background-color: #160e6f;
+  color: #ffffff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.actionBtn:hover {
+  opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+  .mainContent {
+    padding: 16px 24px;
+  }
+
+  .cardHeader {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .rightCol {
+    text-align: left;
+  }
+
+  .cardActions {
+    flex-direction: column;
+  }
+
+  .actionBtn {
+    width: 100%;
+  }
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 32px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.modalTitle {
+  margin: 0 0 16px 0;
+  color: #160e6f;
+  font-size: 24px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.modalText {
+  margin: 0 0 24px 0;
+  color: #333;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.cancelBtn,
+.confirmDeleteBtn {
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.2s;
+}
+
+.cancelBtn {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.confirmDeleteBtn {
+  background-color: #e53e3e;
+  color: #ffffff;
+}
+
+.cancelBtn:hover,
+.confirmDeleteBtn:hover {
+  opacity: 0.9;
+}

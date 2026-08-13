@@ -1,0 +1,243 @@
+.pageContainer {
+  min-height: 100vh;
+  background-color: #ffffff;
+  font-family: 'Poppins', sans-serif;
+  color: #160e6f;
+  padding: 48px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.loading {
+  text-align: center;
+  padding: 48px;
+  font-size: 18px;
+}
+
+.header {
+  margin-bottom: 32px;
+}
+
+.backBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #160e6f;
+  font-size: 20px;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  padding: 0;
+}
+
+.backBtn:hover {
+  opacity: 0.8;
+}
+
+.formContainer {
+  width: 100%;
+}
+
+.pageTitle {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0 0 40px 0;
+  color: #160e6f;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  margin-bottom: 48px;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field label {
+  font-size: 16px;
+  font-weight: 700;
+  color: #160e6f;
+}
+
+.field input,
+.field textarea {
+  padding: 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  color: #333;
+  outline: none;
+  background: #ffffff;
+  transition: border-color 0.2s;
+}
+
+.field input:focus,
+.field textarea:focus {
+  border-color: #160e6f;
+}
+
+.field input::placeholder,
+.field textarea::placeholder {
+  color: #b0b0b0;
+}
+
+.dateInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.dateInputWrapper input {
+  width: 100%;
+  padding-right: 48px;
+}
+
+.dateInputWrapper input::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  cursor: pointer;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.dateIcon {
+  position: absolute;
+  right: 16px;
+  pointer-events: none;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.cancelBtn,
+.saveBtn {
+  padding: 12px 32px;
+  border-radius: 4px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.cancelBtn {
+  background-color: transparent;
+  color: #160e6f;
+  border: 1px solid #160e6f;
+}
+
+.saveBtn {
+  background-color: #160e6f;
+  color: #ffffff;
+  border: 1px solid #160e6f;
+}
+
+.cancelBtn:hover,
+.saveBtn:hover {
+  opacity: 0.9;
+}
+
+.cancelBtn:disabled,
+.saveBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .pageContainer {
+    padding: 24px;
+  }
+  
+  .formGrid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  
+  .formActions {
+    flex-direction: column-reverse;
+  }
+  
+  .cancelBtn,
+  .saveBtn {
+    width: 100%;
+  }
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 32px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.modalTitle {
+  margin: 0 0 16px 0;
+  color: #160e6f;
+  font-size: 24px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.modalText {
+  margin: 0 0 24px 0;
+  color: #333;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: center;
+}
+
+.okBtn {
+  padding: 10px 32px;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  background-color: #160e6f;
+  color: #ffffff;
+  transition: opacity 0.2s;
+}
+
+.okBtn:hover {
+  opacity: 0.9;
+}
