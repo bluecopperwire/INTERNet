@@ -1,0 +1,289 @@
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 32px;
+  max-width: 900px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modalTitle {
+  margin: 0;
+  color: #160e6f;
+  font-size: 28px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+}
+
+.closeBtn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid #e0e0e0;
+  margin: 0;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #160e6f;
+  border-radius: 4px;
+  padding: 8px 12px;
+  width: 300px;
+}
+
+.searchBox input {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  color: #160e6f;
+}
+
+.searchBox input::placeholder {
+  color: #160e6f;
+}
+
+.filterBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid #160e6f;
+  border-radius: 4px;
+  padding: 8px 16px;
+  color: #160e6f;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.filterBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid #160e6f;
+  border-radius: 4px;
+  padding: 8px 16px;
+  color: #160e6f;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.filterMenuRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.filterWrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filterLabel {
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #160e6f;
+}
+
+.filterSelect {
+  border: 1px solid #160e6f;
+  border-radius: 4px;
+  padding: 6px 10px;
+  color: #160e6f;
+  font-family: 'Poppins', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  background: #ffffff;
+  outline: none;
+  cursor: pointer;
+}
+
+.tableContainer {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #160e6f;
+  border-radius: 4px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #160e6f;
+  border-bottom: 1px solid #160e6f;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #333;
+  border-bottom: 1px solid #f0f0f0;
+  background-color: #f0f0f0; /* Like the screenshot row styles */
+  margin-bottom: 4px;
+}
+
+/* For spacing out the rows like in the image, we can use empty rows or display: block tricks. But a simple background with border-bottom is fine for mockup. */
+.table tbody tr {
+  border-bottom: 4px solid #ffffff; /* create gap between rows */
+}
+.table tbody tr:nth-child(even) {
+  background-color: #f8fafc;
+}
+.table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 11px;
+  border-radius: 999px;
+  color: #ffa518;
+  background: #fff4e6;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.statusPill.accepted {
+  color: #34cba7;
+  background: #eaf9f5;
+}
+
+.statusPill.rejected {
+  color: #e25555;
+  background: #fff0ef;
+}
+
+.statusPill.underReview {
+  color: #6557a8;
+  background: #f0eef9;
+}
+
+/* Pagination */
+.paginationRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.leftControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.viewLabel, .perPageLabel {
+  font-size: 14px;
+  color: #160e6f;
+  font-weight: 600;
+}
+
+.viewSelectBox {
+  border: 1px solid #160e6f;
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+
+.viewSelect {
+  border: none;
+  outline: none;
+  color: #160e6f;
+  font-weight: 600;
+  background: transparent;
+  cursor: pointer;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pageBtn {
+  background: transparent;
+  border: none;
+  color: #160e6f;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  min-width: 32px;
+}
+
+.pageBtn.active {
+  background: #d9d9ea;
+}
+
+.pageBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pageInfo {
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #160e6f;
+}
