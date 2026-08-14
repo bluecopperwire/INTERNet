@@ -1,0 +1,262 @@
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 312px;
+  max-width: 100vw;
+  height: 100vh;
+  padding: 24px 16px;
+  background-color: #160e6f;
+  box-shadow: 0px 4px 40px 0 rgb(0 0 0 / 0.50);
+  overflow-y: auto;
+  color: #ffffff;
+  transform: translateX(-110%);
+  visibility: hidden;
+  transition: transform 220ms ease, visibility 220ms;
+}
+
+.sidebar.open {
+  transform: translateX(0);
+  visibility: visible;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logoBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 6px;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.logoBox img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.brandName {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.headerActions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 4px;
+  border: 0;
+  border-radius: 6px;
+  color: #ffffff;
+  background: transparent;
+  cursor: pointer;
+  transition: background 150ms;
+}
+
+.headerActions button:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.searchLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 42px;
+  padding: 0 14px;
+  border: 1px solid #ffffff;
+  border-radius: 8px;
+  background: #160e6f;
+}
+
+.searchLabel svg {
+  width: 18px;
+  height: 18px;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.searchLabel input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+  font-size: 15px;
+  outline: none;
+}
+
+.searchLabel input::placeholder {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 400;
+  text-decoration: none;
+  transition: background 150ms, color 150ms;
+}
+
+.navItem:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.navSubItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px 10px 36px;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 400;
+  text-decoration: none;
+  transition: background 150ms, color 150ms;
+}
+
+.navSubItem:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.navActiveItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #160e6f;
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.navActiveItem svg {
+  color: #160e6f;
+}
+
+.userSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding: 12px 4px 4px;
+  width: 100%;
+}
+
+.userLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  color: #160e6f;
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+.userText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.userName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #ffffff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.userEmail {
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.8);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logoutBtn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: background 150ms;
+}
+
+.logoutBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

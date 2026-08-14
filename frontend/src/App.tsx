@@ -26,6 +26,7 @@ import { CreateOpportunityPage } from './features/employer/pages/CreateOpportuni
 import { ApplicantsPage } from './features/employer/pages/ApplicantsPage'
 import { CompanyProfilePage } from './features/employer/pages/CompanyProfilePage'
 import EmployerLayout from './features/employer/components/EmployerLayout'
+import AdminLayout from './features/admin/components/AdminLayout'
 
 function App() {
   return (
@@ -84,6 +85,13 @@ function App() {
           <Route path="opportunities/:id/edit" element={<CreateOpportunityPage />} />
           <Route path="applicants" element={<ApplicantsPage />} />
           <Route path="*" element={<Navigate to="/employer/profile" replace />} />
+        </Route>
+
+        {/* System Administrator Routes */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Navigate to="/admin/backups-maintenance" replace />} />
+          <Route path="backups-maintenance" element={<BackupsMaintenancePage />} />
+          <Route path="*" element={<Navigate to="/admin/backups-maintenance" replace />} />
         </Route>
       </Routes>
     </BrowserRouter>
