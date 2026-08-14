@@ -31,3 +31,23 @@ export interface Applicant {
   availabilityDate?: string;
   notes?: string;
 }
+
+export interface CompanyProfile {
+  companyName: string;
+  location: string;
+  industry: string;
+  about: string;
+  verified: boolean;
+  verifiedBy: string;
+  dateVerified: string;
+  verificationId: string;
+  contactPerson: string;
+  email: string;
+  contactNumber: string;
+  website: string;
+  yearEstablished: string;
+  companySize: string;
+  logoUrl?: string;
+  bannerUrl?: string;
+}
+

@@ -1,4 +1,4 @@
-import type { Opportunity, Applicant } from '../types/employer.types';
+import type { Opportunity, Applicant, CompanyProfile } from '../types/employer.types';
 
 const mockOpportunities: Opportunity[] = [
   { id: '1', title: 'IT Intern', department: 'IT Department', slots: 5, duration: 200, status: 'Active', applicants: 24 },
@@ -7,7 +7,35 @@ const mockOpportunities: Opportunity[] = [
   { id: '4', title: 'Finance Intern', department: 'Finance', slots: 1, duration: 250, status: 'Active', applicants: 8 },
 ];
 
+let mockCompanyProfile: CompanyProfile = {
+  companyName: 'ABC Company',
+  location: 'Quezon City, Philippines',
+  industry: 'Information Technology',
+  about: 'Short description here short description here short description here short description here',
+  verified: true,
+  verifiedBy: 'QC PESO',
+  dateVerified: 'July 19, 2026',
+  verificationId: 'QCP-2026-1234',
+  contactPerson: 'Juan Dela Cruz',
+  email: 'abccompany.hr@gmail.com',
+  contactNumber: '(02)1234-5678',
+  website: 'abc.company.com',
+  yearEstablished: '2015',
+  companySize: '51-200 employees',
+};
+
 export const employerService = {
+  getCompanyProfile: async (): Promise<CompanyProfile> => {
+    return new Promise((resolve) => setTimeout(() => resolve({ ...mockCompanyProfile }), 300));
+  },
+  updateCompanyProfile: async (updated: Partial<CompanyProfile>): Promise<CompanyProfile> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        mockCompanyProfile = { ...mockCompanyProfile, ...updated };
+        resolve({ ...mockCompanyProfile });
+      }, 300);
+    });
+  },
   getOpportunities: async (): Promise<Opportunity[]> => {
     return new Promise((resolve) => setTimeout(() => resolve([...mockOpportunities]), 500));
   },
@@ -32,7 +60,13 @@ export const employerService = {
     })
   },
   deleteOpportunity: async (id: string): Promise<void> => {
-    return new Promise((resolve) => setTimeout(resolve, 500));
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const index = mockOpportunities.findIndex((o) => o.id === id)
+        if (index > -1) mockOpportunities.splice(index, 1)
+        resolve()
+      }, 500)
+    });
   },
   getAllApplicants: async (): Promise<Applicant[]> => {
     return new Promise((resolve) => {
@@ -85,3 +119,4 @@ export const employerService = {
     })
   }
 };
+
