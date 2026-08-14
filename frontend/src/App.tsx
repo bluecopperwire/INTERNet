@@ -23,6 +23,8 @@ import { QCPesoProfilePage } from './features/qcpeso/pages/QCPesoProfilePage'
 import { OpportunitiesPage } from './features/employer/pages/OpportunitiesPage'
 import { CreateOpportunityPage } from './features/employer/pages/CreateOpportunityPage'
 import { ApplicantsPage } from './features/employer/pages/ApplicantsPage'
+import { CompanyProfilePage } from './features/employer/pages/CompanyProfilePage'
+import EmployerLayout from './features/employer/components/EmployerLayout'
 
 function App() {
   return (
@@ -71,13 +73,20 @@ function App() {
         </Route>
 
         {/* Employer Routes */}
-        <Route path="/employer/opportunities" element={<OpportunitiesPage />} />
-        <Route path="/employer/opportunities/create" element={<CreateOpportunityPage />} />
-        <Route path="/employer/opportunities/:id/edit" element={<CreateOpportunityPage />} />
-        <Route path="/employer/applicants" element={<ApplicantsPage />} />
+        <Route path="/employer" element={<EmployerLayout />}>
+          <Route index element={<Navigate to="/employer/profile" replace />} />
+          <Route path="dashboard" element={<Navigate to="/employer/profile" replace />} />
+          <Route path="profile" element={<CompanyProfilePage />} />
+          <Route path="opportunities" element={<OpportunitiesPage />} />
+          <Route path="opportunities/create" element={<CreateOpportunityPage />} />
+          <Route path="opportunities/:id/edit" element={<CreateOpportunityPage />} />
+          <Route path="applicants" element={<ApplicantsPage />} />
+          <Route path="*" element={<Navigate to="/employer/profile" replace />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   )
 }
 
 export default App
+
