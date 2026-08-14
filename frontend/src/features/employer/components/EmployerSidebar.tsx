@@ -40,7 +40,6 @@ export function EmployerSidebar({ isOpen, onClose }: EmployerSidebarProps) {
       id="employer-sidebar"
       aria-hidden={!isOpen}
     >
-      {/* Header */}
       <div className={styles.header}>
         <div className={styles.brand}>
           <div className={styles.logoBox}>
@@ -58,7 +57,6 @@ export function EmployerSidebar({ isOpen, onClose }: EmployerSidebarProps) {
         </button>
       </div>
 
-      {/* Search Input */}
       <div className={styles.searchWrapper}>
         <Search size={18} color="rgba(255, 255, 255, 0.8)" />
         <input
@@ -71,11 +69,11 @@ export function EmployerSidebar({ isOpen, onClose }: EmployerSidebarProps) {
         />
       </div>
 
-      {/* Main Navigation Links */}
       <nav className={styles.navigation} aria-label="Employer Navigation">
         <div className={styles.navSection}>
           {matchesSearch('Dashboard') && (
             <NavLink
+              end
               className={({ isActive }) =>
                 `${styles.navItem} ${isActive ? styles.active : ''}`
               }
