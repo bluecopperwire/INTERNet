@@ -20,6 +20,7 @@ import ReportsDocumentsPage from './features/qcpeso/pages/ReportsDocumentsPage'
 import QCPesoSettingsPage from './features/qcpeso/pages/QCPesoSettingsPage'
 import { QCPesoDashboardPage } from './features/qcpeso/pages/QCPesoDashboardPage'
 import { QCPesoProfilePage } from './features/qcpeso/pages/QCPesoProfilePage'
+import { EmployerDashboardPage } from './features/employer/pages/EmployerDashboardPage'
 import { OpportunitiesPage } from './features/employer/pages/OpportunitiesPage'
 import { CreateOpportunityPage } from './features/employer/pages/CreateOpportunityPage'
 import { ApplicantsPage } from './features/employer/pages/ApplicantsPage'
@@ -33,7 +34,6 @@ function App() {
         <Route path="/" element={<LoginPage />} />
         <Route path="/sign-up/:role" element={<SignUpPage />} />
 
-        {/* Intern Seeker Routes */}
         <Route path="/intern-seeker" element={<InternSeekerLayout />}>
           <Route index element={<InternshipPortalPage />} />
           <Route path="search" element={<InternshipSearchPage />} />
@@ -50,38 +50,33 @@ function App() {
         <Route path="/terms-of-service" element={<main aria-label="Terms of Service" />} />
         <Route path="/privacy-policy" element={<main aria-label="Privacy Policy" />} />
 
-        {/* QCPESO Admin & Monitor Routes */}
         <Route path="/qcpeso" element={<QCPesoLayout />}>
           <Route index element={<QCPesoDashboardPage />} />
           <Route path="dashboard" element={<QCPesoDashboardPage />} />
 
-          {/* Profile Route */}
           <Route path="profile" element={<QCPesoProfilePage />} />
 
           <Route path="manage/applications" element={<ManageApplicationsPage />} />
           <Route path="manage/employers" element={<ManageEmployersPage />} />
 
-          {/* Monitor Routes */}
           <Route path="monitor/referrals" element={<MonitorReferralsPage />} />
           <Route path="monitor/interns" element={<MonitorInternsPage />} />
           <Route path="monitor/attendance" element={<MonitorAttendancePage />} />
           <Route path="reports-documents" element={<ReportsDocumentsPage />} />
           <Route path="settings" element={<QCPesoSettingsPage />} />
 
-          {/* Fallback to dashboard */}
           <Route path="*" element={<Navigate to="/qcpeso/dashboard" replace />} />
         </Route>
 
-        {/* Employer Routes */}
         <Route path="/employer" element={<EmployerLayout />}>
-          <Route index element={<Navigate to="/employer/profile" replace />} />
-          <Route path="dashboard" element={<Navigate to="/employer/profile" replace />} />
+          <Route index element={<EmployerDashboardPage />} />
+          <Route path="dashboard" element={<EmployerDashboardPage />} />
           <Route path="profile" element={<CompanyProfilePage />} />
           <Route path="opportunities" element={<OpportunitiesPage />} />
           <Route path="opportunities/create" element={<CreateOpportunityPage />} />
           <Route path="opportunities/:id/edit" element={<CreateOpportunityPage />} />
           <Route path="applicants" element={<ApplicantsPage />} />
-          <Route path="*" element={<Navigate to="/employer/profile" replace />} />
+          <Route path="*" element={<Navigate to="/employer/dashboard" replace />} />
         </Route>
       </Routes>
     </BrowserRouter>
@@ -89,4 +84,3 @@ function App() {
 }
 
 export default App
-
