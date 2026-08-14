@@ -18,6 +18,7 @@ import MonitorInternsPage from './features/qcpeso/pages/MonitorInternsPage'
 import MonitorAttendancePage from './features/qcpeso/pages/MonitorAttendancePage'
 import ReportsDocumentsPage from './features/qcpeso/pages/ReportsDocumentsPage'
 import QCPesoSettingsPage from './features/qcpeso/pages/QCPesoSettingsPage'
+import BackupsMaintenancePage from './features/qcpeso/pages/BackupsMaintenancePage'
 import { QCPesoDashboardPage } from './features/qcpeso/pages/QCPesoDashboardPage'
 import { QCPesoProfilePage } from './features/qcpeso/pages/QCPesoProfilePage'
 import { OpportunitiesPage } from './features/employer/pages/OpportunitiesPage'
@@ -66,6 +67,7 @@ function App() {
           <Route path="monitor/interns" element={<MonitorInternsPage />} />
           <Route path="monitor/attendance" element={<MonitorAttendancePage />} />
           <Route path="reports-documents" element={<ReportsDocumentsPage />} />
+          <Route path="backups-maintenance" element={<BackupsMaintenancePage />} />
           <Route path="settings" element={<QCPesoSettingsPage />} />
 
           {/* Fallback to dashboard */}

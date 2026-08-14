@@ -131,3 +131,16 @@ export interface QCPesoProfile {
   qcpesoPosition: string;
   city: string;
 }
+
+export type BackupTriggerType = 'Automated' | 'Manual'
+export type BackupStatus = 'Successful' | 'In Progress' | 'Failed'
+
+export interface BackupRecord {
+  id: string
+  filename: string
+  timestamp: string
+  triggerType: BackupTriggerType
+  fileSize: string
+  status: BackupStatus
+  downloadUrl?: string
+}
