@@ -20,6 +20,7 @@ import ReportsDocumentsPage from './features/qcpeso/pages/ReportsDocumentsPage'
 import QCPesoSettingsPage from './features/qcpeso/pages/QCPesoSettingsPage'
 import { QCPesoDashboardPage } from './features/qcpeso/pages/QCPesoDashboardPage'
 import { QCPesoProfilePage } from './features/qcpeso/pages/QCPesoProfilePage'
+import { AuditLogsPage } from './features/admin/pages/AuditLogsPage'
 
 function App() {
   return (
@@ -27,7 +28,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/sign-up/:role" element={<SignUpPage />} />
-        
+        <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
         {/* Intern Seeker Routes */}
         <Route path="/intern-seeker" element={<InternSeekerLayout />}>
           <Route index element={<InternshipPortalPage />} />
