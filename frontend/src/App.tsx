@@ -12,21 +12,14 @@ import ApplicationStatusPage from './features/intern-seeker/pages/ApplicationSta
 import AttendancePage from './features/intern-seeker/pages/AttendancePage'
 import QCPesoLayout from './features/qcpeso/components/QCPesoLayout'
 import MonitorReferralsPage from './features/qcpeso/pages/MonitorReferralsPage'
-import ManageApplicationsPage from './features/qcpeso/pages/ManageApplicationsPage'
-import ManageEmployersPage from './features/qcpeso/pages/ManageEmployersPage'
 import MonitorInternsPage from './features/qcpeso/pages/MonitorInternsPage'
-import MonitorAttendancePage from './features/qcpeso/pages/MonitorAttendancePage'
-import ReportsDocumentsPage from './features/qcpeso/pages/ReportsDocumentsPage'
-import QCPesoSettingsPage from './features/qcpeso/pages/QCPesoSettingsPage'
-import BackupsMaintenancePage from './features/qcpeso/pages/BackupsMaintenancePage'
-import { QCPesoDashboardPage } from './features/qcpeso/pages/QCPesoDashboardPage'
-import { QCPesoProfilePage } from './features/qcpeso/pages/QCPesoProfilePage'
 import { OpportunitiesPage } from './features/employer/pages/OpportunitiesPage'
 import { CreateOpportunityPage } from './features/employer/pages/CreateOpportunityPage'
 import { ApplicantsPage } from './features/employer/pages/ApplicantsPage'
 import { CompanyProfilePage } from './features/employer/pages/CompanyProfilePage'
 import EmployerLayout from './features/employer/components/EmployerLayout'
 import AdminLayout from './features/admin/components/AdminLayout'
+import BackupsMaintenancePage from './features/admin/pages/BackupsMaintenancePage'
 
 function App() {
   return (
@@ -52,27 +45,12 @@ function App() {
         <Route path="/terms-of-service" element={<main aria-label="Terms of Service" />} />
         <Route path="/privacy-policy" element={<main aria-label="Privacy Policy" />} />
 
-        {/* QCPESO Admin & Monitor Routes */}
+        {/* QCPESO Monitor Routes */}
         <Route path="/qcpeso" element={<QCPesoLayout />}>
-          <Route index element={<QCPesoDashboardPage />} />
-          <Route path="dashboard" element={<QCPesoDashboardPage />} />
-
-          {/* Profile Route */}
-          <Route path="profile" element={<QCPesoProfilePage />} />
-
-          <Route path="manage/applications" element={<ManageApplicationsPage />} />
-          <Route path="manage/employers" element={<ManageEmployersPage />} />
-
-          {/* Monitor Routes */}
+          <Route index element={<Navigate to="/qcpeso/monitor/referrals" replace />} />
           <Route path="monitor/referrals" element={<MonitorReferralsPage />} />
           <Route path="monitor/interns" element={<MonitorInternsPage />} />
-          <Route path="monitor/attendance" element={<MonitorAttendancePage />} />
-          <Route path="reports-documents" element={<ReportsDocumentsPage />} />
-          <Route path="backups-maintenance" element={<BackupsMaintenancePage />} />
-          <Route path="settings" element={<QCPesoSettingsPage />} />
-
-          {/* Fallback to dashboard */}
-          <Route path="*" element={<Navigate to="/qcpeso/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/qcpeso/monitor/referrals" replace />} />
         </Route>
 
         {/* Employer Routes */}
@@ -99,4 +77,3 @@ function App() {
 }
 
 export default App
-
