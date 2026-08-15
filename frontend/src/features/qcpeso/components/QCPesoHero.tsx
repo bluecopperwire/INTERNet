@@ -1,26 +1,22 @@
 import headerImage from '../../../assets/requirements-header-image.png'
-import qcLogos from '../../../assets/qc-logos.svg'
 import styles from './QCPesoHero.module.css'
 
 interface QCPesoHeroProps {
-  title: string
-  subtitle: string
-  comfortableSpacing?: boolean
+  title?: string
+  subtitle?: string
 }
 
-function QCPesoHero({ title, subtitle, comfortableSpacing = false }: QCPesoHeroProps) {
+export function QCPesoHero({
+  title = 'Monitor User',
+  subtitle = 'QCPESO Referral Monitoring',
+}: QCPesoHeroProps) {
   return (
-    <header className={styles.hero}>
-      <img src={headerImage} alt="" className={styles.background} />
-      <div className={styles.overlay} />
-      <img
-        className={styles.logos}
-        src={qcLogos}
-        alt="Quezon City Government and QC PESO"
-      />
-      <div className={`${styles.content} ${comfortableSpacing ? styles.comfortableSpacing : ''}`}>
-        <h1>{title}</h1>
-        <p>{subtitle}</p>
+    <header className={styles.heroHeader}>
+      <img src={headerImage} alt="" className={styles.heroBgImage} />
+      <div className={styles.heroOverlay} />
+      <div className={styles.heroContent}>
+        <h1 className={styles.heroTitle}>{title}</h1>
+        <p className={styles.heroSubtitle}>{subtitle}</p>
       </div>
     </header>
   )
