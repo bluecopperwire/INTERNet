@@ -1,15 +1,16 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react'
 import {
-  ArrowDown,
   ArrowLeft,
   ArrowRight,
   ChevronDown,
   ChevronUp,
   Search,
-  Star,
 } from 'lucide-react'
 import headerImage from '../../../assets/header-image.svg'
 import qcLogos from '../../../assets/qc-logos.svg'
+import carouselSlideOne from '../../../assets/intern-seeker-carousel/slide-1.png'
+import carouselSlideTwo from '../../../assets/intern-seeker-carousel/slide-2.png'
+import carouselSlideThree from '../../../assets/intern-seeker-carousel/slide-3.png'
 import { useNavigate } from 'react-router-dom'
 import { useInternshipPortal } from '../hooks/useInternshipPortal'
 import type { InternshipOpportunity, PartnerCompany } from '../types/internship.types'
@@ -17,6 +18,11 @@ import OpportunityDetail from '../components/OpportunityDetail'
 import styles from './InternshipPortalPage.module.css'
 
 const SLIDE_COUNT = 3
+const CAROUSEL_SLIDES = [
+  { src: carouselSlideOne, alt: 'INTERNet platform announcement' },
+  { src: carouselSlideTwo, alt: 'INTERNet platform announcement' },
+  { src: carouselSlideThree, alt: 'INTERNet platform announcement' },
+]
 
 function InternshipPortalPage() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -91,7 +97,7 @@ function InternshipPortalPage() {
       <section className={styles.companySection} aria-labelledby="open-for-internship-title">
         <SectionHeading
           id="open-for-internship-title"
-          title="Open For Internship"
+          title="Companies Open For Internship"
           onPrevious={() => scrollSection('companies', -1)}
           onNext={() => scrollSection('companies', 1)}
         />
@@ -114,6 +120,14 @@ function InternshipPortalPage() {
 export function InternshipPortalHero() {
   const [activeSlide, setActiveSlide] = useState(0)
 
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setActiveSlide((currentSlide) => (currentSlide + 1) % SLIDE_COUNT)
+    }, 5000)
+
+    return () => window.clearInterval(intervalId)
+  }, [])
+
   return (
     <header className={styles.hero} style={{ backgroundImage: `url(${headerImage})` }}>
       <div className={styles.heroCopy}>
@@ -125,7 +139,11 @@ export function InternshipPortalHero() {
         <p>A Unified Work Immersion and Internship Platform<br />Integrated with Guided Digital CV Frameworks for<br />Quezon City</p>
       </div>
       <section className={styles.carousel} aria-label="Featured announcements">
-        <div className={styles.blankSlide} aria-label={`Blank carousel slide ${activeSlide + 1} of ${SLIDE_COUNT}`} />
+        <img
+          className={styles.carouselSlide}
+          src={CAROUSEL_SLIDES[activeSlide].src}
+          alt={CAROUSEL_SLIDES[activeSlide].alt}
+        />
         <div className={styles.carouselControls}>
           <button type="button" onClick={() => setActiveSlide((activeSlide - 1 + SLIDE_COUNT) % SLIDE_COUNT)} aria-label="Previous slide"><ChevronUp /></button>
           <div className={styles.indicators} aria-label="Select carousel slide">
@@ -136,7 +154,6 @@ export function InternshipPortalHero() {
           <button type="button" onClick={() => setActiveSlide((activeSlide + 1) % SLIDE_COUNT)} aria-label="Next slide"><ChevronDown /></button>
         </div>
       </section>
-      <div className={styles.seeMore} aria-hidden="true"><span>SEE MORE</span><ArrowDown /></div>
     </header>
   )
 }
@@ -150,12 +167,14 @@ interface SectionHeadingProps {
 }
 
 function SectionHeading({ id, title, light = false, onPrevious, onNext }: SectionHeadingProps) {
+  const [activeDirection, setActiveDirection] = useState<'previous' | 'next'>('previous')
+
   return (
     <div className={`${styles.sectionHeading} ${light ? styles.lightHeading : ''}`}>
       <h2 id={id}>{title}</h2>
       <div className={styles.sectionArrows}>
-        <button type="button" onClick={onPrevious} aria-label={`Previous ${title}`}><ArrowLeft /></button>
-        <button type="button" onClick={onNext} aria-label={`Next ${title}`}><ArrowRight /></button>
+        <button className={activeDirection === 'previous' ? styles.activeSectionArrow : ''} type="button" onClick={() => { setActiveDirection('previous'); onPrevious() }} aria-label={`Previous ${title}`}><ArrowLeft /></button>
+        <button className={activeDirection === 'next' ? styles.activeSectionArrow : ''} type="button" onClick={() => { setActiveDirection('next'); onNext() }} aria-label={`Next ${title}`}><ArrowRight /></button>
       </div>
     </div>
   )
@@ -182,13 +201,9 @@ function CompanyCard({ company }: { company: PartnerCompany }) {
   return (
     <article className={styles.companyCard}>
       <span className={styles.companyLogoPlaceholder} aria-hidden="true" />
-      <div className={styles.companyTitleRow}>
-        <h3>{company.name}</h3>
-        <span><Star aria-hidden="true" /> {company.rating}</span>
-      </div>
-      <p>{company.summary}</p>
-      {company.isOpen && <strong>Open For Internship</strong>}
-      <p>{company.description}</p>
+      <h3>{company.name}</h3>
+      <p className={styles.companySummary}>{company.summary}</p>
+      <p className={styles.companyDescription}>{company.description}</p>
       <div className={styles.tags}>{company.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
     </article>
   )

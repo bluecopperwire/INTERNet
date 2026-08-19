@@ -12,6 +12,7 @@ import { DashboardPage } from './features/intern-seeker/pages/DashboardPage'
 import { ProfileEditorPage } from './features/intern-seeker/pages/ProfileEditorPage'
 import ApplicationStatusPage from './features/intern-seeker/pages/ApplicationStatusPage'
 import AttendancePage from './features/intern-seeker/pages/AttendancePage'
+import TrackingLayout from './features/intern-seeker/components/TrackingLayout'
 
 // QCPESO
 import QCPesoLayout from './features/qcpeso/components/QCPesoLayout'
@@ -32,12 +33,20 @@ import { OpportunitiesPage } from './features/employer/pages/OpportunitiesPage'
 import { CreateOpportunityPage } from './features/employer/pages/CreateOpportunityPage'
 import { ApplicantsPage } from './features/employer/pages/ApplicantsPage'
 import { CompanyProfilePage } from './features/employer/pages/CompanyProfilePage'
+import { ReviewApplicantPage } from './features/employer/pages/ReviewApplicantPage'
+import { AttendanceMonitoringPage } from './features/employer/pages/AttendanceMonitoringPage'
+import { ReportsPage } from './features/employer/pages/ReportsPage'
+import { EmployerSettingsPage } from './features/employer/pages/EmployerSettingsPage'
 
 // Admin
 import AdminLayout from './features/admin/components/AdminLayout'
 import { AdminDashboardPage } from './features/admin/pages/AdminDashboardPage'
 import { AuditLogsPage } from './features/admin/pages/AuditLogsPage'
 import { BackupsMaintenancePage } from './features/admin/pages/BackupsMaintenancePage'
+import { ManageStudentsPage } from './features/admin/pages/ManageStudentsPage'
+import { ManageEmployersPage as AdminManageEmployersPage } from './features/admin/pages/ManageEmployersPage'
+import { ManageQCPesoPage } from './features/admin/pages/ManageQCPesoPage'
+import { AdminSettingsPage } from './features/admin/pages/AdminSettingsPage'
 
 function App() {
   return (
@@ -53,9 +62,11 @@ function App() {
           <Route path="profile" element={<DashboardPage />} />
           <Route path="profile/edit" element={<ProfileEditorPage />} />
           <Route path="digicv" element={<DigiCVPage />} />
-          <Route path="requirements" element={<RequirementsPage />} />
-          <Route path="application-status" element={<ApplicationStatusPage />} />
-          <Route path="attendance" element={<AttendancePage />} />
+          <Route element={<TrackingLayout />}>
+            <Route path="requirements" element={<RequirementsPage />} />
+            <Route path="application-status" element={<ApplicationStatusPage />} />
+            <Route path="attendance" element={<AttendancePage />} />
+          </Route>
         </Route>
 
         <Route path="/terms-of-service" element={<main aria-label="Terms of Service" />} />
@@ -85,6 +96,10 @@ function App() {
           <Route path="opportunities/create" element={<CreateOpportunityPage />} />
           <Route path="opportunities/:id/edit" element={<CreateOpportunityPage />} />
           <Route path="applicants" element={<ApplicantsPage />} />
+          <Route path="applicants/:id" element={<ReviewApplicantPage />} />
+          <Route path="attendance" element={<AttendanceMonitoringPage />} />
+          <Route path="reports" element={<ReportsPage />} />
+          <Route path="settings" element={<EmployerSettingsPage />} />
           <Route path="*" element={<Navigate to="/employer/dashboard" replace />} />
         </Route>
 
@@ -93,6 +108,10 @@ function App() {
           <Route index element={<AdminDashboardPage />} />
           <Route path="dashboard" element={<AdminDashboardPage />} />
           <Route path="audit-logs" element={<AuditLogsPage />} />
+          <Route path="manage-students" element={<ManageStudentsPage />} />
+          <Route path="manage-employers" element={<AdminManageEmployersPage />} />
+          <Route path="manage-qcpeso" element={<ManageQCPesoPage />} />
+          <Route path="settings" element={<AdminSettingsPage />} />
           <Route path="backups-maintenance" element={<BackupsMaintenancePage />} />
           <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
         </Route>

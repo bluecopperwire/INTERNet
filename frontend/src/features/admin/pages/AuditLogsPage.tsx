@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Search, Filter, FileSpreadsheet, ChevronLeft, ChevronRight } from 'lucide-react'
-import QCPesoHero from '../../qcpeso/components/QCPesoHero'
+import { Search, Filter, FileSpreadsheet, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
+import headerImage from '../../../assets/requirements-header-image.png'
 import { adminService } from '../services/admin.service'
 import type { AuditLog } from '../types/admin.types'
 import { AuditLogDetailsModal } from '../components/AuditLogDetailsModal'
@@ -128,11 +128,8 @@ export function AuditLogsPage() {
   }
 
   return (
-    <div className={styles.pageContainer}>
-      <QCPesoHero 
-        title="Audit Logs"
-        subtitle="Monitor system activity, user actions, and security events."
-      />
+    <main className={styles.pageContainer}>
+      <header className={styles.hero}><img src={headerImage} alt="" className={styles.heroImage} /><div className={styles.heroOverlay} /><div className={styles.heroContent}><h1>Audit Logs</h1><p>Monitor system activity, user actions, and security events.</p></div></header>
 
       <div className={styles.mainContent}>
         {/* Top Toolbar */}
@@ -169,7 +166,7 @@ export function AuditLogsPage() {
               value={startDate} 
               onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }}
             />
-            <span style={{color: '#160e6f', fontWeight: 'bold'}}>-</span>
+            <span>to</span>
             <input 
               type="date" 
               className={styles.dateInput} 
@@ -256,7 +253,7 @@ export function AuditLogsPage() {
                     </td>
                     <td>
                       <button className={styles.detailsBtn} onClick={() => setSelectedLog(log)}>
-                        Details
+                        <Eye size={16} aria-hidden="true" />Details
                       </button>
                     </td>
                   </tr>
@@ -322,6 +319,6 @@ export function AuditLogsPage() {
           onClose={() => setSelectedLog(null)}
         />
       )}
-    </div>
+    </main>
   )
 }

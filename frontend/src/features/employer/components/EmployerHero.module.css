@@ -28,45 +28,6 @@
     linear-gradient(90deg, rgba(21, 24, 102, 0.22) 0%, transparent 58%);
 }
 
-.navbar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 4;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24px 48px;
-}
-
-.navLeft {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.logos {
-  width: 70px;
-  height: auto;
-}
-
-.iconBtn {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px;
-  border-radius: 50%;
-  transition: background 0.2s ease;
-}
-
-.iconBtn:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
 .content {
   position: relative;
   z-index: 3;
@@ -103,16 +64,7 @@
     height: 220px;
     padding: 0 0 58px;
   }
-
-  .navbar {
-    padding: 16px 24px;
-  }
-
   .content {
     padding: 0 24px;
-  }
-
-  .logos {
-    width: 62px;
   }
 }

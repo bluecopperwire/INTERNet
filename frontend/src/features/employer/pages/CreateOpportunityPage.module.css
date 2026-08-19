@@ -1,98 +1,119 @@
 .pageContainer {
   min-height: 100vh;
-  background-color: #ffffff;
-  font-family: 'Poppins', sans-serif;
+  padding: 32px 48px 48px;
+  background: #ffffff;
   color: #160e6f;
-  padding: 48px;
-  max-width: 1200px;
-  margin: 0 auto;
+  font-family: 'Poppins', sans-serif;
 }
 
 .loading {
-  text-align: center;
   padding: 48px;
-  font-size: 18px;
+  text-align: center;
+  font-size: 16px;
 }
 
 .header {
-  margin-bottom: 32px;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto 20px;
 }
 
 .backBtn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
+  padding: 8px 0;
+  border: 0;
   background: transparent;
-  border: none;
-  cursor: pointer;
   color: #160e6f;
-  font-size: 20px;
-  font-weight: 600;
   font-family: 'Poppins', sans-serif;
-  padding: 0;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 150ms ease, transform 150ms ease;
 }
 
 .backBtn:hover {
-  opacity: 0.8;
+  opacity: 0.75;
+  transform: translateX(-2px);
 }
 
 .formContainer {
   width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid rgba(22, 14, 111, 0.2);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(22, 14, 111, 0.05);
 }
 
 .pageTitle {
-  font-size: 32px;
-  font-weight: 700;
-  margin: 0 0 40px 0;
+  margin: 0;
+  padding: 20px 24px;
+  border-bottom: 2px solid #160e6f;
+  background: #f8fafc;
   color: #160e6f;
+  font-size: 22px;
+  font-weight: 700;
 }
 
 .formGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 48px;
-  margin-bottom: 48px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  padding: 24px;
 }
 
 .col {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 18px;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .field label {
-  font-size: 16px;
-  font-weight: 700;
   color: #160e6f;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .field input,
 .field textarea {
-  padding: 16px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  font-family: 'Poppins', sans-serif;
-  font-size: 14px;
-  color: #333;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid rgba(22, 14, 111, 0.25);
+  border-radius: 6px;
   outline: none;
   background: #ffffff;
-  transition: border-color 0.2s;
+  color: #1e293b;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.field textarea {
+  min-height: 150px;
+  resize: vertical;
 }
 
 .field input:focus,
 .field textarea:focus {
   border-color: #160e6f;
+  box-shadow: 0 0 0 3px rgba(22, 14, 111, 0.08);
 }
 
 .field input::placeholder,
 .field textarea::placeholder {
-  color: #b0b0b0;
+  color: #94a3b8;
 }
 
 .dateInputWrapper {
@@ -102,18 +123,17 @@
 }
 
 .dateInputWrapper input {
-  width: 100%;
   padding-right: 48px;
 }
 
 .dateInputWrapper input::-webkit-calendar-picker-indicator {
-  opacity: 0;
-  cursor: pointer;
   position: absolute;
-  right: 0;
   top: 0;
+  right: 0;
   width: 100%;
   height: 100%;
+  opacity: 0;
+  cursor: pointer;
 }
 
 .dateIcon {
@@ -125,36 +145,40 @@
 .formActions {
   display: flex;
   justify-content: flex-end;
-  gap: 16px;
-  margin-top: 32px;
+  gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
 }
 
 .cancelBtn,
 .saveBtn {
-  padding: 12px 32px;
-  border-radius: 4px;
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 6px;
   font-family: 'Poppins', sans-serif;
+  font-size: 14px;
   font-weight: 600;
-  font-size: 16px;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: opacity 150ms ease, transform 160ms ease;
 }
 
 .cancelBtn {
-  background-color: transparent;
-  color: #160e6f;
   border: 1px solid #160e6f;
+  background: #ffffff;
+  color: #160e6f;
 }
 
 .saveBtn {
-  background-color: #160e6f;
-  color: #ffffff;
   border: 1px solid #160e6f;
+  background: #160e6f;
+  color: #ffffff;
 }
 
 .cancelBtn:hover,
 .saveBtn:hover {
   opacity: 0.9;
+  transform: translateY(-1px);
 }
 
 .cancelBtn:disabled,
@@ -163,60 +187,36 @@
   cursor: not-allowed;
 }
 
-@media (max-width: 768px) {
-  .pageContainer {
-    padding: 24px;
-  }
-  
-  .formGrid {
-    grid-template-columns: 1fr;
-    gap: 24px;
-  }
-  
-  .formActions {
-    flex-direction: column-reverse;
-  }
-  
-  .cancelBtn,
-  .saveBtn {
-    width: 100%;
-  }
-}
-
 .modalOverlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  inset: 0;
   z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.4);
 }
 
 .modalContent {
+  width: min(400px, 90%);
+  padding: 28px;
+  border: 1px solid rgba(22, 14, 111, 0.2);
+  border-radius: 8px;
   background: #ffffff;
-  border-radius: 12px;
-  padding: 32px;
-  max-width: 400px;
-  width: 90%;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.14);
   text-align: center;
 }
 
 .modalTitle {
-  margin: 0 0 16px 0;
+  margin: 0 0 12px;
   color: #160e6f;
-  font-size: 24px;
-  font-family: 'Poppins', sans-serif;
+  font-size: 20px;
 }
 
 .modalText {
-  margin: 0 0 24px 0;
-  color: #333;
-  font-size: 16px;
+  margin: 0 0 20px;
+  color: #475569;
+  font-size: 14px;
   line-height: 1.5;
 }
 
@@ -226,18 +226,42 @@
 }
 
 .okBtn {
-  padding: 10px 32px;
-  border-radius: 8px;
-  font-family: 'Poppins', sans-serif;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  border: none;
-  background-color: #160e6f;
+  min-height: 40px;
+  padding: 0 24px;
+  border: 1px solid #160e6f;
+  border-radius: 6px;
+  background: #160e6f;
   color: #ffffff;
-  transition: opacity 0.2s;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 150ms ease, transform 160ms ease;
 }
 
 .okBtn:hover {
   opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+  .pageContainer {
+    padding: 24px 20px;
+  }
+  .formGrid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 20px;
+  }
+  .pageTitle {
+    padding: 18px 20px;
+    font-size: 20px;
+  }
+  .formActions {
+    flex-direction: column-reverse;
+    padding: 16px 20px;
+  }
+  .cancelBtn, .saveBtn {
+    width: 100%;
+  }
 }

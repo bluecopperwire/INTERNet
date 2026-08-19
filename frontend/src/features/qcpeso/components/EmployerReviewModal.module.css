@@ -228,26 +228,21 @@
     gap: 18px;
     padding: 24px 20px;
   }
-
   .companyInfo {
     padding-right: 45px;
   }
-
   .detailsGrid,
   .actions {
     grid-template-columns: 1fr;
   }
-
   .detailItem:first-child {
     border-right: 0;
     border-bottom: 1px solid #dfe3ea;
   }
-
   .statusSummary {
     flex-direction: column;
     gap: 16px;
   }
-
   .accountStatusGroup {
     align-items: flex-start;
     text-align: left;

@@ -1,0 +1,247 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, .4);
+}
+
+.modal {
+  width: min(640px, 100%);
+  overflow: hidden;
+  border: 1px solid rgba(22, 14, 111, .2);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, .14);
+  color: #160e6f;
+  font-family: 'Poppins', sans-serif;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  border-bottom: 2px solid #160e6f;
+  background: #f8fafc;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.header p {
+  margin: 4px 0 0;
+  color: #625d7d;
+  font-size: 13px;
+}
+
+.closeBtn {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgba(22, 14, 111, .16);
+  border-radius: 50%;
+  background: #fff;
+  color: #160e6f;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.closeBtn:hover {
+  background: #f2f1f8;
+}
+
+.closeBtn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.formBody {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px;
+}
+
+.dateTimeGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.field, .modeField {
+  display: flex;
+  position: relative;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  color: #160e6f;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.field > input, .field textarea, .inputWithIcon input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid rgba(22, 14, 111, .25);
+  border-radius: 6px;
+  outline: 0;
+  color: #1e293b;
+  background: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.field > input {
+  padding-right: 42px;
+}
+
+.field > svg {
+  position: absolute;
+  right: 13px;
+  bottom: 11px;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+}
+
+.field textarea {
+  min-height: 108px;
+  resize: vertical;
+}
+
+.field > input:focus, .field textarea:focus, .inputWithIcon input:focus {
+  border-color: #160e6f;
+  box-shadow: 0 0 0 3px rgba(22, 14, 111, .08);
+}
+
+.field > input[type='date']::-webkit-calendar-picker-indicator,
+.field > input[type='time']::-webkit-calendar-picker-indicator {
+  opacity: 0;
+}
+
+.modeField legend {
+  margin-bottom: 8px;
+}
+
+.modeChoices {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.modeChoices label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.modeChoices input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #160e6f;
+}
+
+.inputWithIcon {
+  position: relative;
+}
+
+.inputWithIcon input {
+  padding-right: 42px;
+}
+
+.inputWithIcon svg {
+  position: absolute;
+  top: 12px;
+  right: 13px;
+  width: 18px;
+  height: 18px;
+  color: #160e6f;
+  pointer-events: none;
+}
+
+.count {
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 400;
+  text-align: right;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.actions button {
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 150ms ease, transform 160ms ease;
+}
+
+.actions button:hover:not(:disabled) {
+  opacity: .9;
+  transform: translateY(-1px);
+}
+
+.actions button:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+
+.cancelBtn {
+  border: 1px solid #160e6f;
+  background: #fff;
+  color: #160e6f;
+}
+
+.scheduleBtn {
+  border: 1px solid #160e6f;
+  background: #160e6f;
+  color: #fff;
+}
+
+@media (max-width: 640px) {
+  .overlay {
+    padding: 12px;
+  }
+  .header, .formBody, .actions {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .dateTimeGrid {
+    grid-template-columns: 1fr;
+  }
+  .actions {
+    flex-direction: column-reverse;
+  }
+  .actions button {
+    width: 100%;
+  }
+}

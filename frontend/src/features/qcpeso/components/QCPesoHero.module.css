@@ -7,7 +7,6 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 0 48px;
 }
 
 .heroBgImage {
@@ -33,13 +32,17 @@
   position: relative;
   z-index: 3;
   display: flex;
+  width: 100%;
+  max-width: 1280px;
   flex-direction: column;
   gap: 8px;
+  margin: 0 auto;
+  padding: 0 48px;
 }
 
 .heroTitle {
   font-size: clamp(36px, 5vw, 64px);
-  font-weight: 600;
+  font-weight: 700;
   color: #ffffff;
   margin: 0;
   line-height: 1.1;
@@ -50,4 +53,10 @@
   font-weight: 400;
   color: #ffffff;
   margin: 0;
+}
+
+@media (max-width: 768px) {
+  .heroContent {
+    padding: 0 20px;
+  }
 }

@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Eye, Search } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Eye, Search, SlidersHorizontal } from 'lucide-react'
 import QCPesoHero from '../components/QCPesoHero'
 import InternDetailModal from '../components/InternDetailModal'
 import { qcpesoService } from '../services/qcpeso.service'
@@ -88,12 +88,15 @@ export function MonitorInternsPage() {
           </div>
 
           <div className={`${styles.filterGroup} ${styles.statusFilterGroup}`}>
-            <select className={styles.filterSelect} value={selectedStatus} onChange={(e) => { setSelectedStatus(e.target.value); setCurrentPage(1) }}>
-              <option value="All">All Statuses</option>
-              <option value="Ongoing">Ongoing</option>
-              <option value="Completed">Completed</option>
-              <option value="Paused">Paused</option>
-            </select>
+            <div className={styles.filterSelect}>
+              <SlidersHorizontal size={16} aria-hidden="true" />
+              <select value={selectedStatus} onChange={(e) => { setSelectedStatus(e.target.value); setCurrentPage(1) }}>
+                <option value="All">All Statuses</option>
+                <option value="Ongoing">Ongoing</option>
+                <option value="Completed">Completed</option>
+                <option value="Paused">Paused</option>
+              </select>
+            </div>
           </div>
         </div>
 

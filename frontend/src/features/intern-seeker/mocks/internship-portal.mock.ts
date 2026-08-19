@@ -27,11 +27,11 @@ export const MOCK_INTERNSHIP_PORTAL_DATA: InternshipPortalData = {
     { id: 'opp-6', companyName: 'CivicWorks PH', position: 'Administrative Intern', location: 'Quezon City Hall', workSetup: 'On-site', postedAt: '3d', tags: ['Easy Apply', 'Public Service'], isApplied: true, isExclusive: true, details: DEFAULT_DETAILS },
   ],
   companies: [
-    { id: 'company-1', name: 'Amazon Company', rating: 3.4, summary: 'Technology and digital services', description: 'Build practical experience with a collaborative technology team.', tags: ['Hiring', 'High Benefit'], isOpen: true },
-    { id: 'company-2', name: 'Innovate Labs', rating: 4.7, summary: 'Product and software development', description: 'Work with mentors on products used by growing local businesses.', tags: ['Hiring', 'Confirmed Benefit'], isOpen: true },
-    { id: 'company-3', name: 'Creative House', rating: 4.5, summary: 'Design and media production', description: 'Develop your portfolio through real creative campaigns and projects.', tags: ['Creative', 'Confirmed Benefit'], isOpen: true },
-    { id: 'company-4', name: 'PeopleFirst Co.', rating: 4.6, summary: 'Human resources and operations', description: 'Learn modern people operations in a supportive professional setting.', tags: ['Hiring', 'Mentorship'], isOpen: true },
-    { id: 'company-5', name: 'Greenline Group', rating: 4.3, summary: 'Sustainability and community programs', description: 'Support community-centered programs with measurable local impact.', tags: ['Community', 'High Benefit'], isOpen: true },
+    { id: 'company-1', name: 'Amazon Company', summary: 'Technology and digital services', description: 'Build practical experience with a collaborative technology team.', tags: ['Hiring', 'High Benefit'] },
+    { id: 'company-2', name: 'Innovate Labs', summary: 'Product and software development', description: 'Work with mentors on products used by growing local businesses.', tags: ['Hiring', 'Confirmed Benefit'] },
+    { id: 'company-3', name: 'Creative House', summary: 'Design and media production', description: 'Develop your portfolio through real creative campaigns and projects.', tags: ['Creative', 'Confirmed Benefit'] },
+    { id: 'company-4', name: 'PeopleFirst Co.', summary: 'Human resources and operations', description: 'Learn modern people operations in a supportive professional setting.', tags: ['Hiring', 'Mentorship'] },
+    { id: 'company-5', name: 'Greenline Group', summary: 'Sustainability and community programs', description: 'Support community-centered programs with measurable local impact.', tags: ['Community', 'High Benefit'] },
   ],
 }
 

@@ -69,7 +69,7 @@
   margin: 0 auto;
 }
 
-/* ── Stats Cards Row ── */
+/* â”€â”€ Stats Cards Row â”€â”€ */
 .summaryGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -134,7 +134,7 @@
   max-width: 32%;
 }
 
-/* ── Toolbar ── */
+/* â”€â”€ Toolbar â”€â”€ */
 .toolbarRow {
   display: flex;
   flex-wrap: wrap;
@@ -204,14 +204,26 @@
 }
 
 .filterSelect {
-  min-width: 160px;
+  display: flex;
+  align-items: center;
+  min-width: 210px;
   height: 42px;
-  padding: 8px 42px 8px 14px;
+  gap: 10px;
+  padding: 0 14px;
   border: 1px solid #160e6f;
   border-radius: 6px;
-  font-size: 14px;
   color: #160e6f;
   background: #ffffff;
+}
+
+.filterSelect select {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font-size: 14px;
   outline: none;
   cursor: pointer;
 }
@@ -278,7 +290,7 @@
   cursor: not-allowed;
 }
 
-/* ── Table ── */
+/* â”€â”€ Table â”€â”€ */
 .tableCard {
   width: 100%;
   background: #ffffff;
@@ -384,7 +396,6 @@
     flex-direction: column;
     align-items: flex-start;
   }
-
   .searchGroup,
   .statusFilterGroup,
   .filterSelect {

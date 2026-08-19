@@ -1,7 +1,5 @@
 import { useMemo, useState } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight, Clock3, MapPin } from 'lucide-react'
-import TrackingHeader from '../components/TrackingHeader'
-import TrackingTabs from '../components/TrackingTabs'
 import { useAttendance } from '../hooks/useAttendance'
 import type { AttendanceDayStatus, AttendanceMonth, Holiday } from '../types/attendance.types'
 import styles from './AttendancePage.module.css'
@@ -21,11 +19,7 @@ function AttendancePage() {
   }
 
   return (
-    <main className={styles.page}>
-      <TrackingHeader />
-      <section className={styles.trackingContent}>
-        <TrackingTabs />
-
+    <>
         {error && <p className={styles.error} role="alert">{error}</p>}
         {isLoading && <p className={styles.feedback}>Loading attendance...</p>}
 
@@ -63,8 +57,7 @@ function AttendancePage() {
             </aside>
           </div>
         )}
-      </section>
-    </main>
+    </>
   )
 }
 

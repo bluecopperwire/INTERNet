@@ -31,11 +31,9 @@ export interface OpportunityDetails {
 export interface PartnerCompany {
   id: string
   name: string
-  rating: number
   summary: string
   description: string
   tags: string[]
-  isOpen: boolean
 }
 
 export interface InternshipPortalData {

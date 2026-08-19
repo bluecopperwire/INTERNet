@@ -1,192 +1,203 @@
 .modalOverlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  inset: 0;
   z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.4);
 }
 
 .modalContent {
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 32px;
-  max-width: 900px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   display: flex;
+  width: min(1120px, 100%);
+  max-height: calc(100vh - 40px);
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
+  overflow-y: auto;
+  padding: 24px;
+  border: 1px solid rgba(22, 14, 111, 0.2);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.14);
 }
 
 .modalHeader {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
 }
 
 .modalTitle {
   margin: 0;
   color: #160e6f;
-  font-size: 28px;
   font-family: 'Poppins', sans-serif;
+  font-size: 22px;
   font-weight: 700;
 }
 
 .closeBtn {
-  background: transparent;
-  border: none;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgba(22, 14, 111, 0.16);
+  border-radius: 50%;
+  background: #ffffff;
   cursor: pointer;
-  padding: 4px;
+  transition: background 150ms ease;
+}
+
+.closeBtn:hover {
+  background: #f2f1f8;
+}
+
+.closeBtn svg {
+  width: 20px;
+  height: 20px;
 }
 
 .divider {
-  border: none;
-  border-top: 1px solid #e0e0e0;
+  width: 100%;
   margin: 0;
+  border: 0;
+  border-top: 1px solid #e2e8f0;
 }
 
 .toolbar {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .searchBox {
   display: flex;
+  width: min(100%, 420px);
+  height: 42px;
   align-items: center;
   gap: 8px;
+  padding: 0 12px;
   border: 1px solid #160e6f;
-  border-radius: 4px;
-  padding: 8px 12px;
-  width: 300px;
+  border-radius: 6px;
+  background: #ffffff;
 }
 
 .searchBox input {
-  border: none;
-  outline: none;
   width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: #160e6f;
   font-family: 'Poppins', sans-serif;
   font-size: 14px;
-  color: #160e6f;
 }
 
 .searchBox input::placeholder {
   color: #160e6f;
+  opacity: 0.7;
 }
 
 .filterBtn {
-  display: flex;
+  display: inline-flex;
+  min-height: 42px;
   align-items: center;
   gap: 8px;
-  background: transparent;
+  padding: 0 14px;
   border: 1px solid #160e6f;
-  border-radius: 4px;
-  padding: 8px 16px;
+  border-radius: 6px;
+  background: #ffffff;
   color: #160e6f;
   font-family: 'Poppins', sans-serif;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
 }
 
-.filterBtn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: transparent;
-  border: 1px solid #160e6f;
-  border-radius: 4px;
-  padding: 8px 16px;
-  color: #160e6f;
-  font-family: 'Poppins', sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
+.filterBtn:hover {
+  background: rgba(22, 14, 111, 0.05);
 }
 
 .filterMenuRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
   padding: 16px;
-  background: #f8fafc;
+  border: 1px solid rgba(22, 14, 111, 0.2);
   border-radius: 8px;
-  border: 1px solid #e0e0e0;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(22, 14, 111, 0.05);
 }
 
 .filterWrapper {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .filterLabel {
-  font-family: 'Poppins', sans-serif;
-  font-size: 14px;
-  font-weight: 600;
   color: #160e6f;
+  font-size: 13px;
+  font-weight: 400;
 }
 
 .filterSelect {
+  width: 100%;
+  height: 42px;
+  padding: 0 36px 0 12px;
   border: 1px solid #160e6f;
-  border-radius: 4px;
-  padding: 6px 10px;
+  border-radius: 6px;
+  outline: 0;
+  background: #ffffff;
   color: #160e6f;
   font-family: 'Poppins', sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  background: #ffffff;
-  outline: none;
+  font-size: 14px;
+  font-weight: 400;
   cursor: pointer;
 }
 
 .tableContainer {
   width: 100%;
   overflow-x: auto;
-  border: 1px solid #160e6f;
-  border-radius: 4px;
+  border: 1px solid rgba(22, 14, 111, 0.2);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(22, 14, 111, 0.05);
 }
 
 .table {
   width: 100%;
+  min-width: 850px;
   border-collapse: collapse;
   text-align: left;
 }
 
 .table th {
-  padding: 12px 16px;
+  padding: 16px 20px;
+  border-bottom: 2px solid #160e6f;
+  background: #f8fafc;
+  color: #160e6f;
   font-size: 14px;
   font-weight: 600;
-  color: #160e6f;
-  border-bottom: 1px solid #160e6f;
   white-space: nowrap;
 }
 
 .table td {
-  padding: 12px 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #1e293b;
   font-size: 14px;
-  color: #333;
-  border-bottom: 1px solid #f0f0f0;
-  background-color: #f0f0f0; /* Like the screenshot row styles */
-  margin-bottom: 4px;
 }
 
-/* For spacing out the rows like in the image, we can use empty rows or display: block tricks. But a simple background with border-bottom is fine for mockup. */
-.table tbody tr {
-  border-bottom: 4px solid #ffffff; /* create gap between rows */
+.table tbody tr:hover {
+  background: #f1f5f9;
 }
-.table tbody tr:nth-child(even) {
-  background-color: #f8fafc;
-}
-.table tbody tr:last-child {
-  border-bottom: none;
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
 }
 
 .statusPill {
@@ -194,96 +205,168 @@
   align-items: center;
   padding: 6px 11px;
   border-radius: 999px;
-  color: #ffa518;
   background: #fff4e6;
+  color: #ffa518;
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
 }
 
 .statusPill.accepted {
-  color: #34cba7;
   background: #eaf9f5;
+  color: #34cba7;
 }
 
 .statusPill.rejected {
-  color: #e25555;
   background: #fff0ef;
+  color: #e25555;
 }
 
 .statusPill.underReview {
-  color: #6557a8;
   background: #f0eef9;
+  color: #6557a8;
 }
 
-/* Pagination */
+.reviewBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid #160e6f;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #160e6f;
+  font-family: 'Poppins', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.reviewBtn:hover {
+  background: #160e6f;
+  color: #ffffff;
+}
+
 .paginationRow {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-top: 16px;
+  justify-content: flex-end;
+  gap: 16px;
 }
 
 .leftControls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
-.viewLabel, .perPageLabel {
+.viewLabel {
+  color: #625d7d;
   font-size: 14px;
-  color: #160e6f;
   font-weight: 600;
 }
 
 .viewSelectBox {
-  border: 1px solid #160e6f;
-  border-radius: 4px;
-  padding: 4px 8px;
+  display: flex;
+  width: 76px;
+  height: 42px;
+  align-items: center;
+  padding: 0 6px 0 10px;
+  border: 1px solid rgba(22, 14, 111, 0.42);
+  border-radius: 6px;
+  background: #ffffff;
 }
 
 .viewSelect {
-  border: none;
-  outline: none;
-  color: #160e6f;
-  font-weight: 600;
+  width: 100%;
+  height: 100%;
+  padding: 0 18px 0 2px;
+  border: 0;
+  outline: 0;
   background: transparent;
+  color: #160e6f;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
+}
+
+.perPageLabel {
+  color: #625d7d;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .pagination {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
 }
 
 .pageBtn {
-  background: transparent;
-  border: none;
+  display: grid;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgba(22, 14, 111, 0.42);
+  border-radius: 6px;
+  background: #ffffff;
   color: #160e6f;
-  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
   font-size: 14px;
-  padding: 8px;
+  font-weight: 600;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  min-width: 32px;
 }
 
 .pageBtn.active {
-  background: #d9d9ea;
+  border-color: #160e6f;
+  background: #160e6f;
+  color: #ffffff;
+}
+
+.pageBtn:hover:not(.active):not(:disabled) {
+  background: rgba(22, 14, 111, 0.08);
 }
 
 .pageBtn:disabled {
-  opacity: 0.5;
+  border-color: #d8d6e3;
+  color: #aaa6c3;
   cursor: not-allowed;
 }
 
 .pageInfo {
-  font-family: 'Poppins', sans-serif;
+  color: #625d7d;
   font-size: 14px;
   font-weight: 500;
-  color: #160e6f;
+}
+
+@media (max-width: 768px) {
+  .modalOverlay {
+    padding: 12px;
+  }
+  .modalContent {
+    max-height: calc(100vh - 24px);
+    padding: 20px;
+  }
+  .toolbar, .paginationRow {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .searchBox {
+    width: 100%;
+  }
+  .filterBtn {
+    justify-content: center;
+  }
+  .filterMenuRow {
+    grid-template-columns: 1fr;
+  }
+  .leftControls {
+    flex-wrap: wrap;
+  }
+  .pagination {
+    justify-content: flex-end;
+  }
 }

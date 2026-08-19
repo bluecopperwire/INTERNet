@@ -1,53 +1,67 @@
-﻿.page {
+.page {
   --tracking-purple: #21167b;
   --tracking-yellow: #f1c400;
   --tracking-content-width: 1280px;
-
   min-height: 100vh;
   color: var(--tracking-purple);
   background: #ffffff;
 }
 
 .trackingContent {
-  padding: 56px max(4vw, 32px) 64px;
+  padding: 48px max(4vw, 32px) 64px;
 }
 
 .requirementsPanel {
   max-width: var(--tracking-content-width);
   margin: 0 auto;
-  padding: 18px 24px 28px;
-  border: 1.5px solid var(--tracking-purple);
-  border-radius: 10px;
+  padding: 26px;
+  border: 1px solid #d8dcea;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(16, 13, 51, 0.06);
 }
+
 .panelHeader {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 40px;
-  margin-bottom: 22px;
+  margin-bottom: 26px;
 }
+
 .panelHeader h2 {
-  margin: 0 0 3px;
-  font-size: 21px;
+  margin: 0 0 6px;
+  font-size: 24px;
+  line-height: 1.2;
 }
+
 .panelHeader p {
   margin: 0;
-  font-size: 13px;
+  color: #5d6881;
+  font-size: 14px;
 }
+
 .progressSummary {
   width: min(100%, 345px);
   flex: none;
+  padding: 15px 17px;
+  border: 1px solid #e0e4ee;
+  border-radius: 10px;
+  background: #f7f8fb;
 }
+
 .progressSummary strong {
   display: block;
-  margin-bottom: 9px;
-  font-size: 16px;
+  margin-bottom: 11px;
+  font-size: 15px;
 }
+
 .progressRow {
   display: flex;
   align-items: center;
   gap: 12px;
 }
+
 .progressRow progress {
   width: 100%;
   height: 6px;
@@ -57,73 +71,101 @@
   background: #b9bebd;
   appearance: none;
 }
+
 .progressRow progress::-webkit-progress-bar {
   background: #b9bebd;
 }
+
 .progressRow progress::-webkit-progress-value {
   border-radius: 999px;
   background: #21167b;
 }
+
 .progressRow progress::-moz-progress-bar {
   border-radius: 999px;
   background: #21167b;
 }
+
 .progressRow span {
   font-size: 12px;
   font-weight: 600;
 }
+
 .table {
   overflow: hidden;
-  border: 1.5px solid #21167b;
-  border-radius: 9px;
+  border: 1px solid #d8dcea;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(16, 13, 51, 0.04);
 }
+
 .tableHeader, .requirementRow {
   display: grid;
   grid-template-columns: 2.2fr 0.72fr 1.05fr 0.58fr;
   align-items: center;
 }
+
 .tableHeader {
-  min-height: 68px;
-  color: #ffffff;
-  background: #21167b;
-  font-size: 15px;
+  min-height: 64px;
+  border-bottom: 2px solid #21167b;
+  color: #21167b;
+  background: #f6f7fa;
+  font-size: 14px;
   font-weight: 600;
   text-align: center;
 }
-.requirementRow {
-  min-height: 92px;
-  border-bottom: 1.5px solid #21167b;
+
+.tableHeader > span:first-child {
+  padding-left: 22px;
+  text-align: left;
 }
+
+.requirementRow {
+  min-height: 100px;
+  border-bottom: 1px solid #e1e4ec;
+  transition: background 160ms ease;
+}
+
+.requirementRow:hover {
+  background: #fbfcff;
+}
+
 .requirementRow:last-child {
   border-bottom: 0;
 }
+
 .requirementRow > div {
   padding: 14px 18px;
 }
+
 .requirementRow > [role='cell']:not(.requirementDetails) {
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
 }
+
 .requirementDetails h3 {
-  margin: 0 0 4px;
+  margin: 0 0 5px;
   font-size: 16px;
 }
+
 .requirementDetails p {
   margin: 0;
   font-size: 12px;
   line-height: 1.35;
 }
+
 .recipient {
   display: flex;
   flex-direction: column;
   margin-top: 11px;
   font-size: 12px;
 }
+
 .recipientName {
   font-weight: 700;
 }
+
 .status {
   display: inline-block;
   padding: 6px 11px;
@@ -131,22 +173,27 @@
   font-size: 12px;
   font-weight: 600;
 }
+
 .submitted {
   color: #34cba7;
   background: #eaf9f5;
 }
+
 .pending {
   color: #ffa518;
   background: #fff4e6;
 }
+
 .lastUpdated {
   font-size: 12px;
   font-weight: 600;
   text-align: center;
 }
+
 .actionCell {
   text-align: center;
 }
+
 .actionCell button, .uploadButton {
   display: inline-grid;
   min-width: 94px;
@@ -154,17 +201,22 @@
   place-items: center;
   padding: 0 16px;
   border: 1px solid #21167b;
-  border-radius: 5px;
+  border-radius: 7px;
   color: #21167b;
   background: #ffffff;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+  transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
+
 .actionCell button:hover, .uploadButton:hover {
   color: #ffffff;
   background: #21167b;
+  box-shadow: 0 4px 10px rgba(33, 22, 123, 0.16);
+  transform: translateY(-1px);
 }
+
 .actionCell input {
   position: absolute;
   width: 1px;
@@ -173,9 +225,11 @@
   clip: rect(0, 0, 0, 0);
   clip-path: inset(50%);
 }
+
 .mobileLabel {
   display: none;
 }
+
 .error {
   margin: 0 0 16px;
   padding: 10px 14px;
@@ -184,10 +238,12 @@
   background: #fff0f0;
   font-size: 13px;
 }
+
 .feedback {
   padding: 35px;
   text-align: center;
 }
+
 .modalBackdrop {
   position: fixed;
   z-index: 100;
@@ -197,6 +253,7 @@
   padding: 24px;
   background: rgba(9, 7, 31, 0.66);
 }
+
 .documentModal {
   width: min(100%, 540px);
   padding: 34px;
@@ -204,13 +261,16 @@
   background: #ffffff;
   box-shadow: 0 22px 60px rgba(6, 4, 33, 0.34);
 }
+
 .documentModal h2 {
   margin: 0 0 24px;
   font-size: 24px;
 }
+
 .documentModal dl {
   margin: 0;
 }
+
 .documentModal dl div {
   display: grid;
   grid-template-columns: 110px minmax(0, 1fr);
@@ -218,14 +278,17 @@
   padding: 10px 0;
   border-bottom: 1px solid #e4e6eb;
 }
+
 .documentModal dt {
   font-weight: 700;
 }
+
 .documentModal dd {
   min-width: 0;
   margin: 0;
   overflow-wrap: anywhere;
 }
+
 .documentModal a {
   display: inline-block;
   margin-top: 22px;
@@ -236,6 +299,7 @@
   font-weight: 600;
   text-decoration: none;
 }
+
 .documentModal > p {
   margin: 20px 0 0;
   color: #747b8d;
@@ -268,7 +332,7 @@
     padding: 45px 16px 55px;
   }
   .requirementsPanel {
-    padding: 18px 14px 20px;
+    padding: 20px 14px;
   }
   .panelHeader h2 {
     font-size: 22px;
@@ -288,11 +352,13 @@
     gap: 8px 10px;
     margin-bottom: 16px;
     padding: 18px;
-    border: 1px solid #21167b;
-    border-radius: 7px;
+    border: 1px solid #d8dcea;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(16, 13, 51, 0.05);
   }
   .requirementRow:last-child {
-    border-bottom: 1px solid #21167b;
+    border-bottom: 1px solid #d8dcea;
   }
   .requirementRow > div {
     padding: 0;

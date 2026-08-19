@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Eye, Search } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Eye, Search, SlidersHorizontal } from 'lucide-react'
 import QCPesoHero from '../components/QCPesoHero'
 import ReferralDetailModal from '../components/ReferralDetailModal'
 import { qcpesoService } from '../services/qcpeso.service'
@@ -112,14 +112,17 @@ export function MonitorReferralsPage() {
           </div>
 
           <div className={`${styles.filterGroup} ${styles.statusFilterGroup}`}>
-            <select className={styles.filterSelect} value={selectedStatus} onChange={(e) => { setSelectedStatus(e.target.value); setCurrentPage(1) }}>
-              <option value="All">All Statuses</option>
-              <option value="Under Review">Under Review</option>
-              <option value="Endorsed to Employer">Endorsed to Employer</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
-              <option value="Pending">Pending</option>
-            </select>
+            <div className={styles.filterSelect}>
+              <SlidersHorizontal size={16} aria-hidden="true" />
+              <select value={selectedStatus} onChange={(e) => { setSelectedStatus(e.target.value); setCurrentPage(1) }}>
+                <option value="All">All Statuses</option>
+                <option value="Under Review">Under Review</option>
+                <option value="Endorsed to Employer">Endorsed to Employer</option>
+                <option value="Approved">Approved</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Pending">Pending</option>
+              </select>
+            </div>
           </div>
         </div>
 

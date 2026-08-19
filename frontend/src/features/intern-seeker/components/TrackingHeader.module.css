@@ -56,10 +56,26 @@
 }
 
 @media (max-width: 700px) {
-  .header { min-height: 390px; }
-  .copy { top: 140px; left: 24px; }
-  .copy h1 { font-size: 50px; letter-spacing: -2px; }
-  .copy p { font-size: 14px; }
-  .logos { top: 28px; right: 20px; width: 76px; }
-  .seeMore { display: none; }
+  .header {
+    min-height: 390px;
+  }
+  .copy {
+    top: 140px;
+    left: 24px;
+  }
+  .copy h1 {
+    font-size: 50px;
+    letter-spacing: -2px;
+  }
+  .copy p {
+    font-size: 14px;
+  }
+  .logos {
+    top: 28px;
+    right: 20px;
+    width: 76px;
+  }
+  .seeMore {
+    display: none;
+  }
 }

@@ -12,7 +12,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import headerImage from '../../../assets/requirements-header-image.png'
-import type { BackupRecord } from '../../qcpeso/types/qcpeso.types'
+import type { BackupRecord } from '../types/admin.types'
 import styles from './BackupsMaintenancePage.module.css'
 
 const INITIAL_BACKUPS: BackupRecord[] = [

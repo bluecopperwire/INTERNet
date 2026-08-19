@@ -3,7 +3,8 @@ import type {
   Applicant, 
   CompanyProfile, 
   EmployerDashboardSummary, 
-  EmployerNotification 
+  EmployerNotification,
+  EmployerAttendanceRecord
 } from '../types/employer.types'
 
 const mockOpportunities: Opportunity[] = [
@@ -14,20 +15,26 @@ const mockOpportunities: Opportunity[] = [
 ]
 
 let mockCompanyProfile: CompanyProfile = {
-  companyName: 'ABC Company',
-  location: 'Quezon City, Philippines',
-  industry: 'Information Technology',
-  about: 'Short description here short description here short description here short description here',
+  company_name: 'ABC Company',
+  company_type: 'Private Corporation',
+  description: 'Short description here short description here short description here short description here',
+  website_url: 'abc.company.com',
+  year_established: '2015',
+  company_size: '51-200 employees',
+  address_line: '123 Aurora Boulevard',
+  address_barangay: 'Cubao',
+  address_district: 'District 3',
+  address_city: 'Quezon City',
+  contact_email: 'abccompany.hr@gmail.com',
+  contact_number: '(02)1234-5678',
+  contact_person_first_name: 'Juan',
+  contact_person_middle_name: 'Mendoza',
+  contact_person_last_name: 'Dela Cruz',
+  contact_person_extension_name: 'Jr.',
   verified: true,
   verifiedBy: 'QC PESO',
   dateVerified: 'July 19, 2026',
   verificationId: 'QCP-2026-1234',
-  contactPerson: 'Juan Dela Cruz',
-  email: 'abccompany.hr@gmail.com',
-  contactNumber: '(02)1234-5678',
-  website: 'abc.company.com',
-  yearEstablished: '2015',
-  companySize: '51-200 employees',
 }
 
 const mockApplicantsList: Applicant[] = [
@@ -163,7 +170,20 @@ let mockNotificationsList: EmployerNotification[] = [
   },
 ]
 
+const mockAttendanceRecords: EmployerAttendanceRecord[] = [
+  { id: 'attendance-1', applicantId: 'app-2', studentName: 'John Doe', role: 'HR Intern', company: 'ABC Company', date: '2026-08-10', timeIn: '8:00 AM', timeOut: '5:00 PM', status: 'Present', hoursRendered: 8, requiredHours: 150 },
+  { id: 'attendance-2', applicantId: 'app-2', studentName: 'John Doe', role: 'HR Intern', company: 'ABC Company', date: '2026-08-11', timeIn: '8:11 AM', timeOut: '5:00 PM', status: 'Late', hoursRendered: 8, requiredHours: 150 },
+  { id: 'attendance-3', applicantId: 'app-2', studentName: 'John Doe', role: 'HR Intern', company: 'ABC Company', date: '2026-08-12', timeIn: '8:00 AM', timeOut: '5:00 PM', status: 'Present', hoursRendered: 8, requiredHours: 150 },
+  { id: 'attendance-4', applicantId: 'app-2', studentName: 'John Doe', role: 'HR Intern', company: 'ABC Company', date: '2026-08-13', timeIn: '—', timeOut: '—', status: 'Absent', hoursRendered: 0, requiredHours: 150 },
+  { id: 'attendance-5', applicantId: 'app-2', studentName: 'John Doe', role: 'HR Intern', company: 'ABC Company', date: '2026-08-14', timeIn: '8:00 AM', timeOut: '5:00 PM', status: 'Present', hoursRendered: 8, requiredHours: 150 },
+  { id: 'attendance-6', applicantId: 'app-2', studentName: 'John Doe', role: 'HR Intern', company: 'ABC Company', date: '2026-08-16', timeIn: '8:00 AM', timeOut: '5:00 PM', status: 'Present', hoursRendered: 8, requiredHours: 150 },
+]
+
 export const employerService = {
+  getAttendanceRecords: async (): Promise<EmployerAttendanceRecord[]> => {
+    return new Promise((resolve) => setTimeout(() => resolve([...mockAttendanceRecords]), 300))
+  },
+
   getCompanyProfile: async (): Promise<CompanyProfile> => {
     return new Promise((resolve) => setTimeout(() => resolve({ ...mockCompanyProfile }), 300))
   },
@@ -221,6 +241,24 @@ export const employerService = {
     })
   },
 
+  getApplicantById: async (id: string): Promise<Applicant | undefined> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(mockApplicantsList.find((applicant) => applicant.id === id))
+      }, 300)
+    })
+  },
+
+  updateApplicantStatus: async (id: string, status: Applicant['status']): Promise<void> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const applicant = mockApplicantsList.find((item) => item.id === id)
+        if (applicant) applicant.status = status
+        resolve()
+      }, 300)
+    })
+  },
+
   getApplicantsForOpportunity: async (opportunityId: string): Promise<Applicant[]> => {
     return new Promise((resolve) => {
       setTimeout(() => {
@@ -244,7 +282,7 @@ export const employerService = {
         const acceptanceRate = totalApplicants > 0 ? Math.round((acceptedCount / totalApplicants) * 100) : 0
 
         resolve({
-          companyName: mockCompanyProfile.companyName,
+          companyName: mockCompanyProfile.company_name,
           activeOpportunities,
           totalApplicants,
           acceptedPercentage,

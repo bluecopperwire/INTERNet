@@ -10,21 +10,45 @@ import type {
 } from '../types/admin.types'
 import { 
   MOCK_STUDENT_RECORD, 
+  MOCK_STUDENT_RECORDS,
   MOCK_EMPLOYER_RECORD, 
+  MOCK_EMPLOYER_RECORDS,
   MOCK_QCPESO_RECORD, 
+  MOCK_QCPESO_RECORDS,
   MOCK_AUDIT_LOGS,
   MOCK_ADMIN_SUMMARY,
   MOCK_ADMIN_NOTIFICATIONS
 } from '../mocks/admin.mock'
 
 let currentStudentRecord = { ...MOCK_STUDENT_RECORD }
+let currentStudentRecords = MOCK_STUDENT_RECORDS.map((record) => ({ ...record }))
 let currentEmployerRecord = { ...MOCK_EMPLOYER_RECORD }
+let currentEmployerRecords = MOCK_EMPLOYER_RECORDS.map((record) => ({ ...record }))
 let currentQCPesoRecord = { ...MOCK_QCPESO_RECORD }
+let currentQCPesoRecords = MOCK_QCPESO_RECORDS.map((record) => ({ ...record }))
 let currentAuditLogs = [ ...MOCK_AUDIT_LOGS ]
 let currentSummary = { ...MOCK_ADMIN_SUMMARY }
 let currentNotifications = [ ...MOCK_ADMIN_NOTIFICATIONS ]
 
 export const adminService = {
+  getStudentRecords: async (): Promise<StudentRecord[]> => {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve(currentStudentRecords.map((record) => ({ ...record }))), 300)
+    })
+  },
+
+  getEmployerRecords: async (): Promise<EmployerRecord[]> => {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve(currentEmployerRecords.map((record) => ({ ...record }))), 300)
+    })
+  },
+
+  getQCPesoRecords: async (): Promise<QCPesoRecord[]> => {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve(currentQCPesoRecords.map((record) => ({ ...record }))), 300)
+    })
+  },
+
   getDashboardSummary: async (): Promise<AdminDashboardSummary> => {
     return new Promise((resolve) => {
       setTimeout(() => resolve({ ...currentSummary }), 300)

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
-import { X, Search, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react'
-import { ReviewApplicantModal } from './ReviewApplicantModal'
+import { X, Search, SlidersHorizontal, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { employerService } from '../services/employer.service'
 import type { Opportunity, Applicant } from '../types/employer.types'
 import styles from './ViewApplicantsModal.module.css'
@@ -13,18 +13,17 @@ interface ViewApplicantsModalProps {
 export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModalProps) {
   const [applicants, setApplicants] = useState<Applicant[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [applicantToReview, setApplicantToReview] = useState<Applicant | null>(null)
+  const navigate = useNavigate()
 
   // Pagination & Filtering state
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(7)
+  const itemsPerPage = 3
   const [searchQuery, setSearchQuery] = useState('')
 
   const [showFilterMenu, setShowFilterMenu] = useState(false)
   const [statusFilter, setStatusFilter] = useState('All')
   const [courseFilter, setCourseFilter] = useState('All')
   const [yearLevelFilter, setYearLevelFilter] = useState('All')
-  const [dateFilter, setDateFilter] = useState('All')
 
   useEffect(() => {
     employerService.getApplicantsForOpportunity(opportunity.id).then((data) => {
@@ -36,7 +35,6 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
   // Extract unique values for filter dropdowns
   const uniqueCourses = useMemo(() => ['All', ...new Set(applicants.map(a => a.course))], [applicants])
   const uniqueYearLevels = useMemo(() => ['All', ...new Set(applicants.map(a => a.yearLevel))], [applicants])
-  const uniqueDates = useMemo(() => ['All', ...new Set(applicants.map(a => a.dateApplied))], [applicants])
 
   const filteredApplicants = useMemo(() => {
     return applicants.filter((app) => {
@@ -54,13 +52,9 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
       if (yearLevelFilter !== 'All') {
         matches = matches && app.yearLevel === yearLevelFilter
       }
-      if (dateFilter !== 'All') {
-        matches = matches && app.dateApplied === dateFilter
-      }
-
       return matches
     })
-  }, [applicants, searchQuery, statusFilter, courseFilter, yearLevelFilter, dateFilter])
+  }, [applicants, searchQuery, statusFilter, courseFilter, yearLevelFilter])
 
   const totalPages = Math.max(1, Math.ceil(filteredApplicants.length / itemsPerPage))
 
@@ -139,12 +133,6 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
                 {uniqueYearLevels.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
-            <div className={styles.filterWrapper}>
-              <span className={styles.filterLabel}>Date Applied:</span>
-              <select className={styles.filterSelect} value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}>
-                {uniqueDates.map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
-            </div>
           </div>
         )}
 
@@ -158,6 +146,7 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
                 <th>Year Level</th>
                 <th>Date Applied</th>
                 <th>Status</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -190,9 +179,10 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
                     <td>
                       <button 
                         className={styles.reviewBtn}
-                        onClick={() => setApplicantToReview(app)}
+                        onClick={() => navigate(`/employer/applicants/${app.id}?from=opportunity&opportunityId=${opportunity.id}`)}
                       >
-                        Review
+                        <Eye size={16} />
+                        <span>Review</span>
                       </button>
                     </td>
                   </tr>
@@ -203,25 +193,6 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
         </div>
 
         <div className={styles.paginationRow}>
-          <div className={styles.leftControls}>
-            <span className={styles.viewLabel}>View</span>
-            <div className={styles.viewSelectBox}>
-              <select
-                className={styles.viewSelect}
-                value={itemsPerPage}
-                onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value))
-                  setCurrentPage(1)
-                }}
-              >
-                <option value={7}>7</option>
-                <option value={10}>10</option>
-                <option value={15}>15</option>
-              </select>
-            </div>
-            <span className={styles.perPageLabel}>Students per page</span>
-          </div>
-
           <div className={styles.pagination}>
             <button
               className={styles.pageBtn}
@@ -233,7 +204,6 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
             <button className={`${styles.pageBtn} ${styles.active}`}>
               {currentPage}
             </button>
-            <span className={styles.pageInfo}>of {totalPages}</span>
             <button
               className={styles.pageBtn}
               onClick={handleNextPage}
@@ -245,18 +215,6 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
         </div>
       </div>
       
-      {applicantToReview && (
-        <ReviewApplicantModal 
-          applicant={applicantToReview} 
-          onClose={() => setApplicantToReview(null)} 
-          onStatusChange={(newStatus) => {
-            setApplicants(prev => prev.map(a => 
-              a.id === applicantToReview.id ? { ...a, status: newStatus as any } : a
-            ))
-            setApplicantToReview(prev => prev ? { ...prev, status: newStatus as any } : null)
-          }}
-        />
-      )}
     </div>
   )
 }

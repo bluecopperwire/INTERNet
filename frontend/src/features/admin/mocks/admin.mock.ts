@@ -91,6 +91,17 @@ export const MOCK_STUDENT_RECORD: StudentRecord = {
   hostOrgType: 'Private Corporation',
 }
 
+export const MOCK_STUDENT_RECORDS: StudentRecord[] = [
+  MOCK_STUDENT_RECORD,
+  { ...MOCK_STUDENT_RECORD, id: 'USER-STU-002', studentId: 'STU-0002', fullName: 'Marie Santos', email: 'marie.santos@student.edu.ph', status: 'Active', dateCreated: 'August 13, 2026', schoolName: 'Quezon City University', programStrand: 'BS Information Technology', yearLevel: 'Third Year College' },
+  { ...MOCK_STUDENT_RECORD, id: 'USER-STU-003', studentId: 'STU-0003', fullName: 'Kyle Ethan Porciuncula', email: 'kyle.porciuncula@student.edu.ph', status: 'Active', dateCreated: 'August 12, 2026', schoolName: 'Polytechnic University of the Philippines', programStrand: 'BS Computer Science', yearLevel: 'Third Year College' },
+  { ...MOCK_STUDENT_RECORD, id: 'USER-STU-004', studentId: 'STU-0004', fullName: 'Angelica Reyes', email: 'angelica.reyes@student.edu.ph', status: 'Deactivated', dateCreated: 'August 10, 2026', schoolName: 'Quezon City University', programStrand: 'BS Information Systems', yearLevel: 'Fourth Year College' },
+  { ...MOCK_STUDENT_RECORD, id: 'USER-STU-005', studentId: 'STU-0005', fullName: 'John Doe', email: 'john.doe@student.edu.ph', status: 'Active', dateCreated: 'August 8, 2026', schoolName: 'Technological Institute of the Philippines', programStrand: 'BS Psychology', yearLevel: 'Fourth Year College' },
+  { ...MOCK_STUDENT_RECORD, id: 'USER-STU-006', studentId: 'STU-0006', fullName: 'Sofia Mendoza', email: 'sofia.mendoza@student.edu.ph', status: 'Inactive', dateCreated: 'August 7, 2026', schoolName: 'Polytechnic University of the Philippines', programStrand: 'BS Information Technology', yearLevel: 'Second Year College' },
+  { ...MOCK_STUDENT_RECORD, id: 'USER-STU-007', studentId: 'STU-0007', fullName: 'Paolo Garcia', email: 'paolo.garcia@student.edu.ph', status: 'Active', dateCreated: 'August 6, 2026', schoolName: 'Quezon City University', programStrand: 'BS Computer Science', yearLevel: 'Third Year College' },
+  { ...MOCK_STUDENT_RECORD, id: 'USER-STU-008', studentId: 'STU-0008', fullName: 'Trisha Villanueva', email: 'trisha.villanueva@student.edu.ph', status: 'Active', dateCreated: 'August 5, 2026', schoolName: 'Technological Institute of the Philippines', programStrand: 'BS Information Technology', yearLevel: 'Fourth Year College' },
+]
+
 export const MOCK_EMPLOYER_RECORD: EmployerRecord = {
   id: 'USER-EMP-001',
   role: 'Employer',
@@ -111,6 +122,14 @@ export const MOCK_EMPLOYER_RECORD: EmployerRecord = {
   verificationStatus: 'Verified',
 }
 
+export const MOCK_EMPLOYER_RECORDS: EmployerRecord[] = [
+  MOCK_EMPLOYER_RECORD,
+  { ...MOCK_EMPLOYER_RECORD, id: 'USER-EMP-002', companyId: 'COMP-002', companyName: 'Metropolitan Tech Solutions', fullName: 'Miguel Santos', contactPerson: 'Miguel Santos', email: 'miguel@metrotech.ph', dateCreated: 'August 12, 2026', status: 'Active' },
+  { ...MOCK_EMPLOYER_RECORD, id: 'USER-EMP-003', companyId: 'COMP-003', companyName: 'Quezon Innovation Labs', fullName: 'Andrea Cruz', contactPerson: 'Andrea Cruz', email: 'andrea@qilabs.ph', dateCreated: 'August 10, 2026', status: 'Deactivated' },
+  { ...MOCK_EMPLOYER_RECORD, id: 'USER-EMP-004', companyId: 'COMP-004', companyName: 'BrightPath Digital', fullName: 'Joseph Ramos', contactPerson: 'Joseph Ramos', email: 'joseph@brightpath.ph', dateCreated: 'August 8, 2026', status: 'Active' },
+  { ...MOCK_EMPLOYER_RECORD, id: 'USER-EMP-005', companyId: 'COMP-005', companyName: 'Nexa Commerce', fullName: 'Trina Valdez', contactPerson: 'Trina Valdez', email: 'trina@nexa.ph', dateCreated: 'August 6, 2026', status: 'Inactive' },
+]
+
 export const MOCK_QCPESO_RECORD: QCPesoRecord = {
   id: 'USER-QC-001',
   role: 'QC PESO Personnel',
@@ -128,6 +147,13 @@ export const MOCK_QCPESO_RECORD: QCPesoRecord = {
   contactNumber: '09123456789',
   verificationStatus: 'Approved',
 }
+
+export const MOCK_QCPESO_RECORDS: QCPesoRecord[] = [
+  MOCK_QCPESO_RECORD,
+  { ...MOCK_QCPESO_RECORD, id: 'USER-QC-002', employeeId: 'QCPESO-002', fullName: 'Ramon Villanueva', firstName: 'Ramon', middleName: '', lastName: 'Villanueva', email: 'ramon.villanueva@quezoncity.gov.ph', position: 'Internship Coordinator', dateCreated: 'August 11, 2026', status: 'Active' },
+  { ...MOCK_QCPESO_RECORD, id: 'USER-QC-003', employeeId: 'QCPESO-003', fullName: 'Lea Martinez', firstName: 'Lea', middleName: '', lastName: 'Martinez', email: 'lea.martinez@quezoncity.gov.ph', position: 'Employment Officer', dateCreated: 'August 7, 2026', status: 'Inactive' },
+  { ...MOCK_QCPESO_RECORD, id: 'USER-QC-004', employeeId: 'QCPESO-004', fullName: 'Ernesto Flores', firstName: 'Ernesto', middleName: '', lastName: 'Flores', email: 'ernesto.flores@quezoncity.gov.ph', position: 'PESO Administrator', dateCreated: 'August 4, 2026', status: 'Active' },
+]
 
 export const MOCK_AUDIT_LOGS: AuditLog[] = [
   {

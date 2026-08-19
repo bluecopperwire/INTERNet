@@ -1,7 +1,8 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import {
-  Bell,
   Grid2X2,
+  ChevronDown,
+  ChevronRight,
   Users,
   Search,
   Settings,
@@ -19,6 +20,7 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
   const [search, setSearch] = useState('')
+  const [isUserManagementOpen, setIsUserManagementOpen] = useState(false)
   const navigate = useNavigate()
 
   const logout = () => {
@@ -40,32 +42,28 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.brand}>
-          <div className={styles.logoBox}>
+          <span className={styles.logoBox}>
             <img src={internetLogo} alt="INTERNet Logo" />
-          </div>
-          <span className={styles.brandName}>INTERNet</span>
+          </span>
+          <span>INTERNet</span>
         </div>
         <div className={styles.headerActions}>
-          <button type="button" className={styles.iconBtn} aria-label="Notifications">
-            <Bell size={20} color="#ffffff" />
-          </button>
-          <button type="button" className={styles.iconBtn} aria-label="Close navigation" onClick={onClose}>
-            <Menu size={20} color="#ffffff" />
+          <button type="button" aria-label="Close navigation" onClick={onClose}>
+            <Menu />
           </button>
         </div>
       </div>
 
-      {/* Search Input */}
-      <div className={styles.searchWrapper}>
+      <label className={styles.searchLabel}>
+        <span className={styles.srOnly}>Search navigation</span>
         <input
           type="search"
-          className={styles.searchInput}
           placeholder="Search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           tabIndex={isOpen ? 0 : -1}
         />
-      </div>
+      </label>
 
       {/* Navigation Links */}
       <nav className={styles.navigation} aria-label="System Admin navigation">
@@ -88,14 +86,19 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
           {(matchesSearch('User Management') ||
             matchesSearch('Manage Students') ||
             matchesSearch('Manage Employers') ||
-            matchesSearch('Manage QC PESO')) && (
+          matchesSearch('Manage QC PESO')) && (
             <div className={styles.userManagementSection}>
-              <div className={styles.sectionHeaderItem}>
-                <Users size={20} />
-                <span>User Management</span>
-              </div>
+              <button
+                type="button"
+                className={styles.navGroupHeader}
+                onClick={() => setIsUserManagementOpen((current) => !current)}
+                aria-expanded={isUserManagementOpen}
+              >
+                <span className={styles.navGroupTitle}><Users size={20} /><span>User Management</span></span>
+                {isUserManagementOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+              </button>
 
-              <div className={styles.subItemsList}>
+              {isUserManagementOpen && <div className={styles.subItemsList}>
                 {matchesSearch('Manage Students') && (
                   <NavLink
                     className={({ isActive }) =>
@@ -134,7 +137,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                     Manage QC PESO
                   </NavLink>
                 )}
-              </div>
+              </div>}
             </div>
           )}
 
@@ -203,7 +206,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
 
           <button
             type="button"
-            className={styles.navItem}
+            className={styles.logout}
             onClick={logout}
             tabIndex={isOpen ? 0 : -1}
           >

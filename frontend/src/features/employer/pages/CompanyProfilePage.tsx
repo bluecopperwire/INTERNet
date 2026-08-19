@@ -19,6 +19,20 @@ import { employerService } from '../services/employer.service'
 import type { CompanyProfile } from '../types/employer.types'
 import styles from './CompanyProfilePage.module.css'
 
+const formatAddress = (profile: CompanyProfile) => [
+  profile.address_line,
+  profile.address_barangay,
+  profile.address_district,
+  profile.address_city,
+].filter(Boolean).join(', ')
+
+const formatContactPerson = (profile: CompanyProfile) => [
+  profile.contact_person_first_name,
+  profile.contact_person_middle_name,
+  profile.contact_person_last_name,
+  profile.contact_person_extension_name,
+].filter(Boolean).join(' ')
+
 export function CompanyProfilePage() {
   const [profile, setProfile] = useState<CompanyProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -93,7 +107,7 @@ export function CompanyProfilePage() {
 
       {/* Top Hero Banner */}
       <EmployerHero
-        title="Company Profile"
+        title=""
         subtitle=""
         comfortableSpacing={false}
       />
@@ -113,7 +127,7 @@ export function CompanyProfilePage() {
               {profile.logoUrl ? (
                 <img
                   src={profile.logoUrl}
-                  alt={profile.companyName}
+                  alt={profile.company_name}
                   className={styles.pfpImage}
                 />
               ) : (
@@ -133,11 +147,11 @@ export function CompanyProfilePage() {
 
             {/* Company Meta text cleanly rendered inside white header */}
             <div className={styles.companyMeta}>
-              <h1 className={styles.companyTitle}>{profile.companyName}</h1>
-              <p className={styles.industryText}>{profile.industry}</p>
+              <h1 className={styles.companyTitle}>{profile.company_name}</h1>
+              <p className={styles.industryText}>{profile.company_type}</p>
               <div className={styles.locationText}>
                 <MapPin size={16} />
-                <span>{profile.location}</span>
+                <span>{formatAddress(profile)}</span>
               </div>
             </div>
           </div>
@@ -165,7 +179,7 @@ export function CompanyProfilePage() {
                 </div>
                 <h2 className={styles.cardTitle}>About Company</h2>
               </div>
-              <p className={styles.aboutText}>{profile.about}</p>
+              <p className={styles.aboutText}>{profile.description}</p>
             </div>
 
             {/* Company Verification Card */}
@@ -194,18 +208,18 @@ export function CompanyProfilePage() {
               <div className={styles.verificationDetails}>
                 <div className={styles.detailRow}>
                   <span className={styles.detailLabel}>Verified by</span>
-                  <span className={styles.detailValue}>{profile.verifiedBy}</span>
+                  <span className={styles.detailValue}>{profile.verifiedBy ?? 'QC PESO'}</span>
                 </div>
                 <div className={styles.detailRow}>
                   <span className={styles.detailLabel}>Date Verified</span>
                   <span className={styles.detailValue}>
-                    {profile.dateVerified}
+                    {profile.dateVerified ?? 'Not provided'}
                   </span>
                 </div>
                 <div className={styles.detailRow}>
                   <span className={styles.detailLabel}>Verification ID</span>
                   <span className={styles.detailValue}>
-                    {profile.verificationId}
+                    {profile.verificationId ?? 'Not provided'}
                   </span>
                 </div>
               </div>
@@ -228,9 +242,9 @@ export function CompanyProfilePage() {
                     <span className={styles.itemIcon}>
                       <Tag size={20} />
                     </span>
-                    <span className={styles.itemLabel}>Industry</span>
+                    <span className={styles.itemLabel}>Company Type</span>
                   </div>
-                  <span className={styles.itemValue}>{profile.industry}</span>
+                  <span className={styles.itemValue}>{profile.company_type}</span>
                 </div>
 
                 <div className={styles.detailItem}>
@@ -240,7 +254,7 @@ export function CompanyProfilePage() {
                     </span>
                     <span className={styles.itemLabel}>Location</span>
                   </div>
-                  <span className={styles.itemValue}>{profile.location}</span>
+                  <span className={styles.itemValue}>{formatAddress(profile)}</span>
                 </div>
 
                 <div className={styles.detailItem}>
@@ -251,7 +265,7 @@ export function CompanyProfilePage() {
                     <span className={styles.itemLabel}>Contact Person</span>
                   </div>
                   <span className={styles.itemValue}>
-                    {profile.contactPerson}
+                    {formatContactPerson(profile)}
                   </span>
                 </div>
 
@@ -262,7 +276,7 @@ export function CompanyProfilePage() {
                     </span>
                     <span className={styles.itemLabel}>Email</span>
                   </div>
-                  <span className={styles.itemValue}>{profile.email}</span>
+                  <span className={styles.itemValue}>{profile.contact_email}</span>
                 </div>
 
                 <div className={styles.detailItem}>
@@ -273,7 +287,7 @@ export function CompanyProfilePage() {
                     <span className={styles.itemLabel}>Contact Number</span>
                   </div>
                   <span className={styles.itemValue}>
-                    {profile.contactNumber}
+                    {profile.contact_number}
                   </span>
                 </div>
 
@@ -284,7 +298,7 @@ export function CompanyProfilePage() {
                     </span>
                     <span className={styles.itemLabel}>Company Website</span>
                   </div>
-                  <span className={styles.itemValue}>{profile.website}</span>
+                  <span className={styles.itemValue}>{profile.website_url ?? 'Not provided'}</span>
                 </div>
 
                 <div className={styles.detailItem}>
@@ -295,7 +309,7 @@ export function CompanyProfilePage() {
                     <span className={styles.itemLabel}>Year Established</span>
                   </div>
                   <span className={styles.itemValue}>
-                    {profile.yearEstablished}
+                    {profile.year_established ?? 'Not provided'}
                   </span>
                 </div>
 
@@ -306,7 +320,7 @@ export function CompanyProfilePage() {
                     </span>
                     <span className={styles.itemLabel}>Company Size</span>
                   </div>
-                  <span className={styles.itemValue}>{profile.companySize}</span>
+                  <span className={styles.itemValue}>{profile.company_size ?? 'Not provided'}</span>
                 </div>
               </div>
             </div>

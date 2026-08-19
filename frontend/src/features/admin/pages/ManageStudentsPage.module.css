@@ -1,0 +1,370 @@
+.pageContainer {
+  min-height: 100vh;
+  background: #fff;
+  color: #160e6f;
+}
+
+.hero {
+  position: relative;
+  display: flex;
+  height: 290px;
+  align-items: flex-end;
+  overflow: hidden;
+  padding: 0 0 92px;
+}
+
+.heroImage,.heroOverlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.heroImage {
+  object-fit: cover;
+}
+
+.heroOverlay {
+  background: linear-gradient(180deg, rgba(24,25,105,.36), rgba(255,214,27,.25)), linear-gradient(90deg, rgba(21,24,102,.22), transparent 58%);
+}
+
+.heroContent {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 48px;
+}
+
+.heroContent h1 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(42px,4.4vw,62px);
+  font-weight: 600;
+  letter-spacing: -.035em;
+  line-height: 1.02;
+}
+
+.heroContent p {
+  margin: 8px 0 0;
+  color: #fff;
+  font-size: clamp(16px,1.55vw,21px);
+}
+
+.mainContent {
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 32px 48px 48px;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.summaryCard {
+  position: relative;
+  display: flex;
+  min-height: 118px;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  padding: 20px 28px;
+  border-radius: 8px;
+  background: #160e6f;
+  color: #fff;
+  transition: transform 160ms ease;
+}
+
+.summaryCard:hover {
+  transform: translateY(-2px);
+}
+
+.summaryCard h2,.summaryCard p {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+}
+
+.summaryCard h2 {
+  max-width: 72%;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.summaryCard p {
+  margin-top: 4px;
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.summaryCard img {
+  position: absolute;
+  right: 22px;
+  bottom: -19px;
+  width: 102px;
+  max-width: 26%;
+  pointer-events: none;
+}
+
+.managementCard {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.searchBox {
+  display: flex;
+  width: 100%;
+  height: 42px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border: 1px solid #160e6f;
+  border-radius: 6px;
+  color: #160e6f;
+}
+
+.searchBox input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  color: #160e6f;
+  font: inherit;
+  font-size: 14px;
+}
+
+.searchBox input::placeholder {
+  color: #626b7c;
+}
+
+.statusFilter {
+  display: flex;
+  width: 210px;
+  height: 42px;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border: 1px solid #160e6f;
+  border-radius: 6px;
+  color: #160e6f;
+  background: #fff;
+}
+
+.statusFilter select {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  color: #160e6f;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+}
+
+.manageButton {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid #160e6f;
+  border-radius: 6px;
+  color: #160e6f;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease,color 150ms ease,transform 160ms ease;
+}
+
+.manageButton:hover {
+  background: #160e6f;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid rgba(22,14,111,.2);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(22,14,111,.05);
+}
+
+.tableWrap table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.tableWrap th {
+  padding: 15px 20px;
+  border-bottom: 2px solid #160e6f;
+  background: #f8fafc;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tableWrap td {
+  padding: 14px 20px;
+  border-bottom: 1px solid #dfe3eb;
+  color: #26324a;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.tableWrap tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.tableWrap td strong {
+  color: #160e6f;
+  font-weight: 600;
+}
+
+.tableWrap th:last-child,.tableWrap td:last-child {
+  text-align: right;
+}
+
+.statusBadge {
+  display: inline-flex;
+  padding: 6px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.active {
+  color: #008f70;
+  background: #e4f8f2;
+}
+
+.inactive {
+  color: #90691b;
+  background: #fff2d9;
+}
+
+.deactivated {
+  color: #d63e45;
+  background: #feeaeb;
+}
+
+.empty {
+  padding: 32px !important;
+  color: #625d7d !important;
+  text-align: center !important;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 28px;
+  color: #625d7d;
+  font-size: 14px;
+}
+
+.pageSizeControl {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #625d7d;
+}
+
+.pageSizeControl select {
+  width: 76px;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #a8add0;
+  border-radius: 6px;
+  outline: 0;
+  color: #160e6f;
+  background: #fff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.pagination > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pagination button,.currentPage {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid #d8dce7;
+  border-radius: 6px;
+  color: #160e6f;
+  background: #fff;
+}
+
+.pagination button {
+  cursor: pointer;
+}
+
+.pagination button:disabled {
+  cursor: default;
+  opacity: .5;
+}
+
+.currentPage {
+  border-color: #160e6f;
+  color: #fff;
+  background: #160e6f;
+  font-weight: 700;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+}
+
+@media (max-width: 768px) {
+  .hero {
+    height: 220px;
+    padding-bottom: 58px;
+  }
+  .heroContent,.mainContent {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+  .summaryGrid {
+    grid-template-columns: 1fr;
+  }
+  .toolbar,.pagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .searchBox,.statusFilter {
+    width: 100%;
+  }
+  .pagination > div {
+    justify-content: flex-end;
+  }
+}

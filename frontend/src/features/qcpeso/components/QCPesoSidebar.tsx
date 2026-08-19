@@ -6,7 +6,6 @@ import {
   Clock,
   ExternalLink,
   Grid2X2,
-  HardDrive,
   LogOut,
   Menu,
   Settings,
@@ -219,20 +218,6 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
           >
             <Clock size={20} aria-hidden="true" />
             <span>Reports and Documents</span>
-          </NavLink>
-        )}
-
-        {matchesSearch('Backups and Maintenance') && (
-          <NavLink
-            className={({ isActive }) =>
-              `${styles.navItem} ${isActive ? styles.active : ''}`
-            }
-            to="/qcpeso/backups-maintenance"
-            onClick={onClose}
-            tabIndex={isOpen ? 0 : -1}
-          >
-            <HardDrive size={20} aria-hidden="true" />
-            <span>Backups and Maintenance</span>
           </NavLink>
         )}
 

@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Eye, Search } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Eye, Search, SlidersHorizontal } from 'lucide-react'
 import QCPesoHero from '../components/QCPesoHero'
 import documentIcon from '../../../assets/docu.svg'
 import suitcaseIcon from '../../../assets/suitcase-2.svg'
@@ -144,20 +144,22 @@ export function ManageEmployersPage() {
           </div>
 
           <div className={`${styles.filterGroup} ${styles.statusFilterGroup}`}>
-            <select
-              className={styles.filterSelect}
-              value={selectedStatus}
-              onChange={(e) => {
-                setSelectedStatus(e.target.value)
-                setCurrentPage(1)
-              }}
-            >
-              <option value="All">Filter</option>
-              <option value="Active">Active</option>
-              <option value="Pending">Pending</option>
-              <option value="Suspended">Suspended</option>
-              <option value="Rejected">Rejected</option>
-            </select>
+            <div className={styles.filterSelect}>
+              <SlidersHorizontal size={16} aria-hidden="true" />
+              <select
+                value={selectedStatus}
+                onChange={(e) => {
+                  setSelectedStatus(e.target.value)
+                  setCurrentPage(1)
+                }}
+              >
+                <option value="All">All Statuses</option>
+                <option value="Active">Active</option>
+                <option value="Pending">Pending</option>
+                <option value="Suspended">Suspended</option>
+                <option value="Rejected">Rejected</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -235,7 +237,7 @@ export function ManageEmployersPage() {
                 <option value={15}>15</option>
               </select>
             </div>
-            <span className={styles.perPageLabel}>Students per page</span>
+            <span className={styles.perPageLabel}>Employers per page</span>
           </div>
 
           <div className={styles.pagination}>

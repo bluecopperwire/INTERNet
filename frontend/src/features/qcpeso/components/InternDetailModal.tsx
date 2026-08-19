@@ -113,17 +113,6 @@ export function InternDetailModal({ intern, onClose }: InternDetailModalProps) {
             />
           </div>
 
-          {intern.dtrLogs && intern.dtrLogs.length > 0 && (
-            <div className={styles.dtrLogList}>
-              {intern.dtrLogs.map((log) => (
-                <div key={log.id} className={styles.dtrLogRow}>
-                  <span><strong>{log.date}</strong></span>
-                  <span>In: {log.timeIn} | Out: {log.timeOut}</span>
-                  <span>{log.hoursRendered} hrs ({log.status})</span>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Submitted Documents Section */}

@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { useNavigate, useOutletContext } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { 
-  Menu, 
   Bell, 
   ArrowRight, 
+  ChevronRight,
   Plus, 
   FileText, 
   Users, 
@@ -11,14 +11,11 @@ import {
   X 
 } from 'lucide-react'
 import headerImage from '../../../assets/requirements-header-image.png'
-import qcLogos from '../../../assets/qc-logos.svg'
 import styles from './EmployerDashboardPage.module.css'
 import { useEmployerDashboard } from '../hooks/useEmployerDashboard'
-import type { EmployerLayoutContext } from '../components/EmployerLayout'
 
 export const EmployerDashboardPage: React.FC = () => {
   const navigate = useNavigate()
-  const { openSidebar } = useOutletContext<EmployerLayoutContext>()
   const { summary, recentApplicants, notifications, isLoading, markAllAsRead } = useEmployerDashboard()
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
@@ -52,21 +49,6 @@ export const EmployerDashboardPage: React.FC = () => {
         </div>
 
         <div className={styles.topNavbar}>
-          <div className={styles.navbarLeft}>
-            <button 
-              type="button" 
-              className={styles.menuBtn} 
-              onClick={openSidebar}
-              aria-label="Open Sidebar"
-            >
-              <Menu size={24} color="#ffffff" />
-            </button>
-            <div className={styles.dashboardTitleWrapper}>
-              <span className={styles.dashboardTitle}>Dashboard</span>
-              <img src={qcLogos} alt="QC PESO Logo" className={styles.qcLogosImg} />
-            </div>
-          </div>
-
           <div className={styles.navbarRight} ref={notificationRef}>
             <button
               type="button"
@@ -200,13 +182,17 @@ export const EmployerDashboardPage: React.FC = () => {
         <div className={styles.bottomSectionGrid}>
           <div className={styles.recentAppsContainer}>
             <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionHeading}>Recent Applications</h2>
+              <div className={styles.sectionTitle}>
+                <h2 className={styles.sectionHeading}>Recent Applications</h2>
+                <p>Latest applications submitted to your opportunities</p>
+              </div>
               <button 
                 type="button" 
                 className={styles.outlineViewAllBtn}
                 onClick={() => navigate('/employer/applicants')}
               >
-                View All
+                <span>View All</span>
+                <ChevronRight size={16} aria-hidden="true" />
               </button>
             </div>
 
@@ -247,7 +233,10 @@ export const EmployerDashboardPage: React.FC = () => {
           </div>
 
           <div className={styles.quickActionsContainer}>
-            <h2 className={styles.sectionHeading}>Quick Actions</h2>
+            <div className={styles.sectionTitle}>
+              <h2 className={styles.sectionHeading}>Quick Actions</h2>
+              <p>Manage opportunities and your company profile</p>
+            </div>
 
             <div className={styles.actionsList}>
               <button

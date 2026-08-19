@@ -47,6 +47,7 @@
   align-items: center;
   gap: 2px;
 }
+
 .asterisk {
   color: #cc0001;
   margin-left: 2px;
@@ -104,7 +105,6 @@
   opacity: 0.95;
 }
 
-
 .contentArea {
   padding: 16px 28px 40px 28px;
 }
@@ -151,13 +151,19 @@
   background-color: #160e6f;
 }
 
-
 .sectionBlock {
   animation: fadeIn 0.3s ease-in-out;
 }
+
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .sectionHeader {
@@ -307,7 +313,6 @@
   padding: 0;
   margin-bottom: 24px;
 }
-
 
 .appGrid {
   display: grid;

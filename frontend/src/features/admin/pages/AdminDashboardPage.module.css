@@ -16,11 +16,12 @@
 .heroHeader {
   position: relative;
   width: 100%;
-  min-height: 330px;
+  height: 290px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  padding: 24px 48px 36px 48px;
+  justify-content: flex-end;
+  padding: 0 0 72px;
+  overflow: hidden;
   z-index: 20;
 }
 
@@ -225,10 +226,13 @@
 .heroContent {
   position: relative;
   z-index: 3;
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 48px;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-top: 16px;
 }
 
 .superBadge {
@@ -247,16 +251,17 @@
 }
 
 .heroTitle {
-  font-size: clamp(34px, 4.5vw, 54px);
+  font-size: clamp(42px, 4.4vw, 62px);
   font-family: 'Poppins', sans-serif;
-  font-weight: 800;
+  font-weight: 600;
   color: #ffffff;
   margin: 0;
   line-height: 1.1;
 }
 
 .heroSubtitle {
-  font-size: clamp(14px, 1.5vw, 17px);
+  margin-top: 2px;
+  font-size: clamp(16px, 1.55vw, 21px);
   font-weight: 400;
   color: #ffffff;
   margin: 0;
@@ -281,13 +286,18 @@
 
 .summaryCard {
   position: relative;
-  padding: 24px 32px;
-  min-height: 140px;
+  padding: 20px 28px;
+  min-height: 118px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   overflow: hidden;
-  border-radius: 6px;
+  border-radius: 8px;
+  transition: transform 160ms ease;
+}
+
+.summaryCard:hover {
+  transform: translateY(-2px);
 }
 
 .cardBlue {
@@ -340,41 +350,53 @@
   line-height: 1;
 }
 
-.bgIcon {
+.summaryIcon {
   position: absolute;
-  right: 20px;
-  bottom: -10px;
-  width: 100px;
-  height: 100px;
+  right: 18px;
+  bottom: 0;
   z-index: 1;
+  width: 150px;
+  max-width: 35%;
+  height: auto;
+  pointer-events: none;
 }
 
-.bgIconBlue {
-  color: #ffffff;
-  opacity: 0.15;
+.peopleIcon {
+  right: 30px;
+  bottom: -18px;
+  width: 108px;
+  max-width: 25%;
 }
 
-.bgIconWhite {
-  color: #ffffff;
-  opacity: 1;
+.suitcaseIcon {
+  width: 112px;
+  max-width: 27%;
 }
 
 /* System Health Monitor Bar */
 .systemHealthBar {
-  background-color: #ffffff;
-  border: 1.5px solid #160e6f;
-  border-radius: 6px;
+  background: #f8fafc;
+  border: 1px solid rgba(22, 14, 111, 0.2);
+  border-radius: 8px;
   padding: 16px 24px;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   align-items: center;
+  box-shadow: 0 4px 12px rgba(22, 14, 111, 0.05);
 }
 
 .healthItem {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
+  padding: 3px 0;
+}
+
+.healthItem + .healthItem {
+  padding-left: 24px;
+  border-left: 1px solid #dfe3eb;
 }
 
 .healthLabel {
@@ -401,7 +423,7 @@
   height: 10px;
   background-color: #16a34a;
   border-radius: 50%;
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.2);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.16);
 }
 
 /* Split Grid for Logs & Actions */
@@ -415,52 +437,56 @@
 .auditCard {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .cardHeaderWithAction {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: flex-end;
+  gap: 16px;
 }
 
 .sectionHeading {
   margin: 0;
   font-family: 'Poppins', sans-serif;
   font-weight: 700;
-  font-size: 1.25rem;
+  font-size: 1.4rem;
   color: #160e6f;
 }
 
 .sectionSubtext {
-  margin: 2px 0 0 0;
-  font-size: 0.85rem;
-  color: #64748b;
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+  color: #555;
+  font-weight: 500;
 }
 
 .outlineViewAllBtn {
-  background: #ffffff;
-  border: 1.5px solid #160e6f;
-  border-radius: 6px;
-  padding: 6px 18px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0;
+  background: transparent;
+  border: 0;
   color: #160e6f;
   font-family: 'Poppins', sans-serif;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: opacity 150ms ease;
 }
 
 .outlineViewAllBtn:hover {
-  background: #160e6f;
-  color: #ffffff;
+  opacity: 0.7;
 }
 
 .tableCard {
   background: #ffffff;
-  border: 1.5px solid #160e6f;
-  border-radius: 6px;
+  border: 1px solid rgba(22, 14, 111, 0.2);
+  border-radius: 8px;
   overflow: hidden;
+  box-shadow: 0 4px 12px rgba(22, 14, 111, 0.05);
 }
 
 .table {
@@ -470,17 +496,17 @@
 }
 
 .table th {
-  padding: 14px 18px;
+  padding: 13px 18px;
   font-family: 'Poppins', sans-serif;
   font-size: 0.85rem;
   font-weight: 700;
   color: #160e6f;
-  background: #ffffff;
-  border-bottom: 1.5px solid #160e6f;
+  background: #f8fafc;
+  border-bottom: 2px solid #160e6f;
 }
 
 .table td {
-  padding: 12px 18px;
+  padding: 13px 18px;
   font-size: 0.88rem;
   color: #160e6f;
   border-bottom: 1px solid rgba(22, 14, 111, 0.1);
@@ -500,25 +526,31 @@
 }
 
 .moduleBadge {
+  display: inline-flex;
+  padding: 4px 9px;
+  border-radius: 999px;
   background-color: rgba(22, 14, 111, 0.08);
   color: #160e6f;
   font-size: 0.75rem;
   font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 4px;
 }
 
 /* Quick Actions */
 .quickActionsContainer {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
+}
+
+.quickActionsHeader {
+  display: flex;
+  flex-direction: column;
 }
 
 .actionsList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .actionButton {
@@ -526,20 +558,23 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  padding: 14px 18px;
+  min-height: 58px;
+  padding: 14px 20px;
   background-color: #160e6f;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   color: #ffffff;
   font-family: 'Poppins', sans-serif;
   font-size: 0.92rem;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: background 150ms ease, transform 160ms ease, box-shadow 160ms ease;
 }
 
 .actionButton:hover {
-  opacity: 0.92;
+  background: #211578;
+  box-shadow: 0 7px 16px rgba(22, 14, 111, 0.18);
+  transform: translateY(-2px);
 }
 
 .actionButtonHighlight {
@@ -563,11 +598,19 @@
   .systemHealthBar {
     grid-template-columns: repeat(2, 1fr);
   }
+  .healthItem:nth-child(3) {
+    padding-left: 0;
+    border-left: 0;
+  }
 }
 
 @media (max-width: 768px) {
   .heroHeader {
-    padding: 20px;
+    height: 220px;
+    padding: 0 0 58px;
+  }
+  .heroContent {
+    padding: 0 24px;
   }
   .mainContent {
     padding: 20px;
@@ -577,5 +620,11 @@
   }
   .systemHealthBar {
     grid-template-columns: 1fr;
+  }
+  .healthItem + .healthItem {
+    padding-left: 0;
+    border-left: 0;
+    border-top: 1px solid #dfe3eb;
+    padding-top: 14px;
   }
 }

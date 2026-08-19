@@ -1,52 +1,417 @@
-.pageContainer { min-height: 100vh; background: #fff; }
-.mainContent { display: flex; width: 100%; max-width: 1280px; margin: 0 auto; padding: 42px 48px; flex-direction: column; gap: 28px; }
-.chartsGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-items: stretch; gap: 24px; margin-bottom: 48px; }
-.chartPanel { min-width: 0; overflow: hidden; border: 1px solid rgba(22,14,111,.2); border-radius: 8px; background: #fff; box-shadow: 0 4px 12px rgba(22,14,111,.05); }
-.chartHeader { display: flex; min-height: 78px; align-items: center; justify-content: space-between; gap: 18px; padding: 16px 20px; border-bottom: 2px solid #160e6f; background: #f8fafc; }
-.chartHeader h2 { margin: 0 0 3px; color: #160e6f; font-size: 1.05rem; font-weight: 700; }
-.chartHeader p { margin: 0; color: #625d7d; font-size: .78rem; }
-.chartBody { display: flex; min-height: 365px; flex-direction: column; justify-content: center; padding: 24px; }
-.donut { position: relative; width: min(220px,68%); aspect-ratio: 1; margin: 0 auto 22px; border-radius: 50%; }
-.donutHole { position: absolute; inset: 29%; border-radius: 50%; background: #fff; }
-.legend { display: grid; width: 100%; max-width: 470px; margin: 0 auto; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px 24px; }
-.legendRow { display: grid; grid-template-columns: 13px 1fr auto; align-items: center; gap: 9px; color: #586071; font-size: 14px; }
-.legendDot { width: 11px; height: 11px; border-radius: 50%; }
-.legendRow strong { color: #202020; }
-.timelineBody { position: relative; justify-content: center; }
-.yAxisLabel { position: absolute; top: 25px; left: 24px; color: #625d7d; font-size: .72rem; font-weight: 600; }
-.lineChart { position: relative; min-height: 270px; }
-.lineChart svg { display: block; width: 100%; height: 235px; overflow: visible; }
-.gridLine { stroke: #cbd0da; stroke-width: 1; stroke-dasharray: 4 5; }
-.axisValue { fill: #596071; font-family: 'Poppins', sans-serif; font-size: 11px; text-anchor: end; }
-.chartLine { fill: none; stroke: #211578; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
-.chartPoint { fill: #fdd116; stroke: #211578; stroke-width: 3; }
-.axisLabels { display: flex; justify-content: space-between; padding: 0 3% 0 7.3%; color: #596071; font-size: 12px; }
-.emptyChart { position: absolute; inset: 45% 0 auto; margin: 0; text-align: center; color: #7b8190; font-size: 14px; }
-.toolbarRow { display: flex; width: 100%; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
-.searchBox { display: flex; height: 42px; min-width: 0; flex: 1; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid #160e6f; border-radius: 6px; color: #160e6f; background: #fff; }
-.searchBox input { width: 100%; min-width: 0; border: 0; outline: 0; color: #160e6f; font: inherit; font-size: 14px; }
-.filterSelect { min-width: 160px; height: 42px; padding: 8px 42px 8px 14px; border: 1px solid #160e6f; border-radius: 6px; color: #160e6f; background: #fff; font: inherit; font-size: 14px; outline: none; cursor: pointer; }
-.tableCard { width: 100%; overflow-x: auto; border: 1px solid rgba(22,14,111,.2); border-radius: 8px; background: #fff; box-shadow: 0 4px 12px rgba(22,14,111,.05); }
-.table { width: 100%; border-collapse: collapse; text-align: left; }
-.table th { padding: 16px 20px; border-bottom: 2px solid #160e6f; color: #160e6f; background: #f8fafc; font-size: 14px; font-weight: 600; white-space: nowrap; }
-.table td { padding: 16px 20px; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-size: 14px; }
-.table tbody tr:last-child td { border-bottom: 0; }
-.table tr:hover { background: #f1f5f9; }
-.table strong { color: #160e6f; }
-.statusPill { display: inline-flex; align-items: center; padding: 6px 11px; border-radius: 999px; color: #ffa518; background: #fff4e6; font-size: 12px; font-weight: 600; white-space: nowrap; }
-.statusPill.verified { color: #34cba7; background: #eaf9f5; }
-.statusPill.rejected { color: #e25555; background: #fff0ef; }
-.statusPill.flagged { color: #6557a8; background: #f0eef9; }
-.actionBtn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border: 1px solid #160e6f; border-radius: 6px; color: #160e6f; background: #fff; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: color 150ms, background 150ms; }
-.actionBtn:hover { color: #fff; background: #160e6f; }
-.noData { padding: 48px; text-align: center; color: #64748b; font-size: 15px; }
-.leftControls, .pagination { display: flex; align-items: center; gap: 10px; color: #625d7d; font-size: 13px; font-weight: 500; }
-.viewSelect { width: 76px; height: 42px; padding: 0 22px 0 13px; border: 1px solid rgba(22,14,111,.42); border-radius: 6px; color: #160e6f; background: #fff; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
-.pagination { gap: 7px; }
-.pageBtn { display: grid; width: 42px; height: 42px; place-items: center; padding: 0; border: 1px solid rgba(22,14,111,.42); border-radius: 6px; color: #160e6f; background: #fff; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
-.pageBtn.active { border-color: #160e6f; color: #fff; background: #160e6f; }
-.pageBtn:hover:not(.active):not(:disabled) { background: rgba(22,14,111,.08); }
-.pageBtn:disabled { border-color: #d8d6e3; color: #aaa6c3; cursor: not-allowed; }
-@media (max-width: 850px) { .chartsGrid { grid-template-columns: 1fr; } .chartPanel { max-width: 650px; width: 100%; margin: 0 auto; } }
-@media (max-width: 768px) { .mainContent { padding: 28px 20px; } .toolbarRow { align-items: stretch; flex-direction: column; } .searchBox, .filterSelect { width: 100%; } .leftControls { flex-wrap: wrap; } .pagination { align-self: flex-end; } }
-@media (max-width: 480px) { .legend { grid-template-columns: 1fr; } }
+.pageContainer {
+  min-height: 100vh;
+  background: #fff;
+}
+
+.mainContent {
+  display: flex;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 42px 48px;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.chartsGrid {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  align-items: stretch;
+  gap: 24px;
+  margin-bottom: 48px;
+}
+
+.chartPanel {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(22,14,111,.2);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(22,14,111,.05);
+}
+
+.chartHeader {
+  display: flex;
+  min-height: 78px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 20px;
+  border-bottom: 2px solid #160e6f;
+  background: #f8fafc;
+}
+
+.chartHeader h2 {
+  margin: 0 0 3px;
+  color: #160e6f;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.chartHeader p {
+  margin: 0;
+  color: #625d7d;
+  font-size: .78rem;
+}
+
+.chartBody {
+  display: flex;
+  min-height: 365px;
+  flex-direction: column;
+  justify-content: center;
+  padding: 24px;
+}
+
+.donut {
+  position: relative;
+  width: min(220px,68%);
+  aspect-ratio: 1;
+  margin: 0 auto 22px;
+  border-radius: 50%;
+}
+
+.donutHole {
+  position: absolute;
+  inset: 29%;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.legend {
+  display: grid;
+  width: 100%;
+  max-width: 470px;
+  margin: 0 auto;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 10px 24px;
+}
+
+.legendRow {
+  display: grid;
+  grid-template-columns: 13px 1fr auto;
+  align-items: center;
+  gap: 9px;
+  color: #586071;
+  font-size: 14px;
+}
+
+.legendDot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+}
+
+.legendRow strong {
+  color: #202020;
+}
+
+.timelineBody {
+  position: relative;
+  justify-content: center;
+}
+
+.yAxisLabel {
+  position: absolute;
+  top: 25px;
+  left: 24px;
+  color: #625d7d;
+  font-size: .72rem;
+  font-weight: 600;
+}
+
+.lineChart {
+  position: relative;
+  min-height: 270px;
+}
+
+.lineChart svg {
+  display: block;
+  width: 100%;
+  height: 235px;
+  overflow: visible;
+}
+
+.gridLine {
+  stroke: #cbd0da;
+  stroke-width: 1;
+  stroke-dasharray: 4 5;
+}
+
+.axisValue {
+  fill: #596071;
+  font-family: 'Poppins', sans-serif;
+  font-size: 11px;
+  text-anchor: end;
+}
+
+.chartLine {
+  fill: none;
+  stroke: #211578;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chartPoint {
+  fill: #fdd116;
+  stroke: #211578;
+  stroke-width: 3;
+}
+
+.axisLabels {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 3% 0 7.3%;
+  color: #596071;
+  font-size: 12px;
+}
+
+.emptyChart {
+  position: absolute;
+  inset: 45% 0 auto;
+  margin: 0;
+  text-align: center;
+  color: #7b8190;
+  font-size: 14px;
+}
+
+.toolbarRow {
+  display: flex;
+  width: 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.searchBox {
+  display: flex;
+  height: 42px;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #160e6f;
+  border-radius: 6px;
+  color: #160e6f;
+  background: #fff;
+}
+
+.searchBox input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: #160e6f;
+  font: inherit;
+  font-size: 14px;
+}
+
+.filterSelect {
+  min-width: 160px;
+  height: 42px;
+  padding: 8px 42px 8px 14px;
+  border: 1px solid #160e6f;
+  border-radius: 6px;
+  color: #160e6f;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+}
+
+.tableCard {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgba(22,14,111,.2);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(22,14,111,.05);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  padding: 16px 20px;
+  border-bottom: 2px solid #160e6f;
+  color: #160e6f;
+  background: #f8fafc;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #1e293b;
+  font-size: 14px;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.table tr:hover {
+  background: #f1f5f9;
+}
+
+.table strong {
+  color: #160e6f;
+}
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 11px;
+  border-radius: 999px;
+  color: #ffa518;
+  background: #fff4e6;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.statusPill.verified {
+  color: #34cba7;
+  background: #eaf9f5;
+}
+
+.statusPill.rejected {
+  color: #e25555;
+  background: #fff0ef;
+}
+
+.statusPill.flagged {
+  color: #6557a8;
+  background: #f0eef9;
+}
+
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid #160e6f;
+  border-radius: 6px;
+  color: #160e6f;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 150ms, background 150ms;
+}
+
+.actionBtn:hover {
+  color: #fff;
+  background: #160e6f;
+}
+
+.noData {
+  padding: 48px;
+  text-align: center;
+  color: #64748b;
+  font-size: 15px;
+}
+
+.leftControls, .pagination {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #625d7d;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.viewSelect {
+  width: 76px;
+  height: 42px;
+  padding: 0 22px 0 13px;
+  border: 1px solid rgba(22,14,111,.42);
+  border-radius: 6px;
+  color: #160e6f;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pagination {
+  gap: 7px;
+}
+
+.pageBtn {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(22,14,111,.42);
+  border-radius: 6px;
+  color: #160e6f;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pageBtn.active {
+  border-color: #160e6f;
+  color: #fff;
+  background: #160e6f;
+}
+
+.pageBtn:hover:not(.active):not(:disabled) {
+  background: rgba(22,14,111,.08);
+}
+
+.pageBtn:disabled {
+  border-color: #d8d6e3;
+  color: #aaa6c3;
+  cursor: not-allowed;
+}
+
+@media (max-width: 850px) {
+  .chartsGrid {
+    grid-template-columns: 1fr;
+  }
+  .chartPanel {
+    max-width: 650px;
+    width: 100%;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .mainContent {
+    padding: 28px 20px;
+  }
+  .toolbarRow {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .searchBox, .filterSelect {
+    width: 100%;
+  }
+  .leftControls {
+    flex-wrap: wrap;
+  }
+  .pagination {
+    align-self: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .legend {
+    grid-template-columns: 1fr;
+  }
+}

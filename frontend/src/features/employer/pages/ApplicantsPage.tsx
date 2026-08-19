@@ -1,26 +1,22 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Search, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, SlidersHorizontal, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { EmployerHero } from '../components/EmployerHero'
-import { ReviewApplicantModal } from '../components/ReviewApplicantModal'
 import { employerService } from '../services/employer.service'
 import type { Applicant } from '../types/employer.types'
 import styles from './ApplicantsPage.module.css'
 
 export function ApplicantsPage() {
+  const navigate = useNavigate()
   const [applicants, setApplicants] = useState<Applicant[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [applicantToReview, setApplicantToReview] = useState<Applicant | null>(null)
 
   // Pagination & Filtering state
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(7)
   const [searchQuery, setSearchQuery] = useState('')
   
-  const [showFilterMenu, setShowFilterMenu] = useState(false)
   const [statusFilter, setStatusFilter] = useState('All')
-  const [opportunityFilter, setOpportunityFilter] = useState('All')
-  const [courseFilter, setCourseFilter] = useState('All')
-  const [yearLevelFilter, setYearLevelFilter] = useState('All')
 
   useEffect(() => {
     employerService.getAllApplicants().then((data) => {
@@ -31,9 +27,6 @@ export function ApplicantsPage() {
 
   // Extract unique values for filter dropdowns
   const uniqueStatuses = useMemo(() => ['All', ...new Set(applicants.map(a => a.status))], [applicants])
-  const uniqueOpportunities = useMemo(() => ['All', ...new Set(applicants.map(a => a.opportunityTitle))], [applicants])
-  const uniqueCourses = useMemo(() => ['All', ...new Set(applicants.map(a => a.course))], [applicants])
-  const uniqueYearLevels = useMemo(() => ['All', ...new Set(applicants.map(a => a.yearLevel))], [applicants])
 
   const filteredApplicants = useMemo(() => {
     return applicants.filter((app) => {
@@ -45,19 +38,9 @@ export function ApplicantsPage() {
       if (statusFilter !== 'All') {
         matches = matches && app.status === statusFilter
       }
-      if (opportunityFilter !== 'All') {
-        matches = matches && app.opportunityTitle === opportunityFilter
-      }
-      if (courseFilter !== 'All') {
-        matches = matches && app.course === courseFilter
-      }
-      if (yearLevelFilter !== 'All') {
-        matches = matches && app.yearLevel === yearLevelFilter
-      }
-
       return matches
     })
-  }, [applicants, searchQuery, statusFilter, opportunityFilter, courseFilter, yearLevelFilter])
+  }, [applicants, searchQuery, statusFilter])
 
   const totalPages = Math.max(1, Math.ceil(filteredApplicants.length / itemsPerPage))
   
@@ -80,12 +63,6 @@ export function ApplicantsPage() {
     if (currentPage < totalPages) setCurrentPage(currentPage + 1)
   }
 
-  // Summary counts
-  const totalApplicantsCount = filteredApplicants.length
-  const forReviewCount = filteredApplicants.filter(a => a.status === 'For Review' || a.status === 'Under Review').length
-  const shortlistedCount = filteredApplicants.filter(a => a.status === 'Shortlisted').length
-  const rejectedCount = filteredApplicants.filter(a => a.status === 'Rejected').length
-
   if (isLoading) {
     return (
       <main className={styles.pageContainer}>
@@ -97,83 +74,31 @@ export function ApplicantsPage() {
   return (
     <main className={styles.pageContainer}>
       <EmployerHero
-        title="Applicant"
+        title="Applicants"
         subtitle="Company applicant list monitoring"
         comfortableSpacing
       />
 
       <section className={styles.mainContent}>
-        {/* Summary Cards */}
-        <div className={styles.summaryGrid}>
-          <div className={styles.summaryCard}>
-            <h3 className={styles.cardTitle}>Total Applicants</h3>
-            <p className={styles.cardValue}>{totalApplicantsCount.toString().padStart(2, '0')}</p>
+        <div className={styles.toolbar}>
+          <div className={styles.searchBox}>
+            <Search size={18} color="#160e6f" />
+            <input 
+              type="text" 
+              placeholder="Search applicants..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
-          <div className={styles.summaryCard}>
-            <h3 className={styles.cardTitle}>For Review</h3>
-            <p className={styles.cardValue}>{forReviewCount.toString().padStart(2, '0')}</p>
-          </div>
-          <div className={styles.summaryCard}>
-            <h3 className={styles.cardTitle}>Shortlisted</h3>
-            <p className={styles.cardValue}>{shortlistedCount.toString().padStart(2, '0')}</p>
-          </div>
-          <div className={styles.summaryCard}>
-            <h3 className={styles.cardTitle}>Rejected</h3>
-            <p className={styles.cardValue}>{rejectedCount.toString().padStart(2, '0')}</p>
+          <div className={styles.statusFilter}>
+            <SlidersHorizontal size={18} aria-hidden="true" />
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Filter applicants by status">
+              {uniqueStatuses.map((status) => <option key={status} value={status}>{status === 'All' ? 'All Statuses' : status}</option>)}
+            </select>
           </div>
         </div>
 
-        {/* Table Container */}
         <div className={styles.tableCard}>
-          <div className={styles.toolbar}>
-            <div className={styles.searchBox}>
-              <Search size={18} color="#160e6f" />
-              <input 
-                type="text" 
-                placeholder="Search applicants..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            
-            <button 
-              className={styles.filterBtn}
-              onClick={() => setShowFilterMenu(!showFilterMenu)}
-            >
-              <SlidersHorizontal size={18} color="#160e6f" />
-              <span>Filter</span>
-            </button>
-          </div>
-
-          {showFilterMenu && (
-            <div className={styles.filterMenuRow}>
-              <div className={styles.filterWrapper}>
-                <span className={styles.filterLabel}>Status:</span>
-                <select className={styles.filterSelect} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                  {uniqueStatuses.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-              <div className={styles.filterWrapper}>
-                <span className={styles.filterLabel}>Opportunity:</span>
-                <select className={styles.filterSelect} value={opportunityFilter} onChange={(e) => setOpportunityFilter(e.target.value)}>
-                  {uniqueOpportunities.map(o => <option key={o} value={o}>{o}</option>)}
-                </select>
-              </div>
-              <div className={styles.filterWrapper}>
-                <span className={styles.filterLabel}>Course/Program:</span>
-                <select className={styles.filterSelect} value={courseFilter} onChange={(e) => setCourseFilter(e.target.value)}>
-                  {uniqueCourses.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div className={styles.filterWrapper}>
-                <span className={styles.filterLabel}>Year Level:</span>
-                <select className={styles.filterSelect} value={yearLevelFilter} onChange={(e) => setYearLevelFilter(e.target.value)}>
-                  {uniqueYearLevels.map(y => <option key={y} value={y}>{y}</option>)}
-                </select>
-              </div>
-            </div>
-          )}
-
           <div className={styles.tableWrapper}>
             <table className={styles.table}>
               <thead>
@@ -184,7 +109,7 @@ export function ApplicantsPage() {
                   <th>Year Level</th>
                   <th>Date Applied</th>
                   <th>Status</th>
-                  <th></th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -213,9 +138,10 @@ export function ApplicantsPage() {
                       <td>
                         <button 
                           className={styles.reviewBtn}
-                          onClick={() => setApplicantToReview(app)}
+                          onClick={() => navigate(`/employer/applicants/${app.id}`)}
                         >
-                          Review
+                          <Eye size={16} />
+                          <span>Review</span>
                         </button>
                       </td>
                     </tr>
@@ -257,7 +183,6 @@ export function ApplicantsPage() {
             <button className={`${styles.pageBtn} ${styles.active}`}>
               {currentPage}
             </button>
-            <span className={styles.pageInfo}>of {totalPages}</span>
             <button 
               className={styles.pageBtn} 
               onClick={handleNextPage}
@@ -269,18 +194,6 @@ export function ApplicantsPage() {
         </div>
       </section>
 
-      {applicantToReview && (
-        <ReviewApplicantModal 
-          applicant={applicantToReview} 
-          onClose={() => setApplicantToReview(null)} 
-          onStatusChange={(newStatus) => {
-            setApplicants(prev => prev.map(a => 
-              a.id === applicantToReview.id ? { ...a, status: newStatus as any } : a
-            ))
-            setApplicantToReview(prev => prev ? { ...prev, status: newStatus as any } : null)
-          }}
-        />
-      )}
     </main>
   )
 }

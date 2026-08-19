@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Eye, Search } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Eye, Search, SlidersHorizontal } from 'lucide-react'
 import QCPesoHero from '../components/QCPesoHero'
 import documentIcon from '../../../assets/docu.svg'
 import suitcaseIcon from '../../../assets/suitcase-2.svg'
@@ -146,20 +146,22 @@ export function ManageApplicationsPage() {
           </div>
 
           <div className={`${styles.filterGroup} ${styles.statusFilterGroup}`}>
-            <select
-              className={styles.filterSelect}
-              value={selectedStatus}
-              onChange={(e) => {
-                setSelectedStatus(e.target.value)
-                setCurrentPage(1)
-              }}
-            >
-              <option value="All">Filter</option>
-              <option value="Pending">Pending</option>
-              <option value="Verified">Verified</option>
-              <option value="Rejected">Rejected</option>
-              <option value="Flagged">Flagged</option>
-            </select>
+            <div className={styles.filterSelect}>
+              <SlidersHorizontal size={16} aria-hidden="true" />
+              <select
+                value={selectedStatus}
+                onChange={(e) => {
+                  setSelectedStatus(e.target.value)
+                  setCurrentPage(1)
+                }}
+              >
+                <option value="All">All Statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="Verified">Verified</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Flagged">Flagged</option>
+              </select>
+            </div>
           </div>
         </div>
 

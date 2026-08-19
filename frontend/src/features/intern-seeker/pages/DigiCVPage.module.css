@@ -164,31 +164,25 @@
     padding: 120px 22px 96px;
     overflow-y: auto;
   }
-
   .qcLogos {
     top: 28px;
     right: 20px;
     width: 76px;
   }
-
   .heading h1 {
     letter-spacing: -2px;
   }
-
   .heading h2 {
     margin-top: 30px;
   }
-
   .actions {
     grid-template-columns: 1fr;
     gap: 28px;
     margin-top: 42px;
   }
-
   .actionCard {
     min-height: 240px;
   }
-
   .steps {
     flex-wrap: wrap;
     border-radius: 18px;

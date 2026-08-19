@@ -1,8 +1,49 @@
-.tabs { display: flex; gap: 29px; max-width: 1280px; margin: 0 auto 32px; overflow-x: auto; scrollbar-width: none; }
-.tabs::-webkit-scrollbar { display: none; }
-.tabs a { flex: none; padding: 0 2px 6px; color: #21167b; font-size: 19px; text-decoration: none; }
-.tabs .activeTab { border-bottom: 2px solid #21167b; font-weight: 600; }
+.tabs {
+  display: flex;
+  max-width: 1280px;
+  gap: 6px;
+  margin: 0 auto 30px;
+  padding: 6px;
+  overflow-x: auto;
+  border: 1px solid #d8dcea;
+  border-radius: 10px;
+  background: #f6f7fa;
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tabs a {
+  flex: none;
+  padding: 11px 18px;
+  border-radius: 7px;
+  color: #5d6881;
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.tabs a:hover {
+  color: #21167b;
+  background: #ffffff;
+}
+
+.tabs .activeTab {
+  color: #ffffff;
+  background: #21167b;
+  box-shadow: 0 3px 8px rgba(33, 22, 123, 0.17);
+  font-weight: 600;
+}
+
 @media (max-width: 700px) {
-  .tabs { gap: 24px; margin-bottom: 28px; }
-  .tabs a { font-size: 17px; }
+  .tabs {
+    margin-bottom: 28px;
+  }
+  .tabs a {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
 }

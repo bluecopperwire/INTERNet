@@ -242,34 +242,27 @@
     gap: 18px;
     padding: 24px 20px;
   }
-
   .studentInfo {
     padding-right: 0;
   }
-
   .gridCards,
   .actions {
     grid-template-columns: 1fr;
   }
-
   .card {
     min-height: 0;
   }
-
   .card:nth-child(n) {
     border-right: 0;
     border-bottom: 1px solid #dfe3ea;
   }
-
   .card:last-child {
     border-bottom: 0;
   }
-
   .applicationSummary {
     flex-direction: column;
     gap: 16px;
   }
-
   .appliedForGroup {
     align-items: flex-start;
     text-align: left;

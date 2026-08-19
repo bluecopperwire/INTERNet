@@ -54,7 +54,14 @@ export const MOCK_INTERNS: InternItem[] = [
     targetHours: 200,
     course: 'BS Computer Science',
     school: 'Quezon City University',
-    dtrLogs: []
+    dtrLogs: [
+      { id: 'DTR-001', date: '2026-08-10', timeIn: '8:00 AM', timeOut: '5:00 PM', hoursRendered: 8, status: 'Present' },
+      { id: 'DTR-002', date: '2026-08-11', timeIn: '8:11 AM', timeOut: '5:00 PM', hoursRendered: 8, status: 'Late' },
+      { id: 'DTR-003', date: '2026-08-12', timeIn: '8:00 AM', timeOut: '5:00 PM', hoursRendered: 8, status: 'Present' },
+      { id: 'DTR-004', date: '2026-08-13', timeIn: '--', timeOut: '--', hoursRendered: 0, status: 'Absent' },
+      { id: 'DTR-005', date: '2026-08-14', timeIn: '8:04 AM', timeOut: '5:00 PM', hoursRendered: 8, status: 'Present' },
+      { id: 'DTR-006', date: '2026-08-16', timeIn: '8:02 AM', timeOut: '5:00 PM', hoursRendered: 8, status: 'Present' },
+    ]
   }
 ]
 

@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
-import { Plus, SlidersHorizontal } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { ChevronDown, Plus, SlidersHorizontal } from 'lucide-react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { EmployerHero } from '../components/EmployerHero'
 import { ViewApplicantsModal } from '../components/ViewApplicantsModal'
 import { employerService } from '../services/employer.service'
@@ -9,6 +9,7 @@ import styles from './OpportunitiesPage.module.css'
 
 export function OpportunitiesPage() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [opportunities, setOpportunities] = useState<Opportunity[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('All')
@@ -20,9 +21,28 @@ export function OpportunitiesPage() {
   const [opportunityToDelete, setOpportunityToDelete] = useState<string | null>(null)
   const [opportunityForApplicants, setOpportunityForApplicants] = useState<Opportunity | null>(null)
 
+  const requestedApplicantsId = searchParams.get('viewApplicants')
+
   useEffect(() => {
     fetchOpportunities()
   }, [])
+
+  useEffect(() => {
+    if (!requestedApplicantsId || opportunities.length === 0) return
+    const opportunity = opportunities.find((item) => item.id === requestedApplicantsId)
+    if (opportunity) setOpportunityForApplicants(opportunity)
+  }, [opportunities, requestedApplicantsId])
+
+  const closeApplicants = () => {
+    setOpportunityForApplicants(null)
+    if (requestedApplicantsId) {
+      setSearchParams((current) => {
+        const next = new URLSearchParams(current)
+        next.delete('viewApplicants')
+        return next
+      })
+    }
+  }
 
   const fetchOpportunities = async () => {
     setIsLoading(true)
@@ -86,8 +106,11 @@ export function OpportunitiesPage() {
               aria-label="Filter"
               onClick={() => setShowFilterMenu(!showFilterMenu)}
             >
-              <SlidersHorizontal size={24} color="#160e6f" />
-              <span className={styles.filterBtnText}>Filter</span>
+              <SlidersHorizontal size={16} />
+              <span className={styles.filterBtnText}>
+                {statusFilter === 'All' ? 'All Statuses' : statusFilter}
+              </span>
+              <ChevronDown size={16} />
             </button>
           </div>
           <button 
@@ -102,25 +125,25 @@ export function OpportunitiesPage() {
         {showFilterMenu && (
           <div className={styles.filterMenuRow}>
             <div className={styles.filterItem}>
-              <span className={styles.filterLabel}>Status:</span>
+              <span className={styles.filterLabel}>Status</span>
               <select className={styles.filterSelect} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                 {uniqueStatuses.map(s => <option key={s} value={s}>{s === 'All' ? 'All Statuses' : s}</option>)}
               </select>
             </div>
             <div className={styles.filterItem}>
-              <span className={styles.filterLabel}>Department:</span>
+              <span className={styles.filterLabel}>Department</span>
               <select className={styles.filterSelect} value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)}>
                 {uniqueDepartments.map(d => <option key={d} value={d}>{d === 'All' ? 'All Departments' : d}</option>)}
               </select>
             </div>
             <div className={styles.filterItem}>
-              <span className={styles.filterLabel}>Duration (hrs):</span>
+              <span className={styles.filterLabel}>Duration (hrs)</span>
               <select className={styles.filterSelect} value={durationFilter} onChange={(e) => setDurationFilter(e.target.value)}>
                 {uniqueDurations.map(d => <option key={d} value={d}>{d === 'All' ? 'All Durations' : d}</option>)}
               </select>
             </div>
             <div className={styles.filterItem}>
-              <span className={styles.filterLabel}>Slots:</span>
+              <span className={styles.filterLabel}>Slots</span>
               <select className={styles.filterSelect} value={slotsFilter} onChange={(e) => setSlotsFilter(e.target.value)}>
                 {uniqueSlots.map(s => <option key={s} value={s}>{s === 'All' ? 'All Slots' : s}</option>)}
               </select>
@@ -210,7 +233,7 @@ export function OpportunitiesPage() {
       {opportunityForApplicants && (
         <ViewApplicantsModal 
           opportunity={opportunityForApplicants}
-          onClose={() => setOpportunityForApplicants(null)}
+          onClose={closeApplicants}
         />
       )}
     </main>

@@ -1,6 +1,4 @@
 import { type ChangeEvent, useEffect, useMemo, useState } from 'react'
-import TrackingHeader from '../components/TrackingHeader'
-import TrackingTabs from '../components/TrackingTabs'
 import { useRequirements } from '../hooks/useRequirements'
 import type { InternshipRequirement } from '../types/requirement.types'
 import styles from './RequirementsPage.module.css'
@@ -47,12 +45,7 @@ function RequirementsPage() {
   }
 
   return (
-    <main className={styles.page}>
-      <TrackingHeader />
-
-      <section className={styles.trackingContent}>
-        <TrackingTabs />
-
+    <>
         <section className={styles.requirementsPanel} aria-labelledby="requirements-heading">
           <div className={styles.panelHeader}>
             <div>
@@ -92,7 +85,6 @@ function RequirementsPage() {
             </div>
           )}
         </section>
-      </section>
 
       {viewingRequirement?.document && (
         <div className={styles.modalBackdrop} role="presentation" onMouseDown={() => setViewingRequirement(null)}>
@@ -111,7 +103,7 @@ function RequirementsPage() {
           </section>
         </div>
       )}
-    </main>
+    </>
   )
 }
 

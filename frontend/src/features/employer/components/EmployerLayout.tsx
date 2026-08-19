@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Menu } from 'lucide-react'
 import { Outlet } from 'react-router-dom'
 import EmployerSidebar from './EmployerSidebar'
 import styles from './EmployerLayout.module.css'
@@ -25,6 +26,17 @@ export function EmployerLayout() {
 
   return (
     <div className={styles.shell}>
+      <button
+        className={styles.menuTrigger}
+        type="button"
+        aria-label="Open navigation"
+        aria-expanded={isSidebarOpen}
+        aria-controls="employer-sidebar"
+        onClick={openSidebar}
+      >
+        <Menu aria-hidden="true" />
+      </button>
+
       <EmployerSidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}

@@ -352,15 +352,12 @@
   .resultsLayout {
     grid-template-columns: 280px minmax(0, 1fr);
   }
-
   .detailPanel {
     padding: 28px 24px 40px;
   }
-
   .detailHeader {
     flex-direction: column;
   }
-
   .detailTabs {
     gap: 20px;
     overflow-x: auto;
@@ -371,23 +368,18 @@
   .searchArea {
     padding: 40px 18px 60px;
   }
-
   .filters {
     margin-bottom: 17px;
   }
-
   .resultsLayout {
     grid-template-columns: 1fr;
   }
-
   .resultsList {
     max-height: 390px;
   }
-
   .detailPanel {
     padding: 25px 18px 36px;
   }
-
   .overviewGrid {
     grid-template-columns: 1fr;
   }

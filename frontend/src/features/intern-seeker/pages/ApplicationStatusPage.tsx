@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { Check, ChevronRight, Info, Plus } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import TrackingHeader from '../components/TrackingHeader'
-import TrackingTabs from '../components/TrackingTabs'
 import { useApplications } from '../hooks/useApplications'
 import type { ApplicationDisplayStatus, UserApplication } from '../types/application.types'
 import styles from './ApplicationStatusPage.module.css'
@@ -13,11 +11,7 @@ function ApplicationStatusPage() {
   const selectedApplication = applications.find((application) => application.id === selectedId) ?? applications[0]
 
   return (
-    <main className={styles.page}>
-      <TrackingHeader />
-      <section className={styles.trackingContent}>
-        <TrackingTabs />
-
+    <>
         {error && <p className={styles.feedback} role="alert">{error}</p>}
         {isLoading && <p className={styles.feedback}>Loading applications...</p>}
         {!isLoading && applications.length === 0 && <p className={styles.feedback}>You have not submitted any applications yet.</p>}
@@ -39,8 +33,7 @@ function ApplicationStatusPage() {
             {selectedApplication && <ApplicationProgress application={selectedApplication} />}
           </div>
         )}
-      </section>
-    </main>
+    </>
   )
 }
 
@@ -63,7 +56,12 @@ function StatusBadge({ status }: { status: ApplicationDisplayStatus }) {
 function ApplicationProgress({ application }: { application: UserApplication }) {
   return (
     <section className={styles.progressPanel} aria-labelledby="progress-heading">
-      <header className={styles.progressHeader}><h2 id="progress-heading">Application Progress</h2><strong>{application.companyName} - {application.position}</strong></header>
+      <header className={styles.progressHeader}>
+        <div>
+          <h2 id="progress-heading">Application Progress</h2>
+          <p>{application.companyName} - {application.position}</p>
+        </div>
+      </header>
       <div className={styles.timeline}>
         {application.progress.map((step, index) => (
           <div className={`${styles.timelineStep} ${styles[step.status.toLowerCase()]}`} key={step.stage}>

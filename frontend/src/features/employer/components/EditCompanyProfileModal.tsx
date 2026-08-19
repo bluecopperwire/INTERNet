@@ -9,6 +9,15 @@ interface EditCompanyProfileModalProps {
   onSave: (updated: CompanyProfile) => void
 }
 
+const NULLABLE_FIELDS = new Set([
+  'website_url',
+  'year_established',
+  'company_size',
+  'address_district',
+  'contact_person_middle_name',
+  'contact_person_extension_name',
+])
+
 export function EditCompanyProfileModal({
   profile,
   onClose,
@@ -21,7 +30,8 @@ export function EditCompanyProfileModal({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    const normalizedValue = NULLABLE_FIELDS.has(name) && !value.trim() ? null : value
+    setFormData((prev) => ({ ...prev, [name]: normalizedValue }))
   }
 
   const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,123 +131,150 @@ export function EditCompanyProfileModal({
             </div>
 
             <div className={`${styles.field} ${styles.fullWidth}`}>
-              <label htmlFor="companyName">Company Name</label>
+              <label htmlFor="company_name">Company Name</label>
               <input
-                id="companyName"
-                name="companyName"
+                id="company_name"
+                name="company_name"
                 type="text"
-                value={formData.companyName}
+                value={formData.company_name}
                 onChange={handleChange}
                 required
               />
             </div>
 
             <div className={styles.field}>
-              <label htmlFor="industry">Industry</label>
+              <label htmlFor="company_type">Company Type</label>
               <input
-                id="industry"
-                name="industry"
+                id="company_type"
+                name="company_type"
                 type="text"
-                value={formData.industry}
+                value={formData.company_type}
                 onChange={handleChange}
                 required
               />
             </div>
 
             <div className={styles.field}>
-              <label htmlFor="location">Location</label>
+              <label htmlFor="address_line">Address Line</label>
               <input
-                id="location"
-                name="location"
+                id="address_line"
+                name="address_line"
                 type="text"
-                value={formData.location}
+                value={formData.address_line}
                 onChange={handleChange}
                 required
               />
             </div>
 
             <div className={`${styles.field} ${styles.fullWidth}`}>
-              <label htmlFor="about">About Company</label>
+              <label htmlFor="description">Company Description</label>
               <textarea
-                id="about"
-                name="about"
-                value={formData.about}
+                id="description"
+                name="description"
+                value={formData.description}
                 onChange={handleChange}
                 required
               />
             </div>
 
             <div className={styles.field}>
-              <label htmlFor="contactPerson">Contact Person</label>
+              <label htmlFor="address_barangay">Barangay</label>
               <input
-                id="contactPerson"
-                name="contactPerson"
+                id="address_barangay"
+                name="address_barangay"
                 type="text"
-                value={formData.contactPerson}
+                value={formData.address_barangay}
                 onChange={handleChange}
                 required
               />
             </div>
 
             <div className={styles.field}>
-              <label htmlFor="email">Email Address</label>
+              <label htmlFor="address_district">District</label>
               <input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className={styles.field}>
-              <label htmlFor="contactNumber">Contact Number</label>
-              <input
-                id="contactNumber"
-                name="contactNumber"
+                id="address_district"
+                name="address_district"
                 type="text"
-                value={formData.contactNumber}
+                value={formData.address_district ?? ''}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label htmlFor="address_city">City</label>
+              <input
+                id="address_city"
+                name="address_city"
+                type="text"
+                value={formData.address_city}
                 onChange={handleChange}
                 required
               />
             </div>
 
             <div className={styles.field}>
-              <label htmlFor="website">Company Website</label>
+              <label htmlFor="contact_person_first_name">Contact Person First Name</label>
               <input
-                id="website"
-                name="website"
+                id="contact_person_first_name"
+                name="contact_person_first_name"
                 type="text"
-                value={formData.website}
+                value={formData.contact_person_first_name}
                 onChange={handleChange}
                 required
               />
             </div>
 
             <div className={styles.field}>
-              <label htmlFor="yearEstablished">Year Established</label>
+              <label htmlFor="contact_person_middle_name">Contact Person Middle Name</label>
               <input
-                id="yearEstablished"
-                name="yearEstablished"
+                id="contact_person_middle_name"
+                name="contact_person_middle_name"
                 type="text"
-                value={formData.yearEstablished}
+                value={formData.contact_person_middle_name ?? ''}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label htmlFor="contact_person_last_name">Contact Person Last Name</label>
+              <input
+                id="contact_person_last_name"
+                name="contact_person_last_name"
+                type="text"
+                value={formData.contact_person_last_name}
                 onChange={handleChange}
                 required
               />
             </div>
 
             <div className={styles.field}>
-              <label htmlFor="companySize">Company Size</label>
-              <input
-                id="companySize"
-                name="companySize"
-                type="text"
-                value={formData.companySize}
-                onChange={handleChange}
-                placeholder="e.g. 51-200 employees or 150"
-                required
-              />
+              <label htmlFor="contact_person_extension_name">Contact Person Extension Name</label>
+              <input id="contact_person_extension_name" name="contact_person_extension_name" type="text" value={formData.contact_person_extension_name ?? ''} onChange={handleChange} />
+            </div>
+
+            <div className={styles.field}>
+              <label htmlFor="contact_email">Contact Email</label>
+              <input id="contact_email" name="contact_email" type="email" value={formData.contact_email} onChange={handleChange} required />
+            </div>
+
+            <div className={styles.field}>
+              <label htmlFor="contact_number">Contact Number</label>
+              <input id="contact_number" name="contact_number" type="text" value={formData.contact_number} onChange={handleChange} required />
+            </div>
+
+            <div className={styles.field}>
+              <label htmlFor="website_url">Company Website</label>
+              <input id="website_url" name="website_url" type="text" value={formData.website_url ?? ''} onChange={handleChange} />
+            </div>
+
+            <div className={styles.field}>
+              <label htmlFor="year_established">Year Established</label>
+              <input id="year_established" name="year_established" type="text" value={formData.year_established ?? ''} onChange={handleChange} />
+            </div>
+
+            <div className={styles.field}>
+              <label htmlFor="company_size">Company Size</label>
+              <input id="company_size" name="company_size" type="text" value={formData.company_size ?? ''} onChange={handleChange} placeholder="e.g. 51-200 employees" />
             </div>
           </div>
 

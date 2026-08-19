@@ -24,25 +24,35 @@ export interface Applicant {
   preferredField: string
   requiredHours: number
   availabilityDate: string
+  notes?: string
 }
 
 export type RecentApplicant = Applicant
 
 export interface CompanyProfile {
-  companyName: string
-  location: string
-  industry: string
-  about: string
-  verified: boolean
-  verifiedBy: string
-  dateVerified: string
-  verificationId: string
-  contactPerson: string
-  email: string
-  contactNumber: string
-  website: string
-  yearEstablished: string
-  companySize: string
+  company_name: string
+  company_type: string
+  description: string
+  website_url: string | null
+  year_established: string | null
+  company_size: string | null
+  address_line: string
+  address_barangay: string
+  address_district: string | null
+  address_city: string
+  contact_email: string
+  contact_number: string
+  contact_person_first_name: string
+  contact_person_middle_name: string | null
+  contact_person_last_name: string
+  contact_person_extension_name: string | null
+
+  // UI-only fields pending corresponding backend support.
+  logoUrl?: string
+  verified?: boolean
+  verifiedBy?: string
+  dateVerified?: string
+  verificationId?: string
 }
 
 export interface EmployerDashboardSummary {
@@ -61,4 +71,18 @@ export interface EmployerNotification {
   message: string
   timeAgo: string
   isRead: boolean
+}
+
+export interface EmployerAttendanceRecord {
+  id: string
+  applicantId: string
+  studentName: string
+  role: string
+  company: string
+  date: string
+  timeIn: string
+  timeOut: string
+  status: 'Present' | 'Absent' | 'Late'
+  hoursRendered: number
+  requiredHours: number
 }

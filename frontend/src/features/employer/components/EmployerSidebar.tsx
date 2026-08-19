@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import {
-  Search,
   Grid2X2,
   Building2,
   Briefcase,
@@ -9,7 +8,7 @@ import {
   FileText,
   Settings,
   LogOut,
-  X,
+  Menu,
 } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import internetLogo from '../../../assets/internet-logo.svg'
@@ -42,36 +41,29 @@ export function EmployerSidebar({ isOpen, onClose }: EmployerSidebarProps) {
     >
       <div className={styles.header}>
         <div className={styles.brand}>
-          <div className={styles.logoBox}>
+          <span className={styles.logoBox}>
             <img src={internetLogo} alt="INTERNet Logo" />
-          </div>
-          <span className={styles.brandName}>INTERNet</span>
+          </span>
+          <span>INTERNet</span>
         </div>
-        <button
-          type="button"
-          className={styles.closeBtn}
-          aria-label="Close navigation"
-          onClick={onClose}
-        >
-          <X size={20} />
-        </button>
+        <div className={styles.headerActions}>
+          <button type="button" aria-label="Close navigation" onClick={onClose}><Menu /></button>
+        </div>
       </div>
 
-      <div className={styles.searchWrapper}>
-        <Search size={18} color="rgba(255, 255, 255, 0.8)" />
+      <label className={styles.searchLabel}>
+        <span className={styles.srOnly}>Search navigation</span>
         <input
           type="search"
-          className={styles.searchInput}
           placeholder="Search"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(event) => setSearch(event.target.value)}
           tabIndex={isOpen ? 0 : -1}
         />
-      </div>
+      </label>
 
       <nav className={styles.navigation} aria-label="Employer Navigation">
-        <div className={styles.navSection}>
-          {matchesSearch('Dashboard') && (
+        {matchesSearch('Dashboard') && (
             <NavLink
               end
               className={({ isActive }) =>
@@ -84,9 +76,9 @@ export function EmployerSidebar({ isOpen, onClose }: EmployerSidebarProps) {
               <Grid2X2 size={20} />
               <span>Dashboard</span>
             </NavLink>
-          )}
+        )}
 
-          {matchesSearch('Company Profile') && (
+        {matchesSearch('Company Profile') && (
             <NavLink
               className={({ isActive }) =>
                 `${styles.navItem} ${isActive ? styles.active : ''}`
@@ -98,9 +90,9 @@ export function EmployerSidebar({ isOpen, onClose }: EmployerSidebarProps) {
               <Building2 size={20} />
               <span>Company Profile</span>
             </NavLink>
-          )}
+        )}
 
-          {matchesSearch('Opportunities') && (
+        {matchesSearch('Opportunities') && (
             <NavLink
               className={({ isActive }) =>
                 `${styles.navItem} ${isActive ? styles.active : ''}`
@@ -112,9 +104,9 @@ export function EmployerSidebar({ isOpen, onClose }: EmployerSidebarProps) {
               <Briefcase size={20} />
               <span>Opportunities</span>
             </NavLink>
-          )}
+        )}
 
-          {matchesSearch('Applicants') && (
+        {matchesSearch('Applicants') && (
             <NavLink
               className={({ isActive }) =>
                 `${styles.navItem} ${isActive ? styles.active : ''}`
@@ -126,9 +118,9 @@ export function EmployerSidebar({ isOpen, onClose }: EmployerSidebarProps) {
               <Users size={20} />
               <span>Applicants</span>
             </NavLink>
-          )}
+        )}
 
-          {matchesSearch('Attendance Monitoring') && (
+        {matchesSearch('Attendance Monitoring') && (
             <NavLink
               className={({ isActive }) =>
                 `${styles.navItem} ${isActive ? styles.active : ''}`
@@ -140,9 +132,9 @@ export function EmployerSidebar({ isOpen, onClose }: EmployerSidebarProps) {
               <Clock size={20} />
               <span>Attendance Monitoring</span>
             </NavLink>
-          )}
+        )}
 
-          {matchesSearch('Reports') && (
+        {matchesSearch('Reports') && (
             <NavLink
               className={({ isActive }) =>
                 `${styles.navItem} ${isActive ? styles.active : ''}`
@@ -154,35 +146,31 @@ export function EmployerSidebar({ isOpen, onClose }: EmployerSidebarProps) {
               <FileText size={20} />
               <span>Reports</span>
             </NavLink>
-          )}
-        </div>
+        )}
+      </nav>
 
-        <div className={styles.navSection}>
-          {matchesSearch('Settings') && (
-            <NavLink
-              className={({ isActive }) =>
-                `${styles.navItem} ${isActive ? styles.active : ''}`
-              }
-              to="/employer/settings"
-              onClick={onClose}
-              tabIndex={isOpen ? 0 : -1}
-            >
-              <Settings size={20} />
-              <span>Settings</span>
-            </NavLink>
-          )}
-
-          <button
-            className={styles.navItem}
-            type="button"
-            onClick={handleLogout}
+      <div className={styles.bottomActions}>
+        {matchesSearch('Settings') && (
+          <NavLink
+            className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
+            to="/employer/settings"
+            onClick={onClose}
             tabIndex={isOpen ? 0 : -1}
           >
-            <LogOut size={20} />
-            <span>Log Out</span>
-          </button>
-        </div>
-      </nav>
+            <Settings aria-hidden="true" />
+            <span>Settings</span>
+          </NavLink>
+        )}
+        <button
+          className={styles.logout}
+          type="button"
+          onClick={handleLogout}
+          tabIndex={isOpen ? 0 : -1}
+        >
+          <LogOut aria-hidden="true" />
+          <span>Log out</span>
+        </button>
+      </div>
     </aside>
   )
 }
