@@ -23,4 +23,17 @@ export class ApplicationsService {
       throw error;
     }
   }
+
+  async findByIdAndStudentId(
+    applicationId: number,
+    studentId: number,
+  ): Promise<Application | null> {
+    return this.applicationRepo.findOne({
+      where: {
+        applicationId,
+        student: { studentId },
+      },
+      relations: { student: true },
+    });
+  }
 }
