@@ -58,6 +58,30 @@ export class StudentsController {
     return this.studentsService.getStudentProfile(id);
   }
 
+  // Returns the stored resume submission for the student.
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/resume')
+  @HttpCode(HttpStatus.OK)
+  async getStudentResume(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() currentUser: any,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    return this.studentsService.getStudentResume(id);
+  }
+
+  // Returns the student together with all requirement submissions.
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/requirements')
+  @HttpCode(HttpStatus.OK)
+  async getStudentRequirements(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() currentUser: any,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    return this.studentsService.getStudentRequirements(id);
+  }
+
   // Saves the profile form payload and persists the related academic/preference data.
   @UseGuards(JwtAuthGuard)
   @Post(':id/profile')

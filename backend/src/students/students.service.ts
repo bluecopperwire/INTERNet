@@ -74,6 +74,67 @@ export class StudentsService {
     };
   }
 
+  async getStudentResume(studentId: number) {
+    const [resume] = await this.dataSource.query(
+      `
+        SELECT srs.student_requirement_submission_id,
+               srs.student_id,
+               srs.requirement_name,
+               srs.requirement_file_path,
+               srs.submitted_at,
+               srs.updated_at
+        FROM public.student_requirement_submission srs
+        WHERE srs.student_id = $1
+          AND srs.requirement_type_id = 3
+        ORDER BY srs.updated_at DESC
+        LIMIT 1
+      `,
+      [studentId],
+    );
+
+    if (!resume) {
+      const student = await this.findById(studentId);
+      if (!student) throw new NotFoundException('Student not found');
+      throw new NotFoundException('Resume not found for this student');
+    }
+
+    return resume;
+  }
+
+  async getStudentRequirements(studentId: number) {
+    const [student] = await this.dataSource.query(
+      `
+        SELECT s.*
+        FROM public.student s
+        WHERE s.student_id = $1
+      `,
+      [studentId],
+    );
+
+    if (!student) throw new NotFoundException('Student not found');
+
+    const requirements = await this.dataSource.query(
+      `
+        SELECT srs.student_requirement_submission_id,
+               srs.student_id,
+               srs.requirement_type_id,
+               rt.requirement_type_name,
+               srs.requirement_name,
+               srs.requirement_file_path,
+               srs.submitted_at,
+               srs.updated_at
+        FROM public.student_requirement_submission srs
+        JOIN public.requirement_type rt
+          ON rt.requirement_type_id = srs.requirement_type_id
+        WHERE srs.student_id = $1
+        ORDER BY rt.requirement_type_name ASC, srs.updated_at DESC
+      `,
+      [studentId],
+    );
+
+    return { student, requirements };
+  }
+
   async upsertStudentProfile(studentId: number, dto: StudentProfileUpdateDto) {
     await this.dataSource.transaction(async (manager) => {
       const studentExists = await manager.query(
