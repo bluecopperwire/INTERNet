@@ -18,6 +18,17 @@ const NULLABLE_FIELDS = new Set([
   'contact_person_extension_name',
 ])
 
+const INDUSTRY_OPTIONS = [
+  'Office Administration',
+  'Engineering',
+  'Information Technology',
+  'Accounting / Finance',
+  'Customer Service / Retail',
+  'Human Resources',
+  'Hospitality / Tourism',
+  'Healthcare',
+]
+
 export function EditCompanyProfileModal({
   profile,
   onClose,
@@ -31,7 +42,7 @@ export function EditCompanyProfileModal({
   ) => {
     const { name, value } = e.target
     const normalizedValue = NULLABLE_FIELDS.has(name) && !value.trim() ? null : value
-    setFormData((prev) => ({ ...prev, [name]: normalizedValue }))
+    setFormData((prev) => ({ ...prev, [name]: normalizedValue } as CompanyProfile))
   }
 
   const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,14 +155,23 @@ export function EditCompanyProfileModal({
 
             <div className={styles.field}>
               <label htmlFor="company_type">Company Type</label>
-              <input
+              <select
                 id="company_type"
                 name="company_type"
-                type="text"
                 value={formData.company_type}
                 onChange={handleChange}
                 required
-              />
+              >
+                <option value="Government">Government</option>
+                <option value="Private">Private</option>
+              </select>
+            </div>
+
+            <div className={styles.field}>
+              <label htmlFor="industry">Industry</label>
+              <select id="industry" name="industry" value={formData.industry} onChange={handleChange} required>
+                {INDUSTRY_OPTIONS.map((industry) => <option key={industry} value={industry}>{industry}</option>)}
+              </select>
             </div>
 
             <div className={styles.field}>

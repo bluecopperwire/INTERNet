@@ -27,13 +27,14 @@ export const internshipPortalService: InternshipPortalService = {
     return Promise.resolve(clonePortalData())
   },
 
-  async searchOpportunities({ query }) {
+  async searchOpportunities({ query, companyId }) {
     const normalizedQuery = query.trim().toLowerCase()
     const data = clonePortalData()
 
     return Promise.resolve({
       ...data,
       opportunities: data.opportunities.filter((opportunity) => {
+        if (companyId && opportunity.companyId !== companyId) return false
         if (!normalizedQuery) return true
 
         return [

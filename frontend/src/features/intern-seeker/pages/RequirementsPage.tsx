@@ -1,4 +1,5 @@
-import { type ChangeEvent, useEffect, useMemo, useState } from 'react'
+import { type ChangeEvent, useMemo } from 'react'
+import { Download, Trash2 } from 'lucide-react'
 import { useRequirements } from '../hooks/useRequirements'
 import type { InternshipRequirement } from '../types/requirement.types'
 import styles from './RequirementsPage.module.css'
@@ -12,23 +13,13 @@ const isAcceptedFile = (file: File) => {
 }
 
 function RequirementsPage() {
-  const { requirements, isLoading, uploadingId, error, setError, uploadRequirement } = useRequirements()
-  const [viewingRequirement, setViewingRequirement] = useState<InternshipRequirement | null>(null)
+  const { requirements, isLoading, uploadingId, error, setError, uploadRequirement, deleteRequirement } = useRequirements()
 
   const submittedCount = useMemo(
     () => requirements.filter((requirement) => requirement.status === 'submitted').length,
     [requirements],
   )
   const completion = requirements.length ? Math.round((submittedCount / requirements.length) * 100) : 0
-
-  useEffect(() => {
-    if (!viewingRequirement) return
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setViewingRequirement(null)
-    }
-    window.addEventListener('keydown', closeOnEscape)
-    return () => window.removeEventListener('keydown', closeOnEscape)
-  }, [viewingRequirement])
 
   const handleFileSelection = async (
     requirement: InternshipRequirement,
@@ -78,7 +69,7 @@ function RequirementsPage() {
                   key={requirement.id}
                   requirement={requirement}
                   isUploading={uploadingId === requirement.id}
-                  onView={() => setViewingRequirement(requirement)}
+                  onDelete={() => void deleteRequirement(requirement.id)}
                   onFileSelection={(event) => void handleFileSelection(requirement, event)}
                 />
               ))}
@@ -86,23 +77,6 @@ function RequirementsPage() {
           )}
         </section>
 
-      {viewingRequirement?.document && (
-        <div className={styles.modalBackdrop} role="presentation" onMouseDown={() => setViewingRequirement(null)}>
-          <section className={styles.documentModal} role="dialog" aria-modal="true" aria-labelledby="document-title" onMouseDown={(event) => event.stopPropagation()}>
-            <h2 id="document-title">{viewingRequirement.title}</h2>
-            <dl>
-              <div><dt>File name</dt><dd>{viewingRequirement.document.fileName}</dd></div>
-              <div><dt>File type</dt><dd>{viewingRequirement.document.mimeType}</dd></div>
-              <div><dt>File size</dt><dd>{formatFileSize(viewingRequirement.document.size)}</dd></div>
-              <div><dt>Uploaded</dt><dd>{formatDate(viewingRequirement.document.uploadedAt)}</dd></div>
-            </dl>
-            {viewingRequirement.document.previewUrl && (
-              <a href={viewingRequirement.document.previewUrl} target="_blank" rel="noreferrer">Open uploaded document</a>
-            )}
-            <p>Click outside this window or press Escape to close.</p>
-          </section>
-        </div>
-      )}
     </>
   )
 }
@@ -110,11 +84,11 @@ function RequirementsPage() {
 interface RequirementRowProps {
   requirement: InternshipRequirement
   isUploading: boolean
-  onView: () => void
+  onDelete: () => void
   onFileSelection: (event: ChangeEvent<HTMLInputElement>) => void
 }
 
-function RequirementRow({ requirement, isUploading, onView, onFileSelection }: RequirementRowProps) {
+function RequirementRow({ requirement, isUploading, onDelete, onFileSelection }: RequirementRowProps) {
   const inputId = `requirement-${requirement.id}`
   return (
     <div className={styles.requirementRow} role="row">
@@ -130,7 +104,10 @@ function RequirementRow({ requirement, isUploading, onView, onFileSelection }: R
       <div className={styles.mobileLabel}>Action</div>
       <div className={styles.actionCell} role="cell">
         {requirement.status === 'submitted' ? (
-          <button type="button" onClick={onView}>View</button>
+          <div className={styles.documentActions}>
+            <button className={styles.iconAction} type="button" aria-label={`Download ${requirement.document?.fileName ?? requirement.title}`} title="Download" onClick={() => downloadDocument(requirement)}><Download aria-hidden="true" /></button>
+            <button className={`${styles.iconAction} ${styles.deleteAction}`} type="button" aria-label={`Delete ${requirement.document?.fileName ?? requirement.title}`} title="Delete" onClick={onDelete}><Trash2 aria-hidden="true" /></button>
+          </div>
         ) : (
           <>
             <label className={styles.uploadButton} htmlFor={inputId}>{isUploading ? 'Uploading...' : 'Upload'}</label>
@@ -142,13 +119,20 @@ function RequirementRow({ requirement, isUploading, onView, onFileSelection }: R
   )
 }
 
+const downloadDocument = (requirement: InternshipRequirement) => {
+  if (!requirement.document) return
+  const hasPreviewUrl = Boolean(requirement.document.previewUrl)
+  const url = requirement.document.previewUrl ?? URL.createObjectURL(new Blob([`Mock document: ${requirement.document.fileName}`], { type: requirement.document.mimeType }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = requirement.document.fileName
+  link.click()
+  if (!hasPreviewUrl) window.setTimeout(() => URL.revokeObjectURL(url), 0)
+}
+
 const formatDate = (value: string) => new Intl.DateTimeFormat('en-PH', {
   dateStyle: 'long',
   timeStyle: 'short',
 }).format(new Date(value))
-
-const formatFileSize = (size: number) => size >= 1_000_000
-  ? `${(size / 1_000_000).toFixed(1)} MB`
-  : `${Math.ceil(size / 1_000)} KB`
 
 export default RequirementsPage

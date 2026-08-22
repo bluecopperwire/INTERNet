@@ -1,8 +1,22 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
+import { ArrowLeft, Building2, GraduationCap, Mail, UserRound } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import styles from './ProfileEditorPage.module.css'
 import { useInternshipPortal } from '../hooks/useInternshipPortal'
 import type { UserProfile } from '../types/internship.types'
+
+const INDUSTRIES = [
+  'Office Administration',
+  'Information Technology',
+  'Customer Service / Retail',
+  'Hospitality / Tourism',
+  'Engineering',
+  'Accounting / Finance',
+  'Human Resources',
+  'Healthcare',
+]
+
+const SCHEDULES = ['Weekdays', 'Weekends', 'Flexible']
 
 export const ProfileEditorPage: React.FC = () => {
   const navigate = useNavigate()
@@ -13,45 +27,56 @@ export const ProfileEditorPage: React.FC = () => {
     if (profile) setFormData(profile)
   }, [profile])
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target
-    let parsedValue: string | boolean = value
-    if (type === 'radio' && (value === 'true' || value === 'false')) {
-      parsedValue = value === 'true'
-    }
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = event.target
+    const parsedValue: string | boolean = type === 'radio' && (value === 'true' || value === 'false')
+      ? value === 'true'
+      : value
 
     if (name.includes('.')) {
       const [section, field] = name.split('.') as [keyof UserProfile, string]
-      setFormData(prev => ({
-        ...prev,
+      setFormData(previous => ({
+        ...previous,
         [section]: {
-          ...(prev[section] as any),
-          [field]: parsedValue
-        }
+          ...(previous[section] as object),
+          [field]: parsedValue,
+        },
       }))
-    } else {
-      setFormData(prev => ({ ...prev, [name]: parsedValue }))
+      return
     }
+
+    setFormData(previous => ({ ...previous, [name]: parsedValue }))
   }
 
-  const handleCheckboxChange = (section: 'preferences', field: 'preferredIndustries' | 'schedule', value: string) => {
-    setFormData(prev => {
-      const currentArray = (prev[section]?.[field] as string[]) || []
-      const newArray = currentArray.includes(value)
-        ? currentArray.filter(item => item !== value)
-        : [...currentArray, value]
+  const togglePreference = (field: 'preferredIndustries' | 'schedule', value: string) => {
+    setFormData(previous => {
+      const currentValues = previous.preferences?.[field] ?? []
+      const nextValues = currentValues.includes(value)
+        ? currentValues.filter(item => item !== value)
+        : [...currentValues, value]
+
       return {
-        ...prev,
-        [section]: {
-          ...(prev[section] as any),
-          [field]: newArray
-        }
+        ...previous,
+        preferences: {
+          ...(previous.preferences as UserProfile['preferences']),
+          [field]: nextValues,
+        },
       }
     })
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const selectSchedule = (value: string) => {
+    setFormData(previous => ({
+      ...previous,
+      preferences: {
+        ...(previous.preferences as UserProfile['preferences']),
+        schedule: [value],
+      },
+    }))
+  }
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
     const success = await saveProfile(formData)
     if (success) {
       alert('Profile saved successfully!')
@@ -59,271 +84,154 @@ export const ProfileEditorPage: React.FC = () => {
     }
   }
 
-  if (isLoading || !formData) return <div className={styles.loading}>Loading...</div>
-
-  const PersonIcon = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-      <circle cx="12" cy="7" r="4"></circle>
-    </svg>
-  )
-
-  const AcademicIcon = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
-      <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
-    </svg>
-  )
-  
-  const InfoIcon = () => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"></circle>
-      <line x1="12" y1="16" x2="12" y2="12"></line>
-      <line x1="12" y1="8" x2="12.01" y2="8"></line>
-    </svg>
-  )
+  if (isLoading || !profile) return <div className={styles.loading}>Loading...</div>
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <div className={styles.titleArea}>
-          <h2>My Profile</h2>
-          <p>Complete your profile to increase your chances of being matched with opportunities.</p>
-        </div>
-        <button type="submit" form="profileForm" className={styles.saveBtn}>Save Profile</button>
-      </div>
+    <main className={styles.page}>
+      <button type="button" className={styles.backButton} onClick={() => navigate('/intern-seeker/profile')}>
+        <ArrowLeft size={19} aria-hidden="true" />
+        Back to Profile
+      </button>
 
-      <form id="profileForm" onSubmit={handleSubmit} className={styles.form}>
-        
-        {/* PERSONAL INFO */}
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <div className={styles.iconCircle}><PersonIcon /></div>
-            <div className={styles.cardTitleBox}>
-              <h3>Personal Information</h3>
-              <p>Please put your correct information</p>
-            </div>
-          </div>
-          
-          <div className={styles.cardBody}>
-            <div className={styles.grid4}>
-              <div className={styles.inputGroup}>
-                <label>First Name <span className={styles.req}>*</span></label>
-                <input required type="text" name="firstName" value={formData.firstName || ''} onChange={handleChange} />
-              </div>
-              <div className={styles.inputGroup}>
-                <label>Middle Name <span className={styles.req}>*</span></label>
-                <input required type="text" name="middleName" value={formData.middleName || ''} onChange={handleChange} />
-              </div>
-              <div className={styles.inputGroup}>
-                <label>Last Name <span className={styles.req}>*</span></label>
-                <input required type="text" name="lastName" value={formData.lastName || ''} onChange={handleChange} />
-              </div>
-              <div className={styles.inputGroup}>
-                <label>Extension Name</label>
-                <input type="text" name="extensionName" value={formData.extensionName || ''} onChange={handleChange} />
-              </div>
-            </div>
+      <form className={styles.formCard} onSubmit={handleSubmit}>
+        <header className={styles.formHeader}>
+          <h1>Edit Profile</h1>
+          <p>Keep your personal, academic, and internship preference details up to date.</p>
+        </header>
 
-            <div className={styles.grid3}>
-              <div className={styles.inputGroup}>
-                <label>Sex <span className={styles.req}>*</span></label>
-                <div className={styles.selectWrapper}>
-                  <select required name="sex" value={formData.sex || ''} onChange={handleChange}>
-                    <option value="">Select Sex</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                  </select>
-                </div>
-              </div>
-              <div className={styles.inputGroup}>
-                <label>Birthdate <span className={styles.req}>*</span></label>
-                <input required type="date" name="birthdate" value={formData.birthdate || ''} onChange={handleChange} />
-              </div>
-              <div className={styles.inputGroup}>
-                <label>Contact Number <span className={styles.req}>*</span></label>
-                <input required type="text" name="contactNumber" value={formData.contactNumber || ''} onChange={handleChange} />
-              </div>
+        <div className={styles.formBody}>
+          <section className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <span className={styles.sectionIcon}><UserRound size={21} /></span>
+              <h2>Personal Information</h2>
             </div>
-            
-            <div className={styles.grid3}>
-              <div className={styles.inputGroup}>
-                <label>House/Block No./Street <span className={styles.req}>*</span></label>
-                <input required type="text" name="address.street" value={formData.address?.street || ''} onChange={handleChange} />
+            <div className={styles.sectionBody}>
+              <div className={`${styles.fieldGrid} ${styles.nameGrid}`}>
+                <Field label="First Name" required><input required name="firstName" placeholder="Enter first name" value={formData.firstName ?? ''} onChange={handleChange} /></Field>
+                <Field label="Middle Name"><input name="middleName" placeholder="Enter middle name" value={formData.middleName ?? ''} onChange={handleChange} /></Field>
+                <Field label="Last Name" required><input required name="lastName" placeholder="Enter last name" value={formData.lastName ?? ''} onChange={handleChange} /></Field>
+                <Field label="Suffix"><input name="extensionName" placeholder="e.g., Jr." value={formData.extensionName ?? ''} onChange={handleChange} /></Field>
               </div>
-              <div className={styles.inputGroup}>
-                <label>Barangay <span className={styles.req}>*</span></label>
-                <div className={styles.selectWrapper}>
-                  <select required name="address.barangay" value={formData.address?.barangay || ''} onChange={handleChange}>
-                    <option value="">Select Barangay</option>
-                    <option value="Loyola Heights">Loyola Heights</option>
-                    <option value="Batasan Hills">Batasan Hills</option>
-                  </select>
-                </div>
-              </div>
-              <div className={styles.inputGroup}>
-                <label>District <span className={styles.req}>*</span></label>
-                <div className={styles.selectWrapper}>
-                  <select required name="address.district" value={formData.address?.district || ''} onChange={handleChange}>
-                    <option value="">Select District</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-            
-            <div className={styles.grid3}>
-              <div className={styles.inputGroup}>
-                <label>City <span className={styles.req}>*</span></label>
-                <input required type="text" name="address.city" value={formData.address?.city || ''} onChange={handleChange} />
-              </div>
-              <div className={styles.inputGroup}>
-                <label>Inquiry via <span className={styles.req}>*</span></label>
-                <div className={styles.selectWrapper}>
-                  <select required name="inquiryVia" value={formData.inquiryVia || ''} onChange={handleChange}>
-                    <option value="Walk-in">Walk-in</option>
-                    <option value="Online">Online</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* ACADEMIC INFO */}
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <div className={styles.iconCircle}><AcademicIcon /></div>
-            <div className={styles.cardTitleBox}>
-              <h3>Academic Information</h3>
-              <p>Please put your correct information</p>
-            </div>
-          </div>
-          <div className={styles.cardBody}>
-            <div className={styles.grid2Unequal}>
-              <div className={styles.inputGroup}>
-                <label>School Name in Full (No Acronyms / Abbreviations)<span className={styles.req}>*</span></label>
-                <input required type="text" name="academic.schoolName" placeholder="Enter school name" value={formData.academic?.schoolName || ''} onChange={handleChange} />
+              <div className={`${styles.fieldGrid} ${styles.addressGrid}`}>
+                <Field label="House / Block No. / Street" required><input required name="address.street" placeholder="Enter house / block no. / street" value={formData.address?.street ?? ''} onChange={handleChange} /></Field>
+                <Field label="Barangay" required>
+                  <input required name="address.barangay" placeholder="Enter barangay" value={formData.address?.barangay ?? ''} onChange={handleChange} />
+                </Field>
+                <Field label="District" required>
+                  <input required name="address.district" placeholder="If none, type N/A" value={formData.address?.district ?? ''} onChange={handleChange} />
+                </Field>
+                <Field label="City" required>
+                  <input required name="address.city" placeholder="Enter city" value={formData.address?.city ?? ''} onChange={handleChange} />
+                </Field>
               </div>
-              <div className={styles.inputGroup}>
-                <label>Year Level <span className={styles.req}>*</span></label>
-                <div className={styles.selectWrapper}>
-                  <select required name="academic.yearLevel" value={formData.academic?.yearLevel || ''} onChange={handleChange}>
-                    <option value="">Select year level</option>
-                    <option value="1st Year">1st Year</option>
-                    <option value="2nd Year">2nd Year</option>
-                    <option value="3rd Year">3rd Year</option>
-                    <option value="4th Year">4th Year</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-            <div className={styles.grid3}>
-              <div className={styles.inputGroup}>
-                <label>Program/Strand <span className={styles.req}>*</span></label>
-                <input required type="text" name="academic.program" placeholder="Enter program/strand" value={formData.academic?.program || ''} onChange={handleChange} />
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* PREFERENCES */}
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <div className={styles.iconCircle}><AcademicIcon /></div>
-            <div className={styles.cardTitleBox}>
-              <h3>Work Immersion / Internship Requirements and Preferences</h3>
-              <p>Please provide accurate details regarding your internship requirements to help us match you with the most suitable host establishment.</p>
-            </div>
-          </div>
-          
-          <div className={styles.cardBody}>
-            <div className={styles.grid2Half}>
-              <div className={styles.inputGroup}>
-                <label>Required Work Immersion / Internship Hours <span className={styles.req}>*</span></label>
-                <input type="number" required placeholder="Enter required hours" name="preferences.requiredHours" value={formData.preferences?.requiredHours || ''} onChange={handleChange} />
+              <div className={`${styles.fieldGrid} ${styles.personalDetailsGrid}`}>
+                <Field label="Birthdate" required><input required type="date" name="birthdate" value={formData.birthdate ?? ''} onChange={handleChange} /></Field>
+                <fieldset className={styles.choiceField}>
+                  <legend>Sex <span>*</span></legend>
+                  <div className={styles.radioGroup}>
+                    {['Male', 'Female'].map(sex => <label key={sex}><input required type="radio" name="sex" value={sex} checked={formData.sex === sex} onChange={handleChange} />{sex}</label>)}
+                  </div>
+                </fieldset>
               </div>
-              <div className={styles.inputGroup}>
-                <label>Are you willing to be assigned outside your preferred field if not available? <span className={styles.req}>*</span></label>
+            </div>
+          </section>
+
+          <section className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <span className={styles.sectionIcon}><Mail size={21} /></span>
+              <h2>Contact Information</h2>
+            </div>
+            <div className={styles.sectionBody}>
+              <div className={styles.fieldGrid}>
+                <Field label="Email" required><input required type="email" name="email" placeholder="Enter email address" value={formData.email ?? ''} onChange={handleChange} /></Field>
+                <Field label="Mobile Number" required><input required type="tel" name="contactNumber" placeholder="Enter mobile number" value={formData.contactNumber ?? ''} onChange={handleChange} /></Field>
+                <Field label="LinkedIn"><input type="url" name="linkedinUrl" placeholder="Enter LinkedIn profile address" value={formData.linkedinUrl ?? ''} onChange={handleChange} /></Field>
+              </div>
+            </div>
+          </section>
+
+          <section className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <span className={styles.sectionIcon}><GraduationCap size={21} /></span>
+              <h2>Current Academic Information</h2>
+            </div>
+            <div className={styles.sectionBody}>
+              <div className={`${styles.fieldGrid} ${styles.academicGrid}`}>
+                <Field label="School" required><input required name="academic.schoolName" placeholder="Enter school name" value={formData.academic?.schoolName ?? ''} onChange={handleChange} /></Field>
+                <Field label="Year Level" required>
+                  <select required name="academic.yearLevel" value={formData.academic?.yearLevel ?? ''} onChange={handleChange}>
+                    <option value="">Select year level</option><option value="Grade 11">Grade 11</option><option value="Grade 12">Grade 12</option><option value="1st Year">1st Year</option><option value="2nd Year">2nd Year</option><option value="3rd Year">3rd Year</option><option value="4th Year">4th Year</option>
+                  </select>
+                </Field>
+                <Field label="Program" required><input required name="academic.program" placeholder="Enter program" value={formData.academic?.program ?? ''} onChange={handleChange} /></Field>
+              </div>
+            </div>
+          </section>
+
+          <section className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <span className={styles.sectionIcon}><Building2 size={21} /></span>
+              <h2>Internship Preferences</h2>
+            </div>
+            <div className={styles.sectionBody}>
+              <div className={`${styles.fieldGrid} ${styles.preferenceTopGrid}`}>
+                <Field label="Internship Required Hours" required><input required min="1" type="number" name="preferences.requiredHours" placeholder="Enter required hours" value={formData.preferences?.requiredHours ?? ''} onChange={handleChange} /></Field>
+                <Field label="Preferred Host Organization Type" required>
+                  <select required name="preferences.hostOrgType" value={formData.preferences?.hostOrgType ?? ''} onChange={handleChange}>
+                    <option value="">Select organization type</option><option value="Government">Government</option><option value="Private">Private</option>
+                  </select>
+                </Field>
+              </div>
+
+              <div className={`${styles.fieldGrid} ${styles.preferenceTopGrid}`}>
+                <fieldset className={styles.choiceField}>
+                  <legend>Internship Days Availability <span>*</span></legend>
+                  <div className={styles.radioGroup}>
+                    {SCHEDULES.map(item => <label key={item}><input type="radio" name="internshipSchedule" checked={formData.preferences?.schedule?.[0] === item} onChange={() => selectSchedule(item)} />{item}</label>)}
+                  </div>
+                </fieldset>
+                <Field label="Internship Start Date Availability" required><input required type="date" name="preferences.startDate" value={formData.preferences?.startDate ?? ''} onChange={handleChange} /></Field>
+              </div>
+
+              <fieldset className={styles.choiceField}>
+                <legend>Preferred Field of Internship <span>*</span></legend>
+                <div className={styles.industriesGrid}>
+                  {INDUSTRIES.map(item => <label key={item}><input type="checkbox" checked={formData.preferences?.preferredIndustries?.includes(item) ?? false} onChange={() => togglePreference('preferredIndustries', item)} />{item}</label>)}
+                  <div className={styles.otherIndustry}>
+                    <label>
+                      <input type="checkbox" checked={formData.preferences?.preferredIndustries?.includes('Other') ?? false} onChange={() => togglePreference('preferredIndustries', 'Other')} />
+                      Other
+                    </label>
+                    <input type="text" aria-label="Other preferred internship field" disabled={!(formData.preferences?.preferredIndustries?.includes('Other') ?? false)} name="preferences.otherPreferredField" placeholder="Please specify" value={formData.preferences?.otherPreferredField ?? ''} onChange={handleChange} />
+                  </div>
+                </div>
+              </fieldset>
+
+              <fieldset className={styles.choiceField}>
+                <legend>Willing to be assigned outside of preferred field if not available? <span>*</span></legend>
                 <div className={styles.radioGroup}>
-                  <label className={styles.radioLabel}>
-                    <input type="radio" name="preferences.willingToAssignOutside" value="true" onChange={handleChange} checked={formData.preferences?.willingToAssignOutside === true} /> Yes
-                  </label>
-                  <label className={styles.radioLabel}>
-                    <input type="radio" name="preferences.willingToAssignOutside" value="false" onChange={handleChange} checked={formData.preferences?.willingToAssignOutside === false} /> No
-                  </label>
+                  <label><input required type="radio" name="preferences.willingToAssignOutside" value="true" checked={formData.preferences?.willingToAssignOutside === true} onChange={handleChange} />Yes</label>
+                  <label><input required type="radio" name="preferences.willingToAssignOutside" value="false" checked={formData.preferences?.willingToAssignOutside === false} onChange={handleChange} />No</label>
                 </div>
-              </div>
+              </fieldset>
             </div>
-
-            <div className={styles.inputGroup}>
-              <label>Preferred Industry / Field of Internship <span className={styles.req}>*</span></label>
-              <div className={styles.checkboxGrid}>
-                {['Office Administration', 'Information Technology', 'Customer Service / Retail', 'Hospitality / Tourism', 'Engineering', 'Accounting / Finance', 'Human Resources', 'Healthcare'].map(ind => (
-                  <label key={ind} className={styles.checkboxLabel}>
-                    <input 
-                      type="checkbox" 
-                      checked={formData.preferences?.preferredIndustries?.includes(ind) || false}
-                      onChange={() => handleCheckboxChange('preferences', 'preferredIndustries', ind)}
-                    /> {ind}
-                  </label>
-                ))}
-                <label className={styles.checkboxLabel}>
-                  <input type="checkbox" /> Other: <input type="text" className={styles.inlineInput} />
-                </label>
-              </div>
-            </div>
-
-            <div className={styles.inputGroup}>
-              <label>Internship Schedule / Availability <span className={styles.req}>*</span></label>
-              <div className={styles.checkboxGrid4}>
-                {['Weekdays (Mon-Fri)', 'Weekends (Sat-Sun)', 'Flexible'].map(schedule => (
-                  <label key={schedule} className={styles.checkboxLabel}>
-                    <input 
-                      type="checkbox" 
-                      checked={formData.preferences?.schedule?.includes(schedule) || false}
-                      onChange={() => handleCheckboxChange('preferences', 'schedule', schedule)}
-                    /> {schedule}
-                  </label>
-                ))}
-                <label className={styles.checkboxLabel}>
-                  <input type="checkbox" /> Other: <input type="text" className={styles.inlineInput} />
-                </label>
-              </div>
-            </div>
-
-            <div className={styles.grid2Half}>
-               <div className={styles.inputGroup}>
-                <label>Internship Availability Date (Start of Internship) <span className={styles.req}>*</span></label>
-                <input type="date" required name="preferences.startDate" value={formData.preferences?.startDate || ''} onChange={handleChange} />
-              </div>
-              <div className={styles.inputGroup}>
-                <label>Preferred Host Organization Type <span className={styles.req}>*</span></label>
-                <div className={styles.selectWrapper}>
-                  <select name="preferences.hostOrgType" value={formData.preferences?.hostOrgType || ''} onChange={handleChange}>
-                    <option value="">Select organization type</option>
-                    <option value="Private">Private</option>
-                    <option value="Public">Public Sector</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
+          </section>
         </div>
 
-        {/* FOOTER BANNER */}
-        <div className={styles.infoBanner}>
-          <div className={styles.infoIconWrapper}>
-            <InfoIcon />
-          </div>
-          <div className={styles.infoBannerText}>
-            <strong>Your profile help us match you with the most suitable internship or work immersion opportunities.</strong>
-            <p>Please make sure all information provided is accurate and up to date.</p>
-          </div>
-        </div>
-
+        <footer className={styles.formFooter}>
+          <button type="button" className={styles.cancelButton} onClick={() => navigate('/intern-seeker/profile')}>Cancel</button>
+          <button type="submit" className={styles.saveButton} disabled={isLoading}>Save Changes</button>
+        </footer>
       </form>
-    </div>
+    </main>
   )
 }
+
+const Field: React.FC<{ label: string; required?: boolean; children: React.ReactNode }> = ({ label, required, children }) => (
+  <label className={styles.field}>
+    <span>{label}{required && <em>*</em>}</span>
+    {children}
+  </label>
+)

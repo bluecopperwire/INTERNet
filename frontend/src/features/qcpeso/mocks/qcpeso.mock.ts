@@ -1,69 +1,16 @@
 import type {
-  InternItem,
-  ReferralItem,
   QCPesoDashboardSummary,
   QCPesoProfile,
-  StudentApplication,
-  EmployerOpportunity,
   ApplicationItem,
-  EmployerItem
+  EmployerItem,
+  MonitoredCompanyUser,
+  MonitoredStudentUser,
+  QCPesoOpportunity,
+  QCPesoReferral,
+  QCPesoReviewApplicant,
+  QCPesoAttendanceRecord,
+  QCPesoInternshipRecord,
 } from '../types/qcpeso.types'
-
-export const MOCK_REFERRALS: ReferralItem[] = [
-  {
-    id: 'REF-2026-001',
-    studentName: 'Kyle Ethan Porciuncula',
-    email: 'kyleporciuncula@gmail.com',
-    phone: '09123456789',
-    targetEmployer: 'Metropolitan Tech Solutions',
-    position: 'Full Stack Web Developer Intern',
-    dateForwarded: '2026-08-01',
-    status: 'Under Review',
-    submittedDocuments: ['Curriculum vitae', 'Proof of Residency', 'COR / Credentials', 'Letter of Intent'],
-    course: 'BS Computer Science',
-    school: 'Quezon City University',
-    notes: 'Complete pre-referral documents submitted. Outstanding DigiCV portfolio.',
-  },
-  {
-    id: 'REF-2026-002',
-    studentName: 'Maria Santos',
-    email: 'maria.santos@gmail.com',
-    phone: '09171234567',
-    targetEmployer: 'Quezon City IT Department',
-    position: 'UI/UX Design Intern',
-    dateForwarded: '2026-08-02',
-    status: 'Endorsed to Employer',
-    submittedDocuments: ['Curriculum vitae', 'Proof of Residency', 'Letter of Recommendation'],
-    course: 'BS Information Technology',
-    school: 'Polytechnic University of the Philippines',
-  }
-]
-
-export const MOCK_INTERNS: InternItem[] = [
-  {
-    id: 'INT-2026-001',
-    studentName: 'Kyle Ethan Porciuncula',
-    email: 'kyleporciuncula@gmail.com',
-    phone: '09123456789',
-    matchedEmployer: 'Metropolitan Tech Solutions',
-    acceptedRole: 'Full Stack Web Developer Intern',
-    dateOfPlacement: '2026-07-15',
-    status: 'Ongoing',
-    submittedDocuments: ['Curriculum vitae', 'Proof of Residency', 'COR / Credentials', 'Letter of Intent'],
-    renderedHours: 120,
-    targetHours: 200,
-    course: 'BS Computer Science',
-    school: 'Quezon City University',
-    dtrLogs: [
-      { id: 'DTR-001', date: '2026-08-10', timeIn: '8:00 AM', timeOut: '5:00 PM', hoursRendered: 8, status: 'Present' },
-      { id: 'DTR-002', date: '2026-08-11', timeIn: '8:11 AM', timeOut: '5:00 PM', hoursRendered: 8, status: 'Late' },
-      { id: 'DTR-003', date: '2026-08-12', timeIn: '8:00 AM', timeOut: '5:00 PM', hoursRendered: 8, status: 'Present' },
-      { id: 'DTR-004', date: '2026-08-13', timeIn: '--', timeOut: '--', hoursRendered: 0, status: 'Absent' },
-      { id: 'DTR-005', date: '2026-08-14', timeIn: '8:04 AM', timeOut: '5:00 PM', hoursRendered: 8, status: 'Present' },
-      { id: 'DTR-006', date: '2026-08-16', timeIn: '8:02 AM', timeOut: '5:00 PM', hoursRendered: 8, status: 'Present' },
-    ]
-  }
-]
 
 export const MOCK_QCPESO_SUMMARY: QCPesoDashboardSummary = {
   pendingApplications: 1291,
@@ -77,96 +24,75 @@ export const MOCK_QCPESO_PROFILE: QCPesoProfile = {
   firstName: 'Kyle Ethan',
   middleName: 'Santos',
   lastName: 'Porciuncula',
-  birthdate: '2004-05-15',
+  suffix: '',
+  birthdate: '2004-08-05',
+  sex: 'Male',
+  addressLine: '309 Katipunan Ave',
+  barangay: 'Loyola Heights',
+  district: '3',
+  city: 'Quezon City',
+  email: 'flowforgestd@gmail.com',
+  mobileNumber: '09123456789',
   employeeIdNumber: 'QCPESO-2026-089',
   position: 'UI/UX Designer',
   department: 'Information Technology Division',
   fullName: 'Kyle Ethan Santos Porciuncula',
   role: 'UI/UX Designer',
-  location: 'Quezon City, Philippines',
+  location: '309 Katipunan Ave, Loyola Heights, District 3, Quezon City',
   qcpesoPosition: 'UI/UX Designer',
-  city: 'Quezon City'
 }
 
-export const MOCK_STUDENTS: StudentApplication[] = [
-  {
-    id: '1',
-    name: 'Kyle Ethan Porciuncula',
-    school: 'Polytechnic University of the Philippines',
-    program: 'BS Computer Science',
-    date: 'July 1, 2026',
-    status: 'Pending',
-    email: 'kyleporciuncula@gmail.com',
-    phone: '09123456789',
-    gwa: '1.25',
-    submittedDocuments: ['Curriculum Vitae', 'Lorem Ipsum'],
-    appliedFor: 'Lorem Ipsum'
-  },
-  {
-    id: '2',
-    name: 'Juan Dela Cruz',
-    school: 'Quezon City University',
-    program: 'BS Information Technology',
-    date: 'July 2, 2026',
-    status: 'Verified',
-    email: 'juandelacruz@gmail.com',
-    phone: '09171234567',
-    gwa: '1.50',
-    submittedDocuments: ['Curriculum Vitae', 'Proof of Residency'],
-    appliedFor: 'Software Engineer Intern'
-  }
+export const MOCK_MONITORED_STUDENTS: MonitoredStudentUser[] = [
+  { id: 'STU-001', studentName: 'Kyle Ethan Porciuncula', email: 'kyleporciuncula@gmail.com', mobileNumber: '09123456789', linkedIn: 'linkedin.com/in/kyle-porciuncula', dateRegistered: 'August 20, 2026', status: 'Active', address: '309 Katipunan Ave, Loyola Heights, District 3, Quezon City', birthdate: 'August 5, 2004', sex: 'Male', school: 'Polytechnic University of the Philippines', program: 'BS Computer Science', yearLevel: '3rd Year', requiredHours: '250 hours', preferredHostOrganizationType: 'Private', internshipDaysAvailability: 'Weekdays', internshipStartDateAvailability: 'August 25, 2026', preferredField: 'Information Technology', willingOutsidePreferredField: 'Yes' },
+  { id: 'STU-002', studentName: 'Maria Santos', email: 'maria.santos@gmail.com', mobileNumber: '09171234567', linkedIn: 'linkedin.com/in/maria-santos', dateRegistered: 'August 19, 2026', status: 'Active', address: 'Commonwealth Avenue, Batasan Hills, Quezon City', birthdate: 'March 14, 2004', sex: 'Female', school: 'Quezon City University', program: 'BS Information Technology', yearLevel: '3rd Year', requiredHours: '200 hours', preferredHostOrganizationType: 'Government', internshipDaysAvailability: 'Weekdays', internshipStartDateAvailability: 'August 22, 2026', preferredField: 'Information Technology', willingOutsidePreferredField: 'Yes' },
+  { id: 'STU-003', studentName: 'Juan Dela Cruz', email: 'juan.delacruz@gmail.com', mobileNumber: '09189876543', linkedIn: 'linkedin.com/in/juan-delacruz', dateRegistered: 'August 17, 2026', status: 'Suspended', address: 'Tandang Sora Avenue, Quezon City', birthdate: 'November 8, 2003', sex: 'Male', school: 'University of the Philippines Diliman', program: 'BS Computer Science', yearLevel: '4th Year', requiredHours: '300 hours', preferredHostOrganizationType: 'Private', internshipDaysAvailability: 'Flexible', internshipStartDateAvailability: 'September 1, 2026', preferredField: 'Data Analytics', willingOutsidePreferredField: 'No' },
+  { id: 'STU-004', studentName: 'Angelica Reyes', email: 'angelica.reyes@gmail.com', mobileNumber: '09223334455', linkedIn: 'linkedin.com/in/angelica-reyes', dateRegistered: 'August 15, 2026', status: 'Active', address: 'Aurora Boulevard, Cubao, Quezon City', birthdate: 'June 20, 2004', sex: 'Female', school: 'Far Eastern University', program: 'BS Information Systems', yearLevel: '4th Year', requiredHours: '240 hours', preferredHostOrganizationType: 'Private', internshipDaysAvailability: 'Weekdays', internshipStartDateAvailability: 'August 28, 2026', preferredField: 'Software Quality Assurance', willingOutsidePreferredField: 'Yes' },
+  { id: 'STU-005', studentName: 'Christian Garcia', email: 'christian.garcia@gmail.com', mobileNumber: '09334445566', linkedIn: 'linkedin.com/in/christian-garcia', dateRegistered: 'August 12, 2026', status: 'Active', address: 'Congressional Avenue, Project 8, Quezon City', birthdate: 'January 25, 2004', sex: 'Male', school: 'Technological Institute of the Philippines', program: 'BS Industrial Engineering', yearLevel: '3rd Year', requiredHours: '240 hours', preferredHostOrganizationType: 'Government', internshipDaysAvailability: 'Weekend', internshipStartDateAvailability: 'September 5, 2026', preferredField: 'Engineering', willingOutsidePreferredField: 'Yes' },
 ]
 
-export const MOCK_EMPLOYER_OPPORTUNITIES: EmployerOpportunity[] = [
-  {
-    id: '1',
-    name: 'ABC Company',
-    rep: 'Polytechnic University of the Philippines',
-    opportunities: 5,
-    status: 'Active',
-    email: 'ABCcompany@gmail.com',
-    phone: '09123456789',
-    employerStatus: 'Ongoing',
-    createdOn: 'July 1, 2026',
-    opportunitiesOffered: [
-      'Lorem ipsum dolor sit amet',
-      'Lorem ipsum dolor sit amet',
-      'Lorem ipsum dolor sit amet',
-      'Lorem ipsum dolor sit amet',
-      'Lorem ipsum dolor sit amet',
-      'Lorem ipsum dolor sit amet'
-    ]
-  },
-  {
-    id: '2',
-    name: 'Meta Company',
-    rep: 'John Doe',
-    opportunities: 12,
-    status: 'Pending Review',
-    email: 'contact@meta.com',
-    phone: '09181112222',
-    employerStatus: 'Under Review',
-    createdOn: 'July 5, 2026',
-    opportunitiesOffered: [
-      'Frontend Developer Intern',
-      'UI/UX Researcher'
-    ]
-  },
-  {
-    id: '3',
-    name: 'Innovate Tech',
-    rep: 'Mark Reyes',
-    opportunities: 2,
-    status: 'Inactive',
-    email: 'careers@innovatetech.ph',
-    phone: '09199998888',
-    employerStatus: 'Paused',
-    createdOn: 'June 15, 2026',
-    opportunitiesOffered: [
-      'QA Tester Intern',
-      'Data Encoder'
-    ]
-  }
+export const MOCK_MONITORED_COMPANIES: MonitoredCompanyUser[] = [
+  { id: 'COM-001', companyName: 'Metropolitan Tech Solutions', email: 'hr@metrotechsolutions.com', contactNumber: '(02) 8123-4567', dateRegistered: 'August 21, 2026', status: 'Active', description: 'A technology solutions company focused on practical software and infrastructure services.', address: '123 Aurora Boulevard, Cubao, District 3, Quezon City', companyType: 'Private', industry: 'Information Technology', companySize: '51–200 employees', yearEstablished: '2015', websiteUrl: 'metrotechsolutions.example.com', contactPerson: 'Ricardo Lim' },
+  { id: 'COM-002', companyName: 'Quezon City IT Department', email: 'itdepartment@quezoncity.gov.ph', contactNumber: '(02) 8988-4242', dateRegistered: 'August 18, 2026', status: 'Active', description: 'The information technology department supporting digital public services for Quezon City.', address: 'Quezon City Hall Complex, Elliptical Road, Quezon City', companyType: 'Government', industry: 'Information Technology', companySize: '201–500 employees', yearEstablished: '1939', websiteUrl: 'quezoncity.gov.ph', contactPerson: 'Maria Reyes' },
+  { id: 'COM-003', companyName: 'Nexa Solutions', email: 'careers@nexasolutions.ph', contactNumber: '09176543210', dateRegistered: 'August 16, 2026', status: 'Suspended', description: 'A product and software development company.', address: 'Ortigas Center, Pasig City', companyType: 'Private', industry: 'Information Technology', companySize: '11–50 employees', yearEstablished: '2019', websiteUrl: 'nexasolutions.example.com', contactPerson: 'Anton Cruz' },
+  { id: 'COM-004', companyName: 'CloudCore Systems', email: 'talent@cloudcoresystems.ph', contactNumber: '09182345678', dateRegistered: 'August 14, 2026', status: 'Active', description: 'A cloud software and quality assurance services provider.', address: 'Bonifacio Global City, Taguig City', companyType: 'Private', industry: 'Information Technology', companySize: '51–200 employees', yearEstablished: '2017', websiteUrl: 'cloudcoresystems.example.com', contactPerson: 'Bianca Flores' },
+  { id: 'COM-005', companyName: 'BrightPath Media', email: 'hello@brightpathmedia.ph', contactNumber: '09193456789', dateRegistered: 'August 10, 2026', status: 'Active', description: 'A media company offering creative and marketing services.', address: '1890 Taft Avenue, Malate, Manila City', companyType: 'Private', industry: 'Customer Service / Retail', companySize: '11–50 employees', yearEstablished: '2020', websiteUrl: 'brightpathmedia.example.com', contactPerson: 'Felix Tan' },
+]
+
+export const MOCK_QCPESO_OPPORTUNITIES: QCPesoOpportunity[] = [
+  { id: 'OPP-001', title: 'Full Stack Web Developer Intern', company: 'Metropolitan Tech Solutions', department: 'Information Technology', workArrangement: 'On-site', slots: 5, duration: 250, allowance: 'PHP 500 per day', applicationDeadline: '2026-09-15', jobDescription: 'Support the development team in building and maintaining web applications. Participate in planning, implementation, testing, and documentation tasks.', qualifications: 'Knowledge of HTML, CSS, JavaScript, and modern web development fundamentals. Familiarity with React is an advantage.' },
+  { id: 'OPP-002', title: 'UI/UX Design Intern', company: 'Quezon City IT Department', department: 'Digital Services', workArrangement: 'Hybrid', slots: 3, duration: 200, allowance: 'PHP 400 per day', applicationDeadline: '2026-09-08', jobDescription: 'Assist with research, wireframes, prototypes, and usability improvements for public-facing digital services.', qualifications: 'Portfolio or coursework in UI/UX design. Familiarity with Figma and user-centred design processes.' },
+  { id: 'OPP-003', title: 'Software QA Intern', company: 'CloudCore Systems', department: 'Quality Assurance', workArrangement: 'Hybrid', slots: 2, duration: 240, allowance: 'Allowance provided', applicationDeadline: '2026-09-20', jobDescription: 'Assist in executing test cases, documenting defects, and validating product fixes with the QA team.', qualifications: 'Attention to detail and basic understanding of software testing or web applications.' },
+]
+
+export const MOCK_QCPESO_REVIEW_APPLICANTS: QCPesoReviewApplicant[] = [
+  { id: 'QCA-001', studentName: 'Maria Santos', company: 'Metropolitan Tech Solutions', jobTitle: 'Full Stack Web Developer Intern', program: 'BS Information Technology', yearLevel: '3rd Year', dateApplied: 'August 14, 2026', status: 'Pending', email: 'maria.santos@gmail.com', phone: '09171234567', address: 'Commonwealth Avenue, Batasan Hills, Quezon City', school: 'Quezon City University', requiredHours: 200, availableDays: 'Weekdays', availableStartingDate: 'August 22, 2026', opportunityId: 'OPP-001' },
+  { id: 'QCA-002', studentName: 'Kyle Ethan Porciuncula', company: 'Quezon City IT Department', jobTitle: 'UI/UX Design Intern', program: 'BS Computer Science', yearLevel: '3rd Year', dateApplied: 'August 12, 2026', status: 'Pending', email: 'kyleporciuncula@gmail.com', phone: '09123456789', address: '309 Katipunan Ave, Loyola Heights, Quezon City', school: 'Polytechnic University of the Philippines', requiredHours: 250, availableDays: 'Weekdays', availableStartingDate: 'August 25, 2026', opportunityId: 'OPP-002' },
+  { id: 'QCA-003', studentName: 'Angelica Reyes', company: 'CloudCore Systems', jobTitle: 'Software QA Intern', program: 'BS Information Systems', yearLevel: '4th Year', dateApplied: 'August 10, 2026', status: 'Pending', email: 'angelica.reyes@gmail.com', phone: '09223334455', address: 'Aurora Boulevard, Cubao, Quezon City', school: 'Far Eastern University', requiredHours: 240, availableDays: 'Weekdays', availableStartingDate: 'August 28, 2026', opportunityId: 'OPP-003' },
+  { id: 'QCA-004', studentName: 'Juan Dela Cruz', company: 'Metropolitan Tech Solutions', jobTitle: 'Full Stack Web Developer Intern', program: 'BS Computer Science', yearLevel: '4th Year', dateApplied: 'August 9, 2026', status: 'Rejected', email: 'juan.delacruz@gmail.com', phone: '09189876543', address: 'Tandang Sora Avenue, Quezon City', school: 'University of the Philippines Diliman', requiredHours: 300, availableDays: 'Flexible', availableStartingDate: 'September 1, 2026', opportunityId: 'OPP-001' },
+]
+
+export const MOCK_QCPESO_REFERRALS: QCPesoReferral[] = [
+  { id: 'REF-001', studentName: 'Maria Santos', company: 'Metropolitan Tech Solutions', jobTitle: 'Full Stack Web Developer Intern', referralDate: 'August 15, 2026', companyResponse: 'For Interview', studentResponse: 'Pending', email: 'maria.santos@gmail.com', phone: '09171234567', address: 'Commonwealth Avenue, Batasan Hills, Quezon City' },
+  { id: 'REF-002', studentName: 'Kyle Ethan Porciuncula', company: 'Quezon City IT Department', jobTitle: 'UI/UX Design Intern', referralDate: 'August 13, 2026', companyResponse: 'Accepted', studentResponse: 'Accepted', email: 'kyleporciuncula@gmail.com', phone: '09123456789', address: '309 Katipunan Ave, Loyola Heights, Quezon City' },
+  { id: 'REF-003', studentName: 'Angelica Reyes', company: 'CloudCore Systems', jobTitle: 'Software QA Intern', referralDate: 'August 11, 2026', companyResponse: 'Pending', studentResponse: 'Pending', email: 'angelica.reyes@gmail.com', phone: '09223334455', address: 'Aurora Boulevard, Cubao, Quezon City' },
+]
+
+export const MOCK_QCPESO_INTERNSHIPS: QCPesoInternshipRecord[] = [
+  { id: 'INT-001', studentName: 'Kyle Ethan Porciuncula', company: 'Metropolitan Tech Solutions', jobTitle: 'Full Stack Web Developer Intern', workingDays: 'Weekdays', requiredHours: 200, startDate: 'August 10, 2026', expectedEndDate: 'September 18, 2026', shiftStartTime: '9:00 AM', shiftEndTime: '6:00 PM', status: 'On Going', renderedHours: 120 },
+  { id: 'INT-002', studentName: 'Maria Santos', company: 'Quezon City IT Department', jobTitle: 'UI/UX Design Intern', workingDays: 'Weekdays', requiredHours: 200, startDate: 'August 8, 2026', expectedEndDate: 'September 16, 2026', shiftStartTime: '8:00 AM', shiftEndTime: '5:00 PM', status: 'Awaiting Completion', renderedHours: 200 },
+  { id: 'INT-003', studentName: 'Angelica Reyes', company: 'CloudCore Systems', jobTitle: 'Software QA Intern', workingDays: 'Flexible', requiredHours: 240, startDate: 'August 12, 2026', expectedEndDate: 'September 30, 2026', shiftStartTime: '9:00 AM', shiftEndTime: '6:00 PM', status: 'On Going', renderedHours: 88 },
+  { id: 'INT-004', studentName: 'Christian Garcia', company: 'BrightPath Media', jobTitle: 'Marketing Intern', workingDays: 'Weekdays', requiredHours: 240, startDate: 'July 1, 2026', expectedEndDate: 'August 12, 2026', shiftStartTime: '8:00 AM', shiftEndTime: '5:00 PM', status: 'Completed', renderedHours: 240 },
+]
+
+export const MOCK_QCPESO_ATTENDANCE: QCPesoAttendanceRecord[] = [
+  { id: 'ATT-000', internshipId: 'INT-001', studentName: 'Kyle Ethan Porciuncula', company: 'Metropolitan Tech Solutions', jobTitle: 'Full Stack Web Developer Intern', date: '2026-08-22', timeIn: '8:00 AM', timeOut: '5:00 PM', status: 'Present', hoursRendered: 8 },
+  { id: 'ATT-000A', internshipId: 'INT-002', studentName: 'Maria Santos', company: 'Quezon City IT Department', jobTitle: 'UI/UX Design Intern', date: '2026-08-22', timeIn: '8:09 AM', timeOut: '5:00 PM', status: 'Late', hoursRendered: 8 },
+  { id: 'ATT-000B', internshipId: 'INT-003', studentName: 'Angelica Reyes', company: 'CloudCore Systems', jobTitle: 'Software QA Intern', date: '2026-08-22', timeIn: '—', timeOut: '—', status: 'Absent', hoursRendered: 0 },
+  { id: 'ATT-001', internshipId: 'INT-001', studentName: 'Kyle Ethan Porciuncula', company: 'Metropolitan Tech Solutions', jobTitle: 'Full Stack Web Developer Intern', date: '2026-08-16', timeIn: '8:02 AM', timeOut: '5:00 PM', status: 'Present', hoursRendered: 8 },
+  { id: 'ATT-002', internshipId: 'INT-001', studentName: 'Kyle Ethan Porciuncula', company: 'Metropolitan Tech Solutions', jobTitle: 'Full Stack Web Developer Intern', date: '2026-08-15', timeIn: '8:11 AM', timeOut: '5:00 PM', status: 'Late', hoursRendered: 8 },
+  { id: 'ATT-003', internshipId: 'INT-002', studentName: 'Maria Santos', company: 'Quezon City IT Department', jobTitle: 'UI/UX Design Intern', date: '2026-08-16', timeIn: '8:00 AM', timeOut: '5:00 PM', status: 'Present', hoursRendered: 8 },
+  { id: 'ATT-004', internshipId: 'INT-003', studentName: 'Angelica Reyes', company: 'CloudCore Systems', jobTitle: 'Software QA Intern', date: '2026-08-16', timeIn: '—', timeOut: '—', status: 'Absent', hoursRendered: 0 },
+  { id: 'ATT-005', internshipId: 'INT-004', studentName: 'Christian Garcia', company: 'BrightPath Media', jobTitle: 'Marketing Intern', date: '2026-08-14', timeIn: '8:00 AM', timeOut: '5:00 PM', status: 'Present', hoursRendered: 8 },
 ]
 
 export const MOCK_APPLICATIONS: ApplicationItem[] = [

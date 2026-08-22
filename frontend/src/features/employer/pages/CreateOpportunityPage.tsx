@@ -14,10 +14,11 @@ export function CreateOpportunityPage() {
   const [formData, setFormData] = useState<Partial<Opportunity>>({
     title: '',
     department: '',
+    workArrangement: 'On-site',
     slots: 0,
     duration: 0,
+    allowance: '',
     jobDescription: '',
-    requiredSkills: '',
     qualifications: '',
     applicationDeadline: ''
   })
@@ -34,14 +35,14 @@ export function CreateOpportunityPage() {
     }
   }, [id, isEditMode])
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
   const handleSave = async () => {
     // Basic validation
-    if (!formData.title || !formData.department || !formData.slots || !formData.duration || !formData.jobDescription) {
+    if (!formData.title || !formData.department || !formData.workArrangement || !formData.slots || !formData.duration || !formData.jobDescription) {
       setShowValidationModal(true)
       return
     }
@@ -81,99 +82,58 @@ export function CreateOpportunityPage() {
         </h1>
 
         <div className={styles.formGrid}>
-          {/* Left Column */}
-          <div className={styles.col}>
-            <div className={styles.field}>
-              <label>Position Title *</label>
-              <input 
-                type="text" 
-                name="title"
-                value={formData.title || ''}
-                onChange={handleChange}
-                placeholder="e.g IT Intern" 
-              />
-            </div>
-            
-            <div className={styles.field}>
-              <label>Department *</label>
-              <input 
-                type="text" 
-                name="department"
-                value={formData.department || ''}
-                onChange={handleChange}
-                placeholder="e.g IT Department" 
-              />
-            </div>
-            
-            <div className={styles.field}>
-              <label>Number of Slots *</label>
-              <input 
-                type="number" 
-                name="slots"
-                value={formData.slots || ''}
-                onChange={handleChange}
-                placeholder="Enter Number of Slots" 
-              />
-            </div>
-            
-            <div className={styles.field}>
-              <label>Internship Duration *</label>
-              <input 
-                type="number" 
-                name="duration"
-                value={formData.duration || ''}
-                onChange={handleChange}
-                placeholder="Enter Internship Duration (hours)" 
-              />
-            </div>
-            
-            <div className={styles.field}>
-              <label>Job Description *</label>
-              <textarea 
-                name="jobDescription"
-                value={formData.jobDescription || ''}
-                onChange={handleChange}
-                placeholder="Describe the role and responsibilities..." 
-                rows={6}
-              />
-            </div>
+          <div className={styles.field}>
+            <label>Position Title *</label>
+            <input type="text" name="title" value={formData.title || ''} onChange={handleChange} placeholder="e.g. IT Intern" />
           </div>
-
-          {/* Right Column */}
-          <div className={styles.col}>
-            <div className={styles.field}>
-              <label>Required Skills</label>
-              <textarea 
-                name="requiredSkills"
-                value={formData.requiredSkills || ''}
-                onChange={handleChange}
-                placeholder="Enter required skills..." 
-                rows={6}
-              />
-            </div>
-
-            <div className={styles.field}>
-              <label>Qualifications</label>
-              <textarea 
-                name="qualifications"
-                value={formData.qualifications || ''}
-                onChange={handleChange}
-                placeholder="Enter qualifications..." 
-                rows={6}
-              />
-            </div>
-
-            <div className={styles.field}>
-              <label>Application Deadline</label>
-              <div className={styles.dateInputWrapper}>
-                <input 
-                  type="date" 
-                  name="applicationDeadline"
-                  value={formData.applicationDeadline || ''}
-                  onChange={handleChange}
-                />
-                <CalendarIcon className={styles.dateIcon} size={20} color="#160e6f" />
-              </div>
+          <div className={styles.field}>
+            <label>Department *</label>
+            <input type="text" name="department" value={formData.department || ''} onChange={handleChange} placeholder="e.g. IT Department" />
+          </div>
+          <div className={styles.field}>
+            <label>Work Arrangement *</label>
+            <select name="workArrangement" value={formData.workArrangement || 'On-site'} onChange={handleChange}>
+              <option value="On-site">On-site</option>
+              <option value="Remote">Remote</option>
+              <option value="Hybrid">Hybrid</option>
+            </select>
+          </div>
+          <div className={styles.field}>
+            <label>Internship Duration *</label>
+            <input
+              type="text"
+              name="duration"
+              value={formData.duration ?? ''}
+              onChange={(event) => {
+                const numeric = event.target.value.replace(/\D/g, '')
+                setFormData((current) => ({ ...current, duration: numeric ? Number(numeric) : undefined }))
+              }}
+              placeholder="Enter duration in hours"
+              inputMode="numeric"
+              pattern="[0-9]*"
+            />
+          </div>
+          <div className={styles.field}>
+            <label>Number of Slots *</label>
+            <input type="number" name="slots" value={formData.slots || ''} onChange={handleChange} placeholder="Enter number of slots" />
+          </div>
+          <div className={styles.field}>
+            <label>Allowance</label>
+            <input type="text" name="allowance" value={formData.allowance || ''} onChange={handleChange} placeholder="e.g. PHP 500 per day or N/A" />
+          </div>
+          <div className={`${styles.field} ${styles.fullWidth}`}>
+            <label>Job Description *</label>
+            <textarea name="jobDescription" value={formData.jobDescription || ''} onChange={handleChange} placeholder="Describe the role and responsibilities..." rows={6} />
+          </div>
+          <div className={`${styles.field} ${styles.fullWidth}`}>
+            <label>Qualifications</label>
+            <textarea name="qualifications" value={formData.qualifications || ''} onChange={handleChange} placeholder="Enter qualifications..." rows={5} />
+          </div>
+          <div className={`${styles.field} ${styles.fullWidth}`}>
+            <label>Application Deadline</label>
+            <div className={styles.dateInputWrapper}>
+              <input type="date" name="applicationDeadline" value={formData.applicationDeadline || ''} onChange={handleChange} />
+              <CalendarIcon className={styles.dateIcon} size={20} color="#160e6f" />
             </div>
           </div>
         </div>

@@ -1,48 +1,3 @@
-export type ReferralStatus = 'Under Review' | 'Endorsed to Employer' | 'Approved' | 'Rejected' | 'Pending'
-
-export type InternStatus = 'Ongoing' | 'Completed' | 'Paused' | 'For Placement'
-
-export interface DTRLog {
-  id: string
-  date: string
-  timeIn: string
-  timeOut: string
-  hoursRendered: number
-  status: 'Present' | 'Late' | 'Absent'
-  remarks?: string
-}
-export interface ReferralItem {
-  id: string
-  studentName: string
-  email: string
-  phone: string
-  targetEmployer: string
-  position: string
-  dateForwarded: string
-  status: ReferralStatus
-  submittedDocuments: string[]
-  course?: string
-  school?: string
-  notes?: string
-}
-
-export interface InternItem {
-  id: string
-  studentName: string
-  email: string
-  phone: string
-  matchedEmployer: string
-  acceptedRole: string
-  dateOfPlacement: string
-  status: InternStatus
-  submittedDocuments: string[]
-  renderedHours: number
-  targetHours: number
-  dtrLogs: DTRLog[]
-  course?: string
-  school?: string
-}
-
 export type ApplicationStatus = 'Pending' | 'Verified' | 'Rejected' | 'Flagged'
 
 export interface ApplicationItem {
@@ -102,31 +57,167 @@ export interface StudentApplication {
   appliedFor: string;
 }
 
-export interface EmployerOpportunity {
-  id: string;
-  name: string;
-  rep: string;
-  opportunities: number;
-  status: string;
-  email: string;
-  phone: string;
-  employerStatus: string;
-  createdOn: string;
-  opportunitiesOffered: string[];
+export type MonitorUserStatus = 'Active' | 'Suspended'
+
+export interface MonitoredStudentUser {
+  id: string
+  studentName: string
+  email: string
+  mobileNumber: string
+  linkedIn: string
+  dateRegistered: string
+  status: MonitorUserStatus
+  address: string
+  birthdate: string
+  sex: string
+  school: string
+  program: string
+  yearLevel: string
+  requiredHours: string
+  preferredHostOrganizationType: string
+  internshipDaysAvailability: string
+  internshipStartDateAvailability: string
+  preferredField: string
+  willingOutsidePreferredField: string
+}
+
+export interface MonitoredCompanyUser {
+  id: string
+  companyName: string
+  email: string
+  contactNumber: string
+  dateRegistered: string
+  status: MonitorUserStatus
+  description: string
+  address: string
+  companyType: string
+  industry: string
+  companySize: string
+  yearEstablished: string
+  websiteUrl: string
+  contactPerson: string
+}
+
+export interface CreateEmployerPayload {
+  companyName: string
+  companyType: 'Government' | 'Private'
+  industry: string
+  companySize: string
+  yearEstablished: string
+  websiteUrl: string
+  description: string
+  addressLine: string
+  barangay: string
+  district: string
+  city: string
+  contactFirstName: string
+  contactMiddleName: string
+  contactLastName: string
+  contactSuffix: string
+  contactEmail: string
+  contactNumber: string
+  loginEmail: string
+  password: string
+}
+
+export type QCPesoApplicationStatus = 'Pending' | 'Accepted' | 'Rejected'
+
+export interface QCPesoReviewApplicant {
+  id: string
+  studentName: string
+  company: string
+  jobTitle: string
+  program: string
+  yearLevel: string
+  dateApplied: string
+  status: QCPesoApplicationStatus
+  email: string
+  phone: string
+  address: string
+  school: string
+  requiredHours: number
+  availableDays: string
+  availableStartingDate: string
+  opportunityId: string
+}
+
+export interface QCPesoReferral {
+  id: string
+  studentName: string
+  company: string
+  jobTitle: string
+  referralDate: string
+  companyResponse: 'Pending' | 'For Interview' | 'Accepted' | 'Rejected'
+  studentResponse: 'Pending' | 'Accepted' | 'Rejected'
+  email: string
+  phone: string
+  address: string
+}
+
+export interface QCPesoOpportunity {
+  id: string
+  title: string
+  company: string
+  department: string
+  workArrangement: string
+  slots: number
+  duration: number
+  allowance: string
+  applicationDeadline: string
+  jobDescription: string
+  qualifications: string
+}
+
+export type QCPesoInternshipStatus = 'On Going' | 'Completed' | 'Awaiting Completion' | 'Withdrawn by Student' | 'Cancelled'
+
+export interface QCPesoInternshipRecord {
+  id: string
+  studentName: string
+  company: string
+  jobTitle: string
+  workingDays: string
+  requiredHours: number
+  startDate: string
+  expectedEndDate: string
+  shiftStartTime: string
+  shiftEndTime: string
+  status: QCPesoInternshipStatus
+  renderedHours: number
+}
+
+export interface QCPesoAttendanceRecord {
+  id: string
+  internshipId: string
+  studentName: string
+  company: string
+  jobTitle: string
+  date: string
+  timeIn: string
+  timeOut: string
+  status: 'Present' | 'Absent' | 'Late'
+  hoursRendered: number
 }
 
 export interface QCPesoProfile {
-  id: string;
-  firstName: string;
-  middleName: string;
-  lastName: string;
-  birthdate: string;
-  employeeIdNumber: string;
-  position: string;
-  department: string;
-  fullName: string;
-  role: string;
-  location: string;
-  qcpesoPosition: string;
-  city: string;
+  id: string
+  firstName: string
+  middleName: string
+  lastName: string
+  suffix: string
+  birthdate: string
+  sex: 'Male' | 'Female'
+  addressLine: string
+  barangay: string
+  district: string
+  city: string
+  email: string
+  mobileNumber: string
+  employeeIdNumber: string
+  position: string
+  department: string
+  fullName: string
+  role: string
+  location: string
+  qcpesoPosition: string
+  avatarUrl?: string
 }

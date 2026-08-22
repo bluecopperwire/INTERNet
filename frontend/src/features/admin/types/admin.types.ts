@@ -1,4 +1,4 @@
-export type AccountStatus = 'Active' | 'Inactive' | 'Deactivated' | 'Pending'
+export type AccountStatus = 'Active' | 'Inactive' | 'Suspended' | 'Deactivated' | 'Pending'
 
 export interface BaseRecord {
   id: string
@@ -12,10 +12,19 @@ export interface BaseRecord {
 export interface StudentRecord extends BaseRecord {
   role: 'Student'
   studentId: string
+  firstName?: string
+  middleName?: string
+  lastName?: string
+  suffix?: string
   sex: 'Male' | 'Female' | 'Other'
   birthdate: string
   contactNumber: string
   fullAddress: string
+  addressStreet?: string
+  addressBarangay?: string
+  addressDistrict?: string
+  addressCity?: string
+  linkedinUrl?: string
   inquiryVia: string
   schoolName: string
   programStrand: string
@@ -23,6 +32,7 @@ export interface StudentRecord extends BaseRecord {
   requiredHours: string
   flexibleAssignment: boolean
   preferredIndustries: string[]
+  otherPreferredField?: string
   scheduleAvailability: string[]
   startDate: string
   hostOrgType: string
@@ -32,13 +42,22 @@ export interface EmployerRecord extends BaseRecord {
   role: 'Employer'
   companyId: string
   companyName: string
+  description?: string
   industry: string
   companyType: string
   location: string
+  addressLine?: string
+  addressBarangay?: string
+  addressDistrict?: string
+  addressCity?: string
   companyWebsite: string
   yearEstablished: string
   companySize: string
   contactPerson: string
+  contactFirstName?: string
+  contactMiddleName?: string
+  contactLastName?: string
+  contactSuffix?: string
   contactNumber: string
   verificationStatus: 'Verified' | 'Pending' | 'Rejected'
 }
@@ -48,7 +67,13 @@ export interface QCPesoRecord extends BaseRecord {
   firstName: string
   middleName: string
   lastName: string
+  suffix?: string
   birthdate: string
+  sex?: 'Male' | 'Female' | 'Other'
+  addressLine?: string
+  barangay?: string
+  district?: string
+  city?: string
   employeeId: string
   position: string
   department: string

@@ -85,6 +85,7 @@
 }
 
 .field input,
+.field select,
 .field textarea {
   box-sizing: border-box;
   width: 100%;
@@ -105,7 +106,16 @@
   resize: vertical;
 }
 
+.field select {
+  cursor: pointer;
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
 .field input:focus,
+.field select:focus,
 .field textarea:focus {
   border-color: #160e6f;
   box-shadow: 0 0 0 3px rgba(22, 14, 111, 0.08);

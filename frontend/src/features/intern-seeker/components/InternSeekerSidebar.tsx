@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import {
-  Bell,
   BriefcaseBusiness,
   ExternalLink,
   Grid2X2,
@@ -59,7 +58,6 @@ function InternSeekerSidebar({ isOpen, onClose }: InternSeekerSidebarProps) {
           <span>INTERNet</span>
         </div>
         <div className={styles.headerActions}>
-          <button type="button" aria-label="Notifications"><Bell /></button>
           <button type="button" aria-label="Close navigation" onClick={onClose}><Menu /></button>
         </div>
       </div>
@@ -92,14 +90,19 @@ function InternSeekerSidebar({ isOpen, onClose }: InternSeekerSidebarProps) {
         {filteredNavigation.length === 0 && <p className={styles.noResults}>No pages found</p>}
       </nav>
 
-      <div className={styles.userSummary}>
+      <button
+        className={styles.userSummary}
+        type="button"
+        onClick={() => { onClose(); navigate('/intern-seeker/profile') }}
+        tabIndex={isOpen ? 0 : -1}
+      >
         <span className={styles.avatar} aria-hidden="true">{MOCK_USER.initials}</span>
         <span className={styles.userText}>
           <strong>{MOCK_USER.name}</strong>
           <small>{MOCK_USER.email}</small>
         </span>
         <ExternalLink aria-hidden="true" />
-      </div>
+      </button>
 
       <button
         className={styles.logout}

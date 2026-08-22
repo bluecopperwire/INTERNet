@@ -1,57 +1,62 @@
 import { useState } from 'react'
-import { Zap } from 'lucide-react'
+import { Building2 } from 'lucide-react'
 import type { InternshipOpportunity } from '../types/internship.types'
 import styles from './OpportunityDetail.module.css'
 
 function OpportunityDetail({ opportunity }: { opportunity: InternshipOpportunity }) {
   const { details } = opportunity
-  const [activeTab, setActiveTab] = useState<'description' | 'requirements' | 'benefits' | 'overview'>('description')
+  const [activeTab, setActiveTab] = useState<'description' | 'qualifications'>('description')
+  const companyInitials = opportunity.companyName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0])
+    .join('')
+    .toUpperCase()
+
+  const facts = [
+    ['Address', details.workplace],
+    ['Department', details.department],
+    ['Work Arrangement', opportunity.workSetup],
+    ['Internship Duration', details.internshipDuration],
+    ['Number of Slots', String(details.numberOfSlots)],
+    ['Allowance', details.allowance],
+    ['Application Deadline', details.applicationDeadline],
+  ]
+
+  const tabContent = activeTab === 'description'
+    ? [details.description]
+    : [details.qualifications]
 
   return (
     <article className={styles.detailPanel}>
       <header className={styles.detailHeader}>
-        <div>
-          <span className={styles.detailCompany}><span className={styles.companyDot} />{opportunity.companyName}</span>
+        <div className={styles.headerCopy}>
+          <div className={styles.companyRow}>
+            <span className={styles.companyImage} aria-label={`${opportunity.companyName} logo placeholder`} title={`${opportunity.companyName} logo placeholder`}>
+              {companyInitials || <Building2 aria-hidden="true" />}
+            </span>
+            <span>{opportunity.companyName}</span>
+          </div>
           <h1>{opportunity.position}</h1>
-          <p>{opportunity.location} ({opportunity.workSetup})</p>
         </div>
-        <button className={styles.applyButton} type="button"><Zap /> Easy apply</button>
+        <button className={styles.applyButton} type="button">Apply</button>
       </header>
 
       <dl className={styles.quickFacts}>
-        <div><dt>Where you&apos;ll do it</dt><dd>{details.workplace}</dd></div>
-        <div><dt>The Interview Process</dt><dd>{details.interviewProcess}</dd></div>
-        <div><dt>Tools</dt><dd>{details.tools.join(', ')}</dd></div>
-        <div><dt>Reporting to</dt><dd>{details.reportingTo}</dd></div>
-        <div><dt>Your team</dt><dd>{details.team}</dd></div>
+        {facts.map(([label, value]) => <div className={label === 'Address' ? styles.addressFact : undefined} key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
       </dl>
 
       <div className={styles.detailTabs} role="tablist" aria-label="Opportunity details">
-        {([['description', 'Description'], ['requirements', 'Requirement'], ['benefits', 'Benefit'], ['overview', 'Overview']] as const).map(([tab, label]) => (
-          <button className={activeTab === tab ? styles.activeTab : ''} key={tab} type="button" role="tab" aria-selected={activeTab === tab} onClick={() => setActiveTab(tab)}>{label}</button>
-        ))}
+        <button className={activeTab === 'description' ? styles.activeTab : ''} type="button" role="tab" aria-selected={activeTab === 'description'} onClick={() => setActiveTab('description')}>Job Description</button>
+        <button className={activeTab === 'qualifications' ? styles.activeTab : ''} type="button" role="tab" aria-selected={activeTab === 'qualifications'} onClick={() => setActiveTab('qualifications')}>Qualifications</button>
       </div>
 
-      {activeTab === 'description' && <DetailSection title="Internship Description" intro={details.description} items={details.responsibilities} />}
-      {activeTab === 'requirements' && <DetailSection title="Requirement" intro="What You’ll Bring" items={details.requirements} />}
-      {activeTab === 'benefits' && <DetailSection title="Benefit" intro={`Allowance: ${details.allowance}`} items={details.benefits} />}
-      {activeTab === 'overview' && (
-        <section className={styles.detailSection}>
-          <h2>Overview</h2>
-          <dl className={styles.overviewGrid}>
-            <div><dt>Size</dt><dd>{details.companySize}</dd></div>
-            <div><dt>Founded</dt><dd>{details.founded}</dd></div>
-            <div><dt>Type</dt><dd>{details.companyType}</dd></div>
-            <div><dt>Industry</dt><dd>{details.industry}</dd></div>
-          </dl>
-        </section>
-      )}
+      <section className={styles.detailSection}>
+        {tabContent.map((paragraph, index) => <p key={`${index}-${paragraph}`}>{paragraph}</p>)}
+      </section>
     </article>
   )
-}
-
-function DetailSection({ title, intro, items }: { title: string; intro: string; items: string[] }) {
-  return <section className={styles.detailSection}><h2>{title}</h2><strong>{intro}</strong><ul>{items.map((item) => <li key={item}>{item}</li>)}</ul></section>
 }
 
 export default OpportunityDetail

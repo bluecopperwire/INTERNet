@@ -3,12 +3,11 @@ import { applicationsService } from '../services/applications.service'
 import { attendanceService } from '../services/attendance.service'
 import { requirementsService } from '../services/requirements.service'
 import type { UserApplication } from '../types/application.types'
-import type { AttendanceMonth, Holiday, TodayAttendance } from '../types/attendance.types'
+import type { AttendanceMonth, InternshipDetails, TodayAttendance } from '../types/attendance.types'
 import type { InternshipRequirement, RequirementUploadInput } from '../types/requirement.types'
 
 const INITIAL_ATTENDANCE_YEAR = 2026
 const INITIAL_ATTENDANCE_MONTH = 7
-const HOLIDAY_FROM_DATE = '2026-08-10'
 
 const monthKey = (year: number, month: number) => `${year}-${month}`
 
@@ -16,7 +15,7 @@ interface TrackingDataContextValue {
   requirements: InternshipRequirement[] | null
   applications: UserApplication[] | null
   today: TodayAttendance | null
-  holidays: Holiday[] | null
+  internshipDetails: InternshipDetails | null
   attendanceMonths: Record<string, AttendanceMonth>
   isInitializing: boolean
   requirementsError: string | null
@@ -24,6 +23,10 @@ interface TrackingDataContextValue {
   attendanceError: string | null
   setRequirementsError: (error: string | null) => void
   uploadRequirement: (input: RequirementUploadInput) => Promise<InternshipRequirement>
+  deleteRequirement: (requirementId: string) => Promise<InternshipRequirement>
+  withdrawApplication: (applicationId: string) => Promise<UserApplication>
+  respondToOffer: (applicationId: string, decision: 'accept' | 'reject') => Promise<UserApplication>
+  deleteApplication: (applicationId: string) => Promise<void>
   loadAttendanceMonth: (year: number, month: number) => Promise<void>
   checkIn: () => Promise<TodayAttendance>
 }
@@ -34,7 +37,7 @@ export function TrackingDataProvider({ children }: { children: ReactNode }) {
   const [requirements, setRequirements] = useState<InternshipRequirement[] | null>(null)
   const [applications, setApplications] = useState<UserApplication[] | null>(null)
   const [today, setToday] = useState<TodayAttendance | null>(null)
-  const [holidays, setHolidays] = useState<Holiday[] | null>(null)
+  const [internshipDetails, setInternshipDetails] = useState<InternshipDetails | null>(null)
   const [attendanceMonths, setAttendanceMonths] = useState<Record<string, AttendanceMonth>>({})
   const [isInitializing, setIsInitializing] = useState(true)
   const [requirementsError, setRequirementsError] = useState<string | null>(null)
@@ -60,20 +63,20 @@ export function TrackingDataProvider({ children }: { children: ReactNode }) {
       requirementsService.getRequirements(),
       applicationsService.getMyApplications(),
       attendanceService.getToday(),
+      attendanceService.getInternshipDetails(),
       attendanceService.getMonth(INITIAL_ATTENDANCE_YEAR, INITIAL_ATTENDANCE_MONTH),
-      attendanceService.getUpcomingHolidays(HOLIDAY_FROM_DATE),
     ]).then((results) => {
       if (!isActive) return
 
-      const [requirementsResult, applicationsResult, todayResult, monthResult, holidaysResult] = results
+      const [requirementsResult, applicationsResult, todayResult, internshipDetailsResult, monthResult] = results
       if (requirementsResult.status === 'fulfilled') setRequirements(requirementsResult.value)
       else setRequirementsError('Unable to load your requirements.')
       if (applicationsResult.status === 'fulfilled') setApplications(applicationsResult.value)
       else setApplicationsError('Unable to load your applications.')
       if (todayResult.status === 'fulfilled') setToday(todayResult.value)
+      if (internshipDetailsResult.status === 'fulfilled') setInternshipDetails(internshipDetailsResult.value)
       if (monthResult.status === 'fulfilled') setAttendanceMonths({ [monthKey(INITIAL_ATTENDANCE_YEAR, INITIAL_ATTENDANCE_MONTH)]: monthResult.value })
-      if (holidaysResult.status === 'fulfilled') setHolidays(holidaysResult.value)
-      if (todayResult.status === 'rejected' || monthResult.status === 'rejected' || holidaysResult.status === 'rejected') setAttendanceError('Unable to load attendance information.')
+      if (todayResult.status === 'rejected' || internshipDetailsResult.status === 'rejected' || monthResult.status === 'rejected') setAttendanceError('Unable to load attendance information.')
       setIsInitializing(false)
     })
 
@@ -89,6 +92,43 @@ export function TrackingDataProvider({ children }: { children: ReactNode }) {
     } catch {
       setRequirementsError('The document could not be uploaded. Please try again.')
       throw new Error('Requirement upload failed.')
+    }
+  }, [])
+
+  const deleteRequirement = useCallback(async (requirementId: string) => {
+    setRequirementsError(null)
+    try {
+      const updatedRequirement = await requirementsService.deleteRequirement(requirementId)
+      setRequirements((current) => current?.map((item) => item.id === requirementId ? updatedRequirement : item) ?? [updatedRequirement])
+      return updatedRequirement
+    } catch {
+      setRequirementsError('The document could not be deleted. Please try again.')
+      throw new Error('Requirement deletion failed.')
+    }
+  }, [])
+
+  const updateApplication = useCallback(async (action: (applicationId: string) => Promise<UserApplication>, applicationId: string) => {
+    setApplicationsError(null)
+    try {
+      const updated = await action(applicationId)
+      setApplications((current) => current?.map((item) => item.id === applicationId ? updated : item) ?? [updated])
+      return updated
+    } catch {
+      setApplicationsError('Unable to update your application. Please try again.')
+      throw new Error('Application update failed.')
+    }
+  }, [])
+
+  const withdrawApplication = useCallback((applicationId: string) => updateApplication(applicationsService.withdrawApplication, applicationId), [updateApplication])
+  const respondToOffer = useCallback((applicationId: string, decision: 'accept' | 'reject') => updateApplication((id) => applicationsService.respondToOffer(id, decision), applicationId), [updateApplication])
+  const deleteApplication = useCallback(async (applicationId: string) => {
+    setApplicationsError(null)
+    try {
+      await applicationsService.deleteApplication(applicationId)
+      setApplications((current) => current?.filter((item) => item.id !== applicationId) ?? [])
+    } catch {
+      setApplicationsError('Unable to delete your application. Please try again.')
+      throw new Error('Application deletion failed.')
     }
   }, [])
 
@@ -108,7 +148,7 @@ export function TrackingDataProvider({ children }: { children: ReactNode }) {
     requirements,
     applications,
     today,
-    holidays,
+    internshipDetails,
     attendanceMonths,
     isInitializing,
     requirementsError,
@@ -116,9 +156,13 @@ export function TrackingDataProvider({ children }: { children: ReactNode }) {
     attendanceError,
     setRequirementsError,
     uploadRequirement,
+    deleteRequirement,
+    withdrawApplication,
+    respondToOffer,
+    deleteApplication,
     loadAttendanceMonth,
     checkIn,
-  }), [applications, applicationsError, attendanceError, attendanceMonths, checkIn, holidays, isInitializing, loadAttendanceMonth, requirements, requirementsError, today, uploadRequirement])
+  }), [applications, applicationsError, attendanceError, attendanceMonths, checkIn, deleteApplication, deleteRequirement, internshipDetails, isInitializing, loadAttendanceMonth, requirements, requirementsError, respondToOffer, today, uploadRequirement, withdrawApplication])
 
   return <TrackingDataContext.Provider value={value}>{children}</TrackingDataContext.Provider>
 }

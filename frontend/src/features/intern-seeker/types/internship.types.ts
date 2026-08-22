@@ -1,5 +1,6 @@
 export interface InternshipOpportunity {
   id: string
+  companyId: string
   companyName: string
   position: string
   location: string
@@ -13,19 +14,13 @@ export interface InternshipOpportunity {
 
 export interface OpportunityDetails {
   workplace: string
-  interviewProcess: string
-  tools: string[]
-  reportingTo: string
-  team: string
+  department: string
+  internshipDuration: string
+  numberOfSlots: number
+  applicationDeadline: string
   description: string
-  responsibilities: string[]
-  requirements: string[]
-  benefits: string[]
+  qualifications: string
   allowance: string
-  companySize: string
-  founded: string
-  companyType: string
-  industry: string
 }
 
 export interface PartnerCompany {
@@ -43,6 +38,7 @@ export interface InternshipPortalData {
 
 export interface OpportunitySearchParams {
   query: string
+  companyId?: string
 }
 
 export type InternshipStatus = 'Not Employed' | 'Employed' | 'Ongoing'
@@ -56,6 +52,7 @@ export interface UserProfile {
   role: string
   location: string
   email: string
+  linkedinUrl: string
   internshipStatus: InternshipStatus
   sex: string
   birthdate: string
@@ -67,6 +64,7 @@ export interface UserProfile {
     requiredHours: number | ''
     willingToAssignOutside: boolean | null
     preferredIndustries: string[]
+    otherPreferredField?: string
     schedule: string[]
     startDate: string
     hostOrgType: string

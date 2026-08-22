@@ -1,16 +1,20 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Grid2X2,
   Building2,
   Briefcase,
+  ChevronDown,
+  ChevronRight,
+  ClipboardPlus,
   Users,
+  UserRoundCheck,
   Clock,
   FileText,
   Settings,
   LogOut,
   Menu,
 } from 'lucide-react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import internetLogo from '../../../assets/internet-logo.svg'
 import styles from './EmployerSidebar.module.css'
 
@@ -21,7 +25,10 @@ interface EmployerSidebarProps {
 
 export function EmployerSidebar({ isOpen, onClose }: EmployerSidebarProps) {
   const [search, setSearch] = useState('')
+  const [applicantsExpanded, setApplicantsExpanded] = useState(false)
+  const [internsExpanded, setInternsExpanded] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
 
   const handleLogout = () => {
     onClose()
@@ -32,6 +39,18 @@ export function EmployerSidebar({ isOpen, onClose }: EmployerSidebarProps) {
     if (!search.trim()) return true
     return text.toLowerCase().includes(search.trim().toLowerCase())
   }
+
+  const applicantsActive = location.pathname.startsWith('/employer/applicants') || location.pathname.startsWith('/employer/internship-assignments')
+  const internsActive = location.pathname.startsWith('/employer/attendance') || location.pathname.startsWith('/employer/manage-internship')
+  const showApplicantsGroup = matchesSearch('Applicants') || matchesSearch('Review Applicants') || matchesSearch('Create Internship Assignment')
+  const showInternsGroup = matchesSearch('Interns') || matchesSearch('Monitor Attendance') || matchesSearch('Manage Internship')
+  const applicantsOpen = applicantsExpanded || Boolean(search.trim())
+  const internsOpen = internsExpanded || Boolean(search.trim())
+
+  useEffect(() => {
+    if (applicantsActive) setApplicantsExpanded(true)
+    if (internsActive) setInternsExpanded(true)
+  }, [applicantsActive, internsActive])
 
   return (
     <aside
@@ -106,32 +125,48 @@ export function EmployerSidebar({ isOpen, onClose }: EmployerSidebarProps) {
             </NavLink>
         )}
 
-        {matchesSearch('Applicants') && (
-            <NavLink
-              className={({ isActive }) =>
-                `${styles.navItem} ${isActive ? styles.active : ''}`
-              }
-              to="/employer/applicants"
-              onClick={onClose}
+        {showApplicantsGroup && (
+          <div className={styles.navGroup}>
+            <button
+              type="button"
+              className={styles.navGroupButton}
+              onClick={() => setApplicantsExpanded((expanded) => !expanded)}
+              aria-expanded={applicantsOpen}
               tabIndex={isOpen ? 0 : -1}
             >
               <Users size={20} />
               <span>Applicants</span>
-            </NavLink>
+              {applicantsOpen ? <ChevronDown className={styles.groupChevron} /> : <ChevronRight className={styles.groupChevron} />}
+            </button>
+            {applicantsOpen && (
+              <div className={styles.subNav}>
+                {matchesSearch('Review Applicants') && <NavLink className={({ isActive }) => `${styles.subNavItem} ${isActive ? styles.active : ''}`} to="/employer/applicants" onClick={onClose} tabIndex={isOpen ? 0 : -1}><Users size={17} /><span>Review Applicants</span></NavLink>}
+                {matchesSearch('Create Internship Assignment') && <NavLink className={({ isActive }) => `${styles.subNavItem} ${isActive ? styles.active : ''}`} to="/employer/internship-assignments" onClick={onClose} tabIndex={isOpen ? 0 : -1}><ClipboardPlus size={17} /><span>Create Internship Assignment</span></NavLink>}
+              </div>
+            )}
+          </div>
         )}
 
-        {matchesSearch('Attendance Monitoring') && (
-            <NavLink
-              className={({ isActive }) =>
-                `${styles.navItem} ${isActive ? styles.active : ''}`
-              }
-              to="/employer/attendance"
-              onClick={onClose}
+        {showInternsGroup && (
+          <div className={styles.navGroup}>
+            <button
+              type="button"
+              className={styles.navGroupButton}
+              onClick={() => setInternsExpanded((expanded) => !expanded)}
+              aria-expanded={internsOpen}
               tabIndex={isOpen ? 0 : -1}
             >
-              <Clock size={20} />
-              <span>Attendance Monitoring</span>
-            </NavLink>
+              <UserRoundCheck size={20} />
+              <span>Interns</span>
+              {internsOpen ? <ChevronDown className={styles.groupChevron} /> : <ChevronRight className={styles.groupChevron} />}
+            </button>
+            {internsOpen && (
+              <div className={styles.subNav}>
+                {matchesSearch('Monitor Attendance') && <NavLink className={({ isActive }) => `${styles.subNavItem} ${isActive ? styles.active : ''}`} to="/employer/attendance" onClick={onClose} tabIndex={isOpen ? 0 : -1}><Clock size={17} /><span>Monitor Attendance</span></NavLink>}
+                {matchesSearch('Manage Internship') && <NavLink className={({ isActive }) => `${styles.subNavItem} ${isActive ? styles.active : ''}`} to="/employer/manage-internship" onClick={onClose} tabIndex={isOpen ? 0 : -1}><UserRoundCheck size={17} /><span>Manage Internship</span></NavLink>}
+              </div>
+            )}
+          </div>
         )}
 
         {matchesSearch('Reports') && (

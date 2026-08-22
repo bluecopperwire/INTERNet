@@ -7,9 +7,9 @@ import qcLogos from '../../../assets/qc-logos-2.png'
 import styles from './ReportsPage.module.css'
 
 const statusConfig = [
-  { label: 'Pending Review', values: ['Pending', 'For Review', 'Under Review'], color: '#4b4395' },
+  { label: 'Pending', values: ['Pending', 'For Review', 'Under Review', 'Shortlisted'], color: '#4b4395' },
   { label: 'Accepted', values: ['Accepted'], color: '#211578' },
-  { label: 'Shortlisted', values: ['Shortlisted'], color: '#ffb83e' },
+  { label: 'For Interview', values: ['For Interview'], color: '#ffb83e' },
   { label: 'Rejected', values: ['Rejected'], color: '#dc0000' },
 ]
 
@@ -28,13 +28,13 @@ export function ReportsPage() {
   const timeline = useMemo(() => { const dates: string[] = []; const date = new Date(`${range.start}T00:00:00`); const end = new Date(`${range.end}T00:00:00`); while (date <= end && dates.length < 8) { dates.push(localDateKey(date)); date.setDate(date.getDate() + 1) } return dates.map((day) => [day, rangedApplicants.filter((applicant) => dateValue(applicant.dateApplied) === day).length] as const) }, [rangedApplicants, range])
   const maxValue = Math.max(4, ...timeline.map(([, count]) => count))
   const points = timeline.map(([, count], index) => `${timeline.length === 1 ? 310 : 44 + index * 532 / (timeline.length - 1)},${182 - count / maxValue * 142}`).join(' ')
-  const summary = { total: rangedApplicants.length, accepted: statusData[1].count, shortlisted: statusData[2].count, rejected: statusData[3].count }
+  const summary = { total: rangedApplicants.length, accepted: statusData[1].count, forInterview: statusData[2].count, rejected: statusData[3].count }
   const generatedAt = new Intl.DateTimeFormat('en-PH', { dateStyle: 'long' }).format(new Date())
 
   return <main className={styles.pageContainer}>
     <EmployerHero title="Reports" subtitle="Generate and download reports" comfortableSpacing />
     <section className={styles.mainContent}>
-      <section><h2 className={styles.summaryTitle}>Summary</h2><div className={styles.summaryGrid}><SummaryCard label="Total Applicants" value={summary.total} /><SummaryCard label="Accepted" value={summary.accepted} /><SummaryCard label="Shortlisted" value={summary.shortlisted} /><SummaryCard label="Rejected" value={summary.rejected} /></div></section>
+      <section><h2 className={styles.summaryTitle}>Summary</h2><div className={styles.summaryGrid}><SummaryCard label="Total Applicants" value={summary.total} /><SummaryCard label="Accepted" value={summary.accepted} /><SummaryCard label="For Interview" value={summary.forInterview} /><SummaryCard label="Rejected" value={summary.rejected} /></div></section>
       <div className={styles.reportingPeriodRow}><span className={styles.reportingPeriodTitle}>Reporting Period</span><label className={styles.reportingPeriod}><span className={styles.srOnly}>Select reporting period</span><div className={styles.dateRange}><input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /><em>to</em><input type="date" value={endDate} min={startDate} onChange={(event) => setEndDate(event.target.value)} /></div></label></div>
       <div className={styles.chartsGrid}>
         <article className={styles.chartPanel}><header className={styles.chartHeader}><div><h2>Applicants by Status</h2><p>Current application distribution</p></div></header><div className={styles.donutBody}><div className={styles.donut} style={{ background: donutGradient }}><div /></div><div className={styles.legend}>{statusData.map((item) => <div key={item.label}><span style={{ background: item.color }} />{item.label}<strong>{item.percentage}%</strong></div>)}</div></div></article>
@@ -49,7 +49,7 @@ export function ReportsPage() {
         <section className={styles.printTitle}><h1>Applicant Summary Report</h1><p>ABC Company · Generated {generatedAt}</p></section>
         <section className={styles.printPeriod}><strong>Reporting Period</strong><span>{startDate} to {endDate}</span></section>
         <section className={styles.printMetrics}>
-          <PrintMetric label="Total Applicants" value={summary.total} /><PrintMetric label="Accepted" value={summary.accepted} /><PrintMetric label="Shortlisted" value={summary.shortlisted} /><PrintMetric label="Rejected" value={summary.rejected} />
+          <PrintMetric label="Total Applicants" value={summary.total} /><PrintMetric label="Accepted" value={summary.accepted} /><PrintMetric label="For Interview" value={summary.forInterview} /><PrintMetric label="Rejected" value={summary.rejected} />
         </section>
         <section className={styles.printSection}><h2>Applicants by Status</h2><table><thead><tr><th>Status</th><th>Applicants</th><th>Distribution</th></tr></thead><tbody>{statusData.map((item) => <tr key={item.label}><td><span className={styles.printDot} style={{ background: item.color }} />{item.label}</td><td>{item.count}</td><td>{item.percentage}%</td></tr>)}</tbody></table></section>
         <section className={styles.printSection}><h2>Applicants Over Time</h2><table><thead><tr><th>Date</th><th>Applications Submitted</th></tr></thead><tbody>{timeline.map(([day, count]) => <tr key={day}><td>{day}</td><td>{count}</td></tr>)}</tbody></table></section>

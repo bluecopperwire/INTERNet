@@ -3,7 +3,7 @@ import { useTrackingData } from '../components/TrackingDataContext'
 
 export function useAttendance(year: number, month: number) {
   const [isCheckingIn, setIsCheckingIn] = useState(false)
-  const { today, holidays, attendanceMonths, isInitializing, attendanceError, loadAttendanceMonth, checkIn: saveCheckIn } = useTrackingData()
+  const { today, attendanceMonths, isInitializing, attendanceError, loadAttendanceMonth, checkIn: saveCheckIn } = useTrackingData()
   const monthData = attendanceMonths[`${year}-${month}`] ?? null
 
   useEffect(() => {
@@ -22,7 +22,6 @@ export function useAttendance(year: number, month: number) {
   return {
     today,
     monthData,
-    holidays: holidays ?? [],
     isLoading: isInitializing || !monthData,
     isCheckingIn,
     error: attendanceError,

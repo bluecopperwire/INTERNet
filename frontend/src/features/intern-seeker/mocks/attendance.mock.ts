@@ -1,4 +1,4 @@
-import type { AttendanceRecord, Holiday, TodayAttendance } from '../types/attendance.types'
+import type { AttendanceRecord, InternshipDetails, TodayAttendance } from '../types/attendance.types'
 
 const presentDays = [3, 4, 5, 6, 7, 11, 12, 13, 14, 17, 18, 19, 20, 21, 24, 25, 26, 27]
 
@@ -15,13 +15,23 @@ export const MOCK_ATTENDANCE_RECORDS: AttendanceRecord[] = [
 export const MOCK_TODAY_ATTENDANCE: TodayAttendance = {
   date: '2026-08-10',
   status: 'not-checked-in',
-  scheduleStart: '9:00 AM',
-  scheduleEnd: '6:00 PM',
-  location: 'Tech Hub Office, Floor 5',
+  companyName: 'ABC Company',
+  workingDays: 'Weekdays',
+  shiftStart: '9:00 AM',
+  shiftEnd: '6:00 PM',
 }
 
-export const MOCK_HOLIDAYS: Holiday[] = [
-  { id: 'holiday-1', name: 'National Heroes Day', date: '2026-08-31' },
-  { id: 'holiday-2', name: 'Bonifacio Day', date: '2026-11-30' },
-  { id: 'holiday-3', name: 'Christmas Day', date: '2026-12-25' },
-]
+export const MOCK_INTERNSHIP_DETAILS: InternshipDetails = {
+  companyName: 'ABC Company',
+  jobTitle: 'IT Intern',
+  workingDays: 'Weekdays',
+  requiredHours: 200,
+  startDate: 'August 10, 2026',
+  expectedEndDate: 'September 18, 2026',
+  shiftStart: '9:00 AM',
+  shiftEnd: '6:00 PM',
+  status: 'Ongoing',
+  targetHours: 200,
+  renderedHours: 0,
+  remainingHours: 200,
+}

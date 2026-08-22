@@ -48,115 +48,11 @@
   font-weight: 700;
 }
 
-.sectionHeader p, .settingIntro p {
+.sectionHeader p {
   margin: 0;
   color: #625d7d;
   font-size: .85rem;
   line-height: 1.5;
-}
-
-.notificationLayout {
-  display: grid;
-  grid-template-columns: 240px minmax(0,1fr);
-  gap: 36px;
-  padding: 26px 24px;
-}
-
-.settingIntro {
-  padding-right: 24px;
-  border-right: 1px solid #e1e4ec;
-}
-
-.settingIntro h3 {
-  margin: 0 0 6px;
-  font-size: .91rem;
-  font-weight: 700;
-}
-
-.notificationControls {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.notificationOption {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 20px;
-  padding: 14px 16px;
-  border: 1px solid #e1e4ec;
-  border-radius: 7px;
-  background: #fff;
-  cursor: pointer;
-  transition: border-color 150ms,background 150ms;
-}
-
-.notificationOption:hover {
-  border-color: rgba(22,14,111,.42);
-  background: #fafafd;
-}
-
-.notificationOption input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-}
-
-.optionText {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.optionText strong {
-  font-size: .9rem;
-  font-weight: 600;
-}
-
-.optionText span {
-  color: #625d7d;
-  font-size: .8rem;
-  line-height: 1.45;
-}
-
-.toggle {
-  position: relative;
-  display: block;
-  width: 42px;
-  height: 23px;
-  border: 1px solid #c9ced9;
-  border-radius: 999px;
-  background: #e8eaf0;
-  transition: background 150ms,border-color 150ms;
-}
-
-.toggle span {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0,0,0,.18);
-  transition: transform 150ms;
-}
-
-.notificationOption input:checked ~ .toggle {
-  border-color: #211578;
-  background: #211578;
-}
-
-.notificationOption input:checked ~ .toggle span {
-  transform: translateX(19px);
-}
-
-.notificationOption input:focus-visible ~ .toggle {
-  outline: 3px solid rgba(253,209,22,.48);
-  outline-offset: 2px;
 }
 
 .sectionFooter {
@@ -167,7 +63,7 @@
   background: #fff;
 }
 
-.primaryButton, .passwordButton {
+.passwordButton {
   display: inline-flex;
   min-height: 42px;
   align-items: center;
@@ -185,7 +81,7 @@
   transition: background 150ms,transform 150ms;
 }
 
-.primaryButton:hover, .passwordButton:hover {
+.passwordButton:hover {
   background: #160e6f;
   transform: translateY(-1px);
 }
@@ -262,15 +158,6 @@
   .settingsContent {
     padding: 30px 20px 52px;
   }
-  .notificationLayout {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  .settingIntro {
-    padding: 0 0 18px;
-    border-right: 0;
-    border-bottom: 1px solid #e1e4ec;
-  }
   .passwordFields {
     grid-template-columns: 1fr;
   }
@@ -281,14 +168,14 @@
     align-items: flex-start;
     padding: 18px;
   }
-  .notificationLayout,.passwordFields {
+  .passwordFields {
     padding-right: 18px;
     padding-left: 18px;
   }
   .sectionFooter {
     padding: 14px 18px;
   }
-  .primaryButton,.passwordButton {
+  .passwordButton {
     width: 100%;
   }
 }

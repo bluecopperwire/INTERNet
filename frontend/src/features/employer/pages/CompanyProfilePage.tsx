@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from 'react'
 import {
   MapPin,
   Building2,
-  ShieldCheck,
-  CheckCircle2,
   User,
   Mail,
   Phone,
@@ -14,10 +12,10 @@ import {
   Tag,
 } from 'lucide-react'
 import { EmployerHero } from '../components/EmployerHero'
-import { EditCompanyProfileModal } from '../components/EditCompanyProfileModal'
 import { employerService } from '../services/employer.service'
 import type { CompanyProfile } from '../types/employer.types'
 import styles from './CompanyProfilePage.module.css'
+import { useNavigate } from 'react-router-dom'
 
 const formatAddress = (profile: CompanyProfile) => [
   profile.address_line,
@@ -36,8 +34,8 @@ const formatContactPerson = (profile: CompanyProfile) => [
 export function CompanyProfilePage() {
   const [profile, setProfile] = useState<CompanyProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const navigate = useNavigate()
 
   const fetchProfile = async () => {
     setIsLoading(true)
@@ -54,17 +52,6 @@ export function CompanyProfilePage() {
   useEffect(() => {
     fetchProfile()
   }, [])
-
-  const handleSaveProfile = async (updated: CompanyProfile) => {
-    try {
-      const saved = await employerService.updateCompanyProfile(updated)
-      setProfile(saved)
-      setIsEditModalOpen(false)
-    } catch (error) {
-      console.error('Failed to update company profile:', error)
-      alert('Failed to update profile.')
-    }
-  }
 
   const handlePfpClick = () => {
     fileInputRef.current?.click()
@@ -148,20 +135,19 @@ export function CompanyProfilePage() {
             {/* Company Meta text cleanly rendered inside white header */}
             <div className={styles.companyMeta}>
               <h1 className={styles.companyTitle}>{profile.company_name}</h1>
-              <p className={styles.industryText}>{profile.company_type}</p>
-              <div className={styles.locationText}>
-                <MapPin size={16} />
-                <span>{formatAddress(profile)}</span>
+              <div className={styles.contactDetails}>
+                <span><MapPin size={16} />{formatAddress(profile)}</span>
+                <span><Mail size={16} />{profile.contact_email}</span>
               </div>
             </div>
           </div>
 
           <button
             className={styles.editProfileBtn}
-            onClick={() => setIsEditModalOpen(true)}
+            onClick={() => navigate('/employer/profile/edit')}
             type="button"
           >
-            <span>Edit Profile*</span>
+            <span>Edit Profile</span>
           </button>
         </div>
       </section>
@@ -169,175 +155,42 @@ export function CompanyProfilePage() {
       {/* Main 2-Column Cards Section */}
       <div className={styles.mainContent}>
         <div className={styles.profileGrid}>
-          {/* Left Column: About & Verification */}
-          <div className={styles.leftColumn}>
-            {/* About Company Card */}
-            <div className={styles.card}>
-              <div className={styles.cardHeader}>
-                <div className={styles.iconCircle}>
-                  <Building2 size={24} />
-                </div>
-                <h2 className={styles.cardTitle}>About Company</h2>
-              </div>
-              <p className={styles.aboutText}>{profile.description}</p>
+          <ProfileSection icon={<Building2 size={24} />} title="About Company">
+            <p className={styles.aboutText}>{profile.description}</p>
+          </ProfileSection>
+
+          <ProfileSection icon={<Building2 size={24} />} title="Company Information">
+            <div className={styles.detailsList}>
+              <DetailItem icon={<Building2 size={20} />} label="Company Name" value={profile.company_name} />
+              <DetailItem icon={<Tag size={20} />} label="Company Type" value={profile.company_type} />
+              <DetailItem icon={<Tag size={20} />} label="Industry" value={profile.industry} />
+              <DetailItem icon={<MapPin size={20} />} label="Company Address" value={formatAddress(profile)} />
+              <DetailItem icon={<Users size={20} />} label="Company Size" value={profile.company_size ?? 'Not provided'} />
+              <DetailItem icon={<Calendar size={20} />} label="Company Year Established" value={profile.year_established ?? 'Not provided'} />
+              <DetailItem icon={<Globe size={20} />} label="Website URL" value={profile.website_url ?? 'Not provided'} />
             </div>
+          </ProfileSection>
 
-            {/* Company Verification Card */}
-            <div className={styles.card}>
-              <div className={styles.cardHeader}>
-                <div className={styles.iconCircle}>
-                  <ShieldCheck size={24} />
-                </div>
-                <h2 className={styles.cardTitle}>Company Verification</h2>
-              </div>
-
-              <div className={styles.verificationBanner}>
-                <div className={styles.verificationBannerText}>
-                  <span className={styles.bannerTitle}>
-                    Verified Partner Company
-                  </span>
-                  <span className={styles.bannerSubtitle}>
-                    Your company has been verified by QC PESO
-                  </span>
-                </div>
-                <div className={styles.verificationIcon}>
-                  <CheckCircle2 size={32} color="#22c55e" />
-                </div>
-              </div>
-
-              <div className={styles.verificationDetails}>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>Verified by</span>
-                  <span className={styles.detailValue}>{profile.verifiedBy ?? 'QC PESO'}</span>
-                </div>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>Date Verified</span>
-                  <span className={styles.detailValue}>
-                    {profile.dateVerified ?? 'Not provided'}
-                  </span>
-                </div>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>Verification ID</span>
-                  <span className={styles.detailValue}>
-                    {profile.verificationId ?? 'Not provided'}
-                  </span>
-                </div>
-              </div>
+          <ProfileSection icon={<User size={24} />} title="Contact Information">
+            <div className={styles.detailsList}>
+              <DetailItem icon={<User size={20} />} label="Contact Person" value={formatContactPerson(profile)} />
+              <DetailItem icon={<Mail size={20} />} label="Contact Email" value={profile.contact_email} />
+              <DetailItem icon={<Phone size={20} />} label="Contact Number" value={profile.contact_number} />
             </div>
-          </div>
-
-          {/* Right Column: Company Details */}
-          <div className={styles.rightColumn}>
-            <div className={styles.card}>
-              <div className={styles.cardHeader}>
-                <div className={styles.iconCircle}>
-                  <Building2 size={24} />
-                </div>
-                <h2 className={styles.cardTitle}>Company Details</h2>
-              </div>
-
-              <div className={styles.detailsList}>
-                <div className={styles.detailItem}>
-                  <div className={styles.itemLabelGroup}>
-                    <span className={styles.itemIcon}>
-                      <Tag size={20} />
-                    </span>
-                    <span className={styles.itemLabel}>Company Type</span>
-                  </div>
-                  <span className={styles.itemValue}>{profile.company_type}</span>
-                </div>
-
-                <div className={styles.detailItem}>
-                  <div className={styles.itemLabelGroup}>
-                    <span className={styles.itemIcon}>
-                      <MapPin size={20} />
-                    </span>
-                    <span className={styles.itemLabel}>Location</span>
-                  </div>
-                  <span className={styles.itemValue}>{formatAddress(profile)}</span>
-                </div>
-
-                <div className={styles.detailItem}>
-                  <div className={styles.itemLabelGroup}>
-                    <span className={styles.itemIcon}>
-                      <User size={20} />
-                    </span>
-                    <span className={styles.itemLabel}>Contact Person</span>
-                  </div>
-                  <span className={styles.itemValue}>
-                    {formatContactPerson(profile)}
-                  </span>
-                </div>
-
-                <div className={styles.detailItem}>
-                  <div className={styles.itemLabelGroup}>
-                    <span className={styles.itemIcon}>
-                      <Mail size={20} />
-                    </span>
-                    <span className={styles.itemLabel}>Email</span>
-                  </div>
-                  <span className={styles.itemValue}>{profile.contact_email}</span>
-                </div>
-
-                <div className={styles.detailItem}>
-                  <div className={styles.itemLabelGroup}>
-                    <span className={styles.itemIcon}>
-                      <Phone size={20} />
-                    </span>
-                    <span className={styles.itemLabel}>Contact Number</span>
-                  </div>
-                  <span className={styles.itemValue}>
-                    {profile.contact_number}
-                  </span>
-                </div>
-
-                <div className={styles.detailItem}>
-                  <div className={styles.itemLabelGroup}>
-                    <span className={styles.itemIcon}>
-                      <Globe size={20} />
-                    </span>
-                    <span className={styles.itemLabel}>Company Website</span>
-                  </div>
-                  <span className={styles.itemValue}>{profile.website_url ?? 'Not provided'}</span>
-                </div>
-
-                <div className={styles.detailItem}>
-                  <div className={styles.itemLabelGroup}>
-                    <span className={styles.itemIcon}>
-                      <Calendar size={20} />
-                    </span>
-                    <span className={styles.itemLabel}>Year Established</span>
-                  </div>
-                  <span className={styles.itemValue}>
-                    {profile.year_established ?? 'Not provided'}
-                  </span>
-                </div>
-
-                <div className={styles.detailItem}>
-                  <div className={styles.itemLabelGroup}>
-                    <span className={styles.itemIcon}>
-                      <Users size={20} />
-                    </span>
-                    <span className={styles.itemLabel}>Company Size</span>
-                  </div>
-                  <span className={styles.itemValue}>{profile.company_size ?? 'Not provided'}</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          </ProfileSection>
         </div>
       </div>
 
-      {/* Edit Profile Modal */}
-      {isEditModalOpen && (
-        <EditCompanyProfileModal
-          profile={profile}
-          onClose={() => setIsEditModalOpen(false)}
-          onSave={handleSaveProfile}
-        />
-      )}
     </main>
   )
 }
 
 export default CompanyProfilePage
+
+function ProfileSection({ children, icon, title }: { children: React.ReactNode; icon: React.ReactNode; title: string }) {
+  return <section className={styles.card}><header className={styles.cardHeader}><span className={styles.iconCircle}>{icon}</span><h2 className={styles.cardTitle}>{title}</h2></header>{children}</section>
+}
+
+function DetailItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return <div className={styles.detailItem}><div className={styles.itemLabelGroup}><span className={styles.itemIcon}>{icon}</span><span className={styles.itemLabel}>{label}</span></div><span className={styles.itemValue}>{value}</span></div>
+}

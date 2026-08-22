@@ -169,6 +169,13 @@
   transition: background-color 150ms ease, color 150ms ease;
 }
 
+.reviewBtn svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  stroke-width: 2;
+}
+
 .reviewBtn:hover {
   background: #160e6f;
   color: #fff;

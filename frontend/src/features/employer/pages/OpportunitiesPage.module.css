@@ -4,13 +4,12 @@
   font-family: 'Poppins', sans-serif;
   color: #160e6f;
 }
-
 .mainContent {
   max-width: 1280px;
   margin: 0 auto;
   padding: 32px 48px;
 }
-
+/* End of opportunity page styles. */
 .toolbar {
   display: flex;
   justify-content: space-between;
@@ -19,14 +18,10 @@
   margin-bottom: 0;
 }
 
-.filterWrapper {
-  position: relative;
-}
-
-.filterBtn {
+.statusFilter {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   justify-content: flex-start;
   min-width: 210px;
   height: 42px;
@@ -35,63 +30,19 @@
   border: 1px solid #160e6f;
   background-color: #ffffff;
   color: #160e6f;
-  cursor: pointer;
-  transition: background-color 150ms ease, border-color 150ms ease;
 }
 
-.filterBtnText {
-  flex: 1;
-  text-align: left;
+.statusFilter select {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  outline: 0;
   color: #160e6f;
+  background: transparent;
   font-family: 'Poppins', sans-serif;
   font-weight: 500;
   font-size: 14px;
-}
-
-.filterBtn:hover {
-  background-color: rgba(22, 14, 111, 0.05);
-}
-
-.filterMenuRow {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin: 0;
-  padding: 16px;
-  background: #ffffff;
-  border-radius: 8px;
-  border: 1px solid rgba(22, 14, 111, 0.2);
-  box-shadow: 0 4px 12px rgba(22, 14, 111, 0.05);
-  margin-top: 16px;
-}
-
-.filterItem {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 6px;
-}
-
-.filterLabel {
-  color: #160e6f;
-  font-family: 'Poppins', sans-serif;
-  font-size: 13px;
-  font-weight: 400;
-}
-
-.filterSelect {
-  width: 100%;
-  height: 42px;
-  border: 1px solid #160e6f;
-  border-radius: 6px;
-  padding: 0 36px 0 12px;
-  color: #160e6f;
-  font-family: 'Poppins', sans-serif;
-  font-size: 14px;
-  font-weight: 400;
-  background: #ffffff;
-  outline: none;
   cursor: pointer;
 }
 
@@ -199,10 +150,14 @@
   margin-left: 6px;
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(22, 14, 111, 0.1);
-  color: #160e6f;
+  background: #eaf9f5;
+  color: #18a982;
   font-size: 12px;
   font-weight: 700;
+}
+.statusValue.closed {
+  background: #fff0ef;
+  color: #e25555;
 }
 
 .cardActions {
@@ -242,9 +197,6 @@
     flex-direction: column;
     gap: 16px;
   }
-  .filterMenuRow {
-    grid-template-columns: 1fr;
-  }
   .rightCol {
     text-align: left;
   }
@@ -256,72 +208,3 @@
   }
 }
 
-.modalOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modalContent {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 32px;
-  max-width: 400px;
-  width: 90%;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  text-align: center;
-}
-
-.modalTitle {
-  margin: 0 0 16px 0;
-  color: #160e6f;
-  font-size: 24px;
-  font-family: 'Poppins', sans-serif;
-}
-
-.modalText {
-  margin: 0 0 24px 0;
-  color: #333;
-  font-size: 16px;
-  line-height: 1.5;
-}
-
-.modalActions {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-}
-
-.cancelBtn,
-.confirmDeleteBtn {
-  padding: 10px 24px;
-  border-radius: 8px;
-  font-family: 'Poppins', sans-serif;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  border: none;
-  transition: opacity 0.2s;
-}
-
-.cancelBtn {
-  background-color: #f0f0f0;
-  color: #333;
-}
-
-.confirmDeleteBtn {
-  background-color: #e53e3e;
-  color: #ffffff;
-}
-
-.cancelBtn:hover,
-.confirmDeleteBtn:hover {
-  opacity: 0.9;
-}

@@ -1,0 +1,167 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.4);
+}
+
+.modal {
+  width: min(580px, 100%);
+  overflow: hidden;
+  border: 1px solid rgba(22, 14, 111, 0.2);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.14);
+  color: #160e6f;
+  font-family: 'Poppins', sans-serif;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  border-bottom: 2px solid #160e6f;
+  background: #f8fafc;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.header p {
+  margin: 4px 0 0;
+  color: #625d7d;
+  font-size: 13px;
+}
+
+.closeButton {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgba(22, 14, 111, 0.16);
+  border-radius: 50%;
+  color: #160e6f;
+  background: #ffffff;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.closeButton:hover {
+  background: #f2f1f8;
+}
+
+.closeButton svg {
+  width: 20px;
+  height: 20px;
+}
+
+.body {
+  padding: 24px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #160e6f;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.field span,
+.field small {
+  color: #7a7692;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.field textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 120px;
+  padding: 12px;
+  border: 1px solid rgba(22, 14, 111, 0.25);
+  border-radius: 6px;
+  outline: 0;
+  color: #1e293b;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  resize: vertical;
+}
+
+.field textarea:focus {
+  border-color: #160e6f;
+  box-shadow: 0 0 0 3px rgba(22, 14, 111, 0.08);
+}
+
+.field small {
+  text-align: right;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.actions button {
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.cancelButton {
+  border: 1px solid #160e6f;
+  color: #160e6f;
+  background: #ffffff;
+}
+
+.rejectButton {
+  border: 1px solid #e25555;
+  color: #ffffff;
+  background: #e25555;
+}
+
+@media (max-width: 640px) {
+  .overlay {
+    padding: 12px;
+  }
+
+  .header,
+  .body,
+  .actions {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+
+  .actions {
+    flex-direction: column-reverse;
+  }
+
+  .actions button {
+    width: 100%;
+  }
+}

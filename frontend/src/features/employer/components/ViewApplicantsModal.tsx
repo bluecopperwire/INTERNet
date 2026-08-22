@@ -20,10 +20,7 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
   const itemsPerPage = 3
   const [searchQuery, setSearchQuery] = useState('')
 
-  const [showFilterMenu, setShowFilterMenu] = useState(false)
   const [statusFilter, setStatusFilter] = useState('All')
-  const [courseFilter, setCourseFilter] = useState('All')
-  const [yearLevelFilter, setYearLevelFilter] = useState('All')
 
   useEffect(() => {
     employerService.getApplicantsForOpportunity(opportunity.id).then((data) => {
@@ -31,10 +28,6 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
       setIsLoading(false)
     })
   }, [opportunity.id])
-
-  // Extract unique values for filter dropdowns
-  const uniqueCourses = useMemo(() => ['All', ...new Set(applicants.map(a => a.course))], [applicants])
-  const uniqueYearLevels = useMemo(() => ['All', ...new Set(applicants.map(a => a.yearLevel))], [applicants])
 
   const filteredApplicants = useMemo(() => {
     return applicants.filter((app) => {
@@ -46,15 +39,9 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
       if (statusFilter !== 'All') {
         matches = matches && app.status === statusFilter
       }
-      if (courseFilter !== 'All') {
-        matches = matches && app.course === courseFilter
-      }
-      if (yearLevelFilter !== 'All') {
-        matches = matches && app.yearLevel === yearLevelFilter
-      }
       return matches
     })
-  }, [applicants, searchQuery, statusFilter, courseFilter, yearLevelFilter])
+  }, [applicants, searchQuery, statusFilter])
 
   const totalPages = Math.max(1, Math.ceil(filteredApplicants.length / itemsPerPage))
 
@@ -100,50 +87,32 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
             />
           </div>
 
-          <button
-            className={styles.filterBtn}
-            onClick={() => setShowFilterMenu(!showFilterMenu)}
-          >
-            <SlidersHorizontal size={18} color="#160e6f" />
-            <span>Filter</span>
-          </button>
-        </div>
-
-        {showFilterMenu && (
-          <div className={styles.filterMenuRow}>
-            <div className={styles.filterWrapper}>
-              <span className={styles.filterLabel}>Status:</span>
-              <select className={styles.filterSelect} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                <option value="All">All</option>
-                <option value="Pending">Pending</option>
-                <option value="Under Review">Under Review</option>
-                <option value="Accepted">Accepted</option>
-                <option value="Rejected">Rejected</option>
-              </select>
-            </div>
-            <div className={styles.filterWrapper}>
-              <span className={styles.filterLabel}>Course/Program:</span>
-              <select className={styles.filterSelect} value={courseFilter} onChange={(e) => setCourseFilter(e.target.value)}>
-                {uniqueCourses.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-            <div className={styles.filterWrapper}>
-              <span className={styles.filterLabel}>Year Level:</span>
-              <select className={styles.filterSelect} value={yearLevelFilter} onChange={(e) => setYearLevelFilter(e.target.value)}>
-                {uniqueYearLevels.map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
-            </div>
+          <div className={styles.statusFilter}>
+            <SlidersHorizontal size={16} aria-hidden="true" />
+            <select
+              aria-label="Filter applicants by status"
+              value={statusFilter}
+              onChange={(event) => {
+                setStatusFilter(event.target.value)
+                setCurrentPage(1)
+              }}
+            >
+              <option value="All">All Statuses</option>
+              <option value="Pending">Pending</option>
+              <option value="Accepted">Accepted</option>
+              <option value="For Interview">For Interview</option>
+              <option value="Rejected">Rejected</option>
+            </select>
           </div>
-        )}
+        </div>
 
         <div className={styles.tableContainer}>
           <table className={styles.table}>
             <thead>
               <tr>
                 <th>Student Name</th>
-                <th>Opportunity</th>
-                <th>Course/Program</th>
-                <th>Year Level</th>
+                <th>Job Title</th>
+                <th>Program/Strand</th>
                 <th>Date Applied</th>
                 <th>Status</th>
                 <th>Action</th>
@@ -164,13 +133,12 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
                     <td>{app.name}</td>
                     <td>{app.opportunityTitle}</td>
                     <td>{app.course}</td>
-                    <td>{app.yearLevel}</td>
                     <td>{app.dateApplied}</td>
                     <td>
                       <span className={`${styles.statusPill} ${
-                        app.status === 'Accepted' || app.status === 'Shortlisted' ? styles.accepted :
+                        app.status === 'Accepted' ? styles.accepted :
                         app.status === 'Rejected' ? styles.rejected :
-                        app.status === 'Under Review' || app.status === 'For Review' ? styles.underReview :
+                        app.status === 'For Interview' ? styles.underReview :
                         ''
                       }`}>
                         {app.status}

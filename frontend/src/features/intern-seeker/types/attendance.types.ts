@@ -1,4 +1,4 @@
-export type AttendanceDayStatus = 'present' | 'absent' | 'late' | 'holiday'
+export type AttendanceDayStatus = 'present' | 'absent' | 'late'
 
 export interface AttendanceRecord {
   date: string
@@ -10,11 +10,27 @@ export interface AttendanceRecord {
 export interface TodayAttendance {
   date: string
   status: 'not-checked-in' | 'checked-in' | 'checked-out'
-  scheduleStart: string
-  scheduleEnd: string
-  location: string
+  companyName: string
+  workingDays: string
+  shiftStart: string
+  shiftEnd: string
   checkedInAt?: string
   checkedOutAt?: string
+}
+
+export interface InternshipDetails {
+  companyName: string
+  jobTitle: string
+  workingDays: string
+  requiredHours: number
+  startDate: string
+  expectedEndDate: string
+  shiftStart: string
+  shiftEnd: string
+  status: 'Pending' | 'Ongoing' | 'Completed' | 'Withdrawn' | 'Cancelled'
+  targetHours: number
+  renderedHours: number
+  remainingHours: number
 }
 
 export interface AttendanceSummary {
@@ -22,12 +38,6 @@ export interface AttendanceSummary {
   absences: number
   lateArrivals: number
   attendanceRate: number
-}
-
-export interface Holiday {
-  id: string
-  name: string
-  date: string
 }
 
 export interface AttendanceMonth {

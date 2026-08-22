@@ -47,6 +47,10 @@ function InternshipPortalPage() {
     if (query) navigate(`/intern-seeker/search?q=${encodeURIComponent(query)}`)
   }
 
+  const searchCompanyOpportunities = (company: PartnerCompany) => {
+    navigate(`/intern-seeker/search?q=${encodeURIComponent(company.name)}&company=${encodeURIComponent(company.id)}`)
+  }
+
   const scrollSection = (target: 'opportunities' | 'companies', direction: -1 | 1) => {
     const element = target === 'opportunities' ? opportunityGridRef.current : companyRailRef.current
     element?.scrollBy({ left: direction * Math.min(element.clientWidth * 0.8, 760), behavior: 'smooth' })
@@ -102,7 +106,7 @@ function InternshipPortalPage() {
           onNext={() => scrollSection('companies', 1)}
         />
         <div className={styles.companyRail} ref={companyRailRef}>
-          {data.companies.map((company) => <CompanyCard key={company.id} company={company} />)}
+          {data.companies.map((company) => <CompanyCard key={company.id} company={company} onSelect={searchCompanyOpportunities} />)}
         </div>
       </section>
 
@@ -181,31 +185,46 @@ function SectionHeading({ id, title, light = false, onPrevious, onNext }: Sectio
 }
 
 function OpportunityCard({ opportunity, onSelect }: { opportunity: InternshipOpportunity; onSelect: (opportunity: InternshipOpportunity) => void }) {
+  const companyInitials = opportunity.companyName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0])
+    .join('')
+    .toUpperCase()
+
   return (
     <button className={styles.opportunityCard} type="button" onClick={() => onSelect(opportunity)}>
       <div className={styles.cardCompanyRow}>
-        <span className={styles.companyMark} aria-hidden="true" />
+        <span className={styles.companyMark} aria-hidden="true">{companyInitials}</span>
         <span>{opportunity.companyName}</span>
       </div>
       <h3>{opportunity.position}</h3>
-      <p>{opportunity.location} ({opportunity.workSetup})</p>
+      <p className={styles.cardLocation}>{opportunity.location}</p>
       <div className={styles.cardFooter}>
-        <div className={styles.tags}>{opportunity.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
+        <div className={styles.tags}><span>{opportunity.workSetup}</span></div>
         <time>{opportunity.postedAt}</time>
       </div>
     </button>
   )
 }
 
-function CompanyCard({ company }: { company: PartnerCompany }) {
+function CompanyCard({ company, onSelect }: { company: PartnerCompany; onSelect: (company: PartnerCompany) => void }) {
+  const companyInitials = company.name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0])
+    .join('')
+    .toUpperCase()
+
   return (
-    <article className={styles.companyCard}>
-      <span className={styles.companyLogoPlaceholder} aria-hidden="true" />
+    <button className={styles.companyCard} type="button" onClick={() => onSelect(company)}>
+      <span className={styles.companyLogoPlaceholder} aria-hidden="true">{companyInitials}</span>
       <h3>{company.name}</h3>
       <p className={styles.companySummary}>{company.summary}</p>
       <p className={styles.companyDescription}>{company.description}</p>
-      <div className={styles.tags}>{company.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
-    </article>
+    </button>
   )
 }
 

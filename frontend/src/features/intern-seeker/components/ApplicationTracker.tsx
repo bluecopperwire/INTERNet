@@ -20,21 +20,23 @@ export function ApplicationTracker({ application, onClose }: ApplicationTrackerP
         <div className={styles.appInfo}><h4>{application.companyName}</h4><p>{application.position}</p></div>
         <div className={styles.stepper}>
           {application.progress.map((step, index) => {
-            const stepClass = step.status === 'Completed' ? styles.stepPast : step.status === 'Current' ? styles.stepCurrent : styles.stepFuture
+            const isCompleted = step.state === 'completed'
+            const isCurrent = step.state === 'current' || step.state === 'interview-scheduled'
+            const stepClass = isCompleted ? styles.stepPast : isCurrent ? styles.stepCurrent : styles.stepFuture
             return (
               <div key={step.stage} className={`${styles.step} ${stepClass}`}>
                 <div className={styles.indicatorWrapper}>
                   <div className={styles.indicator}>
-                    {step.status === 'Completed' && <span className={styles.check}><Check /></span>}
-                    {step.status === 'Current' && <span className={styles.dotWhite} />}
-                    {step.status === 'Pending' && <span className={styles.dotGrey} />}
+                    {isCompleted && <span className={styles.check}><Check /></span>}
+                    {isCurrent && <span className={styles.dotWhite} />}
+                    {!isCompleted && !isCurrent && <span className={styles.dotGrey} />}
                   </div>
-                  {index < application.progress.length - 1 && <div className={`${styles.line} ${step.status === 'Completed' ? styles.lineGreen : styles.lineGrey}`} />}
+                  {index < application.progress.length - 1 && <div className={`${styles.line} ${isCompleted ? styles.lineGreen : styles.lineGrey}`} />}
                 </div>
                 <div className={styles.content}>
                   <span className={styles.stageName}>{step.stage}</span>
                   <span className={step.timestamp ? styles.timestamp : styles.pendingText}>{step.timestamp ?? 'Pending'}</span>
-                  {step.notes && <p className={styles.notes}>{step.notes}</p>}
+                  <p className={styles.notes}>{step.message}</p>
                 </div>
               </div>
             )

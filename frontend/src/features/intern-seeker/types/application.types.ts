@@ -1,22 +1,43 @@
 export type ApplicationStage =
-  | 'Application Submitted'
-  | 'For Review (QC PESO)'
-  | 'Endorsed to Company'
+  | 'Application Submission'
+  | 'QC PESO Endorsement'
   | 'Company Review'
-  | 'Final Decision'
+  | 'Company Decision'
+  | 'Student Decision'
+
+export type ApplicationProgressState =
+  | 'completed'
+  | 'current'
+  | 'pending'
+  | 'rejected'
+  | 'interview-scheduled'
+  | 'withdrawn'
 
 export type ApplicationDisplayStatus =
   | 'For Review (QC PESO)'
   | 'Endorsed to Company'
   | 'Under Review (Company)'
+  | 'Interview Scheduled'
   | 'Accepted'
   | 'Rejected'
+  | 'Withdrawn'
+
+export interface InterviewDetails {
+  date: string
+  time: string
+  mode: 'online' | 'in-person'
+  meetingUrl?: string
+  location?: string
+  remark?: string
+}
 
 export interface ApplicationProgress {
   stage: ApplicationStage
-  status: 'Completed' | 'Current' | 'Pending'
+  state: ApplicationProgressState
+  message: string
   timestamp?: string
-  notes?: string
+  remark?: string
+  interview?: InterviewDetails
 }
 
 export interface UserApplication {

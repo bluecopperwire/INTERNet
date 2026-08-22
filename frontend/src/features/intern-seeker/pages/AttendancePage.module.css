@@ -28,8 +28,7 @@
 
 .todayPanel,
 .summaryPanel,
-.calendarPanel,
-.holidaysPanel {
+.calendarPanel {
   border: 1px solid #d8dcea;
   border-radius: 12px;
   background: #ffffff;
@@ -51,8 +50,7 @@
 
 .panelHeader h2,
 .summaryPanel h2,
-.calendarHeader h2,
-.holidaysPanel h2 {
+.calendarHeader h2 {
   margin: 0;
   font-size: 22px;
 }
@@ -93,6 +91,27 @@
 .detailRow p {
   margin: 2px 0 0;
   font-size: 13px;
+}
+
+.internshipDetailsButton {
+  width: 100%;
+  min-height: 42px;
+  margin-top: 24px;
+  border: 1px solid var(--tracking-purple);
+  border-radius: 8px;
+  color: var(--tracking-purple);
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.internshipDetailsButton:hover {
+  color: #ffffff;
+  background: var(--tracking-purple);
+  transform: translateY(-1px);
 }
 
 .checkInButton {
@@ -278,10 +297,6 @@
   background: #df1c22;
 }
 
-.holiday {
-  border: 2px solid var(--tracking-yellow);
-}
-
 .legend {
   display: flex;
   flex-wrap: wrap;
@@ -312,61 +327,6 @@
 
 .absentDot {
   background: #df1c22;
-}
-
-.holidaysPanel {
-  padding: 22px;
-}
-
-.holidaysPanel h2 {
-  margin: 0 4px 18px;
-}
-
-.holidayList {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.holidayItem {
-  display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  padding: 13px;
-  border: 1px solid #e1e4ec;
-  border-radius: 9px;
-  background: #f7f8fb;
-}
-
-.holidayItem > svg {
-  width: 25px;
-  height: 25px;
-}
-
-.holidayItem div {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-}
-
-.holidayItem strong {
-  overflow: hidden;
-  font-size: 14px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.holidayItem span {
-  font-size: 11px;
-}
-
-.holidayItem small {
-  padding: 6px 8px;
-  border: 1px solid var(--tracking-purple);
-  border-radius: 999px;
-  font-size: 9px;
-  white-space: nowrap;
 }
 
 .error,
@@ -426,8 +386,7 @@
   }
   .panelHeader h2,
   .summaryPanel h2,
-  .calendarHeader h2,
-  .holidaysPanel h2 {
+  .calendarHeader h2 {
     font-size: 21px;
   }
 }
@@ -438,12 +397,5 @@
   }
   .summaryCard {
     min-height: 118px;
-  }
-  .holidayItem {
-    grid-template-columns: 25px minmax(0, 1fr);
-  }
-  .holidayItem small {
-    grid-column: 2;
-    justify-self: start;
   }
 }

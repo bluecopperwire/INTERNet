@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
-import { CalendarDays, ChevronLeft, ChevronRight, Clock3, MapPin } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Clock3 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useAttendance } from '../hooks/useAttendance'
-import type { AttendanceDayStatus, AttendanceMonth, Holiday } from '../types/attendance.types'
+import type { AttendanceDayStatus, AttendanceMonth } from '../types/attendance.types'
 import styles from './AttendancePage.module.css'
 
 const INITIAL_MONTH = new Date(2026, 7, 1)
@@ -9,7 +10,8 @@ const WEEKDAYS = ['S', 'M', 'T', 'W', 'TH', 'F', 'ST']
 
 function AttendancePage() {
   const [visibleMonth, setVisibleMonth] = useState(INITIAL_MONTH)
-  const { today, monthData, holidays, isLoading, isCheckingIn, error, checkIn } = useAttendance(
+  const navigate = useNavigate()
+  const { today, monthData, isLoading, isCheckingIn, error, checkIn } = useAttendance(
     visibleMonth.getFullYear(),
     visibleMonth.getMonth(),
   )
@@ -35,13 +37,16 @@ function AttendancePage() {
                 <div className={styles.todayDetails}>
                   <div className={styles.detailRow}>
                     <Clock3 aria-hidden="true" />
-                    <div><h3>Check-in Time</h3><p>Working hours: {today.scheduleStart} - {today.scheduleEnd}</p></div>
+                    <div><h3>Intern At</h3><p>{today.companyName}</p></div>
                   </div>
                   <div className={styles.detailRow}>
-                    <MapPin aria-hidden="true" />
-                    <div><h3>Location</h3><p>{today.location}</p></div>
+                    <Clock3 aria-hidden="true" />
+                    <div><h3>Working Days</h3><p>{today.workingDays} | {today.shiftStart} - {today.shiftEnd}</p></div>
                   </div>
                 </div>
+                <button className={styles.internshipDetailsButton} type="button" onClick={() => navigate('/intern-seeker/internship-details')}>
+                  View Internship Details
+                </button>
               </section>
 
               <button className={styles.checkInButton} type="button" disabled={today.status !== 'not-checked-in' || isCheckingIn} onClick={() => void checkIn()}>
@@ -53,7 +58,6 @@ function AttendancePage() {
 
             <aside className={styles.secondaryColumn}>
               <AttendanceCalendar monthData={monthData} onPrevious={() => changeMonth(-1)} onNext={() => changeMonth(1)} />
-              <UpcomingHolidays holidays={holidays} fromDate={today.date} />
             </aside>
           </div>
         )}
@@ -107,24 +111,6 @@ function MonthlySummary({ monthData }: { monthData: AttendanceMonth }) {
   )
 }
 
-function UpcomingHolidays({ holidays, fromDate }: { holidays: Holiday[]; fromDate: string }) {
-  return (
-    <section className={styles.holidaysPanel} aria-labelledby="holidays-heading">
-      <h2 id="holidays-heading">Upcoming Holidays</h2>
-      <div className={styles.holidayList}>
-        {holidays.length === 0 && <p>No upcoming holidays.</p>}
-        {holidays.map((holiday) => (
-          <article className={styles.holidayItem} key={holiday.id}>
-            <CalendarDays aria-hidden="true" />
-            <div><strong>{holiday.name}</strong><span>{formatHolidayDate(holiday.date)}</span></div>
-            <small>{daysBetween(fromDate, holiday.date)} days left</small>
-          </article>
-        ))}
-      </div>
-    </section>
-  )
-}
-
 function buildCalendarDays(monthData: AttendanceMonth) {
   const firstWeekday = new Date(monthData.year, monthData.month, 1).getDay()
   const numberOfDays = new Date(monthData.year, monthData.month + 1, 0).getDate()
@@ -138,7 +124,4 @@ function buildCalendarDays(monthData: AttendanceMonth) {
 }
 
 const formatStatus = (status: string) => status.split('-').map((part) => part[0].toUpperCase() + part.slice(1)).join(' ')
-const formatHolidayDate = (date: string) => new Intl.DateTimeFormat('en-PH', { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(`${date}T00:00:00Z`))
-const daysBetween = (from: string, to: string) => Math.max(0, Math.ceil((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000))
-
 export default AttendancePage

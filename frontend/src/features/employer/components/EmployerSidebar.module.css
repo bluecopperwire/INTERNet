@@ -172,6 +172,89 @@
   stroke-width: 1.8;
 }
 
+.navGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.navGroupButton {
+  display: flex;
+  width: 100%;
+  min-height: 39px;
+  align-items: center;
+  gap: 13px;
+  padding: 8px 13px;
+  border: 0;
+  border-radius: 5px;
+  color: #ffffff;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.navGroupButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.navGroupButton svg {
+  width: 19px;
+  height: 19px;
+  flex: none;
+  stroke-width: 1.8;
+}
+
+.navGroupButton span {
+  flex: 1;
+}
+
+.navGroupButton .groupChevron {
+  width: 17px;
+  height: 17px;
+}
+
+.subNav {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-left: 17px;
+  padding-left: 13px;
+}
+
+.subNavItem {
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 5px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  text-decoration: none;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.subNavItem:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.subNavItem.active {
+  color: #21167b;
+  background: #ffffff;
+  font-weight: 600;
+}
+
+.subNavItem svg {
+  width: 17px;
+  height: 17px;
+  flex: none;
+}
+
 .bottomActions {
   flex: none;
   margin-top: 16px;

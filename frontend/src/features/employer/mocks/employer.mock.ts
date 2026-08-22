@@ -17,10 +17,10 @@ export const MOCK_EMPLOYER_DASHBOARD: EmployerDashboardSummary = {
 }
 
 export const MOCK_OPPORTUNITIES: Opportunity[] = [
-  { id: '1', title: 'IT Intern', department: 'IT Department', slots: 5, duration: 200, status: 'Active', applicants: 24 },
-  { id: '2', title: 'HR Intern', department: 'Human Resources', slots: 2, duration: 150, status: 'Active', applicants: 10 },
-  { id: '3', title: 'Marketing Intern', department: 'Marketing', slots: 3, duration: 300, status: 'Closed', applicants: 45 },
-  { id: '4', title: 'Finance Intern', department: 'Finance', slots: 1, duration: 250, status: 'Active', applicants: 8 },
+  { id: '1', title: 'IT Intern', department: 'IT Department', workArrangement: 'On-site', slots: 5, duration: 200, allowance: 'PHP 500 per day', applicationDeadline: '2026-09-15', jobDescription: 'Support the IT team with documentation, testing, and daily technical operations.', qualifications: 'Currently enrolled in an IT-related program with basic programming and communication skills.', status: 'Open', applicants: 24 },
+  { id: '2', title: 'HR Intern', department: 'Human Resources', workArrangement: 'Hybrid', slots: 2, duration: 150, allowance: 'N/A', applicationDeadline: '2026-09-08', jobDescription: 'Assist with recruitment coordination and employee records.', qualifications: 'Currently enrolled in Psychology, HR, or a related program.', status: 'Open', applicants: 10 },
+  { id: '3', title: 'Marketing Intern', department: 'Marketing', workArrangement: 'Remote', slots: 3, duration: 300, allowance: 'PHP 400 per day', applicationDeadline: '2026-08-01', jobDescription: 'Support campaign planning and social media content preparation.', qualifications: 'Currently enrolled in Marketing, Communications, or a related program.', status: 'Closed', applicants: 45 },
+  { id: '4', title: 'Finance Intern', department: 'Finance', workArrangement: 'On-site', slots: 1, duration: 250, allowance: 'PHP 450 per day', applicationDeadline: '2026-09-22', jobDescription: 'Assist with financial records, reports, and administrative tasks.', qualifications: 'Currently enrolled in Accounting, Finance, or a related program.', status: 'Open', applicants: 8 },
 ]
 
 export const MOCK_RECENT_APPLICANTS: Applicant[] = [
@@ -39,6 +39,7 @@ export const MOCK_RECENT_APPLICANTS: Applicant[] = [
     school: 'Polytechnic University of the Philippines',
     preferredField: 'Information Technology',
     requiredHours: 200,
+    availabilityDays: 'Weekdays',
     availabilityDate: 'August 20, 2026',
   },
   {
@@ -56,6 +57,7 @@ export const MOCK_RECENT_APPLICANTS: Applicant[] = [
     school: 'Quezon City University',
     preferredField: 'Human Resources',
     requiredHours: 150,
+    availabilityDays: 'Weekdays',
     availabilityDate: 'August 18, 2026',
   },
   {
@@ -66,13 +68,14 @@ export const MOCK_RECENT_APPLICANTS: Applicant[] = [
     course: 'BS Computer Science',
     yearLevel: '3rd Year',
     dateApplied: 'August 12, 2026',
-    status: 'For Review',
+    status: 'For Interview',
     email: 'kyleporciuncula@gmail.com',
     phone: '09123456789',
     location: 'Quezon City, Philippines',
     school: 'Polytechnic University of the Philippines',
     preferredField: 'UI/UX Design',
     requiredHours: 200,
+    availabilityDays: 'Flexible',
     availabilityDate: 'August 15, 2026',
   },
   {
@@ -90,17 +93,20 @@ export const MOCK_RECENT_APPLICANTS: Applicant[] = [
     school: 'Far Eastern University',
     preferredField: 'Quality Assurance',
     requiredHours: 200,
+    availabilityDays: 'Weekdays',
     availabilityDate: 'August 16, 2026',
+    rejectionRemark: 'The current opening requires experience with automated testing tools.',
   },
 ]
 
 export const MOCK_COMPANY_PROFILE: CompanyProfile = {
   company_name: 'ABC Company',
-  company_type: 'Private Corporation',
-  description: 'Short description here short description here short description here short description here',
-  website_url: 'abc.company.com',
+  company_type: 'Private',
+  industry: 'Information Technology',
+  description: 'ABC Company creates practical technology solutions and provides structured internship opportunities for students pursuing careers in information technology.',
+  website_url: 'https://abccompany.com',
   year_established: '2015',
-  company_size: '51-200 employees',
+  company_size: '200',
   address_line: '123 Aurora Boulevard',
   address_barangay: 'Cubao',
   address_district: 'District 3',
@@ -110,11 +116,7 @@ export const MOCK_COMPANY_PROFILE: CompanyProfile = {
   contact_person_first_name: 'Juan',
   contact_person_middle_name: 'Mendoza',
   contact_person_last_name: 'Dela Cruz',
-  contact_person_extension_name: 'Jr.',
-  verified: true,
-  verifiedBy: 'QC PESO',
-  dateVerified: 'July 19, 2026',
-  verificationId: 'QCP-2026-1234',
+  contact_person_extension_name: 'Jr',
 }
 
 export const MOCK_EMPLOYER_NOTIFICATIONS: EmployerNotification[] = [

@@ -129,7 +129,7 @@ export function ApplicantsPage() {
                         <span className={`${styles.statusPill} ${
                           app.status === 'Accepted' || app.status === 'Shortlisted' ? styles.accepted :
                           app.status === 'Rejected' ? styles.rejected :
-                          app.status === 'Under Review' || app.status === 'For Review' ? styles.underReview :
+                          app.status === 'Under Review' || app.status === 'For Review' || app.status === 'For Interview' ? styles.underReview :
                           ''
                         }`}>
                           {app.status}

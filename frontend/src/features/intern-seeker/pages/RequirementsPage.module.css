@@ -194,7 +194,7 @@
   text-align: center;
 }
 
-.actionCell button, .uploadButton {
+.uploadButton {
   display: inline-grid;
   min-width: 94px;
   height: 36px;
@@ -210,11 +210,58 @@
   transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
-.actionCell button:hover, .uploadButton:hover {
+.actionCell .uploadButton {
+  box-sizing: border-box;
+  width: 118px;
+  min-width: 118px;
+}
+
+.uploadButton:hover {
   color: #ffffff;
   background: #21167b;
   box-shadow: 0 4px 10px rgba(33, 22, 123, 0.16);
   transform: translateY(-1px);
+}
+
+.documentActions {
+  display: inline-flex;
+  width: 118px;
+  gap: 8px;
+}
+
+.iconAction {
+  display: inline-grid;
+  width: auto;
+  height: 36px;
+  flex: 1;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #21167b;
+  border-radius: 7px;
+  color: #21167b;
+  background: #ffffff;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.iconAction svg {
+  width: 16px;
+  height: 16px;
+}
+
+.iconAction:hover {
+  color: #ffffff;
+  background: #21167b;
+  transform: translateY(-1px);
+}
+
+.deleteAction {
+  border-color: #d9515d;
+  color: #d9515d;
+}
+
+.deleteAction:hover {
+  background: #d9515d;
 }
 
 .actionCell input {
@@ -379,7 +426,7 @@
   .lastUpdated, .actionCell {
     text-align: left;
   }
-  .actionCell button, .uploadButton {
+  .uploadButton {
     min-width: 92px;
     height: 36px;
   }

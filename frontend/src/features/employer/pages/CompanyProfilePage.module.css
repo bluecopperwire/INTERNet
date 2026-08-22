@@ -3,14 +3,13 @@
   background-color: #ffffff;
   font-family: 'Poppins', sans-serif;
   color: #160e6f;
-  padding-bottom: 60px;
+  padding-bottom: 64px;
 }
 
 /* White Header Section below Hero Banner */
 .headerSection {
   background: #ffffff;
   border-bottom: 1px solid rgba(22, 14, 111, 0.12);
-  padding: 0 48px 28px;
 }
 
 .headerContainer {
@@ -19,7 +18,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 28px;
   position: relative;
+  padding: 0 48px 28px;
 }
 
 .companyMainInfo {
@@ -119,34 +120,38 @@
 .companyMeta {
   display: flex;
   flex-direction: column;
-  gap: 4px;
   margin-top: 18px;
 }
 
 .companyTitle {
   margin: 0;
-  font-size: 36px;
+  font-size: clamp(28px, 3vw, 36px);
   font-weight: 700;
   color: #160e6f;
   line-height: 1.1;
   letter-spacing: -0.01em;
 }
 
-.industryText {
-  font-size: 18px;
-  font-weight: 600;
-  color: #160e6f;
-  margin: 0;
+.contactDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
 }
 
-.locationText {
+.contactDetails span {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 15px;
-  font-weight: 500;
   color: #160e6f;
-  margin-top: 2px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.contactDetails span svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
 }
 
 .editProfileBtn {
@@ -178,28 +183,14 @@
   max-width: 1240px;
   margin: 32px auto 0;
   padding: 0 48px;
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
 }
 
 /* Two Column Card Layout */
 .profileGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 28px;
   align-items: start;
-}
-
-.leftColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-}
-
-.rightColumn {
-  display: flex;
-  flex-direction: column;
 }
 
 /* Card Common Styles */
@@ -257,76 +248,6 @@
   white-space: pre-line;
 }
 
-/* Verification Card */
-.verificationBanner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #e8f7ec;
-  margin: 20px 20px 0;
-  border-radius: 6px;
-  padding: 16px 20px;
-}
-
-.verificationBannerText {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.bannerTitle {
-  font-size: 17px;
-  font-weight: 700;
-  color: #16a34a;
-}
-
-.bannerSubtitle {
-  font-size: 13px;
-  font-weight: 500;
-  color: #15803d;
-}
-
-.verificationIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #22c55e;
-}
-
-.verificationDetails {
-  display: flex;
-  flex-direction: column;
-  margin: 20px;
-  overflow: hidden;
-  border: 1px solid rgba(22, 14, 111, 0.2);
-  border-radius: 6px;
-}
-
-.detailRow {
-  display: flex;
-  min-height: 50px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 16px;
-  border-bottom: 1px solid #e2e8f0;
-  font-size: 14px;
-}
-
-.detailRow:last-child {
-  border-bottom: 0;
-}
-
-.detailLabel {
-  font-weight: 500;
-  color: #160e6f;
-}
-
-.detailValue {
-  font-weight: 600;
-  color: #160e6f;
-}
-
 /* Details Card */
 .detailsList {
   display: flex;
@@ -342,7 +263,7 @@
   min-height: 56px;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 20px;
   padding: 12px 16px;
   border-bottom: 1px solid #e2e8f0;
 }
@@ -372,9 +293,11 @@
 }
 
 .itemValue {
+  min-width: 0;
   font-size: 14px;
   font-weight: 600;
   color: #160e6f;
+  overflow-wrap: anywhere;
   text-align: right;
 }
 
@@ -396,7 +319,7 @@
 
 @media (max-width: 768px) {
   .headerSection {
-    padding: 0 20px 20px;
+    padding: 0;
   }
   .mainContent {
     padding: 0 20px;
@@ -405,6 +328,7 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
+    padding: 0 20px 20px;
   }
   .companyMainInfo {
     flex-direction: column;

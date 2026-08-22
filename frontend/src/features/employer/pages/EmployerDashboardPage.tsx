@@ -1,14 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
-  Bell, 
   ArrowRight, 
   ChevronRight,
   Plus, 
   FileText, 
   Users, 
-  Check, 
-  X 
 } from 'lucide-react'
 import headerImage from '../../../assets/requirements-header-image.png'
 import styles from './EmployerDashboardPage.module.css'
@@ -16,24 +13,7 @@ import { useEmployerDashboard } from '../hooks/useEmployerDashboard'
 
 export const EmployerDashboardPage: React.FC = () => {
   const navigate = useNavigate()
-  const { summary, recentApplicants, notifications, isLoading, markAllAsRead } = useEmployerDashboard()
-
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
-  const notificationRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
-        setIsNotificationsOpen(false)
-      }
-    }
-    if (isNotificationsOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [isNotificationsOpen])
-
-  const unreadCount = notifications.filter((item) => !item.isRead).length
+  const { summary, recentApplicants, isLoading } = useEmployerDashboard()
   const formatNumber = (num: number) => (num < 10 ? `0${num}` : `${num}`)
 
   if (isLoading || !summary) {
@@ -46,59 +26,6 @@ export const EmployerDashboardPage: React.FC = () => {
         <div className={styles.heroBgWrapper}>
           <img src={headerImage} alt="" className={styles.heroBgImage} />
           <div className={styles.heroOverlay} />
-        </div>
-
-        <div className={styles.topNavbar}>
-          <div className={styles.navbarRight} ref={notificationRef}>
-            <button
-              type="button"
-              className={styles.bellBtn}
-              onClick={() => setIsNotificationsOpen((prev) => !prev)}
-              aria-label="Toggle notifications"
-            >
-              <Bell size={24} color="#ffffff" />
-              {unreadCount > 0 && <span className={styles.redDot} />}
-            </button>
-
-            {isNotificationsOpen && (
-              <div className={styles.notificationDropdown}>
-                <div className={styles.dropdownHeader}>
-                  <div className={styles.dropdownTitleGroup}>
-                    <h3>Notifications</h3>
-                    <button
-                      type="button"
-                      className={styles.markReadBtn}
-                      onClick={markAllAsRead}
-                    >
-                      <Check size={14} strokeWidth={2.5} />
-                      <span>Mark all as read</span>
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    className={styles.closeDropdownBtn}
-                    onClick={() => setIsNotificationsOpen(false)}
-                    aria-label="Close"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
-
-                <div className={styles.notificationList}>
-                  {notifications.map((n) => (
-                    <div
-                      key={n.id}
-                      className={`${styles.notificationItem} ${!n.isRead ? styles.unread : ''}`}
-                    >
-                      <h4 className={styles.itemTitle}>{n.title}</h4>
-                      <p className={styles.itemMessage}>{n.message}</p>
-                      <span className={styles.itemTime}>{n.timeAgo}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
         </div>
 
         <div className={styles.heroContent}>
@@ -201,8 +128,8 @@ export const EmployerDashboardPage: React.FC = () => {
                 <thead>
                   <tr>
                     <th>Student Name</th>
-                    <th>Position</th>
-                    <th>Date</th>
+                    <th>Job Title</th>
+                    <th>Date Submitted</th>
                     <th>Status</th>
                   </tr>
                 </thead>
@@ -214,7 +141,7 @@ export const EmployerDashboardPage: React.FC = () => {
                         <td>{app.opportunityTitle}</td>
                         <td>{app.dateApplied}</td>
                         <td>
-                          <span className={styles.statusCellText}>{app.status}</span>
+                          <span className={styles.statusCellText}>{formatRecentApplicationStatus(app.status)}</span>
                         </td>
                       </tr>
                     ))
@@ -271,6 +198,11 @@ export const EmployerDashboardPage: React.FC = () => {
       </section>
     </main>
   )
+}
+
+function formatRecentApplicationStatus(status: string) {
+  if (status === 'Accepted' || status === 'Rejected' || status === 'Pending') return status
+  return 'For Interview'
 }
 
 export default EmployerDashboardPage

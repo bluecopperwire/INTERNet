@@ -37,16 +37,62 @@ export const adminService = {
     })
   },
 
+  getStudentRecord: async (id: string): Promise<StudentRecord | null> => {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve(currentStudentRecords.find((record) => record.id === id) ?? null), 250)
+    })
+  },
+
+  updateStudentRecord: async (id: string, updates: Partial<StudentRecord>): Promise<StudentRecord | null> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const index = currentStudentRecords.findIndex((record) => record.id === id)
+        if (index < 0) {
+          resolve(null)
+          return
+        }
+        currentStudentRecords[index] = { ...currentStudentRecords[index], ...updates }
+        resolve({ ...currentStudentRecords[index] })
+      }, 250)
+    })
+  },
+
   getEmployerRecords: async (): Promise<EmployerRecord[]> => {
     return new Promise((resolve) => {
       setTimeout(() => resolve(currentEmployerRecords.map((record) => ({ ...record }))), 300)
     })
   },
 
+  getEmployerRecord: async (id: string): Promise<EmployerRecord | null> => {
+    return new Promise((resolve) => setTimeout(() => resolve(currentEmployerRecords.find((record) => record.id === id) ?? null), 250))
+  },
+
+  updateEmployerRecord: async (id: string, updates: Partial<EmployerRecord>): Promise<EmployerRecord | null> => {
+    return new Promise((resolve) => setTimeout(() => {
+      const index = currentEmployerRecords.findIndex((record) => record.id === id)
+      if (index < 0) return resolve(null)
+      currentEmployerRecords[index] = { ...currentEmployerRecords[index], ...updates }
+      resolve({ ...currentEmployerRecords[index] })
+    }, 250))
+  },
+
   getQCPesoRecords: async (): Promise<QCPesoRecord[]> => {
     return new Promise((resolve) => {
       setTimeout(() => resolve(currentQCPesoRecords.map((record) => ({ ...record }))), 300)
     })
+  },
+
+  getQCPesoRecord: async (id: string): Promise<QCPesoRecord | null> => {
+    return new Promise((resolve) => setTimeout(() => resolve(currentQCPesoRecords.find((record) => record.id === id) ?? null), 250))
+  },
+
+  updateQCPesoRecord: async (id: string, updates: Partial<QCPesoRecord>): Promise<QCPesoRecord | null> => {
+    return new Promise((resolve) => setTimeout(() => {
+      const index = currentQCPesoRecords.findIndex((record) => record.id === id)
+      if (index < 0) return resolve(null)
+      currentQCPesoRecords[index] = { ...currentQCPesoRecords[index], ...updates }
+      resolve({ ...currentQCPesoRecords[index] })
+    }, 250))
   },
 
   getDashboardSummary: async (): Promise<AdminDashboardSummary> => {
@@ -60,6 +106,7 @@ export const adminService = {
       setTimeout(() => resolve(currentAuditLogs.slice(0, limit)), 300)
     })
   },
+
 
   getNotifications: async (): Promise<AdminNotification[]> => {
     return new Promise((resolve) => {
@@ -76,7 +123,7 @@ export const adminService = {
     })
   },
 
-  getRecordById: async (id: string, role: string): Promise<AdminRecord> => {
+  getRecordById: async (_id: string, role: string): Promise<AdminRecord> => {
     return new Promise((resolve) => {
       setTimeout(() => {
         if (role === 'Student') resolve(currentStudentRecord)
@@ -86,7 +133,7 @@ export const adminService = {
     })
   },
   
-  updateRecord: async (id: string, role: string, updates: Partial<AdminRecord>): Promise<AdminRecord> => {
+  updateRecord: async (_id: string, role: string, updates: Partial<AdminRecord>): Promise<AdminRecord> => {
     return new Promise((resolve) => {
       setTimeout(() => {
         if (role === 'Student') {
@@ -103,7 +150,7 @@ export const adminService = {
     })
   },
 
-  toggleRecordStatus: async (id: string, role: string, newStatus: AccountStatus): Promise<boolean> => {
+  toggleRecordStatus: async (_id: string, role: string, newStatus: AccountStatus): Promise<boolean> => {
     return new Promise((resolve) => {
       setTimeout(() => {
         if (role === 'Student') currentStudentRecord.status = newStatus

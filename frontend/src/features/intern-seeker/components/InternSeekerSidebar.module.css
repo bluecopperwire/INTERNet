@@ -169,6 +169,22 @@
   flex: none;
   margin: 16px 7px 0;
   padding-top: 0;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 7px;
+  transition: background-color 150ms ease;
+}
+
+.userSummary:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.userSummary:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 3px;
 }
 
 .avatar {
@@ -211,6 +227,7 @@
 .userSummary > svg {
   width: 16px;
   height: 16px;
+  color: #ffffff;
 }
 
 .logout {

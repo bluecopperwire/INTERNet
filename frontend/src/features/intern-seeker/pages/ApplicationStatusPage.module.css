@@ -128,20 +128,20 @@
   display: flex;
   min-width: 0;
   flex-direction: column;
+  gap: 3px;
 }
 
 .applicationInfo strong {
+  min-width: 0;
   font-size: 17px;
 }
 
-.applicationInfo span {
-  margin-top: 2px;
+.applicationInfo > span {
+  min-width: 0;
   font-size: 14px;
-}
-
-.applicationInfo small {
-  margin-top: 3px;
-  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .applicationMeta {
@@ -152,6 +152,7 @@
 }
 
 .applicationMeta small {
+  flex: none;
   font-size: 11px;
   white-space: nowrap;
 }
@@ -275,8 +276,59 @@
   color: #21167b;
 }
 
+.interview-scheduled .indicator {
+  border-color: #21167b;
+  color: #21167b;
+  background: #f3f2fb;
+}
+
+.rejected .indicator,
+.withdrawn .indicator {
+  border-color: #e35c64;
+  color: #e35c64;
+  background: #fff5f5;
+}
+
+.rejected .timelineLine,
+.withdrawn .timelineLine {
+  background: #e35c64;
+}
+
 .stepContent {
+  width: 100%;
   padding: 3px 0 18px;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+}
+
+.stepContent:disabled {
+  cursor: default;
+}
+
+.clickableStep .stepContent {
+  cursor: pointer;
+}
+
+.clickableStep .stepContent:hover h3 {
+  text-decoration: underline;
+}
+
+.clickHint {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 7px;
+  color: #21167b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.clickHint svg {
+  width: 14px;
+  height: 14px;
 }
 
 .stepContent h3 {
@@ -333,14 +385,196 @@
   .applicationItem {
     grid-template-columns: 58px minmax(0, 1fr) 25px;
   }
-  .applicationMeta {
-    grid-column: 2;
-    align-items: flex-start;
-  }
-  .chevron {
-    grid-column: 3;
-    grid-row: 1 / span 2;
-  }
+}
+
+.withdrawArea {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 17px 8px;
+}
+
+.withdrawButton,
+.deleteApplicationButton,
+.acceptButton,
+.rejectButton {
+  min-height: 40px;
+  padding: 0 17px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.withdrawButton {
+  border: 1px solid #d9515d;
+  color: #d9515d;
+  background: #ffffff;
+}
+
+.deleteApplicationButton {
+  border: 1px solid #d9515d;
+  color: #ffffff;
+  background: #d9515d;
+}
+
+.withdrawButton:hover:not(:disabled),
+.deleteApplicationButton:hover:not(:disabled),
+.acceptButton:hover:not(:disabled),
+.rejectButton:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.withdrawButton:disabled,
+.deleteApplicationButton:disabled,
+.acceptButton:disabled,
+.rejectButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modalBackdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(9, 7, 31, 0.58);
+}
+
+.applicationModal {
+  position: relative;
+  width: min(100%, 520px);
+  padding: 30px;
+  border: 1px solid #d8dcea;
+  border-radius: 12px;
+  color: #21167b;
+  background: #ffffff;
+  box-shadow: 0 18px 50px rgba(9, 7, 31, 0.22);
+}
+
+.applicationModal h2 {
+  margin: 0 40px 18px 0;
+  font-size: 22px;
+}
+
+.closeButton {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: #21167b;
+  background: #f1f3f8;
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.closeButton:hover {
+  background: #e4e8f1;
+  transform: rotate(4deg);
+}
+
+.closeButton svg {
+  width: 20px;
+  height: 20px;
+}
+
+.modalSubtitle,
+.decisionText,
+.remarkText {
+  margin: 0;
+  color: #40506d;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.interviewDetails {
+  margin: 20px 0;
+  overflow: hidden;
+  border: 1px solid #dbe0eb;
+  border-radius: 8px;
+}
+
+.interviewDetails div {
+  display: grid;
+  grid-template-columns: 145px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e3e6ee;
+}
+
+.interviewDetails div:last-child {
+  border-bottom: 0;
+}
+
+.interviewDetails dt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.interviewDetails dt svg {
+  width: 15px;
+  height: 15px;
+}
+
+.interviewDetails dd {
+  min-width: 0;
+  margin: 0;
+  color: #40506d;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.interviewDetails a {
+  color: #21167b;
+}
+
+.remarkBox {
+  padding: 14px;
+  border: 1px solid #e0e4ee;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.remarkBox strong {
+  font-size: 13px;
+}
+
+.remarkBox p {
+  margin: 6px 0 0;
+  color: #40506d;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.decisionActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.rejectButton {
+  border: 1px solid #d9515d;
+  color: #d9515d;
+  background: #ffffff;
+}
+
+.acceptButton {
+  border: 1px solid #21167b;
+  color: #ffffff;
+  background: #21167b;
 }
 
 @media (max-width: 850px) {

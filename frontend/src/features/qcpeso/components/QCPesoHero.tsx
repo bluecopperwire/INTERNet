@@ -4,6 +4,7 @@ import styles from './QCPesoHero.module.css'
 interface QCPesoHeroProps {
   title?: string
   subtitle?: string
+  comfortableSpacing?: boolean
 }
 
 export function QCPesoHero({

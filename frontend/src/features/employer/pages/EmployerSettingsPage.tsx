@@ -1,26 +1,12 @@
 import { useState, type FormEvent } from 'react'
-import { BellRing, LockKeyhole, Save, ShieldCheck } from 'lucide-react'
+import { LockKeyhole, ShieldCheck } from 'lucide-react'
 import { EmployerHero } from '../components/EmployerHero'
 import styles from './EmployerSettingsPage.module.css'
 
-interface NotificationPreferences {
-  management: boolean
-  monitor: boolean
-  dashboard: boolean
-}
-
-const initialPreferences: NotificationPreferences = { management: true, monitor: false, dashboard: false }
-
 export function EmployerSettingsPage() {
-  const [preferences, setPreferences] = useState(initialPreferences)
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [message, setMessage] = useState('')
-
-  const togglePreference = (key: keyof NotificationPreferences) => {
-    setPreferences((current) => ({ ...current, [key]: !current[key] }))
-    setMessage('')
-  }
 
   const updatePassword = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -31,42 +17,11 @@ export function EmployerSettingsPage() {
     setMessage('Password updated successfully.')
   }
 
-  const notificationOptions = [
-    { key: 'management' as const, title: 'Application Notifications', description: 'Updates when students apply to your opportunities.' },
-    { key: 'monitor' as const, title: 'Internship Notifications', description: 'Updates about your active interns and attendance monitoring.' },
-    { key: 'dashboard' as const, title: 'Dashboard Notifications', description: 'Summary alerts and important company account updates.' },
-  ]
-
   return (
     <main className={styles.pageContainer}>
       <EmployerHero title="Settings" subtitle="Manage your account preferences and security settings." comfortableSpacing />
 
       <div className={styles.settingsContent}>
-        <section className={styles.settingsSection}>
-          <header className={styles.sectionHeader}>
-            <div className={styles.sectionIcon}><BellRing size={21} aria-hidden="true" /></div>
-            <div><h2>Notification Preferences</h2><p>Choose which company activity updates you want to receive.</p></div>
-          </header>
-          <div className={styles.notificationLayout}>
-            <div className={styles.settingIntro}>
-              <h3>System notifications</h3>
-              <p>Changes apply to your company account and can be updated anytime.</p>
-            </div>
-            <div className={styles.notificationControls}>
-              {notificationOptions.map((option) => (
-                <label className={styles.notificationOption} key={option.key}>
-                  <input type="checkbox" checked={preferences[option.key]} onChange={() => togglePreference(option.key)} />
-                  <span className={styles.optionText}><strong>{option.title}</strong><span>{option.description}</span></span>
-                  <span className={styles.toggle} aria-hidden="true"><span /></span>
-                </label>
-              ))}
-            </div>
-          </div>
-          <footer className={styles.sectionFooter}>
-            <button className={styles.primaryButton} type="button" onClick={() => setMessage('Notification preferences saved.')}><Save size={17} aria-hidden="true" /><span>Save Preferences</span></button>
-          </footer>
-        </section>
-
         <section className={styles.settingsSection}>
           <header className={styles.sectionHeader}>
             <div className={styles.sectionIcon}><LockKeyhole size={21} aria-hidden="true" /></div>

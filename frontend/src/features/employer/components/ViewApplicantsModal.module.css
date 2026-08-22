@@ -100,25 +100,31 @@
   opacity: 0.7;
 }
 
-.filterBtn {
+.statusFilter {
   display: inline-flex;
-  min-height: 42px;
+  height: 42px;
   align-items: center;
   gap: 8px;
-  padding: 0 14px;
+  min-width: 184px;
+  padding: 0 12px;
   border: 1px solid #160e6f;
   border-radius: 6px;
   background: #ffffff;
   color: #160e6f;
-  font-family: 'Poppins', sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 150ms ease, color 150ms ease;
 }
 
-.filterBtn:hover {
-  background: rgba(22, 14, 111, 0.05);
+.statusFilter select {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  color: #160e6f;
+  background: transparent;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  cursor: pointer;
 }
 
 .filterMenuRow {
@@ -357,7 +363,8 @@
   .searchBox {
     width: 100%;
   }
-  .filterBtn {
+  .statusFilter {
+    width: 100%;
     justify-content: center;
   }
   .filterMenuRow {

@@ -166,8 +166,8 @@
 
 .navItem > svg,
 .navGroupTitle > svg {
-  width: 19px;
-  height: 19px;
+  width: 18px;
+  height: 18px;
   flex: none;
   stroke-width: 1.8;
 }
@@ -200,6 +200,7 @@
   display: flex;
   min-height: 36px;
   align-items: center;
+  gap: 13px;
   padding: 7px 13px 7px 45px;
   border-radius: 5px;
   color: rgba(255, 255, 255, 0.92);
@@ -212,6 +213,12 @@
 
 .subNavItem:hover {
   background: rgba(255, 255, 255, 0.11);
+}
+
+.subNavItem > svg {
+  width: 17px;
+  height: 17px;
+  flex: none;
 }
 
 .userSummary {
