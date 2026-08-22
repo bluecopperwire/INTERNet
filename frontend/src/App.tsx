@@ -59,6 +59,7 @@ import { ManageEmployersPage as AdminManageEmployersPage } from './features/admi
 import { ManageQCPesoPage } from './features/admin/pages/ManageQCPesoPage'
 import { AdminEmployerDetailsPage, AdminEmployerEditorPage } from './features/admin/pages/AdminEmployerRecordPages'
 import { AdminQCPesoDetailsPage, AdminQCPesoEditorPage } from './features/admin/pages/AdminQCPesoRecordPages'
+import { AdminCreateEmployerPage, AdminCreateQCPesoPage } from './features/admin/pages/AdminCreateRecordPages'
 import { AdminSettingsPage } from './features/admin/pages/AdminSettingsPage'
 
 function App() {
@@ -143,9 +144,11 @@ function App() {
           <Route path="manage-students/:id/edit" element={<AdminStudentProfileEditorPage />} />
           <Route path="manage-students/:id" element={<AdminStudentDetailsPage />} />
           <Route path="manage-employers" element={<AdminManageEmployersPage />} />
+          <Route path="manage-employers/create" element={<AdminCreateEmployerPage />} />
           <Route path="manage-employers/:id/edit" element={<AdminEmployerEditorPage />} />
           <Route path="manage-employers/:id" element={<AdminEmployerDetailsPage />} />
           <Route path="manage-qcpeso" element={<ManageQCPesoPage />} />
+          <Route path="manage-qcpeso/create" element={<AdminCreateQCPesoPage />} />
           <Route path="manage-qcpeso/:id/edit" element={<AdminQCPesoEditorPage />} />
           <Route path="manage-qcpeso/:id" element={<AdminQCPesoDetailsPage />} />
           <Route path="settings" element={<AdminSettingsPage />} />

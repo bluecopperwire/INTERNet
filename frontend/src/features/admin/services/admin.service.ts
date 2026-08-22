@@ -76,6 +76,13 @@ export const adminService = {
     }, 250))
   },
 
+  createEmployerRecord: async (record: EmployerRecord): Promise<EmployerRecord> => {
+    return new Promise((resolve) => setTimeout(() => {
+      currentEmployerRecords = [record, ...currentEmployerRecords]
+      resolve({ ...record })
+    }, 250))
+  },
+
   getQCPesoRecords: async (): Promise<QCPesoRecord[]> => {
     return new Promise((resolve) => {
       setTimeout(() => resolve(currentQCPesoRecords.map((record) => ({ ...record }))), 300)
@@ -92,6 +99,13 @@ export const adminService = {
       if (index < 0) return resolve(null)
       currentQCPesoRecords[index] = { ...currentQCPesoRecords[index], ...updates }
       resolve({ ...currentQCPesoRecords[index] })
+    }, 250))
+  },
+
+  createQCPesoRecord: async (record: QCPesoRecord): Promise<QCPesoRecord> => {
+    return new Promise((resolve) => setTimeout(() => {
+      currentQCPesoRecords = [record, ...currentQCPesoRecords]
+      resolve({ ...record })
     }, 250))
   },
 

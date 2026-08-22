@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronLeft, ChevronRight, Eye, Filter, Search } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Eye, Filter, Plus, Search } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import headerImage from '../../../assets/requirements-header-image.png'
 import suitcaseIcon from '../../../assets/suitcase.svg'
@@ -92,7 +92,7 @@ export function ManageEmployersPage() {
               />
             </label>
 
-            <label className={styles.statusFilter}>
+            <div className={styles.toolbarActions}><label className={styles.statusFilter}>
               <Filter size={17} aria-hidden="true" />
               <span className={styles.srOnly}>Account status</span>
               <select
@@ -107,7 +107,7 @@ export function ManageEmployersPage() {
                 <option>Suspended</option>
                 <option>Deactivated</option>
               </select>
-            </label>
+            </label><button type="button" className={styles.createButton} onClick={() => navigate('/admin/manage-employers/create')} aria-label="Create employer"><Plus size={20} /></button></div>
           </div>
 
           <div className={styles.tableWrap}>

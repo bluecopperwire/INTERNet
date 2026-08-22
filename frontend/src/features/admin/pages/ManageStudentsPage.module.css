@@ -130,6 +130,33 @@
   gap: 20px;
 }
 
+.toolbarActions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+}
+
+.createButton {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: none;
+  place-items: center;
+  border: 1px solid #160e6f;
+  border-radius: 6px;
+  color: #ffffff;
+  background: #160e6f;
+  cursor: pointer;
+  transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.createButton:hover {
+  transform: translateY(-1px);
+  background: #251888;
+  box-shadow: 0 4px 10px rgba(22, 14, 111, 0.16);
+}
+
 .searchBox {
   display: flex;
   width: 100%;
@@ -381,6 +408,14 @@
 
   .searchBox,
   .statusFilter {
+    width: 100%;
+  }
+
+  .toolbarActions {
+    width: 100%;
+  }
+
+  .toolbarActions .statusFilter {
     width: 100%;
   }
 
