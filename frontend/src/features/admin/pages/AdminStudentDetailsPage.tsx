@@ -11,6 +11,7 @@ export function AdminStudentDetailsPage() {
   const [student, setStudent] = useState<StudentRecord | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [showSuspendDialog, setShowSuspendDialog] = useState(false)
+  const [showUnsuspendDialog, setShowUnsuspendDialog] = useState(false)
   const [suspensionDays, setSuspensionDays] = useState('')
 
   useEffect(() => {
@@ -30,7 +31,9 @@ export function AdminStudentDetailsPage() {
 
   const suspend = async () => {
     if (!suspensionDays || Number(suspensionDays) < 1) return
-    await setStatus('Suspended')
+    if (!id) return
+    const updated = await adminService.updateStudentRecord(id, { status: 'Suspended', suspensionDaysRemaining: Number(suspensionDays) })
+    if (updated) setStudent(updated)
     setShowSuspendDialog(false)
     setSuspensionDays('')
   }
@@ -77,14 +80,15 @@ export function AdminStudentDetailsPage() {
             </InfoCard>
           </div>
           <footer className={styles.actions}>
-            <button type="button" className={styles.editButton} onClick={() => navigate(`/admin/manage-students/${student.id}/edit`)}><Edit3 size={17} />Edit Profile</button>
-            <button type="button" className={styles.suspendButton} onClick={() => setShowSuspendDialog(true)} disabled={student.status === 'Deactivated'}>Suspend</button>
+            <button type="button" className={styles.editButton} onClick={() => navigate(`/admin/manage-students/${student.id}/edit`)} disabled={student.status === 'Deactivated'}><Edit3 size={17} />Edit Profile</button>
+            <button type="button" className={styles.suspendButton} onClick={() => student.status === 'Suspended' ? setShowUnsuspendDialog(true) : setShowSuspendDialog(true)} disabled={student.status === 'Deactivated'}>{student.status === 'Suspended' ? 'Unsuspend' : 'Suspend'}</button>
             <button type="button" className={styles.deactivateButton} onClick={() => setStatus('Deactivated')} disabled={student.status === 'Deactivated'}>Deactivate</button>
           </footer>
         </section>
       </div>
 
       {showSuspendDialog && <div className={styles.dialogOverlay} onClick={() => setShowSuspendDialog(false)}><section className={styles.dialog} onClick={(event) => event.stopPropagation()}><header className={styles.dialogHeader}><div><h2>Suspend Student Account</h2><p>Set the suspension duration for {student.fullName}.</p></div><button type="button" className={styles.closeButton} aria-label="Close" onClick={() => setShowSuspendDialog(false)}><X size={19} /></button></header><div className={styles.dialogBody}><label>Suspension Duration (Days)<input autoFocus min="1" type="number" inputMode="numeric" value={suspensionDays} onChange={(event) => setSuspensionDays(event.target.value.replace(/\D/g, ''))} placeholder="Enter number of days" /></label><p className={styles.dialogHint}>The account will be marked as suspended for the selected duration.</p></div><footer className={styles.dialogActions}><button type="button" className={styles.cancelButton} onClick={() => setShowSuspendDialog(false)}>Cancel</button><button type="button" className={styles.confirmSuspend} onClick={suspend} disabled={!suspensionDays}>Suspend Account</button></footer></section></div>}
+      {showUnsuspendDialog && <div className={styles.dialogOverlay} onClick={() => setShowUnsuspendDialog(false)}><section className={styles.dialog} onClick={(event) => event.stopPropagation()}><header className={styles.dialogHeader}><div><h2>Unsuspend Student Account</h2><p>{student.fullName} has {student.suspensionDaysRemaining ?? 0} day(s) remaining on their suspension.</p></div><button type="button" className={styles.closeButton} aria-label="Close" onClick={() => setShowUnsuspendDialog(false)}><X size={19} /></button></header><div className={styles.dialogBody}><p className={styles.dialogHint}>Are you sure you want to restore this account now?</p></div><footer className={styles.dialogActions}><button type="button" className={styles.cancelButton} onClick={() => setShowUnsuspendDialog(false)}>Cancel</button><button type="button" className={styles.confirmSuspend} onClick={async () => { if (!id) return; const updated = await adminService.updateStudentRecord(id, { status: 'Active', suspensionDaysRemaining: undefined }); if (updated) setStudent(updated); setShowUnsuspendDialog(false) }}>Confirm Unsuspend</button></footer></section></div>}
     </main>
   )
 }

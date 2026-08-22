@@ -265,11 +265,13 @@
   background: #21167b;
   font-weight: 600;
   cursor: pointer;
-  transition: background 160ms ease, transform 160ms ease;
+  transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
 .primaryButton:hover {
-  background: #17105f;
+  color: #21167b;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px #21167b;
 }
 
 .primaryButton:active {
@@ -280,6 +282,7 @@
 .activeRole:focus-visible,
 .googleButton:focus-visible,
 .primaryButton:focus-visible,
+.backButton:focus-visible,
 .loginPrompt a:focus-visible,
 .legalNotice a:focus-visible {
   outline: 3px solid rgba(33, 24, 128, 0.25);
@@ -287,8 +290,30 @@
 }
 
 .stepHeader {
+  position: relative;
   margin-bottom: 17px;
   text-align: center;
+}
+
+.backButton {
+  width: 100%;
+  height: 51px;
+  margin-top: -2px;
+  padding: 0 16px;
+  border: 1px solid #17116f;
+  border-radius: 2px;
+  color: #17116f;
+  background: #ffffff;
+  font-size: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.backButton:hover {
+  color: #ffffff;
+  background: #21167b;
+  transform: translateY(-1px);
 }
 
 .stepHeader h1 {

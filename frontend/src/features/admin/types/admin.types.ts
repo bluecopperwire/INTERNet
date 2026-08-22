@@ -5,6 +5,7 @@ export interface BaseRecord {
   fullName: string
   email: string
   status: AccountStatus
+  suspensionDaysRemaining?: number
   dateCreated: string
   profileImageUrl?: string
 }
@@ -58,6 +59,7 @@ export interface EmployerRecord extends BaseRecord {
   contactMiddleName?: string
   contactLastName?: string
   contactSuffix?: string
+  contactEmail?: string
   contactNumber: string
   verificationStatus: 'Verified' | 'Pending' | 'Rejected'
 }
@@ -78,6 +80,7 @@ export interface QCPesoRecord extends BaseRecord {
   position: string
   department: string
   contactNumber: string
+  contactEmail?: string
   verificationStatus: 'Approved' | 'Pending' | 'Rejected'
 }
 

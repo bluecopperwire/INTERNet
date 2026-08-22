@@ -118,15 +118,21 @@
 }
 
 .nameGrid {
+  display: grid;
   grid-template-columns: 1.1fr 1.1fr 1.1fr 0.7fr;
+  gap: 18px 24px;
 }
 
 .addressGrid {
+  display: grid;
   grid-template-columns: 1.3fr 1fr 0.8fr 1fr;
+  gap: 18px 24px;
 }
 
 .personalDetailsGrid {
+  display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px 24px;
 }
 
 .academicGrid {

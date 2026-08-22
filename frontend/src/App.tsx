@@ -67,7 +67,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LoginPage />} />
-        <Route path="/sign-up/:role" element={<SignUpPage />} />
+        <Route path="/sign-up" element={<SignUpPage />} />
 
         {/* Intern Seeker Routes */}
         <Route path="/intern-seeker" element={<InternSeekerLayout />}>

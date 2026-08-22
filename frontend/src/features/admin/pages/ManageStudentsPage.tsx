@@ -43,9 +43,9 @@ export function ManageStudentsPage() {
     <section className={styles.mainContent}>
       <div className={styles.summaryGrid}>
         <SummaryCard label="Total Student Accounts" value={String(accountSummary.total)} />
-        <SummaryCard label="Active Accounts" value={String(accountSummary.active)} />
-        <SummaryCard label="Suspended Accounts" value={String(accountSummary.suspended)} />
-        <SummaryCard label="Deactivated Accounts" value={String(accountSummary.deactivated)} />
+        <SummaryCard label="Active Student Accounts" value={String(accountSummary.active)} />
+        <SummaryCard label="Suspended Student Accounts" value={String(accountSummary.suspended)} />
+        <SummaryCard label="Deactivated Student Accounts" value={String(accountSummary.deactivated)} />
       </div>
 
       <section className={styles.managementCard}>

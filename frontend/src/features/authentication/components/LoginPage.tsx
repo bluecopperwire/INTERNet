@@ -75,10 +75,10 @@ function LoginPage() {
             </>
           )}
 
-          {credentials.role !== 'company' && (
+          {credentials.role === 'intern-seeker' && (
             <p className={styles.signupPrompt}>
               Don&apos;t have an account?{' '}
-              <Link to={`/sign-up/${credentials.role}`}>Sign Up</Link>
+              <Link to="/sign-up">Sign Up</Link>
             </p>
           )}
 

@@ -7,7 +7,7 @@ export interface LoginCredentials {
   role: UserRole
 }
 
-export type SignUpRole = Extract<UserRole, 'intern-seeker' | 'qcpeso'>
+export type SignUpRole = Extract<UserRole, 'intern-seeker'>
 
 export interface SignUpData {
   role: SignUpRole
@@ -26,8 +26,4 @@ export interface SignUpData {
   district: string
   city: string
   inquiryChannel: string
-  employeeIdNumber: string
-  position: string
-  department: string
-  employeeIdFile: File | null
 }

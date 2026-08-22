@@ -83,6 +83,7 @@ export function AdminStudentProfileEditorPage() {
   }
 
   if (isLoading) return <main className={styles.loading}>Loading student profile...</main>
+  if (student?.status === 'Deactivated') return <main className={styles.loading}>Profile editing is unavailable for deactivated accounts.</main>
   if (!student || !formData) return <main className={styles.loading}>Student record not found.</main>
 
   return (

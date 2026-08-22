@@ -45,6 +45,7 @@ export function AdminQCPesoDetailsPage() {
   const navigate = useNavigate()
   const [record, setRecord] = useState<QCPesoRecord | null>(null)
   const [suspending, setSuspending] = useState(false)
+  const [unsuspending, setUnsuspending] = useState(false)
 
   useEffect(() => {
     if (id) {
@@ -92,7 +93,7 @@ export function AdminQCPesoDetailsPage() {
                 <div>
                   <span>
                     <Mail size={16} />
-                    {record.email}
+                    {record.contactEmail || record.email}
                   </span>
                   <span>
                     <Phone size={16} />
@@ -115,7 +116,7 @@ export function AdminQCPesoDetailsPage() {
             </Card>
 
             <Card icon={<Mail size={21} />} title="Contact Information">
-              <Row label="Email" value={record.email} />
+              <Row label="Email" value={record.contactEmail || record.email} />
               <Row label="Mobile Number" value={record.contactNumber} />
             </Card>
 
@@ -131,6 +132,7 @@ export function AdminQCPesoDetailsPage() {
               type="button"
               className={detailStyles.editButton}
               onClick={() => navigate(`/admin/manage-qcpeso/${record.id}/edit`)}
+              disabled={record.status === 'Deactivated'}
             >
               <Edit3 size={17} />
               Edit Profile
@@ -139,9 +141,9 @@ export function AdminQCPesoDetailsPage() {
               type="button"
               className={detailStyles.suspendButton}
               disabled={record.status === 'Deactivated'}
-              onClick={() => setSuspending(true)}
+              onClick={() => record.status === 'Suspended' ? setUnsuspending(true) : setSuspending(true)}
             >
-              Suspend
+              {record.status === 'Suspended' ? 'Unsuspend' : 'Suspend'}
             </button>
             <button
               type="button"
@@ -158,12 +160,14 @@ export function AdminQCPesoDetailsPage() {
           <SuspendDialog
             subject={name}
             onClose={() => setSuspending(false)}
-            onConfirm={() => {
-              updateStatus('Suspended')
+            onConfirm={(days) => {
+              if (!id) return
+              adminService.updateQCPesoRecord(id, { status: 'Suspended', suspensionDaysRemaining: days }).then((updated) => { if (updated) setRecord(updated) })
               setSuspending(false)
             }}
           />
         )}
+        {unsuspending && <UnsuspendDialog subject={name} days={record.suspensionDaysRemaining ?? 0} onClose={() => setUnsuspending(false)} onConfirm={() => { if (!id) return; adminService.updateQCPesoRecord(id, { status: 'Active', suspensionDaysRemaining: undefined }).then((updated) => { if (updated) setRecord(updated) }); setUnsuspending(false) }} />}
       </div>
     </main>
   )
@@ -185,6 +189,10 @@ export function AdminQCPesoEditorPage() {
 
   if (!form) {
     return <main className={formStyles.loading}>Loading QC PESO profile...</main>
+  }
+
+  if (form.status === 'Deactivated') {
+    return <main className={formStyles.loading}>Profile editing is unavailable for deactivated accounts.</main>
   }
 
   const change = (key: keyof QCPesoRecord, value: string) => {
@@ -351,8 +359,8 @@ export function AdminQCPesoEditorPage() {
                   required
                   type="email"
                   placeholder="Enter email address"
-                  value={form.email}
-                  onChange={(e) => change('email', e.target.value)}
+                  value={form.contactEmail || form.email}
+                  onChange={(e) => change('contactEmail', e.target.value)}
                 />
               </Field>
 
@@ -426,7 +434,7 @@ function SuspendDialog({
 }: {
   subject: string
   onClose: () => void
-  onConfirm: () => void
+  onConfirm: (days: number) => void
 }) {
   const [days, setDays] = useState('')
 
@@ -471,7 +479,7 @@ function SuspendDialog({
             type="button"
             className={detailStyles.confirmSuspend}
             disabled={!days}
-            onClick={onConfirm}
+            onClick={() => onConfirm(Number(days))}
           >
             Suspend Account
           </button>
@@ -479,6 +487,10 @@ function SuspendDialog({
       </section>
     </div>
   )
+}
+
+function UnsuspendDialog({ subject, days, onClose, onConfirm }: { subject: string; days: number; onClose: () => void; onConfirm: () => void }) {
+  return <div className={detailStyles.dialogOverlay} onClick={onClose}><section className={detailStyles.dialog} onClick={(event) => event.stopPropagation()}><header className={detailStyles.dialogHeader}><div><h2>Unsuspend QC PESO Account</h2><p>{subject} has {days} day(s) remaining on their suspension.</p></div><button type="button" className={detailStyles.closeButton} onClick={onClose} aria-label="Close"><X size={20} /></button></header><div className={detailStyles.dialogBody}><p className={detailStyles.dialogHint}>Are you sure you want to restore this account now?</p></div><footer className={detailStyles.dialogActions}><button type="button" className={detailStyles.cancelButton} onClick={onClose}>Cancel</button><button type="button" className={detailStyles.confirmSuspend} onClick={onConfirm}>Confirm Unsuspend</button></footer></section></div>
 }
 
 function Card({

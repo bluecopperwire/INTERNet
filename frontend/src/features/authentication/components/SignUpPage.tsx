@@ -1,14 +1,9 @@
 import { type FormEvent, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import googleLogo from '../../../assets/google-logo.svg'
 import leftPanelArtwork from '../../../assets/login_left-panel.svg'
-import type { SignUpData, SignUpRole } from '../types/auth.types'
+import type { SignUpData } from '../types/auth.types'
 import styles from './SignUpPage.module.css'
-
-const SIGN_UP_ROLES: ReadonlyArray<{ label: string; value: SignUpRole }> = [
-  { label: 'Intern Seeker', value: 'intern-seeker' },
-  { label: 'QCPESO', value: 'qcpeso' },
-]
 
 const INITIAL_DATA: SignUpData = {
   role: 'intern-seeker',
@@ -27,27 +22,25 @@ const INITIAL_DATA: SignUpData = {
   district: '',
   city: '',
   inquiryChannel: '',
-  employeeIdNumber: '',
-  position: '',
-  department: '',
-  employeeIdFile: null,
 }
 
-const isSignUpRole = (role: string | undefined): role is SignUpRole =>
-  role === 'intern-seeker' || role === 'qcpeso'
+const NAME_PATTERN = /^[A-Za-z ]+$/
+const sanitizeName = (value: string) => value.replace(/[^A-Za-z ]/g, '')
 
 function SignUpPage() {
-  const { role } = useParams()
   const [step, setStep] = useState(0)
-  const [data, setData] = useState<SignUpData>({
-    ...INITIAL_DATA,
-    role: isSignUpRole(role) ? role : 'intern-seeker',
-  })
+  const [data, setData] = useState<SignUpData>(INITIAL_DATA)
   const [error, setError] = useState('')
 
   const updateField = <Field extends keyof SignUpData>(field: Field, value: SignUpData[Field]) => {
     setData((current) => ({ ...current, [field]: value }))
     setError('')
+  }
+
+  const updateNameField = (field: 'firstName' | 'middleName' | 'lastName' | 'extensionName', value: string) => {
+    const sanitizedValue = sanitizeName(value)
+    setData((current) => ({ ...current, [field]: sanitizedValue }))
+    setError(value !== sanitizedValue ? 'Names can only contain letters.' : '')
   }
 
   const continueFromAccount = (event: FormEvent<HTMLFormElement>) => {
@@ -75,8 +68,13 @@ function SignUpPage() {
   const continueFromProfile = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    if (!data.firstName.trim() || !data.middleName.trim() || !data.lastName.trim()) {
-      setError('Please provide your complete name.')
+    if (!data.firstName.trim() || !data.lastName.trim()) {
+      setError('Please provide your first and last name.')
+      return
+    }
+
+    if (![data.firstName, data.middleName, data.lastName, data.extensionName].filter(Boolean).every((name) => NAME_PATTERN.test(name.trim()))) {
+      setError('Names can only contain letters.')
       return
     }
 
@@ -109,27 +107,6 @@ function SignUpPage() {
     setError('')
   }
 
-  const saveEmployeeProfile = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-
-    if (
-      !data.employeeIdNumber.trim() ||
-      !data.position ||
-      !data.department ||
-      !data.employeeIdFile
-    ) {
-      setError('Please complete all employee verification fields.')
-      return
-    }
-
-    if (!data.employeeIdFile.type.startsWith('image/')) {
-      setError('Please upload your employee ID as an image file.')
-      return
-    }
-
-    setError('')
-  }
-
   return (
     <main className={styles.page}>
       <aside className={styles.artPanel} aria-hidden="true">
@@ -151,23 +128,18 @@ function SignUpPage() {
               data={data}
               error={error}
               onChange={updateField}
+              onNameChange={updateNameField}
               onSubmit={continueFromProfile}
+              onBack={() => setStep(0)}
             />
           )}
-          {step === 2 && data.role === 'intern-seeker' && (
+          {step === 2 && (
             <LocationStep
               data={data}
               error={error}
               onChange={updateField}
               onSubmit={saveProfile}
-            />
-          )}
-          {step === 2 && data.role === 'qcpeso' && (
-            <EmployeeStep
-              data={data}
-              error={error}
-              onChange={updateField}
-              onSubmit={saveEmployeeProfile}
+              onBack={() => setStep(1)}
             />
           )}
 
@@ -182,39 +154,23 @@ interface StepProps {
   data: SignUpData
   error: string
   onChange: <Field extends keyof SignUpData>(field: Field, value: SignUpData[Field]) => void
+  onNameChange?: (field: 'firstName' | 'middleName' | 'lastName' | 'extensionName', value: string) => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
+  onBack?: () => void
 }
 
 function AccountStep({ data, error, onChange, onSubmit }: StepProps) {
   return (
     <>
-      <div className={styles.roleTabs} aria-label="Select account type" role="group">
-        {SIGN_UP_ROLES.map((role) => (
-          <button
-            className={data.role === role.value ? styles.activeRole : styles.roleButton}
-            key={role.value}
-            onClick={() => onChange('role', role.value)}
-            type="button"
-            aria-pressed={data.role === role.value}
-          >
-            {role.label}
-          </button>
-        ))}
-      </div>
-
       <h1>Get more opportunities</h1>
 
-      {data.role === 'intern-seeker' && (
-        <>
-          <button className={styles.googleButton} type="button">
-            <img src={googleLogo} alt="" />
-            <span>Sign Up with Google</span>
-          </button>
-          <div className={styles.divider}>
-            <span>Or sign up with email</span>
-          </div>
-        </>
-      )}
+      <button className={styles.googleButton} type="button">
+        <img src={googleLogo} alt="" />
+        <span>Sign Up with Google</span>
+      </button>
+      <div className={styles.divider}>
+        <span>Or sign up with email</span>
+      </div>
 
       <p className={styles.loginPrompt}>
         Already have an account? <Link to="/">Login</Link>
@@ -257,7 +213,7 @@ function AccountStep({ data, error, onChange, onSubmit }: StepProps) {
   )
 }
 
-function BasicProfileStep({ data, error, onChange, onSubmit }: StepProps) {
+function BasicProfileStep({ data, error, onChange, onNameChange, onSubmit, onBack }: StepProps) {
   return (
     <>
       <header className={styles.stepHeader}>
@@ -265,21 +221,22 @@ function BasicProfileStep({ data, error, onChange, onSubmit }: StepProps) {
         <p>Let us know who you are</p>
       </header>
       <form className={styles.form} onSubmit={onSubmit} noValidate>
-        <TextField id="first-name" label="First Name" required placeholder="Enter your first name" value={data.firstName} onChange={(value) => onChange('firstName', value)} />
-        <TextField id="middle-name" label="Middle Name" required placeholder="Enter your middle name" value={data.middleName} onChange={(value) => onChange('middleName', value)} />
-        <TextField id="last-name" label="Last Name" required placeholder="Enter your last name" value={data.lastName} onChange={(value) => onChange('lastName', value)} />
-        <TextField id="extension-name" label="Extension Name" placeholder="Enter your extension name" value={data.extensionName} onChange={(value) => onChange('extensionName', value)} />
+        <TextField id="first-name" label="First Name" required placeholder="Enter your first name" value={data.firstName} onChange={(value) => onNameChange?.('firstName', value)} />
+        <TextField id="middle-name" label="Middle Name" placeholder="Enter your middle name" value={data.middleName} onChange={(value) => onNameChange?.('middleName', value)} />
+        <TextField id="last-name" label="Last Name" required placeholder="Enter your last name" value={data.lastName} onChange={(value) => onNameChange?.('lastName', value)} />
+        <TextField id="extension-name" label="Extension Name" placeholder="Enter your extension name" value={data.extensionName} onChange={(value) => onNameChange?.('extensionName', value)} />
         <SelectField id="sex" label="Sex" required value={data.sex} onChange={(value) => onChange('sex', value)} options={['Female', 'Male', 'Prefer not to say']} />
         <TextField id="birth-date" label="Birth Date" required type="date" value={data.birthDate} onChange={(value) => onChange('birthDate', value)} />
         <FormError error={error} />
         <button className={styles.primaryButton} type="submit">Continue</button>
+        <BackButton onClick={onBack} />
         <p className={styles.pageNumber}>Page 1 of 2</p>
       </form>
     </>
   )
 }
 
-function LocationStep({ data, error, onChange, onSubmit }: StepProps) {
+function LocationStep({ data, error, onChange, onSubmit, onBack }: StepProps) {
   return (
     <>
       <header className={styles.stepHeader}>
@@ -295,55 +252,18 @@ function LocationStep({ data, error, onChange, onSubmit }: StepProps) {
         <SelectField id="inquiry-channel" label="Inquiry via" required value={data.inquiryChannel} onChange={(value) => onChange('inquiryChannel', value)} options={['QC PESO Office', 'School', 'Social Media', 'Referral', 'Other']} />
         <FormError error={error} />
         <button className={styles.primaryButton} type="submit">Save and Continue</button>
+        <BackButton onClick={onBack} />
         <p className={styles.pageNumber}>Page 2 of 2</p>
       </form>
     </>
   )
 }
 
-function EmployeeStep({ data, error, onChange, onSubmit }: StepProps) {
+function BackButton({ onClick }: { onClick?: () => void }) {
   return (
-    <>
-      <header className={styles.stepHeader}>
-        <h1>QCPESO Employee Information</h1>
-        <p>Verify your employee status</p>
-      </header>
-      <form className={styles.form} onSubmit={onSubmit} noValidate>
-        <TextField
-          id="employee-id-number"
-          label="Employee ID Number"
-          required
-          placeholder="Enter your Employee ID Number"
-          value={data.employeeIdNumber}
-          onChange={(value) => onChange('employeeIdNumber', value)}
-        />
-        <SelectField
-          id="position"
-          label="Position/Designation"
-          required
-          value={data.position}
-          onChange={(value) => onChange('position', value)}
-          options={['Administrative Staff', 'Coordinator', 'Employment Officer', 'Supervisor']}
-        />
-        <SelectField
-          id="department"
-          label="Department/Office"
-          required
-          value={data.department}
-          onChange={(value) => onChange('department', value)}
-          options={['Administration', 'Employment Services', 'Labor Market Information', 'Training and Development']}
-        />
-        <FileField
-          id="employee-id-file"
-          label="Upload Employee ID"
-          file={data.employeeIdFile}
-          onChange={(file) => onChange('employeeIdFile', file)}
-        />
-        <FormError error={error} />
-        <button className={styles.primaryButton} type="submit">Continue</button>
-        <p className={styles.pageNumber}>Page 2 of 2</p>
-      </form>
-    </>
+    <button type="button" className={styles.backButton} onClick={onClick}>
+      Back
+    </button>
   )
 }
 
@@ -394,32 +314,6 @@ function SelectField({ id, label, value, onChange, required = false, options }: 
         <option value="" disabled>Choose Option</option>
         {options.map((option) => <option key={option} value={option}>{option}</option>)}
       </select>
-    </div>
-  )
-}
-
-interface FileFieldProps {
-  id: string
-  label: string
-  file: File | null
-  onChange: (file: File | null) => void
-}
-
-function FileField({ id, label, file, onChange }: FileFieldProps) {
-  return (
-    <div className={styles.field}>
-      <label htmlFor={id}>{label}<span> *</span></label>
-      <label className={`${styles.fileControl} ${file ? styles.hasFile : ''}`} htmlFor={id}>
-        {file?.name ?? 'Input Employee ID Image'}
-      </label>
-      <input
-        className={styles.fileInput}
-        id={id}
-        type="file"
-        accept="image/*"
-        required
-        onChange={(event) => onChange(event.target.files?.[0] ?? null)}
-      />
     </div>
   )
 }
