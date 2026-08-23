@@ -6,8 +6,8 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Application } from '../applications/application.entity';
-import { InquiryMethod } from '../common/enums/student-inquiry-method.enum';
+import { Application } from '../../applications/application.entity';
+import { InquiryMethod } from '../../common/enums/student-inquiry-method.enum';
 
 @Entity('student')
 export class Student {
@@ -16,7 +16,7 @@ export class Student {
 
   @Column({
     name: 'user_account_id',
-    type: 'int', 
+    type: 'int',
   })
   userAccountId: number;
 
@@ -27,17 +27,24 @@ export class Student {
   firstName: string;
 
   @Column({
+    name: 'middle_name',
+    type: 'text',
+    nullable: true,
+  })
+  middleName: string | null;
+
+  @Column({
     name: 'last_name',
     type: 'text',
   })
   lastName: string;
 
-
   @Column({
     name: 'extension_name',
     type: 'text',
+    nullable: true,
   })
-  extensionName: string;
+  extensionName: string | null;
 
   @Column({
     name: 'sex',
@@ -46,7 +53,7 @@ export class Student {
   sex: string;
 
   @CreateDateColumn({
-    name: 'birth_date'
+    name: 'birth_date',
   })
   birthDate: Date;
 
@@ -65,8 +72,9 @@ export class Student {
   @Column({
     name: 'linkedin_url',
     type: 'text',
+    nullable: true,
   })
-  linkedinUrl: string;
+  linkedinUrl: string | null;
 
   @Column({
     name: 'address_line',
@@ -85,7 +93,7 @@ export class Student {
     type: 'text',
   })
   addressDistrict: string;
-  
+
   @Column({
     name: 'address_city',
     type: 'text',
@@ -95,26 +103,27 @@ export class Student {
   @Column({
     name: 'inquiry_method',
     type: 'enum',
-    enum: InquiryMethod
+    enum: InquiryMethod,
   })
   inquiryMethod: InquiryMethod;
 
   @Column({
     name: 'photo_file_path',
     type: 'text',
+    nullable: true,
   })
-  photoFilePath: string;
-  
+  photoFilePath: string | null;
+
   @CreateDateColumn({
     name: 'created_at',
   })
   createdAt: Date;
-  
+
   @UpdateDateColumn({
     name: 'updated_at',
   })
   updatedAt: Date;
 
-  @OneToMany(() => Application, application => application.student)
+  @OneToMany(() => Application, (application) => application.student)
   applications: Application[];
 }

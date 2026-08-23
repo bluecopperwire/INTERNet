@@ -1,13 +1,18 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
-  Logger,
 } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { Student } from './students.entity';
-import { StudentProfileUpdateDto, StudentRequirementUploadDto } from './students.dto';
+import { existsSync, unlinkSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { Student } from '../entities/student.entity';
+import {
+  StudentProfileUpdateDto,
+  StudentRequirementUploadDto,
+} from '../dto/students.dto';
 
 @Injectable()
 export class StudentsService {
@@ -84,8 +89,10 @@ export class StudentsService {
                srs.submitted_at,
                srs.updated_at
         FROM public.student_requirement_submission srs
+        JOIN public.requirement_type rt
+          ON rt.requirement_type_id = srs.requirement_type_id
         WHERE srs.student_id = $1
-          AND srs.requirement_type_id = 3
+          AND rt.requirement_type_name = 'curriculum_vitae_resume'
         ORDER BY srs.updated_at DESC
         LIMIT 1
       `,
@@ -307,7 +314,6 @@ export class StudentsService {
   }
 
   async getStudentApplicationStatus(studentId: number, applicationId: number) {
-    Logger.log(`${studentId}, ${applicationId}`);
     const [application] = await this.dataSource.query(
       `
         SELECT a.application_id,
@@ -331,98 +337,147 @@ export class StudentsService {
     return application;
   }
 
-  // Upserts the student's requirement rows using the current requirement_type catalog.
-  async uploadStudentRequirements(
+  // Accepts physical multipart file upload, saves under backend/uploads/requirements, and persists metadata in DB.
+  async uploadRequirementFile(
     studentId: number,
-    submissions: StudentRequirementUploadDto[],
+    file: Express.Multer.File,
+    dto: StudentRequirementUploadDto,
   ) {
+    if (!file) {
+      throw new BadRequestException(
+        'A file is required for requirement upload',
+      );
+    }
+
     const studentExists = await this.studentRepo.findOne({
       where: { studentId },
     });
 
     if (!studentExists) {
+      // Clean up orphaned uploaded file if student does not exist
+      if (file.path && existsSync(file.path)) {
+        unlinkSync(file.path);
+      }
       throw new NotFoundException('Student not found');
     }
 
-    const results: any[] = [];
+    const normalizedType = this.normalizeRequirementType(dto.requirementType);
+    const requirementDisplayName =
+      dto.requirementName?.trim() || file.originalname;
+    const publicRelativePath = `/uploads/requirements/${file.filename}`;
 
-    for (const submission of submissions) {
-      const normalizedType = this.normalizeRequirementType(submission.requirementType);
+    const requirementTypeRecord = await this.dataSource.query(
+      `
+        SELECT requirement_type_id, requirement_type_name
+        FROM public.requirement_type
+        WHERE lower(requirement_type_name) = lower($1)
+      `,
+      [normalizedType],
+    );
 
-      const requirementTypeRecord = await this.dataSource.query(
+    let requirementTypeId: number;
+    if (requirementTypeRecord.length) {
+      requirementTypeId = requirementTypeRecord[0].requirement_type_id;
+    } else {
+      const [inserted] = await this.dataSource.query(
         `
-          SELECT requirement_type_id, requirement_type_name
-          FROM public.requirement_type
-          WHERE lower(requirement_type_name) = lower($1)
+          INSERT INTO public.requirement_type (requirement_type_name)
+          VALUES ($1)
+          RETURNING requirement_type_id, requirement_type_name
         `,
         [normalizedType],
       );
-
-      let requirementTypeId: number;
-      if (requirementTypeRecord.length) {
-        requirementTypeId = requirementTypeRecord[0].requirement_type_id;
-      } else {
-        const [inserted] = await this.dataSource.query(
-          `
-            INSERT INTO public.requirement_type (requirement_type_name)
-            VALUES ($1)
-            RETURNING requirement_type_id, requirement_type_name
-          `,
-          [normalizedType],
-        );
-        requirementTypeId = inserted.requirement_type_id;
-      }
-
-      const [existing] = await this.dataSource.query(
-        `
-          SELECT student_requirement_submission_id
-          FROM public.student_requirement_submission
-          WHERE student_id = $1 AND requirement_type_id = $2
-        `,
-        [studentId, requirementTypeId],
-      );
-
-      let row;
-      if (existing) {
-        [row] = await this.dataSource.query(
-          `
-            UPDATE public.student_requirement_submission
-            SET requirement_name = $3,
-                requirement_file_path = $4,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE student_requirement_submission_id = $2
-            RETURNING *
-          `,
-          [studentId, existing.student_requirement_submission_id, submission.requirementName, submission.requirementFilePath],
-        );
-      } else {
-        [row] = await this.dataSource.query(
-          `
-            INSERT INTO public.student_requirement_submission (
-              student_id,
-              requirement_type_id,
-              requirement_name,
-              requirement_file_path
-            ) VALUES ($1, $2, $3, $4)
-            RETURNING *
-          `,
-          [studentId, requirementTypeId, submission.requirementName, submission.requirementFilePath],
-        );
-      }
-
-      results.push({
-        requirementType: normalizedType,
-        submission: row,
-      });
+      requirementTypeId = inserted.requirement_type_id;
     }
 
-    return results;
+    const [existing] = await this.dataSource.query(
+      `
+        SELECT student_requirement_submission_id, requirement_file_path
+        FROM public.student_requirement_submission
+        WHERE student_id = $1 AND requirement_type_id = $2
+      `,
+      [studentId, requirementTypeId],
+    );
+
+    let row: any;
+    if (existing) {
+      const existingPath = String(existing.requirement_file_path ?? '');
+      // Remove old file from disk if path starts with /uploads/requirements
+      if (existingPath.startsWith('/uploads/requirements/')) {
+        const oldFilename = existingPath.replace('/uploads/requirements/', '');
+        const oldFullPath = resolve(
+          process.cwd(),
+          'uploads',
+          'requirements',
+          oldFilename,
+        );
+        if (existsSync(oldFullPath)) {
+          try {
+            unlinkSync(oldFullPath);
+          } catch {
+            // Ignore error if file already removed
+          }
+        }
+      }
+
+      const updateResult = await this.dataSource.query(
+        `
+          UPDATE public.student_requirement_submission
+          SET requirement_name = $1,
+              requirement_file_path = $2,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE student_requirement_submission_id = $3 AND student_id = $4
+          RETURNING *
+        `,
+        [
+          requirementDisplayName,
+          publicRelativePath,
+          existing.student_requirement_submission_id,
+          studentId,
+        ],
+      );
+      row =
+        Array.isArray(updateResult) && Array.isArray(updateResult[0])
+          ? updateResult[0][0]
+          : Array.isArray(updateResult)
+            ? updateResult[0]
+            : updateResult;
+    } else {
+      const insertResult = await this.dataSource.query(
+        `
+          INSERT INTO public.student_requirement_submission (
+            student_id,
+            requirement_type_id,
+            requirement_name,
+            requirement_file_path
+          ) VALUES ($1, $2, $3, $4)
+          RETURNING *
+        `,
+        [
+          studentId,
+          requirementTypeId,
+          requirementDisplayName,
+          publicRelativePath,
+        ],
+      );
+      row = Array.isArray(insertResult) ? insertResult[0] : insertResult;
+    }
+
+    return {
+      requirementType: normalizedType,
+      submission: row,
+    };
   }
 
   // Records the assignment clock-in for the current day and validates the assignment ownership.
-  async timeInDtr(studentId: number, dto: { internshipAssignmentId: number; timeIn?: string }) {
-    const assignment = await this.validateAssignmentForStudent(studentId, dto.internshipAssignmentId);
-    const attendanceDate = new Date();
+  async timeInDtr(
+    studentId: number,
+    dto: { internshipAssignmentId: number; timeIn?: string },
+  ) {
+    const assignment = await this.validateAssignmentForStudent(
+      studentId,
+      dto.internshipAssignmentId,
+    );
     const timeInValue = dto.timeIn ?? this.currentClockTime();
 
     const [record] = await this.dataSource.query(
@@ -442,15 +497,25 @@ export class StudentsService {
           updated_at = CURRENT_TIMESTAMP
         RETURNING *
       `,
-      [assignment.internship_assignment_id, timeInValue, this.resolveTimeInStatus(timeInValue)],
+      [
+        assignment.internship_assignment_id,
+        timeInValue,
+        this.resolveTimeInStatus(timeInValue),
+      ],
     );
 
     return record;
   }
 
   // Closes the same day attendance row and computes the rendered hours from the in/out timestamps.
-  async timeOutDtr(studentId: number, dto: { internshipAssignmentId: number; timeOut?: string }) {
-    const assignment = await this.validateAssignmentForStudent(studentId, dto.internshipAssignmentId);
+  async timeOutDtr(
+    studentId: number,
+    dto: { internshipAssignmentId: number; timeOut?: string },
+  ) {
+    const assignment = await this.validateAssignmentForStudent(
+      studentId,
+      dto.internshipAssignmentId,
+    );
     const [record] = await this.dataSource.query(
       `
         SELECT *
@@ -461,13 +526,18 @@ export class StudentsService {
     );
 
     if (!record) {
-      throw new UnprocessableEntityException('A time-in entry is required before time-out');
+      throw new UnprocessableEntityException(
+        'A time-in entry is required before time-out',
+      );
     }
 
     const timeOutValue = dto.timeOut ?? this.currentClockTime();
-    const hoursRendered = this.calculateHoursRendered(record.time_in, timeOutValue);
+    const hoursRendered = this.calculateHoursRendered(
+      String(record.time_in),
+      timeOutValue,
+    );
 
-    const [updated] = await this.dataSource.query(
+    const result = await this.dataSource.query(
       `
         UPDATE public.attendance_record
         SET time_out = $2,
@@ -477,8 +547,20 @@ export class StudentsService {
         WHERE attendance_record_id = $1
         RETURNING *
       `,
-      [record.attendance_record_id, timeOutValue, hoursRendered, hoursRendered > 0 ? 'complete' : 'incomplete'],
+      [
+        record.attendance_record_id,
+        timeOutValue,
+        hoursRendered,
+        hoursRendered > 0 ? 'complete' : 'incomplete',
+      ],
     );
+
+    const updated =
+      Array.isArray(result) && Array.isArray(result[0])
+        ? result[0][0]
+        : Array.isArray(result)
+          ? result[0]
+          : result;
 
     return updated;
   }
@@ -492,7 +574,7 @@ export class StudentsService {
       'curriculum vitae/resume': 'curriculum_vitae_resume',
       'curriculum-vitae-resume': 'curriculum_vitae_resume',
       'curriculum vitae': 'curriculum_vitae_resume',
-      'resume': 'curriculum_vitae_resume',
+      resume: 'curriculum_vitae_resume',
       'letter of intent': 'letter_of_intent',
       'letter-of-intent': 'letter_of_intent',
       'recommendation letter': 'recommendation_letter',
@@ -503,8 +585,10 @@ export class StudentsService {
     return map[normalized] ?? normalized;
   }
 
-  private async validateAssignmentForStudent(studentId: number, assignmentId: number) {
-    Logger.log(`${studentId}, ${assignmentId}`);
+  private async validateAssignmentForStudent(
+    studentId: number,
+    assignmentId: number,
+  ) {
     const [assignment] = await this.dataSource.query(
       `
         SELECT ia.*
@@ -517,7 +601,9 @@ export class StudentsService {
     );
 
     if (!assignment) {
-      throw new NotFoundException('No internship assignment exists for this student');
+      throw new NotFoundException(
+        'No internship assignment exists for this student',
+      );
     }
 
     return assignment;

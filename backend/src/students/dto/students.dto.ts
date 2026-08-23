@@ -1,15 +1,21 @@
+import { Type } from 'class-transformer';
 import {
   ArrayNotEmpty,
   IsArray,
   IsBoolean,
   IsDateString,
-  IsIn,
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
   Min,
+  ValidateNested,
 } from 'class-validator';
+import { YearLevel } from '../../common/enums/year-level.enum';
+import { WorkSchedule } from '../../common/enums/work-schedule.enum';
+import { CompanyType } from '../../common/enums/company-type.enum';
+import { InquiryMethod } from '../../common/enums/student-inquiry-method.enum';
 
 // DTO layer: request/response contract for the API, not the database model.
 export class StudentAcademicProfileDto {
@@ -17,9 +23,10 @@ export class StudentAcademicProfileDto {
   @IsNotEmpty()
   schoolName!: string;
 
-  @IsString()
-  @IsNotEmpty()
-  yearLevel!: string;
+  @IsEnum(YearLevel, {
+    message: `yearLevel must be one of: ${Object.values(YearLevel).join(', ')}`,
+  })
+  yearLevel!: YearLevel;
 
   @IsString()
   @IsNotEmpty()
@@ -31,19 +38,31 @@ export class InternshipPreferenceDto {
   @Min(1)
   requiredHours!: number;
 
-  @IsString()
-  @IsIn(['weekdays', 'weekends', 'flexible'])
-  availableDays!: string;
+  @IsEnum(WorkSchedule, {
+    message: `availableDays must be one of: ${Object.values(WorkSchedule).join(', ')}`,
+  })
+  availableDays!: WorkSchedule;
 
-  @IsString()
-  @IsIn(['government', 'private'])
-  preferredCompanyType!: string;
+  @IsEnum(CompanyType, {
+    message: `preferredCompanyType must be one of: ${Object.values(CompanyType).join(', ')}`,
+  })
+  preferredCompanyType!: CompanyType;
 
   @IsDateString()
   startDate!: string;
 
   @IsBoolean()
   allowsOutsidePreferredField!: boolean;
+}
+
+export class StudentPreferredIndustryDto {
+  @IsInt()
+  @Min(1)
+  industryId!: number;
+
+  @IsOptional()
+  @IsString()
+  customIndustryName?: string;
 }
 
 export class StudentProfileUpdateDto {
@@ -98,24 +117,31 @@ export class StudentProfileUpdateDto {
   @IsNotEmpty()
   addressCity!: string;
 
-  @IsString()
-  @IsIn(['walk_in', 'online', 'phone_call', 'school'])
-  inquiryMethod!: string;
+  @IsEnum(InquiryMethod, {
+    message: `inquiryMethod must be one of: ${Object.values(InquiryMethod).join(', ')}`,
+  })
+  inquiryMethod!: InquiryMethod;
 
   @IsOptional()
   @IsString()
   photoFilePath?: string;
 
   @IsOptional()
+  @ValidateNested()
+  @Type(() => StudentAcademicProfileDto)
   academic?: StudentAcademicProfileDto;
 
   @IsOptional()
+  @ValidateNested()
+  @Type(() => InternshipPreferenceDto)
   internshipPreference?: InternshipPreferenceDto;
 
   @IsOptional()
   @IsArray()
   @ArrayNotEmpty()
-  preferredIndustries?: Array<{ industryId: number; customIndustryName?: string }>;
+  @ValidateNested({ each: true })
+  @Type(() => StudentPreferredIndustryDto)
+  preferredIndustries?: StudentPreferredIndustryDto[];
 }
 
 export class StudentRequirementUploadDto {
@@ -123,13 +149,9 @@ export class StudentRequirementUploadDto {
   @IsNotEmpty()
   requirementType!: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  requirementName!: string;
-
-  @IsString()
-  @IsNotEmpty()
-  requirementFilePath!: string;
+  requirementName?: string;
 }
 
 export class StudentApplicationStatusQueryDto {
@@ -154,10 +176,4 @@ export class StudentAttendanceClockDto {
   @IsOptional()
   @IsString()
   photoFilePath?: string;
-}
-
-export class StudentRequirementUploadBatchDto {
-  @IsArray()
-  @ArrayNotEmpty()
-  submissions!: StudentRequirementUploadDto[];
 }

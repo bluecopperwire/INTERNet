@@ -9,19 +9,21 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  UploadedFile,
   UseGuards,
-  Logger,
+  UseInterceptors,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { StudentsService } from './students.service';
-import { ApplicationsService } from '../applications/applications.service';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { StudentsService } from '../services/students.service';
+import { ApplicationsService } from '../../applications/applications.service';
 import {
-  StudentApplicationStatusQueryDto,
   StudentAttendanceClockDto,
   StudentProfileUpdateDto,
-  StudentRequirementUploadBatchDto,
-} from './students.dto';
+  StudentRequirementUploadDto,
+} from '../dto/students.dto';
+import { requirementUploadOptions } from '../../storage/requirement-upload.config';
 
 @Controller('students')
 export class StudentsController {
@@ -115,22 +117,23 @@ export class StudentsController {
     @Param('applicationId', ParseIntPipe) applicationId: number,
     @CurrentUser() currentUser: any,
   ) {
-    Logger.log(`${id}, ${applicationId}`);
-    
     await this.ensureStudentAccess(id, currentUser);
     return this.studentsService.getStudentApplicationStatus(id, applicationId);
   }
 
+  // Accepts physical document upload (multipart/form-data) under backend/uploads/requirements.
   @UseGuards(JwtAuthGuard)
   @Post(':id/requirements')
+  @UseInterceptors(FileInterceptor('file', requirementUploadOptions))
   @HttpCode(HttpStatus.CREATED)
   async uploadStudentRequirement(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() currentUser: any,
-    @Body() dto: StudentRequirementUploadBatchDto,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: StudentRequirementUploadDto,
   ) {
     await this.ensureStudentAccess(id, currentUser);
-    return this.studentsService.uploadStudentRequirements(id, dto.submissions);
+    return this.studentsService.uploadRequirementFile(id, file, dto);
   }
 
   @UseGuards(JwtAuthGuard)

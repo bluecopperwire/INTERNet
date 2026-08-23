@@ -34,7 +34,7 @@ import { StudentsModule } from './students/students.module';
     UsersModule,
     StorageModule,
     ApplicationsModule,
-    StudentsModule
+    StudentsModule,
   ],
   providers: [
     {

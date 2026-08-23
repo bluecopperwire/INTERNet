@@ -5,6 +5,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { YearLevel } from '../../common/enums/year-level.enum';
 
 @Entity({ schema: 'public', name: 'student_academic_information' })
 export class StudentAcademicInformation {
@@ -17,8 +18,8 @@ export class StudentAcademicInformation {
   @Column({ name: 'school_name', type: 'text' })
   schoolName: string;
 
-  @Column({ name: 'year_level', type: 'enum', enum: ['grade_11', 'grade_12', 'first_year_college', 'second_year_college', 'third_year_college', 'fourth_year_college', 'fifth_year_college'] })
-  yearLevel: string;
+  @Column({ name: 'year_level', type: 'enum', enum: YearLevel })
+  yearLevel: YearLevel;
 
   @Column({ name: 'strand_program', type: 'text' })
   strandProgram: string;

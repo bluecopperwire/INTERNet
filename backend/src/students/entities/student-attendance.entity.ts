@@ -29,7 +29,12 @@ export class AttendanceRecord {
   @Column({ name: 'hours_rendered', type: 'numeric', nullable: true })
   hoursRendered: number | null;
 
-  @Column({ name: 'rendered_hours_status', type: 'enum', enum: ['complete', 'undertime', 'overtime', 'incomplete'], default: 'incomplete' })
+  @Column({
+    name: 'rendered_hours_status',
+    type: 'enum',
+    enum: ['complete', 'undertime', 'overtime', 'incomplete'],
+    default: 'incomplete',
+  })
   renderedHoursStatus: string;
 
   @Column({ name: 'photo_file_path', type: 'text', nullable: true })

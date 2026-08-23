@@ -19,7 +19,7 @@ export class ApplicationsService {
         .orderBy('application.updated_at', 'DESC')
         .getMany();
     } catch (error) {
-      Logger.error('Error in ApplicationsService.findByStudentId', error as any);
+      Logger.error('Error in ApplicationsService.findByStudentId', error);
       throw error;
     }
   }

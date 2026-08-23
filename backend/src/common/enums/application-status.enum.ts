@@ -6,5 +6,5 @@ export enum ApplicationStatus {
   REJECTED = 'rejected_for_referral',
   CLOSED = 'closed',
   WITHDRAWN = 'withdrawn',
-  EXPIRED = 'expired'
+  EXPIRED = 'expired',
 }

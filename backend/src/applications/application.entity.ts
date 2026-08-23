@@ -5,7 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { Student } from '../students/students.entity';
+import { Student } from '../students/entities/student.entity';
 import { ApplicationStatus } from '../common/enums/application-status.enum';
 import { StudentResponse } from '../common/enums/student-response.enum';
 
@@ -14,49 +14,49 @@ export class Application {
   @PrimaryGeneratedColumn({ name: 'application_id' })
   applicationId: number;
 
-  @ManyToOne(() => Student, student => student.applications)
+  @ManyToOne(() => Student, (student) => student.applications)
   @JoinColumn({ name: 'student_id' })
   student: Student;
 
   // @ManyToOne(() => Opportunity, opportunity => opportunity.applications)
-  // @JoinColumn({ name: 'opportunity_id' }) 
+  // @JoinColumn({ name: 'opportunity_id' })
   // opportunity: Opportunity;
 
   @Column({
     name: 'submitted_at',
-    type: 'timestamp'
+    type: 'timestamp',
   })
-  submittedAt: Date
+  submittedAt: Date;
 
   @Column({
-    name:'application_status',
+    name: 'application_status',
     type: 'enum',
-    enum: ApplicationStatus
+    enum: ApplicationStatus,
   })
   applicationStatus: ApplicationStatus;
 
   @Column({
     name: 'remark',
-    type: 'text'
+    type: 'text',
   })
-  remark!: string
-  
+  remark!: string;
+
   @Column({
     name: 'student_response',
     type: 'enum',
-    enum: StudentResponse
+    enum: StudentResponse,
   })
-  studentResponse: StudentResponse
+  studentResponse: StudentResponse;
 
   @Column({
     name: 'student_responded_at',
-    type: 'timestamp'
+    type: 'timestamp',
   })
-  studentRespondedAt!: Date
+  studentRespondedAt!: Date;
 
   @Column({
     name: 'updated_at',
-    type: 'timestamp'
+    type: 'timestamp',
   })
-  updatedAt: Date
+  updatedAt: Date;
 }
