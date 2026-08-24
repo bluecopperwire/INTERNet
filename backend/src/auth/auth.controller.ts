@@ -80,7 +80,6 @@ export class AuthController {
     return { accessToken: tokens.accessToken, verificationStatus: 'pending' };
   }
 
-
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @UseGuards(LocalAuthGuard)
   @HttpCode(HttpStatus.OK)

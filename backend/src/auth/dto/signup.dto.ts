@@ -32,7 +32,6 @@ export class SignupDto extends StudentProfileDto {
 
 export class GoogleStudentCompletionDto extends StudentProfileDto {}
 
-
 export class PesoRegistrationDto {
   @IsEmail() email: string;
   @IsString() @MinLength(8) password: string;
