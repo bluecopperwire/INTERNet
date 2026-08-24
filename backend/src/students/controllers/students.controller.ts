@@ -8,6 +8,7 @@ import {
   NotFoundException,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   UploadedFile,
   UseGuards,
@@ -19,11 +20,14 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { StudentsService } from '../services/students.service';
 import { ApplicationsService } from '../../applications/applications.service';
 import {
+  CreateStudentApplicationDto,
+  StudentApplicationResponseDto,
   StudentAttendanceClockDto,
   StudentProfileUpdateDto,
   StudentRequirementUploadDto,
 } from '../dto/students.dto';
 import { requirementUploadOptions } from '../../storage/requirement-upload.config';
+
 
 @Controller('students')
 export class StudentsController {
@@ -97,6 +101,20 @@ export class StudentsController {
     return this.studentsService.upsertStudentProfile(id, dto);
   }
 
+  // Submits a new internship application for an open opportunity.
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/applications')
+  @HttpCode(HttpStatus.CREATED)
+  async submitStudentApplication(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() currentUser: any,
+    @Body() dto: CreateStudentApplicationDto,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    return this.studentsService.createStudentApplication(id, dto, currentUser);
+  }
+
+  // Lists all internship applications for the student with enriched opportunity and company data.
   @UseGuards(JwtAuthGuard)
   @Get(':id/applications')
   @HttpCode(HttpStatus.OK)
@@ -105,10 +123,10 @@ export class StudentsController {
     @CurrentUser() currentUser: any,
   ) {
     await this.ensureStudentAccess(id, currentUser);
-    return this.applicationsService.findByStudentId(id);
+    return this.studentsService.getStudentApplications(id);
   }
 
-  // Returns the current application lifecycle status for a single student application.
+  // Returns the detailed application lifecycle status, referral milestones, interview schedule, and status history.
   @UseGuards(JwtAuthGuard)
   @Get(':id/applications/:applicationId/status')
   @HttpCode(HttpStatus.OK)
@@ -120,6 +138,43 @@ export class StudentsController {
     await this.ensureStudentAccess(id, currentUser);
     return this.studentsService.getStudentApplicationStatus(id, applicationId);
   }
+
+  // Submits student response (accepted/declined) to an accepted company referral offer.
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/applications/:applicationId/response')
+  @HttpCode(HttpStatus.OK)
+  async respondToApplicationOffer(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('applicationId', ParseIntPipe) applicationId: number,
+    @CurrentUser() currentUser: any,
+    @Body() dto: StudentApplicationResponseDto,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    return this.studentsService.respondToApplicationOffer(
+      id,
+      applicationId,
+      dto,
+      currentUser,
+    );
+  }
+
+  // Allows student to withdraw an active application.
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/applications/:applicationId/withdraw')
+  @HttpCode(HttpStatus.OK)
+  async withdrawStudentApplication(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('applicationId', ParseIntPipe) applicationId: number,
+    @CurrentUser() currentUser: any,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    return this.studentsService.withdrawApplication(
+      id,
+      applicationId,
+      currentUser,
+    );
+  }
+
 
   // Accepts physical document upload (multipart/form-data) under backend/uploads/requirements.
   @UseGuards(JwtAuthGuard)

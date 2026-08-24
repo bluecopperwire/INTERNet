@@ -258,6 +258,11 @@ async function runVerification() {
     .get('/students/1/applications')
     .set('Authorization', `Bearer ${studentToken}`);
   console.log('Status:', tc8.status);
+  console.log('Applications count:', tc8.body?.length);
+  if (tc8.body?.length > 0) {
+    console.log('First App Opportunity Title:', tc8.body[0]?.opportunity?.title);
+    console.log('First App Company Name:', tc8.body[0]?.company?.companyName);
+  }
 
   console.log(
     '\n--- Test Case 9: Single Application Status (GET /students/1/applications/1/status) ---',
@@ -266,6 +271,57 @@ async function runVerification() {
     .get('/students/1/applications/1/status')
     .set('Authorization', `Bearer ${studentToken}`);
   console.log('Status:', tc9.status);
+  console.log('Detailed App Title:', tc9.body?.opportunity?.title);
+  console.log('Detailed App Timeline Items:', tc9.body?.timeline?.length);
+
+  console.log(
+    '\n--- Test Case 9b: Negative Test - Cross-Student Application Access (GET /students/2/applications) ---',
+  );
+  const tc9b = await request(server)
+    .get('/students/2/applications')
+    .set('Authorization', `Bearer ${studentToken}`);
+  console.log('Status (Expect 403):', tc9b.status);
+
+  console.log(
+    '\n--- Test Case 9c: Submit Application (POST /students/1/applications) ---',
+  );
+  // Find open opportunity
+  const tc9c = await request(server)
+    .post('/students/1/applications')
+    .set('Authorization', `Bearer ${studentToken}`)
+    .send({
+      opportunityId: 2,
+      remark: 'Applying for QA verification',
+    });
+  console.log('Status (Expect 201 or 400 if already exists):', tc9c.status);
+  if (tc9c.status === 201) {
+    console.log('Created Application ID:', tc9c.body?.applicationId);
+    console.log('Created Status:', tc9c.body?.applicationStatus);
+  }
+
+  console.log(
+    '\n--- Test Case 9d: Duplicate Application Negative Test (POST /students/1/applications) ---',
+  );
+  const tc9d = await request(server)
+    .post('/students/1/applications')
+    .set('Authorization', `Bearer ${studentToken}`)
+    .send({
+      opportunityId: 1, // Student 1 already has active application for Opportunity 1
+      remark: 'Duplicate attempt',
+    });
+  console.log('Status (Expect 400):', tc9d.status);
+
+  console.log(
+    '\n--- Test Case 9e: Negative Test - Invalid Offer Response without Accepted Referral ---',
+  );
+  const tc9e = await request(server)
+    .patch('/students/1/applications/1/response')
+    .set('Authorization', `Bearer ${studentToken}`)
+    .send({
+      response: 'accepted',
+    });
+  console.log('Status (Expect 400):', tc9e.status);
+
 
   console.log(
     '\n--- Test Case 10: Attendance Clock In (POST /students/1/dtr/time-in) ---',

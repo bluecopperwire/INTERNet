@@ -10,9 +10,13 @@ import { existsSync, unlinkSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Student } from '../entities/student.entity';
 import {
+  CreateStudentApplicationDto,
+  StudentApplicationResponseDto,
   StudentProfileUpdateDto,
   StudentRequirementUploadDto,
 } from '../dto/students.dto';
+import { withStatusActor } from '../../database/status-actor.transaction';
+
 
 @Injectable()
 export class StudentsService {
@@ -313,19 +317,294 @@ export class StudentsService {
     return this.getStudentProfile(studentId);
   }
 
+  async createStudentApplication(
+    studentId: number,
+    dto: CreateStudentApplicationDto,
+    currentUser: any,
+  ) {
+    const student = await this.studentRepo.findOne({ where: { studentId } });
+    if (!student) {
+      throw new NotFoundException('Student not found');
+    }
+
+    // Verify student has uploaded a resume
+    const [resumeSubmission] = await this.dataSource.query(
+      `
+        SELECT srs.student_requirement_submission_id
+        FROM public.student_requirement_submission srs
+        JOIN public.requirement_type rt ON rt.requirement_type_id = srs.requirement_type_id
+        WHERE srs.student_id = $1
+          AND rt.requirement_type_name = 'curriculum_vitae_resume'
+      `,
+      [studentId],
+    );
+
+    if (!resumeSubmission) {
+      throw new BadRequestException(
+        'Resume submission (curriculum vitae/resume) is required before applying for an internship opportunity',
+      );
+    }
+
+    // Check opportunity status and deadline
+    const [opportunity] = await this.dataSource.query(
+      `
+        SELECT opportunity_id, title, opportunity_status, application_deadline
+        FROM public.opportunity
+        WHERE opportunity_id = $1
+      `,
+      [dto.opportunityId],
+    );
+
+    if (!opportunity) {
+      throw new NotFoundException('Opportunity not found');
+    }
+
+    if (opportunity.opportunity_status !== 'open') {
+      throw new BadRequestException(
+        `Cannot apply to an opportunity that is ${opportunity.opportunity_status}`,
+      );
+    }
+
+    if (new Date(opportunity.application_deadline) <= new Date()) {
+      throw new BadRequestException(
+        'The application deadline for this opportunity has already passed',
+      );
+    }
+
+    // Check for existing active application
+    const [existingActive] = await this.dataSource.query(
+      `
+        SELECT application_id, application_status
+        FROM public.application
+        WHERE student_id = $1
+          AND opportunity_id = $2
+          AND application_status IN ('submitted', 'under_review', 'approved_for_referral')
+      `,
+      [studentId, dto.opportunityId],
+    );
+
+    if (existingActive) {
+      throw new BadRequestException(
+        `You already have an active application (ID: ${existingActive.application_id}, Status: ${existingActive.application_status}) for this opportunity`,
+      );
+    }
+
+    const [created] = await this.dataSource.query(
+      `
+        INSERT INTO public.application (
+          student_id,
+          opportunity_id,
+          application_status,
+          student_response,
+          remark
+        ) VALUES ($1, $2, 'submitted', 'pending', $3)
+        RETURNING *
+      `,
+      [studentId, dto.opportunityId, dto.remark ?? null],
+    );
+
+    return {
+      applicationId: created.application_id,
+      studentId: created.student_id,
+      opportunityId: created.opportunity_id,
+      applicationStatus: created.application_status,
+      studentResponse: created.student_response,
+      submittedAt: created.submitted_at,
+      updatedAt: created.updated_at,
+      remark: created.remark,
+    };
+  }
+
+  async getStudentApplications(studentId: number) {
+    const records = await this.dataSource.query(
+      `
+        SELECT 
+          ad.application_id AS "applicationId",
+          ad.submitted_at AS "submittedAt",
+          ad.application_status AS "applicationStatus",
+          ad.application_remark AS "applicationRemark",
+          ad.student_response AS "studentResponse",
+          ad.student_responded_at AS "studentRespondedAt",
+          ad.opportunity_id AS "opportunityId",
+          ad.opportunity_title AS "opportunityTitle",
+          ad.opportunity_status AS "opportunityStatus",
+          ad.application_deadline AS "applicationDeadline",
+          ad.work_arrangement AS "workArrangement",
+          ad.minimum_required_hours AS "minimumRequiredHours",
+          ad.company_id AS "companyId",
+          ad.company_name AS "companyName",
+          ad.industry_name AS "industryName",
+          ad.referral_id AS "referralId",
+          ad.referral_status AS "referralStatus",
+          ad.company_response AS "companyResponse",
+          ad.internship_assignment_id AS "internshipAssignmentId",
+          ad.assignment_status AS "assignmentStatus"
+        FROM public.vw_application_details ad
+        WHERE ad.student_id = $1
+        ORDER BY ad.submitted_at DESC
+      `,
+      [studentId],
+    );
+
+    return records.map((r: any) => ({
+      applicationId: r.applicationId,
+      submittedAt: r.submittedAt,
+      applicationStatus: r.applicationStatus,
+      applicationRemark: r.applicationRemark,
+      studentResponse: r.studentResponse,
+      studentRespondedAt: r.studentRespondedAt,
+      opportunity: {
+        opportunityId: r.opportunityId,
+        title: r.opportunityTitle,
+        opportunityStatus: r.opportunityStatus,
+        applicationDeadline: r.applicationDeadline,
+        workArrangement: r.workArrangement,
+        minimumRequiredHours: r.minimumRequiredHours,
+      },
+      company: {
+        companyId: r.companyId,
+        companyName: r.companyName,
+        industryName: r.industryName,
+      },
+      referral: r.referralId
+        ? {
+            referralId: r.referralId,
+            referralStatus: r.referralStatus,
+            companyResponse: r.companyResponse,
+          }
+        : null,
+      assignment: r.internshipAssignmentId
+        ? {
+            internshipAssignmentId: r.internshipAssignmentId,
+            assignmentStatus: r.assignmentStatus,
+          }
+        : null,
+    }));
+  }
+
   async getStudentApplicationStatus(studentId: number, applicationId: number) {
+    const [detail] = await this.dataSource.query(
+      `
+        SELECT 
+          ad.application_id,
+          ad.submitted_at,
+          ad.application_status,
+          ad.application_remark,
+          ad.student_response,
+          ad.student_responded_at,
+          ad.opportunity_id,
+          ad.opportunity_title,
+          ad.opportunity_status,
+          ad.application_deadline,
+          ad.work_arrangement,
+          ad.minimum_required_hours,
+          ad.company_id,
+          ad.company_name,
+          ad.industry_name,
+          ad.referral_id,
+          ad.referral_status,
+          ad.company_response,
+          ad.internship_assignment_id,
+          ad.assignment_status
+        FROM public.vw_application_details ad
+        WHERE ad.application_id = $1 AND ad.student_id = $2
+      `,
+      [applicationId, studentId],
+    );
+
+    if (!detail) {
+      throw new NotFoundException('Application not found for this student');
+    }
+
+    let interview: any = null;
+    if (detail.referral_id) {
+      const [interviewRow] = await this.dataSource.query(
+        `
+          SELECT 
+            iv.interview_id,
+            iv.scheduled_at,
+            iv.interview_mode,
+            iv.physical_location,
+            iv.online_meeting_url,
+            iv.remark
+          FROM public.interview iv
+          WHERE iv.referral_id = $1
+          ORDER BY iv.scheduled_at DESC
+          LIMIT 1
+        `,
+        [detail.referral_id],
+      );
+      if (interviewRow) {
+        interview = interviewRow;
+      }
+    }
+
+    const timeline = await this.dataSource.query(
+      `
+        SELECT 
+          ash.application_status_history_id AS "statusHistoryId",
+          ash.previous_application_status AS "previousStatus",
+          ash.new_application_status AS "newStatus",
+          ash.changed_at AS "changedAt",
+          ua.user_role AS "changedByRole"
+        FROM public.application_status_history ash
+        LEFT JOIN public.user_account ua ON ua.user_account_id = ash.changed_by_user_account_id
+        WHERE ash.application_id = $1
+        ORDER BY ash.changed_at ASC
+      `,
+      [applicationId],
+    );
+
+    return {
+      applicationId: detail.application_id,
+      studentId,
+      applicationStatus: detail.application_status,
+      studentResponse: detail.student_response,
+      studentRespondedAt: detail.student_responded_at,
+      submittedAt: detail.submitted_at,
+      remark: detail.application_remark,
+      opportunity: {
+        opportunityId: detail.opportunity_id,
+        title: detail.opportunity_title,
+        opportunityStatus: detail.opportunity_status,
+        applicationDeadline: detail.application_deadline,
+        workArrangement: detail.work_arrangement,
+        minimumRequiredHours: detail.minimum_required_hours,
+      },
+      company: {
+        companyId: detail.company_id,
+        companyName: detail.company_name,
+        industryName: detail.industry_name,
+      },
+      referral: detail.referral_id
+        ? {
+            referralId: detail.referral_id,
+            referralStatus: detail.referral_status,
+            companyResponse: detail.company_response,
+          }
+        : null,
+      interview,
+      assignment: detail.internship_assignment_id
+        ? {
+            internshipAssignmentId: detail.internship_assignment_id,
+            assignmentStatus: detail.assignment_status,
+          }
+        : null,
+      timeline,
+    };
+  }
+
+  async respondToApplicationOffer(
+    studentId: number,
+    applicationId: number,
+    dto: StudentApplicationResponseDto,
+    currentUser: any,
+  ) {
     const [application] = await this.dataSource.query(
       `
-        SELECT a.application_id,
-               a.student_id,
-               a.application_status,
-               a.student_response,
-               a.submitted_at,
-               a.updated_at,
-               a.remark
+        SELECT a.application_id, a.student_id, a.application_status, a.student_response
         FROM public.application a
-        WHERE a.application_id = $1
-          AND a.student_id = $2
+        WHERE a.application_id = $1 AND a.student_id = $2
       `,
       [applicationId, studentId],
     );
@@ -334,8 +613,94 @@ export class StudentsService {
       throw new NotFoundException('Application not found for this student');
     }
 
-    return application;
+    if (application.student_response !== 'pending') {
+      throw new BadRequestException(
+        `Student has already responded to this application (${application.student_response})`,
+      );
+    }
+
+    const [referral] = await this.dataSource.query(
+      `
+        SELECT referral_id, referral_status, company_response
+        FROM public.referral
+        WHERE application_id = $1
+      `,
+      [applicationId],
+    );
+
+    if (!referral || referral.company_response !== 'accepted') {
+      throw new BadRequestException(
+        'A student may respond only after company acceptance of referral',
+      );
+    }
+
+    return withStatusActor(
+      this.dataSource,
+      currentUser?.userAccountId ?? null,
+      async (runner) => {
+        const [updated] = await runner.query(
+          `
+            UPDATE public.application
+            SET student_response = $2,
+                student_responded_at = CURRENT_TIMESTAMP,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE application_id = $1
+            RETURNING *
+          `,
+          [applicationId, dto.response],
+        );
+        return updated;
+      },
+    );
   }
+
+  async withdrawApplication(
+    studentId: number,
+    applicationId: number,
+    currentUser: any,
+  ) {
+    const [application] = await this.dataSource.query(
+      `
+        SELECT a.application_id, a.student_id, a.application_status
+        FROM public.application a
+        WHERE a.application_id = $1 AND a.student_id = $2
+      `,
+      [applicationId, studentId],
+    );
+
+    if (!application) {
+      throw new NotFoundException('Application not found for this student');
+    }
+
+    if (
+      !['submitted', 'under_review', 'approved_for_referral'].includes(
+        application.application_status,
+      )
+    ) {
+      throw new BadRequestException(
+        `Cannot withdraw an application with status: ${application.application_status}`,
+      );
+    }
+
+    return withStatusActor(
+      this.dataSource,
+      currentUser?.userAccountId ?? null,
+      async (runner) => {
+        const [updated] = await runner.query(
+          `
+            UPDATE public.application
+            SET application_status = 'withdrawn',
+                updated_at = CURRENT_TIMESTAMP
+            WHERE application_id = $1
+            RETURNING *
+          `,
+          [applicationId],
+        );
+        return updated;
+      },
+    );
+  }
+
 
   // Accepts physical multipart file upload, saves under backend/uploads/requirements, and persists metadata in DB.
   async uploadRequirementFile(

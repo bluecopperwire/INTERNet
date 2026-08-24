@@ -454,7 +454,7 @@ curl -X GET http://localhost:3000/students/1/resume \
 
 ### Test Case 8: List Student Applications (`GET /students/:id/applications`)
 
-- **Objective**: List all internship applications belonging to the authenticated student.
+- **Objective**: List all internship applications belonging to the authenticated student, enriched with Opportunity, Company, Referral, and Assignment details.
 
 #### cURL Command:
 ```bash
@@ -467,42 +467,35 @@ curl -X GET http://localhost:3000/students/1/applications \
 [
   {
     "applicationId": 1,
-    "student": {
-      "studentId": 1,
-      "userAccountId": 2,
-      "firstName": "Manuel",
-      "lastName": "Local"
-    },
     "submittedAt": "2026-08-10T07:08:23.039Z",
     "applicationStatus": "submitted",
-    "remark": "dev-seed/submitted",
+    "applicationRemark": "dev-seed/submitted",
     "studentResponse": "pending",
     "studentRespondedAt": null,
-    "updatedAt": "2026-08-10T07:08:23.039Z"
-  },
-  {
-    "applicationId": 4,
-    "student": {
-      "studentId": 1,
-      "userAccountId": 2,
-      "firstName": "Manuel",
-      "lastName": "Local"
+    "opportunity": {
+      "opportunityId": 1,
+      "title": "DEV Open Technology Internship",
+      "opportunityStatus": "open",
+      "applicationDeadline": "2026-10-15T00:00:00.000Z",
+      "workArrangement": "hybrid",
+      "minimumRequiredHours": 300
     },
-    "submittedAt": "2026-08-10T07:08:23.039Z",
-    "applicationStatus": "rejected_for_referral",
-    "remark": "dev-seed/rejected_for_referral",
-    "studentResponse": "pending",
-    "studentRespondedAt": null,
-    "updatedAt": "2026-08-10T07:08:23.039Z"
+    "company": {
+      "companyId": 1,
+      "companyName": "DevSeed Technology Corp.",
+      "industryName": "Information Technology"
+    },
+    "referral": null,
+    "assignment": null
   }
 ]
 ```
 
 ---
 
-### Test Case 9: Single Application Status (`GET /students/:id/applications/:applicationId/status`)
+### Test Case 9: Single Application Lifecycle Status & Tracker (`GET /students/:id/applications/:applicationId/status`)
 
-- **Objective**: Retrieve lifecycle status and remarks for a specific application.
+- **Objective**: Retrieve complete lifecycle tracking details, Opportunity & Company info, Interview schedule, and Status Change Timeline for a specific application.
 
 #### cURL Command:
 ```bash
@@ -513,15 +506,115 @@ curl -X GET http://localhost:3000/students/1/applications/1/status \
 #### Response Output (HTTP `200 OK`):
 ```json
 {
-  "application_id": 1,
-  "student_id": 1,
-  "application_status": "submitted",
-  "student_response": "pending",
-  "submitted_at": "2026-08-10T07:08:23.039Z",
-  "updated_at": "2026-08-10T07:08:23.039Z",
-  "remark": "dev-seed/submitted"
+  "applicationId": 1,
+  "studentId": 1,
+  "applicationStatus": "submitted",
+  "studentResponse": "pending",
+  "studentRespondedAt": null,
+  "submittedAt": "2026-08-10T07:08:23.039Z",
+  "remark": "dev-seed/submitted",
+  "opportunity": {
+    "opportunityId": 1,
+    "title": "DEV Open Technology Internship",
+    "opportunityStatus": "open",
+    "applicationDeadline": "2026-10-15T00:00:00.000Z",
+    "workArrangement": "hybrid",
+    "minimumRequiredHours": 300
+  },
+  "company": {
+    "companyId": 1,
+    "companyName": "DevSeed Technology Corp.",
+    "industryName": "Information Technology"
+  },
+  "referral": null,
+  "interview": null,
+  "assignment": null,
+  "timeline": []
 }
 ```
+
+---
+
+### Test Case 9b: Submit New Internship Application (`POST /students/:id/applications`)
+
+- **Objective**: Allows a student to apply for an open opportunity. Requires a resume on file and enforces deadline & active application constraints.
+
+#### cURL Command:
+```bash
+curl -X POST http://localhost:3000/students/1/applications \
+  -H "Authorization: Bearer <STUDENT_1_ACCESS_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "opportunityId": 2,
+    "remark": "Excited to apply for this software engineering role."
+  }'
+```
+
+#### Response Output (HTTP `201 Created`):
+```json
+{
+  "applicationId": 15,
+  "studentId": 1,
+  "opportunityId": 2,
+  "applicationStatus": "submitted",
+  "studentResponse": "pending",
+  "submittedAt": "2026-08-24T02:45:00.000Z",
+  "updatedAt": "2026-08-24T02:45:00.000Z",
+  "remark": "Excited to apply for this software engineering role."
+}
+```
+
+---
+
+### Test Case 9c: Respond to Company Offer (`PATCH /students/:id/applications/:applicationId/response`)
+
+- **Objective**: Allows a student to accept or decline a company offer after the company has accepted the referral.
+
+#### cURL Command:
+```bash
+curl -X PATCH http://localhost:3000/students/1/applications/2/response \
+  -H "Authorization: Bearer <STUDENT_1_ACCESS_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "response": "accepted"
+  }'
+```
+
+#### Response Output (HTTP `200 OK`):
+```json
+{
+  "application_id": 2,
+  "student_id": 1,
+  "opportunity_id": 1,
+  "application_status": "approved_for_referral",
+  "student_response": "accepted",
+  "student_responded_at": "2026-08-24T02:45:00.000Z",
+  "updated_at": "2026-08-24T02:45:00.000Z"
+}
+```
+
+---
+
+### Test Case 9d: Withdraw Application (`POST /students/:id/applications/:applicationId/withdraw`)
+
+- **Objective**: Allows a student to withdraw an active application (`submitted`, `under_review`, `approved_for_referral`).
+
+#### cURL Command:
+```bash
+curl -X POST http://localhost:3000/students/1/applications/1/withdraw \
+  -H "Authorization: Bearer <STUDENT_1_ACCESS_TOKEN>"
+```
+
+#### Response Output (HTTP `200 OK`):
+```json
+{
+  "application_id": 1,
+  "student_id": 1,
+  "application_status": "withdrawn",
+  "updated_at": "2026-08-24T02:45:00.000Z"
+}
+```
+
 
 ---
 

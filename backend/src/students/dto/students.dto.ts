@@ -16,6 +16,8 @@ import { YearLevel } from '../../common/enums/year-level.enum';
 import { WorkSchedule } from '../../common/enums/work-schedule.enum';
 import { CompanyType } from '../../common/enums/company-type.enum';
 import { InquiryMethod } from '../../common/enums/student-inquiry-method.enum';
+import { StudentResponse } from '../../common/enums/student-response.enum';
+
 
 // DTO layer: request/response contract for the API, not the database model.
 export class StudentAcademicProfileDto {
@@ -154,6 +156,23 @@ export class StudentRequirementUploadDto {
   requirementName?: string;
 }
 
+export class CreateStudentApplicationDto {
+  @IsInt()
+  @Min(1)
+  opportunityId!: number;
+
+  @IsOptional()
+  @IsString()
+  remark?: string;
+}
+
+export class StudentApplicationResponseDto {
+  @IsEnum(StudentResponse, {
+    message: `response must be one of: ${StudentResponse.ACCEPTED}, ${StudentResponse.DECLINED}`,
+  })
+  response!: StudentResponse;
+}
+
 export class StudentApplicationStatusQueryDto {
   @IsInt()
   @Min(1)
@@ -177,3 +196,4 @@ export class StudentAttendanceClockDto {
   @IsString()
   photoFilePath?: string;
 }
+
