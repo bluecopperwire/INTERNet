@@ -912,6 +912,7 @@ async function seedDomain(dataSource: DataSource, ids: SeedIds): Promise<void> {
       [-3, '09:30', '16:00', `${DEV_PREFIX}attendance/late.jpg`],
       [-2, '08:45', '18:00', `${DEV_PREFIX}attendance/overtime.jpg`],
       [-1, '09:15', null, `${DEV_PREFIX}attendance/incomplete.jpg`],
+      [0, '09:00', '17:00', `${DEV_PREFIX}attendance/today.jpg`],
     ] as const;
     for (const [dayOffset, timeIn, timeOut, photoPath] of attendance) {
       await runner.query(

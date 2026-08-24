@@ -10,6 +10,7 @@ import { UsersModule } from './users/users.module';
 import { StorageModule } from './storage/storage.module';
 import { ApplicationsModule } from './applications/applications.module';
 import { StudentsModule } from './students/students.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -27,7 +28,7 @@ import { StudentsModule } from './students/students.module';
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: 10,
+        limit: 100,
       },
     ]),
     AuthModule,
@@ -35,6 +36,7 @@ import { StudentsModule } from './students/students.module';
     StorageModule,
     ApplicationsModule,
     StudentsModule,
+    DashboardModule,
   ],
   providers: [
     {
@@ -43,4 +45,4 @@ import { StudentsModule } from './students/students.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }
