@@ -2,36 +2,38 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { Request } from 'express';
+import type { Request } from 'express';
 
 @Injectable()
-export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
-  constructor(private readonly configService: ConfigService) {
+export class JwtRefreshStrategy extends PassportStrategy(
+  Strategy,
+  'jwt-refresh',
+) {
+  constructor(config: ConfigService) {
+    const secret = config.get<string>('JWT_REFRESH_SECRET');
+    if (!secret) throw new Error('JWT_REFRESH_SECRET is required');
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
-        (req: Request) => {
-          if (req?.body?.refreshToken) {
-            return req.body.refreshToken;
-          }
-          return ExtractJwt.fromAuthHeaderAsBearerToken()(req);
-        },
+        (req: Request) => req?.cookies?.refresh_token ?? null,
       ]),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('JWT_REFRESH_SECRET') || 'super_secret_refresh_key_change_me_in_production',
+      secretOrKey: secret,
       passReqToCallback: true,
     });
   }
-
-  async validate(req: Request, payload: any) {
-    const refreshToken = req.body?.refreshToken || ExtractJwt.fromAuthHeaderAsBearerToken()(req);
-    if (!refreshToken) {
-      throw new UnauthorizedException('Refresh token is missing');
+  validate(
+    req: Request,
+    payload: { sub: number; family: string; jti: string; type: string },
+  ) {
+    const refreshToken = req?.cookies?.refresh_token;
+    if (
+      !refreshToken ||
+      payload.type !== 'refresh' ||
+      !payload.family ||
+      !payload.jti
+    ) {
+      throw new UnauthorizedException('Invalid refresh token');
     }
-    return {
-      userId: payload.sub,
-      email: payload.email,
-      role: payload.role,
-      refreshToken,
-    };
+    return { userAccountId: payload.sub, family: payload.family, refreshToken };
   }
 }

@@ -10,20 +10,17 @@ import { UsersModule } from '../users/users.module';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
+import { GoogleOauthService } from './google-oauth.service';
 
 @Module({
-  imports: [
-    UsersModule,
-    PassportModule,
-    JwtModule.register({}),
-    ConfigModule,
-  ],
+  imports: [UsersModule, PassportModule, JwtModule.register({}), ConfigModule],
   controllers: [AuthController],
   providers: [
     AuthService,
     LocalStrategy,
     JwtStrategy,
     JwtRefreshStrategy,
+    GoogleOauthService,
   ],
   exports: [AuthService],
 })
