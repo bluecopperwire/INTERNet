@@ -58,6 +58,11 @@ interface QCPesoState {
   fetchCompanies: (params?: any) => Promise<void>;
   fetchProfile: () => Promise<void>;
   updateProfile: (payload: any) => Promise<void>;
+  updateApplicationStatus: (
+    applicationId: number,
+    status: 'approved_for_referral' | 'rejected_for_referral',
+    remark?: string,
+  ) => Promise<QCPesoReviewApplicant>;
 }
 
 export const useQCPesoStore = create<QCPesoState>((set) => ({
@@ -213,6 +218,31 @@ export const useQCPesoStore = create<QCPesoState>((set) => ({
     } catch (err: any) {
       const norm = normalizeApiError(err);
       set({ error: norm.message, isLoadingProfile: false });
+      throw err;
+    }
+  },
+
+  updateApplicationStatus: async (
+    applicationId: number,
+    status: 'approved_for_referral' | 'rejected_for_referral',
+    remark?: string,
+  ) => {
+    try {
+      const raw = await qcpesoApiService.updateApplicationStatus(
+        applicationId,
+        status,
+        remark,
+      );
+      const adapted = adaptPesoApplication(raw);
+      set((state) => ({
+        applications: state.applications.map((app) =>
+          app.id === String(applicationId) ? adapted : app,
+        ),
+      }));
+      return adapted;
+    } catch (err: any) {
+      const norm = normalizeApiError(err);
+      set({ error: norm.message });
       throw err;
     }
   },

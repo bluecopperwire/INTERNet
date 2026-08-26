@@ -1,8 +1,10 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -10,12 +12,14 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { PesoApprovedGuard } from '../../auth/guards/peso-approved.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { UserRole } from '../../users/entities/account.entities';
 import { PesoDashboardService } from '../services/peso-dashboard.service';
 import {
   QueryApplicationsDto,
   QueryCompanyEmployersDto,
   QueryReferralsDto,
+  UpdateApplicationStatusDto,
 } from '../dto/peso-dashboard.dto';
 import { DateFilterDto } from '../../common/dto/date-filter.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
@@ -95,6 +99,19 @@ export class PesoDashboardController {
     @Param('applicationId', ParseIntPipe) applicationId: number,
   ) {
     return this.pesoService.getApplicationDetail(applicationId);
+  }
+
+  @Patch('applications/:applicationId/status')
+  updateApplicationStatus(
+    @CurrentUser('userAccountId') userAccountId: number,
+    @Param('applicationId', ParseIntPipe) applicationId: number,
+    @Body() dto: UpdateApplicationStatusDto,
+  ) {
+    return this.pesoService.updateApplicationStatus(
+      userAccountId,
+      applicationId,
+      dto,
+    );
   }
 
   @Get('referrals/:referralId')

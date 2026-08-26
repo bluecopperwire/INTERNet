@@ -138,13 +138,69 @@ export function ReviewApplicantPage() {
               <h2 className={styles.sectionTitle}><span><FileText size={18} /></span>Applicant Documents</h2>
               <div className={styles.docsList}>
                 {[
-                  ['Proof of Residency', `${applicant.name.replace(/\s+/g, '').toLowerCase()}_proof_of_residency.pdf`],
-                  ['Latest Credentials', `${applicant.name.replace(/\s+/g, '').toLowerCase()}_credentials.pdf`],
-                  ['Curriculum Vitae / Resume', `${applicant.name.replace(/\s+/g, '').toLowerCase()}_resume.pdf`],
-                  ['Letter of Intent', `${applicant.name.replace(/\s+/g, '').toLowerCase()}_letter_of_intent.pdf`],
-                  ['Recommendation Letter / Registration Form', `${applicant.name.replace(/\s+/g, '').toLowerCase()}_recommendation_letter.pdf`],
-                  ['Endorsement Letter', `${applicant.name.replace(/\s+/g, '').toLowerCase()}_endorsement_letter.pdf`],
-                ].map(([name, filename]) => <div className={styles.docItem} key={name}><span className={styles.docIcon}><FileText size={17} /></span><div><strong>{name}</strong><p>{filename}</p></div><button type="button" className={styles.viewDocBtn}><Download size={15} />Download</button></div>)}
+                  { key: 'proof_of_residency', label: 'Proof of Residency' },
+                  { key: 'latest_credentials', label: 'Latest Credentials' },
+                  { key: 'curriculum_vitae_resume', label: 'Curriculum Vitae / Resume' },
+                  { key: 'letter_of_intent', label: 'Letter of Intent' },
+                ].map(({ key, label }) => {
+                  const match = applicant.documents?.find((d) => {
+                    const normType = (d.requirementTypeName || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+                    const normKey = key.toLowerCase().replace(/[^a-z0-9]/g, '')
+                    if (normType && normType === normKey) return true
+                    const normName = (d.requirementName || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+                    if (normKey === 'proofofresidency') return normType.includes('residency') || normName.includes('residency')
+                    if (normKey === 'curriculumvitaeresume') return normType.includes('resume') || normType.includes('cv') || normType.includes('curriculum') || normName.includes('resume')
+                    if (normKey === 'letterofintent') return normType.includes('intent') || normType.includes('loi') || normName.includes('intent')
+                    if (normKey === 'latestcredentials') return normType.includes('credential') || normType.includes('grade') || normName.includes('credential')
+                    return false
+                  })
+
+                  const filePath = match?.filePath || ''
+                  const hasFile = Boolean(filePath)
+                  const displayFilename = match?.requirementName || (filePath ? filePath.split('/').pop() : 'Not submitted')
+
+                  const handleDownload = async () => {
+                    if (!filePath) return
+                    const fullUrl = filePath.startsWith('http')
+                      ? filePath
+                      : `http://localhost:3000${filePath.startsWith('/') ? '' : '/'}${filePath}`
+
+                    try {
+                      const res = await fetch(fullUrl)
+                      if (!res.ok) throw new Error('File download failed')
+                      const blob = await res.blob()
+                      const blobUrl = window.URL.createObjectURL(blob)
+                      const a = document.createElement('a')
+                      a.href = blobUrl
+                      a.download = match?.requirementName || `${label}.pdf`
+                      document.body.appendChild(a)
+                      a.click()
+                      document.body.removeChild(a)
+                      window.URL.revokeObjectURL(blobUrl)
+                    } catch {
+                      window.open(fullUrl, '_blank')
+                    }
+                  }
+
+                  return (
+                    <div className={styles.docItem} key={key}>
+                      <span className={styles.docIcon}><FileText size={17} /></span>
+                      <div>
+                        <strong>{label}</strong>
+                        <p style={{ color: hasFile ? undefined : '#94a3b8' }}>{displayFilename}</p>
+                      </div>
+                      <button
+                        type="button"
+                        className={styles.viewDocBtn}
+                        disabled={!hasFile}
+                        onClick={handleDownload}
+                        style={!hasFile ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+                      >
+                        <Download size={15} />{hasFile ? 'Download' : 'Unavailable'}
+                      </button>
+                    </div>
+                  )
+                })}
               </div>
             </section>
           </div>

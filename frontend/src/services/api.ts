@@ -30,7 +30,7 @@ export function normalizeApiError(error: unknown): ApiError {
     const status = error.response?.status || 0;
     const data = error.response?.data as any;
 
-    let message = error.message || 'An unexpected network error occurred';
+    let message = '';
     let validationMessages: string[] = [];
     let code: string | undefined = undefined;
     let dependency: string | undefined = undefined;
@@ -44,6 +44,20 @@ export function normalizeApiError(error: unknown): ApiError {
       }
       code = data.code;
       dependency = data.dependency;
+    }
+
+    if (!message || message.toLowerCase().includes('request failed with status code')) {
+      if (status === 401) {
+        message = 'Invalid email or password. Please try again.';
+      } else if (status === 403) {
+        message = 'Access denied. You do not have permission to perform this action.';
+      } else if (status === 404) {
+        message = 'The requested resource was not found.';
+      } else if (status >= 500) {
+        message = 'Internal server error. Please try again later.';
+      } else {
+        message = error.message || 'An unexpected network error occurred';
+      }
     }
 
     const retryable = status === 0 || status >= 500 || status === 429;

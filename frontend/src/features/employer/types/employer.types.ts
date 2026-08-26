@@ -31,6 +31,13 @@ export interface Applicant {
   availabilityDays: string
   availabilityDate: string
   rejectionRemark?: string
+  documents?: Array<{
+    submissionId?: number
+    requirementTypeId?: number
+    requirementTypeName?: string
+    requirementName?: string
+    filePath?: string
+  }>
 }
 
 export type RecentApplicant = Applicant

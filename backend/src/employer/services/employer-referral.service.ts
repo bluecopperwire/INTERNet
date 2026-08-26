@@ -67,7 +67,8 @@ export class EmployerReferralService {
         SELECT srs.student_requirement_submission_id,
                srs.requirement_type_id,
                rt.requirement_type_name,
-               srs.requirement_name
+               srs.requirement_name,
+               srs.requirement_file_path
         FROM public.student_requirement_submission srs
         JOIN public.requirement_type rt
           ON rt.requirement_type_id = srs.requirement_type_id
@@ -496,6 +497,7 @@ export class EmployerReferralService {
         requirementTypeId: asNumber(document.requirement_type_id),
         requirementTypeName: document.requirement_type_name,
         requirementName: document.requirement_name,
+        filePath: document.requirement_file_path || null,
       })),
     };
   }

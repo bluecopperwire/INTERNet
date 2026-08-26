@@ -29,6 +29,18 @@ export const qcpesoApiService = {
     return response.data;
   },
 
+  async updateApplicationStatus(
+    applicationId: number,
+    status: 'approved_for_referral' | 'rejected_for_referral',
+    remark?: string,
+  ): Promise<any> {
+    const response = await api.patch(
+      `/dashboard/peso/applications/${applicationId}/status`,
+      { status, remark },
+    );
+    return response.data;
+  },
+
   async getEmployers(params?: any): Promise<PaginatedResponse<any>> {
     const response = await api.get<PaginatedResponse<any>>(
       '/dashboard/peso/employers',

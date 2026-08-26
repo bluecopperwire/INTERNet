@@ -53,11 +53,21 @@ export const qcpesoService = {
   },
 
   async updateReviewApplicantStatus(
-    _id: string,
-    _status: QCPesoReviewApplicant['status'],
+    id: string,
+    status: QCPesoReviewApplicant['status'],
+    remark?: string,
   ): Promise<QCPesoReviewApplicant | null> {
-    // Read-only scope for PESO monitoring
-    return null;
+    const apiStatus =
+      status === 'Accepted'
+        ? 'approved_for_referral'
+        : 'rejected_for_referral';
+    const store = useQCPesoStore.getState();
+    const updated = await store.updateApplicationStatus(
+      Number(id),
+      apiStatus,
+      remark,
+    );
+    return updated;
   },
 
   async getReferrals(): Promise<QCPesoReferral[]> {

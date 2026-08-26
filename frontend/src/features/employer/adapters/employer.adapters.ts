@@ -60,7 +60,7 @@ export function adaptEmployerOpportunity(
 }
 
 export function adaptEmployerReferral(
-  r: EmployerReferralListItemDto,
+  r: EmployerReferralListItemDto | any,
 ): Applicant {
   const statusMap: Record<string, any> = {
     pending: 'Pending',
@@ -69,27 +69,48 @@ export function adaptEmployerReferral(
     rejected: 'Rejected',
   };
 
+  const referral = r.referral || r;
+  const student = r.student || {};
+  const opportunity = r.opportunity || {};
+  const internshipPref = r.internshipPreference || {};
+
+  const referralId = referral.referralId || r.referralId;
+  const fullName = student.fullName || r.studentFullName || 'Applicant';
+  const oppId = opportunity.opportunityId || r.opportunityId || '';
+  const oppTitle = opportunity.title || r.opportunityTitle || 'Opportunity';
+  const strandProg = student.strandProgram || r.strandProgram || 'N/A';
+  const yLevel = student.yearLevel || r.yearLevel || 'N/A';
+  const compResponse = referral.companyResponse || r.companyResponse || 'pending';
+  const subAt = r.application?.submittedAt || r.submittedAt;
+
+  const address = [student.addressLine, student.addressBarangay, student.addressCity]
+    .filter(Boolean)
+    .join(', ') || 'Quezon City';
+
   return {
-    id: String(r.referralId),
-    name: r.studentFullName,
-    opportunityId: String(r.opportunityId),
-    opportunityTitle: r.opportunityTitle,
-    course: r.strandProgram || 'N/A',
-    yearLevel: r.yearLevel || 'N/A',
-    dateApplied: new Date(r.submittedAt).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }),
-    status: statusMap[r.companyResponse] || 'Pending',
-    email: 'N/A',
-    phone: 'N/A',
-    location: 'Quezon City',
-    school: 'N/A',
+    id: String(referralId),
+    name: fullName,
+    opportunityId: String(oppId),
+    opportunityTitle: oppTitle,
+    course: strandProg,
+    yearLevel: yLevel,
+    dateApplied: subAt
+      ? new Date(subAt).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        })
+      : 'N/A',
+    status: statusMap[compResponse] || 'Pending',
+    email: student.contactEmail || 'N/A',
+    phone: student.contactNumber || 'N/A',
+    location: address,
+    school: student.schoolName || 'N/A',
     preferredField: 'N/A',
-    requiredHours: 0,
-    availabilityDays: 'Weekdays',
-    availabilityDate: 'N/A',
+    requiredHours: Number(internshipPref.requiredHours || 0),
+    availabilityDays: internshipPref.availableDays || 'Weekdays',
+    availabilityDate: internshipPref.startDate || 'N/A',
+    documents: Array.isArray(r.documents) ? r.documents : undefined,
   };
 }
 

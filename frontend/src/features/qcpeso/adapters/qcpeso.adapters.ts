@@ -28,8 +28,9 @@ export function adaptPesoDashboardMetrics(
 }
 
 export function adaptPesoApplication(
-  d: DashboardApplicationDto,
+  d: DashboardApplicationDto | any,
 ): QCPesoReviewApplicant {
+  if (!d) return {} as any;
   const statusMap: Record<string, any> = {
     submitted: 'Pending',
     under_review: 'Pending',
@@ -39,27 +40,50 @@ export function adaptPesoApplication(
     closed: 'Rejected',
   };
 
+  const rawStatus = d.applicationStatus || d.application_status;
+  const rawDate = d.submittedAt || d.submitted_at;
+  let formattedDate = 'N/A';
+  if (rawDate) {
+    const parsed = new Date(rawDate);
+    if (!isNaN(parsed.getTime())) {
+      formattedDate = parsed.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    }
+  }
+
+  const address = [d.address_line, d.address_barangay, d.address_city]
+    .filter(Boolean)
+    .join(', ') || 'Quezon City';
+
   return {
-    id: String(d.applicationId),
-    studentName: d.studentFullName,
-    company: d.companyName,
-    jobTitle: d.opportunityTitle,
-    program: d.strandProgram || 'N/A',
-    yearLevel: d.yearLevel || 'N/A',
-    dateApplied: new Date(d.submittedAt).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }),
-    status: statusMap[d.applicationStatus] || 'Pending',
-    email: d.studentContactEmail,
-    phone: d.studentContactNumber,
-    address: 'Quezon City',
-    school: d.schoolName || 'N/A',
-    requiredHours: 0,
-    availableDays: 'Weekdays',
+    id: String(d.applicationId || d.application_id || ''),
+    studentName: d.studentFullName || d.student_full_name || 'Applicant',
+    company: d.companyName || d.company_name || 'Partner Company',
+    jobTitle: d.opportunityTitle || d.opportunity_title || 'Internship Role',
+    program: d.strandProgram || d.strand_program || 'N/A',
+    yearLevel: d.yearLevel || d.year_level || 'N/A',
+    dateApplied: formattedDate,
+    status: statusMap[rawStatus] || 'Pending',
+    email: d.studentContactEmail || d.student_contact_email || 'N/A',
+    phone: d.studentContactNumber || d.student_contact_number || 'N/A',
+    address,
+    school: d.schoolName || d.school_name || 'N/A',
+    requiredHours: Number(d.minimum_required_hours || d.minimumRequiredHours || d.requiredHours || 0),
+    availableDays: d.work_arrangement || d.workArrangement || 'Weekdays',
     availableStartingDate: 'N/A',
-    opportunityId: String(d.opportunityId),
+    opportunityId: String(d.opportunityId || d.opportunity_id || ''),
+    documents: Array.isArray(d.requirements)
+      ? d.requirements.map((r: any) => ({
+          id: String(r.student_requirement_submission_id || r.studentRequirementSubmissionId || r.id || ''),
+          name: r.requirement_name || r.requirementName || 'Document',
+          typeName: r.requirement_type_name || r.requirementTypeName || '',
+          filePath: r.requirement_file_path || r.requirementFilePath || '',
+          submittedAt: r.submitted_at || r.submittedAt || '',
+        }))
+      : undefined,
   };
 }
 
@@ -88,9 +112,18 @@ export function adaptPesoReferral(r: PesoReferralDto): QCPesoReferral {
     }),
     companyResponse: compMap[r.companyResponse] || 'Pending',
     studentResponse: studMap[r.companyResponse] || 'Pending',
-    email: r.studentContactEmail,
-    phone: r.studentContactNumber,
+    email: r.studentContactEmail || (r as any).student_contact_email || 'N/A',
+    phone: r.studentContactNumber || (r as any).student_contact_number || 'N/A',
     address: 'Quezon City',
+    documents: Array.isArray((r as any).requirements)
+      ? (r as any).requirements.map((req: any) => ({
+          id: String(req.student_requirement_submission_id || req.id || ''),
+          name: req.requirement_name || 'Document',
+          typeName: req.requirement_type_name || '',
+          filePath: req.requirement_file_path || '',
+          submittedAt: req.submitted_at || '',
+        }))
+      : undefined,
   };
 }
 

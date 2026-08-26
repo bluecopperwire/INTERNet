@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import googleLogo from '../../../assets/google-logo.svg'
 import leftPanelArtwork from '../../../assets/login_left-panel.svg'
 import { authService } from '../../../services/auth.service'
+import { normalizeApiError } from '../../../services/api'
 import { useAuthStore } from '../../../stores/useAuthStore'
 import type { LoginTabRole } from '../types/auth.types'
 import styles from './LoginPage.module.css'
@@ -70,7 +71,8 @@ function LoginPage() {
           navigate('/', { replace: true })
       }
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please check your credentials.')
+      const norm = normalizeApiError(err)
+      setError(norm.message || 'Login failed. Please check your credentials.')
     } finally {
       setLoading(false)
     }

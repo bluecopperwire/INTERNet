@@ -122,6 +122,14 @@ export interface CreateEmployerPayload {
 
 export type QCPesoApplicationStatus = 'Pending' | 'Accepted' | 'Rejected'
 
+export interface QCPesoDocument {
+  id: string
+  name: string
+  typeName?: string
+  filePath: string
+  submittedAt?: string
+}
+
 export interface QCPesoReviewApplicant {
   id: string
   studentName: string
@@ -139,6 +147,7 @@ export interface QCPesoReviewApplicant {
   availableDays: string
   availableStartingDate: string
   opportunityId: string
+  documents?: QCPesoDocument[]
 }
 
 export interface QCPesoReferral {
@@ -152,6 +161,7 @@ export interface QCPesoReferral {
   email: string
   phone: string
   address: string
+  documents?: QCPesoDocument[]
 }
 
 export interface QCPesoOpportunity {

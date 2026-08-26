@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import {
   PesoApplicationManagementMetricsDto,
@@ -8,6 +8,8 @@ import {
   QueryApplicationsDto,
   QueryCompanyEmployersDto,
   QueryReferralsDto,
+  UpdateApplicationStatusDto,
+  ApplicationStatusFilter,
 } from '../dto/peso-dashboard.dto';
 import { DateFilterDto } from '../../common/dto/date-filter.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
@@ -15,6 +17,7 @@ import { PaginatedResponse } from '../../common/interfaces/paginated-response.in
 import { getDateBoundaries } from '../../common/helpers/date-filter.helper';
 import { ApplicationQueryService } from './shared/application-query.service';
 import { AttendanceQueryService } from './shared/attendance-query.service';
+import { withStatusActor } from '../../database/status-actor.transaction';
 
 @Injectable()
 export class PesoDashboardService {
@@ -452,6 +455,97 @@ export class PesoDashboardService {
     };
   }
 
+  async updateApplicationStatus(
+    userAccountId: number,
+    applicationId: number,
+    dto: UpdateApplicationStatusDto,
+  ) {
+    const validStatuses = [
+      ApplicationStatusFilter.APPROVED_FOR_REFERRAL,
+      ApplicationStatusFilter.REJECTED_FOR_REFERRAL,
+    ];
+    if (!validStatuses.includes(dto.status)) {
+      throw new BadRequestException(
+        'Status must be approved_for_referral or rejected_for_referral',
+      );
+    }
+
+    await withStatusActor(this.dataSource, userAccountId, async (runner) => {
+      const pesoRows = await runner.query(
+        `SELECT peso_personnel_id FROM public.peso_personnel WHERE user_account_id = $1`,
+        [userAccountId],
+      );
+      let pesoPersonnelId = pesoRows[0]?.peso_personnel_id || null;
+      if (!pesoPersonnelId) {
+        const anyPeso = await runner.query(
+          `SELECT peso_personnel_id FROM public.peso_personnel ORDER BY peso_personnel_id ASC LIMIT 1`,
+        );
+        pesoPersonnelId = anyPeso[0]?.peso_personnel_id || 1;
+      }
+
+      const appRows = await runner.query(
+        `SELECT * FROM public.application WHERE application_id = $1 FOR UPDATE`,
+        [applicationId],
+      );
+      if (!appRows || appRows.length === 0) {
+        throw new NotFoundException('Application not found');
+      }
+      const currentApp = appRows[0];
+
+      if (['approved_for_referral', 'rejected_for_referral', 'closed', 'withdrawn', 'expired'].includes(currentApp.application_status)) {
+        throw new ConflictException(
+          `Application is already in '${currentApp.application_status}' status and cannot be modified.`,
+        );
+      }
+
+      // Database trigger requires submitted -> under_review before approved/rejected
+      if (currentApp.application_status === 'submitted') {
+        await runner.query(
+          `
+            UPDATE public.application
+            SET application_status = 'under_review',
+                updated_at = CURRENT_TIMESTAMP
+            WHERE application_id = $1
+          `,
+          [applicationId],
+        );
+      }
+
+      await runner.query(
+        `
+          UPDATE public.application
+          SET application_status = $1,
+              remark = COALESCE($2, remark),
+              updated_at = CURRENT_TIMESTAMP
+          WHERE application_id = $3
+        `,
+        [dto.status, dto.remark ?? null, applicationId],
+      );
+
+      if (dto.status === ApplicationStatusFilter.APPROVED_FOR_REFERRAL) {
+        const referralFilePath = `/uploads/referrals/ref-${applicationId}.pdf`;
+        await runner.query(
+          `
+            INSERT INTO public.referral (
+              application_id,
+              peso_personnel_id,
+              referral_document_file_path,
+              referral_status,
+              company_response
+            ) VALUES ($1, $2, $3, 'sent', 'pending')
+            ON CONFLICT (application_id) DO UPDATE SET
+              referral_status = 'sent',
+              peso_personnel_id = COALESCE(EXCLUDED.peso_personnel_id, public.referral.peso_personnel_id),
+              updated_at = CURRENT_TIMESTAMP
+          `,
+          [applicationId, pesoPersonnelId, referralFilePath],
+        );
+      }
+    });
+
+    return this.getApplicationDetail(applicationId);
+  }
+
   async getReferralDetail(referralId: number) {
     const rows = await this.dataSource.query(
       `
@@ -464,7 +558,27 @@ export class PesoDashboardService {
     if (!rows || rows.length === 0) {
       throw new Error('Referral not found');
     }
-    return rows[0];
+    const referral = rows[0];
+
+    const requirements = await this.dataSource.query(
+      `
+        SELECT 
+          srs.student_requirement_submission_id,
+          srs.requirement_name,
+          srs.requirement_file_path,
+          srs.submitted_at,
+          rt.requirement_type_name
+        FROM public.student_requirement_submission srs
+        JOIN public.requirement_type rt ON rt.requirement_type_id = srs.requirement_type_id
+        WHERE srs.student_id = $1
+      `,
+      [referral.student_id],
+    );
+
+    return {
+      ...referral,
+      requirements,
+    };
   }
 
   async getInternDetail(internshipAssignmentId: number) {
