@@ -23,6 +23,7 @@ import {
   CreatePesoPersonnelAccountDto,
   VerificationDecisionDto,
 } from './dto/account-management.dto';
+import { UpdatePesoProfileDto } from './dto/peso-profile.dto';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -42,6 +43,21 @@ export class UsersController {
     @Body() dto: CreatePesoPersonnelAccountDto,
   ) {
     return this.accounts.createPesoPersonnel(dto, adminId);
+  }
+
+  @Roles(UserRole.PESO_PERSONNEL)
+  @Get('peso/profile')
+  getPesoProfile(@CurrentUser('userAccountId') id: number) {
+    return this.accounts.getPesoProfile(id);
+  }
+
+  @Roles(UserRole.PESO_PERSONNEL)
+  @Patch('peso/profile')
+  updatePesoProfile(
+    @CurrentUser('userAccountId') id: number,
+    @Body() dto: UpdatePesoProfileDto,
+  ) {
+    return this.accounts.updatePesoProfile(id, dto);
   }
 
   @Roles(UserRole.PESO_PERSONNEL)

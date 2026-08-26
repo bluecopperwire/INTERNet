@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import internetLogo from '../../../assets/internet-logo.svg'
+import { useAuthStore } from '../../../stores/useAuthStore'
 import styles from './AdminSidebar.module.css'
 
 interface AdminSidebarProps {
@@ -22,10 +23,12 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
   const [search, setSearch] = useState('')
   const [isUserManagementOpen, setIsUserManagementOpen] = useState(false)
   const navigate = useNavigate()
+  const { logout: authLogout } = useAuthStore()
 
-  const logout = () => {
+  const logout = async () => {
     onClose()
-    navigate('/')
+    await authLogout()
+    navigate('/', { replace: true })
   }
 
   const matchesSearch = (text: string) => {

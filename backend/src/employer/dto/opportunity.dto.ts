@@ -61,12 +61,13 @@ export class CreateOpportunityDto {
   @Min(1)
   offeredSlots!: number;
 
-  @NullableTrim()
-  @ValidateIf((_object, value: unknown) => value !== null)
-  @IsDefined()
-  @IsString()
-  @IsNotEmpty()
-  allowance!: string | null;
+  @IsOptional()
+  @ValidateIf((_object, value: unknown) => value !== undefined)
+  hasAllowance?: boolean;
+
+  @IsOptional()
+  @ValidateIf((_object, value: unknown) => value !== null && value !== undefined)
+  allowance?: string | number | null;
 
   @Trim()
   @IsString()
@@ -114,10 +115,10 @@ export class UpdateOpportunityDto {
   offeredSlots?: number;
 
   @IsOptional()
-  @NullableTrim()
-  @IsString()
-  @IsNotEmpty()
-  allowance?: string | null;
+  hasAllowance?: boolean;
+
+  @IsOptional()
+  allowance?: string | number | null;
 
   @IsOptional()
   @Trim()

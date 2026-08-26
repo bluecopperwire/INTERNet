@@ -292,6 +292,9 @@ export class AuthController {
       userRole: current.account.userRole,
       accountStatus: current.account.accountStatus,
       verificationStatus: current.verificationStatus,
+      studentId: current.studentId,
+      companyId: current.companyId,
+      pesoPersonnelId: current.pesoPersonnelId,
     };
   }
 }

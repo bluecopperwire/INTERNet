@@ -1,193 +1,159 @@
-import type { 
-  AdminRecord, 
-  StudentRecord, 
-  EmployerRecord, 
-  QCPesoRecord, 
+import { useAdminStore } from '../stores/useAdminStore';
+import { adminApiService } from './admin-api.service';
+import {
+  adaptAdminStudentItem,
+  adaptAdminEmployerItem,
+  adaptAdminPesoItem,
+} from '../adapters/admin.adapters';
+import type {
+  AdminRecord,
+  StudentRecord,
+  EmployerRecord,
+  QCPesoRecord,
   AccountStatus,
   AuditLog,
   AdminDashboardSummary,
-  AdminNotification
-} from '../types/admin.types'
-import { 
-  MOCK_STUDENT_RECORD, 
-  MOCK_STUDENT_RECORDS,
-  MOCK_EMPLOYER_RECORD, 
-  MOCK_EMPLOYER_RECORDS,
-  MOCK_QCPESO_RECORD, 
-  MOCK_QCPESO_RECORDS,
-  MOCK_AUDIT_LOGS,
-  MOCK_ADMIN_SUMMARY,
-  MOCK_ADMIN_NOTIFICATIONS
-} from '../mocks/admin.mock'
-
-let currentStudentRecord = { ...MOCK_STUDENT_RECORD }
-let currentStudentRecords = MOCK_STUDENT_RECORDS.map((record) => ({ ...record }))
-let currentEmployerRecord = { ...MOCK_EMPLOYER_RECORD }
-let currentEmployerRecords = MOCK_EMPLOYER_RECORDS.map((record) => ({ ...record }))
-let currentQCPesoRecord = { ...MOCK_QCPESO_RECORD }
-let currentQCPesoRecords = MOCK_QCPESO_RECORDS.map((record) => ({ ...record }))
-let currentAuditLogs = [ ...MOCK_AUDIT_LOGS ]
-let currentSummary = { ...MOCK_ADMIN_SUMMARY }
-let currentNotifications = [ ...MOCK_ADMIN_NOTIFICATIONS ]
+  AdminNotification,
+} from '../types/admin.types';
 
 export const adminService = {
   getStudentRecords: async (): Promise<StudentRecord[]> => {
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(currentStudentRecords.map((record) => ({ ...record }))), 300)
-    })
+    const store = useAdminStore.getState();
+    await store.fetchStudents();
+    return useAdminStore.getState().students;
   },
 
   getStudentRecord: async (id: string): Promise<StudentRecord | null> => {
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(currentStudentRecords.find((record) => record.id === id) ?? null), 250)
-    })
+    const raw = await adminApiService.getStudent(Number(id));
+    return adaptAdminStudentItem(raw);
   },
 
   updateStudentRecord: async (id: string, updates: Partial<StudentRecord>): Promise<StudentRecord | null> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const index = currentStudentRecords.findIndex((record) => record.id === id)
-        if (index < 0) {
-          resolve(null)
-          return
-        }
-        currentStudentRecords[index] = { ...currentStudentRecords[index], ...updates }
-        resolve({ ...currentStudentRecords[index] })
-      }, 250)
-    })
+    const raw = await adminApiService.updateStudent(Number(id), updates);
+    return adaptAdminStudentItem(raw);
   },
 
   getEmployerRecords: async (): Promise<EmployerRecord[]> => {
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(currentEmployerRecords.map((record) => ({ ...record }))), 300)
-    })
+    const store = useAdminStore.getState();
+    await store.fetchEmployers();
+    return useAdminStore.getState().employers;
   },
 
   getEmployerRecord: async (id: string): Promise<EmployerRecord | null> => {
-    return new Promise((resolve) => setTimeout(() => resolve(currentEmployerRecords.find((record) => record.id === id) ?? null), 250))
+    const raw = await adminApiService.getEmployer(Number(id));
+    return adaptAdminEmployerItem(raw);
   },
 
   updateEmployerRecord: async (id: string, updates: Partial<EmployerRecord>): Promise<EmployerRecord | null> => {
-    return new Promise((resolve) => setTimeout(() => {
-      const index = currentEmployerRecords.findIndex((record) => record.id === id)
-      if (index < 0) return resolve(null)
-      currentEmployerRecords[index] = { ...currentEmployerRecords[index], ...updates }
-      resolve({ ...currentEmployerRecords[index] })
-    }, 250))
+    const raw = await adminApiService.updateEmployer(Number(id), updates);
+    return adaptAdminEmployerItem(raw);
   },
 
-  createEmployerRecord: async (record: EmployerRecord): Promise<EmployerRecord> => {
-    return new Promise((resolve) => setTimeout(() => {
-      currentEmployerRecords = [record, ...currentEmployerRecords]
-      resolve({ ...record })
-    }, 250))
+  createEmployerRecord: async (record: any): Promise<EmployerRecord> => {
+    const raw = await adminApiService.createCompanyUser(record);
+    return adaptAdminEmployerItem(raw);
   },
 
   getQCPesoRecords: async (): Promise<QCPesoRecord[]> => {
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(currentQCPesoRecords.map((record) => ({ ...record }))), 300)
-    })
+    const store = useAdminStore.getState();
+    await store.fetchPesoUsers();
+    return useAdminStore.getState().pesoUsers;
   },
 
   getQCPesoRecord: async (id: string): Promise<QCPesoRecord | null> => {
-    return new Promise((resolve) => setTimeout(() => resolve(currentQCPesoRecords.find((record) => record.id === id) ?? null), 250))
+    const raw = await adminApiService.getPesoUser(Number(id));
+    return adaptAdminPesoItem(raw);
   },
 
   updateQCPesoRecord: async (id: string, updates: Partial<QCPesoRecord>): Promise<QCPesoRecord | null> => {
-    return new Promise((resolve) => setTimeout(() => {
-      const index = currentQCPesoRecords.findIndex((record) => record.id === id)
-      if (index < 0) return resolve(null)
-      currentQCPesoRecords[index] = { ...currentQCPesoRecords[index], ...updates }
-      resolve({ ...currentQCPesoRecords[index] })
-    }, 250))
+    const raw = await adminApiService.updatePesoUser(Number(id), updates);
+    return adaptAdminPesoItem(raw);
   },
 
-  createQCPesoRecord: async (record: QCPesoRecord): Promise<QCPesoRecord> => {
-    return new Promise((resolve) => setTimeout(() => {
-      currentQCPesoRecords = [record, ...currentQCPesoRecords]
-      resolve({ ...record })
-    }, 250))
+  createQCPesoRecord: async (record: any): Promise<QCPesoRecord> => {
+    const raw = await adminApiService.createPesoUser(record);
+    return adaptAdminPesoItem(raw);
   },
 
   getDashboardSummary: async (): Promise<AdminDashboardSummary> => {
-    return new Promise((resolve) => {
-      setTimeout(() => resolve({ ...currentSummary }), 300)
-    })
+    const store = useAdminStore.getState();
+    await store.fetchDashboard();
+    return (
+      store.summary || {
+        totalStudents: 0,
+        activeStudents: 0,
+        totalEmployers: 0,
+        totalAvailableOpportunities: 0,
+        systemHealth: {
+          serverStatus: 'Operational',
+          uptime: '100%',
+          databaseLoad: 'Normal',
+          activeSessions: 0,
+          lastBackup: 'N/A',
+          storageUsedPercent: 0,
+        },
+      }
+    );
   },
 
-  getRecentAuditLogs: async (limit: number = 4): Promise<AuditLog[]> => {
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(currentAuditLogs.slice(0, limit)), 300)
-    })
+  getRecentAuditLogs: async (_limit: number = 4): Promise<AuditLog[]> => {
+    return [];
   },
-
 
   getNotifications: async (): Promise<AdminNotification[]> => {
-    return new Promise((resolve) => {
-      setTimeout(() => resolve([...currentNotifications]), 300)
-    })
+    return [];
   },
 
   markAllNotificationsAsRead: async (): Promise<void> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        currentNotifications = currentNotifications.map((n) => ({ ...n, isRead: true }))
-        resolve()
-      }, 200)
-    })
+    return Promise.resolve();
   },
 
-  getRecordById: async (_id: string, role: string): Promise<AdminRecord> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        if (role === 'Student') resolve(currentStudentRecord)
-        else if (role === 'Employer') resolve(currentEmployerRecord)
-        else resolve(currentQCPesoRecord)
-      }, 300)
-    })
-  },
-  
-  updateRecord: async (_id: string, role: string, updates: Partial<AdminRecord>): Promise<AdminRecord> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        if (role === 'Student') {
-          currentStudentRecord = { ...currentStudentRecord, ...updates } as StudentRecord
-          resolve(currentStudentRecord)
-        } else if (role === 'Employer') {
-          currentEmployerRecord = { ...currentEmployerRecord, ...updates } as EmployerRecord
-          resolve(currentEmployerRecord)
-        } else {
-          currentQCPesoRecord = { ...currentQCPesoRecord, ...updates } as QCPesoRecord
-          resolve(currentQCPesoRecord)
-        }
-      }, 300)
-    })
+  getRecordById: async (id: string, role: string): Promise<AdminRecord> => {
+    if (role === 'Student') {
+      return (await adminService.getStudentRecord(id))!;
+    }
+    if (role === 'Employer') {
+      return (await adminService.getEmployerRecord(id))!;
+    }
+    return (await adminService.getQCPesoRecord(id))!;
   },
 
-  toggleRecordStatus: async (_id: string, role: string, newStatus: AccountStatus): Promise<boolean> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        if (role === 'Student') currentStudentRecord.status = newStatus
-        else if (role === 'Employer') currentEmployerRecord.status = newStatus
-        else currentQCPesoRecord.status = newStatus
-        resolve(true)
-      }, 300)
-    })
+  updateRecord: async (id: string, role: string, updates: Partial<AdminRecord>): Promise<AdminRecord> => {
+    if (role === 'Student') {
+      return (await adminService.updateStudentRecord(id, updates as Partial<StudentRecord>))!;
+    }
+    if (role === 'Employer') {
+      return (await adminService.updateEmployerRecord(id, updates as Partial<EmployerRecord>))!;
+    }
+    return (await adminService.updateQCPesoRecord(id, updates as Partial<QCPesoRecord>))!;
+  },
+
+  toggleRecordStatus: async (userAccountId: string, role: string, newStatus: AccountStatus): Promise<boolean> => {
+    const statusMap: Record<string, string> = {
+      Active: 'active',
+      Suspended: 'suspended',
+      Deactivated: 'archived',
+    };
+    const mapped = statusMap[newStatus] || 'active';
+    const store = useAdminStore.getState();
+
+    if (role === 'Student') {
+      await store.setStudentAccountStatus(Number(userAccountId), mapped);
+    } else if (role === 'Employer') {
+      await store.setEmployerAccountStatus(Number(userAccountId), mapped);
+    } else {
+      await store.setPesoAccountStatus(Number(userAccountId), mapped);
+    }
+    return true;
   },
 
   getAuditLogs: async (): Promise<AuditLog[]> => {
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(currentAuditLogs), 300)
-    })
+    return [];
   },
 
   triggerManualBackup: async (): Promise<{ success: boolean; message: string }> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ success: true, message: 'Database backup initiated successfully.' })
-      }, 800)
-    })
+    return { success: false, message: 'Database backup is not configured on this server.' };
   },
-}
+};
 
-export default adminService
+export default adminService;

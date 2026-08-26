@@ -1,7 +1,9 @@
 import { type FormEvent, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import googleLogo from '../../../assets/google-logo.svg'
 import leftPanelArtwork from '../../../assets/login_left-panel.svg'
+import { authService } from '../../../services/auth.service'
+import { useAuthStore } from '../../../stores/useAuthStore'
 import type { SignUpData } from '../types/auth.types'
 import styles from './SignUpPage.module.css'
 
@@ -28,9 +30,15 @@ const NAME_PATTERN = /^[A-Za-z ]+$/
 const sanitizeName = (value: string) => value.replace(/[^A-Za-z ]/g, '')
 
 function SignUpPage() {
-  const [step, setStep] = useState(0)
+  const [searchParams] = useSearchParams()
+  const isGoogle = searchParams.get('source') === 'google'
+  const [step, setStep] = useState(isGoogle ? 1 : 0)
   const [data, setData] = useState<SignUpData>(INITIAL_DATA)
   const [error, setError] = useState('')
+  const [, setLoading] = useState(false)
+
+  const navigate = useNavigate()
+  const { registerStudent } = useAuthStore()
 
   const updateField = <Field extends keyof SignUpData>(field: Field, value: SignUpData[Field]) => {
     setData((current) => ({ ...current, [field]: value }))
@@ -87,7 +95,22 @@ function SignUpPage() {
     setStep(2)
   }
 
-  const saveProfile = (event: FormEvent<HTMLFormElement>) => {
+  const mapInquiryMethod = (channel: string): string => {
+    const lower = channel.toLowerCase()
+    if (lower.includes('walk') || lower.includes('office')) return 'walk_in'
+    if (lower.includes('school')) return 'school'
+    if (lower.includes('phone')) return 'phone_call'
+    return 'online'
+  }
+
+  const mapSex = (s: string): string => {
+    const lower = s.toLowerCase()
+    if (lower.includes('female')) return 'female'
+    if (lower.includes('male')) return 'male'
+    return 'prefer_not_to_say'
+  }
+
+  const saveProfile = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     const requiredLocationFields = [
@@ -105,6 +128,50 @@ function SignUpPage() {
     }
 
     setError('')
+    setLoading(true)
+
+    try {
+      if (isGoogle) {
+        await authService.completeGoogleSignup({
+          firstName: data.firstName.trim(),
+          middleName: data.middleName.trim() || undefined,
+          lastName: data.lastName.trim(),
+          extensionName: data.extensionName.trim() || undefined,
+          sex: mapSex(data.sex),
+          birthDate: data.birthDate,
+          contactNumber: data.contactNumber.trim(),
+          addressLine: data.streetAddress.trim(),
+          addressBarangay: data.barangay.trim(),
+          addressDistrict: data.district.trim(),
+          addressCity: data.city.trim(),
+          inquiryMethod: mapInquiryMethod(data.inquiryChannel),
+        })
+        const { loadMe } = useAuthStore.getState()
+        await loadMe()
+      } else {
+        await registerStudent({
+          email: data.email.trim().toLowerCase(),
+          password: data.password,
+          firstName: data.firstName.trim(),
+          middleName: data.middleName.trim() || undefined,
+          lastName: data.lastName.trim(),
+          extensionName: data.extensionName.trim() || undefined,
+          sex: mapSex(data.sex),
+          birthDate: data.birthDate,
+          contactNumber: data.contactNumber.trim(),
+          addressLine: data.streetAddress.trim(),
+          addressBarangay: data.barangay.trim(),
+          addressDistrict: data.district.trim(),
+          addressCity: data.city.trim(),
+          inquiryMethod: mapInquiryMethod(data.inquiryChannel),
+        })
+      }
+      navigate('/intern-seeker', { replace: true })
+    } catch (err: any) {
+      setError(err.message || 'Registration failed. Please check your information.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -164,7 +231,11 @@ function AccountStep({ data, error, onChange, onSubmit }: StepProps) {
     <>
       <h1>Get more opportunities</h1>
 
-      <button className={styles.googleButton} type="button">
+      <button
+        className={styles.googleButton}
+        type="button"
+        onClick={() => authService.startGoogleSignup()}
+      >
         <img src={googleLogo} alt="" />
         <span>Sign Up with Google</span>
       </button>

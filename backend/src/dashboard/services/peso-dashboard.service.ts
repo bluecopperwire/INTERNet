@@ -407,4 +407,200 @@ export class PesoDashboardService {
       dateFilterDto,
     );
   }
+
+  // Direct Detail / Monitor Reads
+  async getApplicationDetail(applicationId: number) {
+    const rows = await this.dataSource.query(
+      `
+        SELECT 
+          ad.*,
+          s.birth_date,
+          s.sex,
+          s.address_line,
+          s.address_barangay,
+          s.address_district,
+          s.address_city
+        FROM public.vw_application_details ad
+        JOIN public.student s ON s.student_id = ad.student_id
+        WHERE ad.application_id = $1
+      `,
+      [applicationId],
+    );
+    if (!rows || rows.length === 0) {
+      throw new Error('Application not found');
+    }
+    const app = rows[0];
+
+    const requirements = await this.dataSource.query(
+      `
+        SELECT 
+          srs.student_requirement_submission_id,
+          srs.requirement_name,
+          srs.requirement_file_path,
+          srs.submitted_at,
+          rt.requirement_type_name
+        FROM public.student_requirement_submission srs
+        JOIN public.requirement_type rt ON rt.requirement_type_id = srs.requirement_type_id
+        WHERE srs.student_id = $1
+      `,
+      [app.student_id],
+    );
+
+    return {
+      ...app,
+      requirements,
+    };
+  }
+
+  async getReferralDetail(referralId: number) {
+    const rows = await this.dataSource.query(
+      `
+        SELECT *
+        FROM public.vw_referral_details
+        WHERE referral_id = $1
+      `,
+      [referralId],
+    );
+    if (!rows || rows.length === 0) {
+      throw new Error('Referral not found');
+    }
+    return rows[0];
+  }
+
+  async getInternDetail(internshipAssignmentId: number) {
+    const rows = await this.dataSource.query(
+      `
+        SELECT 
+          iad.*,
+          ats.total_rendered_hours,
+          ats.attendance_record_count,
+          ats.complete_count,
+          ats.incomplete_count,
+          ats.late_count,
+          ats.undertime_count,
+          ats.overtime_count,
+          ats.first_attendance_date,
+          ats.latest_attendance_date,
+          ats.completion_percentage
+        FROM public.vw_internship_assignment_details iad
+        LEFT JOIN public.vw_attendance_summary ats ON ats.internship_assignment_id = iad.internship_assignment_id
+        WHERE iad.internship_assignment_id = $1
+      `,
+      [internshipAssignmentId],
+    );
+    if (!rows || rows.length === 0) {
+      throw new Error('Internship assignment not found');
+    }
+    return rows[0];
+  }
+
+  async getStudents(query: { search?: string; page?: number; limit?: number }) {
+    const page = query.page && query.page > 0 ? query.page : 1;
+    const limit = query.limit && query.limit > 0 ? query.limit : 10;
+    const offset = (page - 1) * limit;
+
+    const whereClauses: string[] = ['ua.account_status = \'active\'', 'ua.deleted_at IS NULL'];
+    const params: any[] = [];
+    let pIdx = 1;
+
+    if (query.search) {
+      whereClauses.push(
+        `(concat_ws(' ', s.first_name, s.middle_name, s.last_name) ILIKE $${pIdx} OR s.contact_email ILIKE $${pIdx} OR s.address_city ILIKE $${pIdx})`,
+      );
+      params.push(`%${query.search.trim()}%`);
+      pIdx++;
+    }
+
+    const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+    const countRes = await this.dataSource.query(
+      `
+        SELECT COUNT(s.student_id)::int as total
+        FROM public.student s
+        JOIN public.user_account ua ON ua.user_account_id = s.user_account_id
+        ${whereSql}
+      `,
+      params,
+    );
+    const total = countRes[0]?.total ? parseInt(countRes[0].total, 10) : 0;
+    const totalPages = Math.ceil(total / limit) || 1;
+
+    const queryParams = [...params, limit, offset];
+    const rows = await this.dataSource.query(
+      `
+        SELECT 
+          s.student_id,
+          s.user_account_id,
+          concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS full_name,
+          s.contact_email,
+          s.contact_number,
+          s.address_barangay,
+          s.address_district,
+          s.address_city,
+          sai.school_name,
+          sai.year_level,
+          sai.strand_program,
+          ua.account_status,
+          s.created_at
+        FROM public.student s
+        JOIN public.user_account ua ON ua.user_account_id = s.user_account_id
+        LEFT JOIN public.student_academic_information sai ON sai.student_id = s.student_id
+        ${whereSql}
+        ORDER BY s.created_at DESC
+        LIMIT $${pIdx} OFFSET $${pIdx + 1}
+      `,
+      queryParams,
+    );
+
+    return {
+      data: rows,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
+  }
+
+  async getStudentDetail(studentId: number) {
+    const rows = await this.dataSource.query(
+      `
+        SELECT *
+        FROM public.vw_student_profile_details
+        WHERE student_id = $1
+      `,
+      [studentId],
+    );
+    if (!rows || rows.length === 0) {
+      throw new Error('Student not found');
+    }
+    return rows[0];
+  }
+
+  async getEmployerDetail(companyId: number) {
+    const rows = await this.dataSource.query(
+      `
+        SELECT 
+          c.*,
+          i.industry_name,
+          ua.email,
+          ua.account_status,
+          (
+            SELECT count(o.opportunity_id)::int
+            FROM public.opportunity o
+            WHERE o.company_id = c.company_id AND o.opportunity_status = 'open'
+          ) AS active_opportunity_count
+        FROM public.company c
+        JOIN public.industry i ON i.industry_id = c.industry_id
+        JOIN public.user_account ua ON ua.user_account_id = c.user_account_id
+        WHERE c.company_id = $1
+      `,
+      [companyId],
+    );
+    if (!rows || rows.length === 0) {
+      throw new Error('Employer not found');
+    }
+    return rows[0];
+  }
 }

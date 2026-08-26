@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
+import { PesoApprovedGuard } from '../../auth/guards/peso-approved.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { UserRole } from '../../users/entities/account.entities';
 import { PesoDashboardService } from '../services/peso-dashboard.service';
@@ -20,7 +21,7 @@ import { DateFilterDto } from '../../common/dto/date-filter.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @Controller('dashboard/peso')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PesoApprovedGuard)
 @Roles(UserRole.PESO_PERSONNEL)
 export class PesoDashboardController {
   constructor(private readonly pesoService: PesoDashboardService) {}
@@ -86,5 +87,46 @@ export class PesoDashboardController {
     @Query() dateFilterDto: DateFilterDto,
   ) {
     return this.pesoService.getDtrPerStudent(assignmentId, dateFilterDto);
+  }
+
+  // Direct Detail / Monitor Endpoints
+  @Get('applications/:applicationId')
+  getApplicationDetail(
+    @Param('applicationId', ParseIntPipe) applicationId: number,
+  ) {
+    return this.pesoService.getApplicationDetail(applicationId);
+  }
+
+  @Get('referrals/:referralId')
+  getReferralDetail(
+    @Param('referralId', ParseIntPipe) referralId: number,
+  ) {
+    return this.pesoService.getReferralDetail(referralId);
+  }
+
+  @Get('interns/:internshipAssignmentId')
+  getInternDetail(
+    @Param('internshipAssignmentId', ParseIntPipe) internshipAssignmentId: number,
+  ) {
+    return this.pesoService.getInternDetail(internshipAssignmentId);
+  }
+
+  @Get('students')
+  getStudents(@Query() queryDto: PaginationDto & { search?: string }) {
+    return this.pesoService.getStudents(queryDto);
+  }
+
+  @Get('students/:studentId')
+  getStudentDetail(
+    @Param('studentId', ParseIntPipe) studentId: number,
+  ) {
+    return this.pesoService.getStudentDetail(studentId);
+  }
+
+  @Get('employers/:companyId')
+  getEmployerDetail(
+    @Param('companyId', ParseIntPipe) companyId: number,
+  ) {
+    return this.pesoService.getEmployerDetail(companyId);
   }
 }

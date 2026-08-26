@@ -300,4 +300,69 @@ export class AccountManagementService {
       throw error;
     }
   }
+
+  async getPesoProfile(userAccountId: number) {
+    const pesoRepo = this.dataSource.getRepository(PesoPersonnel);
+    const accountRepo = this.dataSource.getRepository(UserAccount);
+    const peso = await pesoRepo.findOne({ where: { userAccountId } });
+    if (!peso) {
+      throw new NotFoundException('PESO personnel profile not found');
+    }
+    const account = await accountRepo.findOne({ where: { userAccountId } });
+    return {
+      pesoPersonnelId: peso.pesoPersonnelId,
+      userAccountId: peso.userAccountId,
+      firstName: peso.firstName,
+      middleName: peso.middleName,
+      lastName: peso.lastName,
+      extensionName: peso.extensionName,
+      sex: peso.sex,
+      birthDate: peso.birthDate,
+      addressLine: peso.addressLine,
+      addressBarangay: peso.addressBarangay,
+      addressDistrict: peso.addressDistrict,
+      addressCity: peso.addressCity,
+      contactNumber: peso.contactNumber,
+      contactEmail: peso.contactEmail,
+      employeeId: peso.employeeId,
+      position: peso.position,
+      department: peso.department,
+      employeeIdFilePath: peso.employeeIdFilePath,
+      photoFilePath: peso.photoFilePath,
+      verificationStatus: peso.verificationStatus,
+      reviewedAt: peso.reviewedAt,
+      verificationRemark: peso.verificationRemark,
+      email: account?.email,
+      accountStatus: account?.accountStatus,
+    };
+  }
+
+  async updatePesoProfile(userAccountId: number, dto: any) {
+    const pesoRepo = this.dataSource.getRepository(PesoPersonnel);
+    const peso = await pesoRepo.findOne({ where: { userAccountId } });
+    if (!peso) {
+      throw new NotFoundException('PESO personnel profile not found');
+    }
+
+    const updates: Partial<PesoPersonnel> = {};
+    if (dto.firstName !== undefined) updates.firstName = dto.firstName;
+    if (dto.middleName !== undefined) updates.middleName = dto.middleName ?? null;
+    if (dto.lastName !== undefined) updates.lastName = dto.lastName;
+    if (dto.extensionName !== undefined) updates.extensionName = dto.extensionName ?? null;
+    if (dto.sex !== undefined) updates.sex = dto.sex;
+    if (dto.birthDate !== undefined) updates.birthDate = dto.birthDate;
+    if (dto.addressLine !== undefined) updates.addressLine = dto.addressLine;
+    if (dto.addressBarangay !== undefined) updates.addressBarangay = dto.addressBarangay;
+    if (dto.addressDistrict !== undefined) updates.addressDistrict = dto.addressDistrict;
+    if (dto.addressCity !== undefined) updates.addressCity = dto.addressCity;
+    if (dto.contactNumber !== undefined) updates.contactNumber = dto.contactNumber;
+    if (dto.contactEmail !== undefined) updates.contactEmail = dto.contactEmail;
+    if (dto.position !== undefined) updates.position = dto.position;
+    if (dto.department !== undefined) updates.department = dto.department;
+    if (dto.photoFilePath !== undefined) updates.photoFilePath = dto.photoFilePath;
+
+    await pesoRepo.update({ userAccountId }, updates);
+    return this.getPesoProfile(userAccountId);
+  }
 }
+

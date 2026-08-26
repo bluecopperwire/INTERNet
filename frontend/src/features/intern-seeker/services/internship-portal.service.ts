@@ -1,66 +1,70 @@
-import { MOCK_INTERNSHIP_PORTAL_DATA, MOCK_USER_PROFILE, MOCK_RESUMES } from '../mocks/internship-portal.mock'
-import { MOCK_APPLICATIONS } from '../mocks/applications.mock'
+import { useStudentStore } from '../stores/useStudentStore';
 import type {
   InternshipPortalData,
   OpportunitySearchParams,
   UserProfile,
   Resume,
-  UserApplication
-} from '../types/internship.types'
+  UserApplication,
+} from '../types/internship.types';
+import { useStudentTrackingStore } from '../stores/useStudentTrackingStore';
 
-export interface InternshipPortalService {
-  getPortalData(): Promise<InternshipPortalData>
-  searchOpportunities(params: OpportunitySearchParams): Promise<InternshipPortalData>
-  getUserProfile(): Promise<UserProfile>
-  updateUserProfile(profile: Partial<UserProfile>): Promise<UserProfile>
-  getUserResumes(): Promise<Resume[]>
-  getUserApplications(): Promise<UserApplication[]>
-}
-
-const clonePortalData = (): InternshipPortalData => ({
-  opportunities: [...MOCK_INTERNSHIP_PORTAL_DATA.opportunities],
-  companies: [...MOCK_INTERNSHIP_PORTAL_DATA.companies],
-})
-
-export const internshipPortalService: InternshipPortalService = {
-  async getPortalData() {
-    return Promise.resolve(clonePortalData())
+export const internshipPortalService = {
+  async getPortalData(): Promise<InternshipPortalData> {
+    const store = useStudentStore.getState();
+    await store.fetchOpportunities();
+    return {
+      opportunities: useStudentStore.getState().opportunities,
+      companies: useStudentStore.getState().companies,
+    };
   },
 
-  async searchOpportunities({ query, companyId }) {
-    const normalizedQuery = query.trim().toLowerCase()
-    const data = clonePortalData()
-
-    return Promise.resolve({
-      ...data,
-      opportunities: data.opportunities.filter((opportunity) => {
-        if (companyId && opportunity.companyId !== companyId) return false
-        if (!normalizedQuery) return true
-
-        return [
-          opportunity.position,
-          opportunity.companyName,
-          opportunity.location,
-        ].some((value) => value.toLowerCase().startsWith(normalizedQuery))
-      }),
-    })
+  async searchOpportunities(params: OpportunitySearchParams): Promise<InternshipPortalData> {
+    const store = useStudentStore.getState();
+    await store.fetchOpportunities({
+      search: params.query,
+      companyId: params.companyId ? Number(params.companyId) : undefined,
+    });
+    return {
+      opportunities: useStudentStore.getState().opportunities,
+      companies: useStudentStore.getState().companies,
+    };
   },
 
-  async getUserProfile() {
-    return new Promise((resolve) => setTimeout(() => resolve({ ...MOCK_USER_PROFILE }), 400))
+  async getUserProfile(): Promise<UserProfile> {
+    const store = useStudentStore.getState();
+    const profile = await store.fetchProfile();
+    if (!profile) throw new Error('Failed to load profile');
+    return profile;
   },
 
-  async updateUserProfile(profileUpdates) {
-    return new Promise((resolve) => setTimeout(() => {
-      resolve({ ...MOCK_USER_PROFILE, ...profileUpdates })
-    }, 600))
+  async updateUserProfile(profileUpdates: any): Promise<UserProfile> {
+    const store = useStudentStore.getState();
+    await store.saveProfile(profileUpdates);
+    return useStudentStore.getState().profile!;
   },
 
-  async getUserResumes() {
-    return new Promise((resolve) => setTimeout(() => resolve([...MOCK_RESUMES]), 400))
+  async getUserResumes(): Promise<Resume[]> {
+    const trackingStore = useStudentTrackingStore.getState();
+    await trackingStore.fetchRequirements();
+    const reqs = useStudentTrackingStore.getState().requirements;
+    const resumeReq = reqs.find((r) => r.id === 'curriculum_vitae_resume' && r.document);
+
+    if (resumeReq && resumeReq.document) {
+      return [
+        {
+          id: 'curriculum_vitae_resume',
+          fileName: resumeReq.document.fileName,
+          dateAdded: resumeReq.document.uploadedAt,
+          url: resumeReq.document.previewUrl || '',
+        },
+      ];
+    }
+    return [];
   },
 
-  async getUserApplications() {
-    return new Promise((resolve) => setTimeout(() => resolve([...MOCK_APPLICATIONS]), 400))
-  }
-}
+  async getUserApplications(): Promise<UserApplication[]> {
+    const trackingStore = useStudentTrackingStore.getState();
+    await trackingStore.fetchApplications();
+    return useStudentTrackingStore.getState().applications;
+  },
+};
