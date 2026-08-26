@@ -1,0 +1,169 @@
+.overlay {
+  position: fixed;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  inset: 0;
+  padding: 20px;
+  background: rgba(18, 17, 25, 0.78);
+}
+
+.modal {
+  position: relative;
+  display: flex;
+  width: min(720px, 100%);
+  max-height: calc(100vh - 40px);
+  flex-direction: column;
+  gap: 22px;
+  padding: 28px 32px 30px;
+  overflow-y: auto;
+  border: 1px solid rgba(22, 14, 111, 0.12);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(8, 6, 35, 0.28);
+}
+
+.header {
+  padding-right: 52px;
+}
+
+.header h2,
+.card h3,
+.sectionGroup h3 {
+  margin: 0;
+  color: #160e6f;
+}
+
+.header h2 {
+  font-size: 1.55rem;
+}
+
+.header p,
+.card p {
+  margin: 2px 0 0;
+  color: #5d6078;
+}
+
+.closeBtn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid rgba(22, 14, 111, 0.16);
+  border-radius: 50%;
+  color: #160e6f;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.gridCards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid #dfe3ea;
+  border-radius: 8px;
+}
+
+.card {
+  min-height: 76px;
+  padding: 14px 18px;
+}
+
+.card:nth-child(odd) {
+  border-right: 1px solid #dfe3ea;
+}
+
+.card:nth-child(-n + 2) {
+  border-bottom: 1px solid #dfe3ea;
+}
+
+.card h3,
+.sectionGroup h3 {
+  font-size: 0.86rem;
+  text-transform: uppercase;
+}
+
+.sectionGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.pillGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.docPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 15px;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #160e6f;
+  font-size: 0.78rem;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  padding-top: 18px;
+  border-top: 1px solid #e4e6eb;
+}
+
+.actions button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 0;
+  border-radius: 7px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btnApprove,
+.btnReject {
+  color: #ffffff;
+}
+
+.btnApprove {
+  background: #160e6f;
+}
+
+.btnFlag {
+  color: #160e6f;
+  background: #fdd116;
+}
+
+.btnReject {
+  background: #cc0001;
+}
+
+@media (max-width: 640px) {
+  .modal {
+    padding: 24px 20px;
+  }
+
+  .gridCards,
+  .actions {
+    grid-template-columns: 1fr;
+  }
+
+  .card:nth-child(n) {
+    border-right: 0;
+    border-bottom: 1px solid #dfe3ea;
+  }
+
+  .card:last-child {
+    border-bottom: 0;
+  }
+}

@@ -1,0 +1,81 @@
+.header {
+  position: relative;
+  min-height: 442px;
+  overflow: hidden;
+  color: #ffffff;
+  background-position: center;
+  background-size: cover;
+}
+
+.copy {
+  position: absolute;
+  top: 122px;
+  left: clamp(70px, 7vw, 105px);
+}
+
+.copy h1 {
+  margin: 0;
+  font-size: clamp(56px, 6vw, 82px);
+  line-height: 1;
+  letter-spacing: -3px;
+}
+
+.copy p {
+  margin: 15px 0 0;
+  font-size: clamp(15px, 1.5vw, 20px);
+  line-height: 1.15;
+}
+
+.logos {
+  position: absolute;
+  top: 38px;
+  right: 31px;
+  width: 92px;
+}
+
+.seeMore {
+  position: absolute;
+  right: 52px;
+  bottom: 78px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 11px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.seeMore span {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.seeMore svg {
+  width: 24px;
+  height: 38px;
+}
+
+@media (max-width: 700px) {
+  .header {
+    min-height: 390px;
+  }
+  .copy {
+    top: 140px;
+    left: 24px;
+  }
+  .copy h1 {
+    font-size: 50px;
+    letter-spacing: -2px;
+  }
+  .copy p {
+    font-size: 14px;
+  }
+  .logos {
+    top: 28px;
+    right: 20px;
+    width: 76px;
+  }
+  .seeMore {
+    display: none;
+  }
+}

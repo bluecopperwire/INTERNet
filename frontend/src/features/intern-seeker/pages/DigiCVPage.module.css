@@ -1,0 +1,197 @@
+.page {
+  position: relative;
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 130px 36px 90px;
+  overflow: hidden;
+  color: #ffffff;
+  background-position: center;
+  background-size: cover;
+}
+
+.qcLogos {
+  position: absolute;
+  top: 38px;
+  right: 31px;
+  width: 92px;
+  height: auto;
+}
+
+.content {
+  width: min(100%, 970px);
+  text-align: center;
+}
+
+.heading h1 {
+  margin: 0;
+  font-size: clamp(76px, 9vw, 132px);
+  font-weight: 400;
+  line-height: 0.9;
+  letter-spacing: -4px;
+}
+
+.heading h2 {
+  margin: 48px 0 0;
+  font-size: clamp(20px, 2vw, 25px);
+  font-weight: 500;
+}
+
+.heading p {
+  margin: 0;
+  font-size: clamp(14px, 1.5vw, 18px);
+}
+
+.heading strong {
+  color: #ffd514;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 63px;
+  margin-top: 60px;
+}
+
+.uploadGroup {
+  position: relative;
+}
+
+.actionCard {
+  display: flex;
+  width: 100%;
+  min-height: 287px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  color: #ffffff;
+  background: rgba(33, 22, 123, 0.85);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.uploadCard {
+  border: 2px dashed rgba(255, 255, 255, 0.95);
+  font-family: inherit;
+}
+
+.actionCard:hover,
+.actionCard:focus-visible,
+.uploadCard.dragging {
+  background: rgba(39, 26, 146, 0.94);
+  box-shadow: 0 14px 32px rgba(10, 7, 47, 0.25);
+  transform: translateY(-3px);
+}
+
+.uploadCard.dragging {
+  border-color: #ffd514;
+}
+
+.actionCard:focus-visible {
+  outline: 3px solid #ffd514;
+  outline-offset: 4px;
+}
+
+.actionCard > svg {
+  width: 68px;
+  height: 68px;
+  margin-bottom: 10px;
+  stroke-width: 1.9;
+}
+
+.actionTitle {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.actionBadge {
+  min-width: 120px;
+  margin-top: 6px;
+  padding: 5px 14px;
+  border-radius: 8px;
+  color: #17105f;
+  background: #ffd514;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.uploadHint {
+  max-width: 88%;
+  margin-top: 12px;
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+}
+
+.error {
+  position: absolute;
+  right: 0;
+  left: 0;
+  margin: 8px 0 0;
+  color: #fff0f0;
+  font-size: 12px;
+}
+
+.steps {
+  display: flex;
+  width: min(100%, 730px);
+  min-height: 50px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 49px auto 0;
+  padding: 10px 26px;
+  border-radius: 999px;
+  background: #21167b;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+@media (max-width: 760px) {
+  .page {
+    padding: 120px 22px 96px;
+    overflow-y: auto;
+  }
+  .qcLogos {
+    top: 28px;
+    right: 20px;
+    width: 76px;
+  }
+  .heading h1 {
+    letter-spacing: -2px;
+  }
+  .heading h2 {
+    margin-top: 30px;
+  }
+  .actions {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    margin-top: 42px;
+  }
+  .actionCard {
+    min-height: 240px;
+  }
+  .steps {
+    flex-wrap: wrap;
+    border-radius: 18px;
+    font-size: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .actionCard {
+    transition: none;
+  }
+}

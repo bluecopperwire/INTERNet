@@ -1,0 +1,140 @@
+.page {
+  width: min(1280px, calc(100% - 96px));
+  margin: 0 auto;
+  padding: 32px 0 48px;
+  color: #160e6f;
+  font-family: 'Poppins', sans-serif;
+}
+
+.feedback {
+  padding: 56px;
+  color: #160e6f;
+  font-family: 'Poppins', sans-serif;
+  text-align: center;
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 26px;
+  padding: 8px 0;
+  border: 0;
+  color: #160e6f;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.backButton:hover {
+  opacity: 0.75;
+  transform: translateX(-2px);
+}
+
+.card {
+  overflow: hidden;
+  margin-bottom: 18px;
+  border: 1px solid #d6daea;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 5px 16px rgba(22, 14, 111, 0.05);
+}
+
+.cardHeader {
+  padding: 18px 22px;
+  border-bottom: 2px solid #160e6f;
+  background: #f8fafc;
+}
+
+.cardHeader h1,
+.cardHeader h2 {
+  margin: 0;
+  color: #160e6f;
+  font-size: 21px;
+  font-weight: 700;
+}
+
+.cardHeader p {
+  margin: 4px 0 0;
+  color: #55627d;
+  font-size: 13px;
+}
+
+.cardBody {
+  padding: 20px 22px 22px;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 22px;
+  margin: 0;
+}
+
+.field {
+  min-width: 0;
+}
+
+.field dt {
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.field dd {
+  min-height: 46px;
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid #cfd5e6;
+  border-radius: 8px;
+  color: #24204f;
+  background: #ffffff;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.withdrawButton {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 20px;
+  border: 0;
+  border-radius: 8px;
+  color: #ffffff;
+  background: #21167b;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.withdrawButton:hover {
+  background: #30239a;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 760px) {
+  .page {
+    width: min(100% - 32px, 1280px);
+    padding-top: 28px;
+  }
+
+  .detailGrid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .cardHeader,
+  .cardBody {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+
+  .cardHeader h1,
+  .cardHeader h2 {
+    font-size: 19px;
+  }
+}

@@ -1,0 +1,18 @@
+.page {
+  --tracking-purple: #21167b;
+  --tracking-yellow: #f1c400;
+  --tracking-content-width: 1280px;
+  min-height: 100vh;
+  color: var(--tracking-purple);
+  background: #ffffff;
+}
+
+.trackingContent {
+  padding: 48px max(4vw, 32px) 64px;
+}
+
+@media (max-width: 700px) {
+  .trackingContent {
+    padding: 45px 16px 55px;
+  }
+}
