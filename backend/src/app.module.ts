@@ -13,6 +13,7 @@ import { ApplicationsModule } from './applications/applications.module';
 import { StudentsModule } from './students/students.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { EmployerModule } from './employer/employer.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { EmployerModule } from './employer/employer.module';
     StudentsModule,
     DashboardModule,
     EmployerModule,
+    AdminModule,
   ],
   providers: [
     {

@@ -19,6 +19,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:employer:e2e": "jest --config ./test/jest-employer-e2e.json --runInBand",
+    "test:admin:e2e": "jest --config ./test/jest-admin-e2e.json --runInBand",
     "typeorm": "typeorm-ts-node-commonjs -d src/config/data-source.ts",
     "migration:show": "npm run typeorm -- migration:show",
     "migration:run": "npm run typeorm -- migration:run --transaction none",
