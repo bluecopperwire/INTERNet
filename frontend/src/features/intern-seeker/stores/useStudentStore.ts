@@ -4,6 +4,7 @@ import type { OpportunityFilters } from '../services/student-api.service';
 import {
   adaptOpportunity,
   adaptStudentProfile,
+  adaptStudentProfileToUpdateDto,
 } from '../adapters/student.adapters';
 import type {
   InternshipOpportunity,
@@ -11,6 +12,7 @@ import type {
   PartnerCompany,
 } from '../types/internship.types';
 import { useAuthStore } from '../../../stores/useAuthStore';
+import { useReferenceStore } from '../../../stores/useReferenceStore';
 import { normalizeApiError } from '../../../services/api';
 
 interface StudentState {
@@ -67,7 +69,9 @@ export const useStudentStore = create<StudentState>((set) => ({
 
     set({ isProfileLoading: true, error: null });
     try {
-      const data = await studentApiService.saveProfile(studentId, payload);
+      const industries = await useReferenceStore.getState().fetchIndustries();
+      const dto = adaptStudentProfileToUpdateDto(payload, industries);
+      const data = await studentApiService.saveProfile(studentId, dto);
       const adapted = adaptStudentProfile(data);
       set({ profile: adapted, isProfileLoading: false });
     } catch (err: any) {

@@ -70,47 +70,218 @@ export function adaptOpportunity(
   };
 }
 
+const YEAR_LEVEL_MAP_TO_UI: Record<string, string> = {
+  grade_11: 'Grade 11',
+  grade_12: 'Grade 12',
+  first_year_college: '1st Year',
+  second_year_college: '2nd Year',
+  third_year_college: '3rd Year',
+  fourth_year_college: '4th Year',
+  fifth_year_college: '5th Year',
+  'Grade 11': 'Grade 11',
+  'Grade 12': 'Grade 12',
+  '1st Year': '1st Year',
+  '2nd Year': '2nd Year',
+  '3rd Year': '3rd Year',
+  '4th Year': '4th Year',
+  '5th Year': '5th Year',
+};
+
+const YEAR_LEVEL_MAP_TO_DTO: Record<string, string> = {
+  'Grade 11': 'grade_11',
+  'Grade 12': 'grade_12',
+  '1st Year': 'first_year_college',
+  '2nd Year': 'second_year_college',
+  '3rd Year': 'third_year_college',
+  '4th Year': 'fourth_year_college',
+  '5th Year': 'fifth_year_college',
+  grade_11: 'grade_11',
+  grade_12: 'grade_12',
+  first_year_college: 'first_year_college',
+  second_year_college: 'second_year_college',
+  third_year_college: 'third_year_college',
+  fourth_year_college: 'fourth_year_college',
+  fifth_year_college: 'fifth_year_college',
+};
+
+const SCHEDULE_MAP_TO_UI: Record<string, string> = {
+  weekdays: 'Weekdays',
+  weekends: 'Weekends',
+  flexible: 'Flexible',
+  Weekdays: 'Weekdays',
+  Weekends: 'Weekends',
+  Flexible: 'Flexible',
+};
+
+const SCHEDULE_MAP_TO_DTO: Record<string, string> = {
+  Weekdays: 'weekdays',
+  Weekends: 'weekends',
+  Flexible: 'flexible',
+  weekdays: 'weekdays',
+  weekends: 'weekends',
+  flexible: 'flexible',
+};
+
+const HOST_ORG_MAP_TO_UI: Record<string, string> = {
+  government: 'Government',
+  private: 'Private',
+  Government: 'Government',
+  Private: 'Private',
+};
+
+const HOST_ORG_MAP_TO_DTO: Record<string, string> = {
+  Government: 'government',
+  Private: 'private',
+  government: 'government',
+  private: 'private',
+};
+
 export function adaptStudentProfile(dto: StudentProfileResponse): UserProfile {
   const s = dto.student;
   const ac = dto.academic;
   const ip = dto.internshipPreference;
   const pi = dto.preferredIndustries || [];
 
+  const rawYear = ac?.year_level || '';
+  const uiYear = YEAR_LEVEL_MAP_TO_UI[rawYear] || rawYear;
+
+  const rawSchedule = ip?.available_days || 'weekdays';
+  const uiSchedule = SCHEDULE_MAP_TO_UI[rawSchedule] || rawSchedule;
+
+  const rawHostOrg = ip?.preferred_company_type || 'private';
+  const uiHostOrg = HOST_ORG_MAP_TO_UI[rawHostOrg] || rawHostOrg;
+
+  const birthDateStr = s.birth_date ? String(s.birth_date).split('T')[0] : '';
+  const startDateStr = ip?.start_date ? String(ip.start_date).split('T')[0] : '';
+
   return {
     id: String(s.student_id),
-    firstName: s.first_name,
+    firstName: s.first_name || '',
     middleName: s.middle_name || '',
-    lastName: s.last_name,
+    lastName: s.last_name || '',
     extensionName: s.extension_name || '',
     role: 'Intern Seeker',
-    location: `${s.address_barangay}, ${s.address_city}`,
-    email: s.contact_email,
+    location: `${s.address_barangay || ''}, ${s.address_city || ''}`.replace(/^, |, $/g, ''),
+    email: s.contact_email || '',
     linkedinUrl: s.linkedin_url || '',
     internshipStatus: 'Not Employed',
-    sex: s.sex,
-    birthdate: s.birth_date,
-    contactNumber: s.contact_number,
+    sex: s.sex || 'Male',
+    birthdate: birthDateStr,
+    contactNumber: s.contact_number || '',
     address: {
-      street: s.address_line,
-      barangay: s.address_barangay,
-      district: s.address_district,
-      city: s.address_city,
+      street: s.address_line || '',
+      barangay: s.address_barangay || '',
+      district: s.address_district || 'N/A',
+      city: s.address_city || '',
     },
-    inquiryVia: s.inquiry_method,
+    inquiryVia: s.inquiry_method || 'online',
     academic: {
       schoolName: ac?.school_name || '',
       program: ac?.strand_program || '',
-      yearLevel: ac?.year_level || '',
+      yearLevel: uiYear,
     },
     preferences: {
-      requiredHours: ip ? ip.required_hours : '',
-      willingToAssignOutside: ip ? ip.allows_outside_preferred_field : false,
-      preferredIndustries: pi.map((p) => p.industry_name || p.custom_industry_name || String(p.industry_id)),
-      otherPreferredField: '',
-      schedule: ip ? [ip.available_days] : ['weekdays'],
-      startDate: ip ? ip.start_date : '',
-      hostOrgType: ip ? ip.preferred_company_type : 'private',
+      requiredHours: ip?.required_hours ?? '',
+      willingToAssignOutside: ip ? Boolean(ip.allows_outside_preferred_field) : false,
+      preferredIndustries: pi.map((p) => p.industry_name || p.custom_industry_name || String(p.industry_id || '')),
+      otherPreferredField: pi.find((p) => p.custom_industry_name)?.custom_industry_name || '',
+      schedule: [uiSchedule],
+      startDate: startDateStr,
+      hostOrgType: uiHostOrg,
     },
+  };
+}
+
+export function adaptStudentProfileToUpdateDto(
+  profile: Partial<UserProfile>,
+  referenceIndustries: Array<{ industryId: number; industryName: string; isCustomText?: boolean }> = [],
+) {
+  const normYear =
+    YEAR_LEVEL_MAP_TO_DTO[profile.academic?.yearLevel || ''] || 'third_year_college';
+  const normSchedule =
+    SCHEDULE_MAP_TO_DTO[profile.preferences?.schedule?.[0] || ''] || 'weekdays';
+  const normOrgType =
+    HOST_ORG_MAP_TO_DTO[profile.preferences?.hostOrgType || ''] || 'private';
+
+  const birthDateValue =
+    profile.birthdate && profile.birthdate.trim()
+      ? profile.birthdate.split('T')[0]
+      : '2002-01-01';
+
+  const startDateValue =
+    profile.preferences?.startDate && profile.preferences.startDate.trim()
+      ? profile.preferences.startDate.split('T')[0]
+      : new Date().toISOString().split('T')[0];
+
+  const preferredIndustriesDto: Array<{ industryId: number; customIndustryName?: string }> = [];
+  const selectedIndustryNames = profile.preferences?.preferredIndustries || [];
+
+  selectedIndustryNames.forEach((name) => {
+    if (name === 'Other') {
+      const customName = profile.preferences?.otherPreferredField?.trim();
+      const customInd = referenceIndustries.find((i) => i.isCustomText || i.industryName.toLowerCase() === 'other');
+      if (customInd) {
+        preferredIndustriesDto.push({
+          industryId: customInd.industryId,
+          customIndustryName: customName || undefined,
+        });
+      } else if (referenceIndustries.length > 0) {
+        preferredIndustriesDto.push({
+          industryId: referenceIndustries[0].industryId,
+          customIndustryName: customName || undefined,
+        });
+      }
+      return;
+    }
+
+    const matched = referenceIndustries.find(
+      (ind) =>
+        ind.industryName.toLowerCase().replace(/[^a-z0-9]/g, '') ===
+        name.toLowerCase().replace(/[^a-z0-9]/g, ''),
+    );
+    if (matched) {
+      preferredIndustriesDto.push({ industryId: matched.industryId });
+    }
+  });
+
+  if (preferredIndustriesDto.length === 0 && referenceIndustries.length > 0) {
+    preferredIndustriesDto.push({ industryId: referenceIndustries[0].industryId });
+  }
+
+  const allowedInquiries = ['walk_in', 'online', 'phone_call', 'school'];
+  const inquiryMethod =
+    profile.inquiryVia && allowedInquiries.includes(profile.inquiryVia)
+      ? profile.inquiryVia
+      : 'online';
+
+  return {
+    firstName: profile.firstName || '',
+    middleName: profile.middleName || undefined,
+    lastName: profile.lastName || '',
+    extensionName: profile.extensionName || undefined,
+    sex: profile.sex || 'Male',
+    birthDate: birthDateValue,
+    contactNumber: profile.contactNumber || '',
+    contactEmail: profile.email || '',
+    linkedinUrl: profile.linkedinUrl || undefined,
+    addressLine: profile.address?.street || '',
+    addressBarangay: profile.address?.barangay || '',
+    addressDistrict: profile.address?.district || 'N/A',
+    addressCity: profile.address?.city || '',
+    inquiryMethod,
+    academic: {
+      schoolName: profile.academic?.schoolName || '',
+      strandProgram: profile.academic?.program || '',
+      yearLevel: normYear,
+    },
+    internshipPreference: {
+      requiredHours: Number(profile.preferences?.requiredHours) || 300,
+      availableDays: normSchedule,
+      preferredCompanyType: normOrgType,
+      startDate: startDateValue,
+      allowsOutsidePreferredField: Boolean(profile.preferences?.willingToAssignOutside),
+    },
+    preferredIndustries: preferredIndustriesDto,
   };
 }
 
@@ -308,11 +479,17 @@ export function adaptRequirements(
   ];
 
   return standardTypes.map((type) => {
-    const submission = res.requirements.find(
-      (r) =>
-        r.requirement_type_name.toLowerCase().includes(type.id.replace(/_/g, ' ')) ||
-        r.requirement_name.toLowerCase().includes(type.id.replace(/_/g, ' ')),
-    );
+    const normTarget = type.id.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const submission = res.requirements.find((r) => {
+      const normServer = (r.requirement_type_name || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '');
+      return (
+        normServer === normTarget ||
+        normServer.includes(normTarget) ||
+        normTarget.includes(normServer)
+      );
+    });
 
     let doc: RequirementDocument | undefined = undefined;
     if (submission) {

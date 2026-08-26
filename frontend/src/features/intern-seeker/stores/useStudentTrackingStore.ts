@@ -34,6 +34,7 @@ interface StudentTrackingState {
 
   fetchRequirements: () => Promise<void>;
   uploadRequirement: (file: File, type: string, name: string) => Promise<void>;
+  deleteRequirement: (type: string) => Promise<void>;
 
   fetchAttendance: (params?: { startDate?: string; endDate?: string }) => Promise<void>;
   clockIn: () => Promise<void>;
@@ -147,6 +148,19 @@ export const useStudentTrackingStore = create<StudentTrackingState>((set, get) =
 
     try {
       await studentApiService.uploadRequirement(studentId, file, type, name);
+      await get().fetchRequirements();
+    } catch (err: any) {
+      const norm = normalizeApiError(err);
+      throw norm;
+    }
+  },
+
+  deleteRequirement: async (type: string) => {
+    const studentId = useAuthStore.getState().user?.studentId;
+    if (!studentId) throw new Error('Student ID not found');
+
+    try {
+      await studentApiService.deleteRequirement(studentId, type);
       await get().fetchRequirements();
     } catch (err: any) {
       const norm = normalizeApiError(err);

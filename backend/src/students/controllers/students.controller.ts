@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   ForbiddenException,
   Get,
   HttpCode,
@@ -191,6 +192,18 @@ export class StudentsController {
   ) {
     await this.ensureStudentAccess(id, currentUser);
     return this.studentsService.uploadRequirementFile(id, file, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id/requirements/:requirementType')
+  @HttpCode(HttpStatus.OK)
+  async deleteStudentRequirement(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('requirementType') requirementType: string,
+    @CurrentUser() currentUser: any,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    return this.studentsService.deleteStudentRequirement(id, requirementType);
   }
 
   @UseGuards(JwtAuthGuard)

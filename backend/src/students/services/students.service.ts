@@ -327,21 +327,115 @@ export class StudentsService {
       throw new NotFoundException('Student not found');
     }
 
-    // Verify student has uploaded a resume
-    const [resumeSubmission] = await this.dataSource.query(
+    // Validate student personal information completeness
+    if (
+      !student.firstName ||
+      !student.lastName ||
+      !student.sex ||
+      !student.birthDate ||
+      !student.contactNumber ||
+      !student.contactEmail ||
+      !student.addressLine ||
+      !student.addressBarangay ||
+      !student.addressCity
+    ) {
+      throw new BadRequestException(
+        'Incomplete personal information. Please complete your personal profile before applying.',
+      );
+    }
+
+    // Validate student academic information completeness
+    const [academic] = await this.dataSource.query(
       `
-        SELECT srs.student_requirement_submission_id
-        FROM public.student_requirement_submission srs
-        JOIN public.requirement_type rt ON rt.requirement_type_id = srs.requirement_type_id
-        WHERE srs.student_id = $1
-          AND rt.requirement_type_name = 'curriculum_vitae_resume'
+        SELECT school_name, year_level, strand_program
+        FROM public.student_academic_information
+        WHERE student_id = $1
       `,
       [studentId],
     );
 
-    if (!resumeSubmission) {
+    if (!academic || !academic.school_name || !academic.year_level || !academic.strand_program) {
       throw new BadRequestException(
-        'Resume submission (curriculum vitae/resume) is required before applying for an internship opportunity',
+        'Incomplete academic information. Please provide your school, year level, and program before applying.',
+      );
+    }
+
+    // Validate student internship preference completeness
+    const [preference] = await this.dataSource.query(
+      `
+        SELECT required_hours, available_days, start_date, preferred_company_type
+        FROM public.internship_preference
+        WHERE student_id = $1
+      `,
+      [studentId],
+    );
+
+    if (
+      !preference ||
+      !preference.required_hours ||
+      !preference.available_days ||
+      !preference.start_date ||
+      !preference.preferred_company_type
+    ) {
+      throw new BadRequestException(
+        'Incomplete internship preferences. Please configure your required hours, schedule, and preferences before applying.',
+      );
+    }
+
+    // Validate student preferred industry
+    const preferredIndustries = await this.dataSource.query(
+      `
+        SELECT industry_id
+        FROM public.student_preferred_industry
+        WHERE student_id = $1
+      `,
+      [studentId],
+    );
+
+    if (!preferredIndustries.length) {
+      throw new BadRequestException(
+        'Please select at least one preferred field of internship before applying.',
+      );
+    }
+
+    // Verify student has uploaded all 4 pre-referral requirements
+    const requiredTypes = [
+      'curriculum_vitae_resume',
+      'proof_of_residency',
+      'latest_credentials',
+      'letter_of_intent',
+    ];
+
+    const submissions = await this.dataSource.query(
+      `
+        SELECT rt.requirement_type_name
+        FROM public.student_requirement_submission srs
+        JOIN public.requirement_type rt ON rt.requirement_type_id = srs.requirement_type_id
+        WHERE srs.student_id = $1
+      `,
+      [studentId],
+    );
+
+    const submittedNames = submissions.map((s: any) =>
+      this.normalizeRequirementType(s.requirement_type_name),
+    );
+
+    const missingRequirements = requiredTypes.filter(
+      (type) => !submittedNames.includes(type),
+    );
+
+    if (missingRequirements.length > 0) {
+      const typeLabels: Record<string, string> = {
+        curriculum_vitae_resume: 'Curriculum Vitae / Resume',
+        proof_of_residency: 'Proof of Residency',
+        latest_credentials: 'Latest Academic Credentials',
+        letter_of_intent: 'Letter of Intent / Endorsement',
+      };
+      const missingLabels = missingRequirements
+        .map((t) => typeLabels[t] || t)
+        .join(', ');
+      throw new BadRequestException(
+        `All pre-referral requirements must be submitted before applying. Missing: ${missingLabels}`,
       );
     }
 
@@ -832,6 +926,47 @@ export class StudentsService {
       requirementType: normalizedType,
       submission: row,
     };
+  }
+
+  async deleteStudentRequirement(studentId: number, requirementType: string) {
+    const student = await this.studentRepo.findOne({ where: { studentId } });
+    if (!student) throw new NotFoundException('Student not found');
+
+    const normalizedType = this.normalizeRequirementType(requirementType);
+
+    const [submission] = await this.dataSource.query(
+      `
+        SELECT srs.student_requirement_submission_id, srs.requirement_file_path
+        FROM public.student_requirement_submission srs
+        JOIN public.requirement_type rt ON rt.requirement_type_id = srs.requirement_type_id
+        WHERE srs.student_id = $1 AND lower(rt.requirement_type_name) = lower($2)
+      `,
+      [studentId, normalizedType],
+    );
+
+    if (!submission) {
+      throw new NotFoundException('Requirement submission not found');
+    }
+
+    const filePath = String(submission.requirement_file_path ?? '');
+    if (filePath.startsWith('/uploads/requirements/')) {
+      const filename = filePath.replace('/uploads/requirements/', '');
+      const fullPath = resolve(process.cwd(), 'uploads', 'requirements', filename);
+      if (existsSync(fullPath)) {
+        try {
+          unlinkSync(fullPath);
+        } catch {
+          // ignore error if file missing
+        }
+      }
+    }
+
+    await this.dataSource.query(
+      `DELETE FROM public.student_requirement_submission WHERE student_requirement_submission_id = $1`,
+      [submission.student_requirement_submission_id],
+    );
+
+    return { success: true, message: 'Requirement deleted successfully' };
   }
 
   // Records the assignment clock-in for the current day and validates the assignment ownership.

@@ -25,10 +25,11 @@ export const requirementsService = {
     return updated;
   },
 
-  async deleteRequirement(_requirementId: string): Promise<InternshipRequirement> {
-    // Delete is not supported; replacing upload replaces the requirement
+  async deleteRequirement(requirementId: string): Promise<InternshipRequirement> {
+    const store = useStudentTrackingStore.getState();
+    await store.deleteRequirement(requirementId);
     return useStudentTrackingStore
       .getState()
-      .requirements.find((r) => r.id === _requirementId)!;
+      .requirements.find((r) => r.id === requirementId)!;
   },
 };

@@ -94,6 +94,16 @@ export const studentApiService = {
     return response.data;
   },
 
+  async deleteRequirement(
+    studentId: number,
+    requirementType: string,
+  ): Promise<any> {
+    const response = await api.delete(
+      `/students/${studentId}/requirements/${encodeURIComponent(requirementType)}`,
+    );
+    return response.data;
+  },
+
   async getApplications(studentId: number): Promise<StudentApplicationDto[]> {
     const response = await api.get<StudentApplicationDto[]>(
       `/students/${studentId}/applications`,
