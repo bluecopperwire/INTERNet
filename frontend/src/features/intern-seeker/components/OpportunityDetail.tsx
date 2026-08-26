@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Building2, Check } from 'lucide-react'
 import type { InternshipOpportunity } from '../types/internship.types'
-import { useInternshipPortal } from '../hooks/useInternshipPortal'
-import { useTrackingData } from './TrackingDataContext'
+import { useStudentStore } from '../stores/useStudentStore'
+import { useStudentTrackingStore } from '../stores/useStudentTrackingStore'
 import { ApplyOpportunityModal } from './ApplyOpportunityModal'
 import styles from './OpportunityDetail.module.css'
 
@@ -10,8 +10,17 @@ function OpportunityDetail({ opportunity }: { opportunity: InternshipOpportunity
   const { details } = opportunity
   const [activeTab, setActiveTab] = useState<'description' | 'qualifications'>('description')
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false)
-  const { profile } = useInternshipPortal()
-  const { requirements } = useTrackingData()
+  const { profile, fetchProfile } = useStudentStore()
+  const { requirements, fetchRequirements } = useStudentTrackingStore()
+
+  useEffect(() => {
+    if (!profile) {
+      void fetchProfile()
+    }
+    if (!requirements || requirements.length === 0) {
+      void fetchRequirements()
+    }
+  }, [fetchProfile, fetchRequirements, profile, requirements])
 
   const companyInitials = opportunity.companyName
     .split(' ')
