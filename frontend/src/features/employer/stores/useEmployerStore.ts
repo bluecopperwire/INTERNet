@@ -52,8 +52,10 @@ interface EmployerState {
   fetchReferrals: (params?: any) => Promise<void>;
   acceptReferral: (id: number, remark?: string) => Promise<void>;
   rejectReferral: (id: number, remark?: string) => Promise<void>;
+  withdrawAcceptance: (id: number) => Promise<void>;
   scheduleInterview: (id: number, payload: any) => Promise<void>;
   fetchInternships: (params?: any) => Promise<void>;
+  deleteInternship: (id: number) => Promise<void>;
   fetchAttendance: (params?: any) => Promise<void>;
 }
 
@@ -225,6 +227,16 @@ export const useEmployerStore = create<EmployerState>((set, get) => ({
     }
   },
 
+  withdrawAcceptance: async (id: number) => {
+    try {
+      await employerApiService.withdrawAcceptance(id);
+      await get().fetchReferrals();
+    } catch (err: any) {
+      const norm = normalizeApiError(err);
+      throw norm;
+    }
+  },
+
   scheduleInterview: async (id: number, payload: any) => {
     try {
       await employerApiService.scheduleInterview(id, payload);
@@ -247,6 +259,16 @@ export const useEmployerStore = create<EmployerState>((set, get) => ({
     } catch (err: any) {
       const norm = normalizeApiError(err);
       set({ error: norm.message, isLoadingInternships: false });
+    }
+  },
+
+  deleteInternship: async (id: number) => {
+    try {
+      await employerApiService.deleteInternship(id);
+      await get().fetchInternships();
+    } catch (err: any) {
+      const norm = normalizeApiError(err);
+      throw norm;
     }
   },
 

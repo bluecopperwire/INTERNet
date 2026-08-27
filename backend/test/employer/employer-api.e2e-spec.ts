@@ -1372,7 +1372,7 @@ describe('manage internship APIs', () => {
     options: Parameters<EmployerFixtureFactory['assignment']>[1] = {},
     company = companyA,
     title = `${status} Job`,
-    label = status,
+    label: string = status,
   ) => {
     const referral = await fixtures.referral(company.companyId, {
       title,

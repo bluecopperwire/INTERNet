@@ -50,10 +50,10 @@ export function adaptEmployerOpportunity(
     workArrangement: workSetupMap[dto.workArrangement] || 'On-site',
     slots: dto.offeredSlots,
     duration: dto.minimumRequiredHours,
-    allowance: dto.allowance ? String(dto.allowance) : 'None',
-    applicationDeadline: dto.applicationDeadline,
+    allowance: dto.allowance ? String(dto.allowance) : '',
+    applicationDeadline: dto.applicationDeadline ? dto.applicationDeadline.split('T')[0] : '',
     jobDescription: dto.description,
-    qualifications: dto.qualification || 'None specified',
+    qualifications: dto.qualification || '',
     status: dto.opportunityStatus === 'open' ? 'Open' : 'Closed',
     applicants: dto.totalApplicantCount,
   };

@@ -2,6 +2,8 @@ import { api } from '../../../services/api';
 import type {
   EmployerDashboardMetricsDto,
   EmployerOpportunityDto,
+  CreateOpportunityRequest,
+  UpdateOpportunityRequest,
   EmployerReferralListItemDto,
   EmployerAttendanceItemDto,
   EmployerInternshipListItemDto,
@@ -48,7 +50,7 @@ export const employerApiService = {
     return response.data;
   },
 
-  async createOpportunity(payload: any): Promise<EmployerOpportunityDto> {
+  async createOpportunity(payload: CreateOpportunityRequest): Promise<EmployerOpportunityDto> {
     const response = await api.post<EmployerOpportunityDto>(
       '/employer/opportunities',
       payload,
@@ -56,7 +58,10 @@ export const employerApiService = {
     return response.data;
   },
 
-  async updateOpportunity(id: number, payload: any): Promise<EmployerOpportunityDto> {
+  async updateOpportunity(
+    id: number,
+    payload: UpdateOpportunityRequest,
+  ): Promise<EmployerOpportunityDto> {
     const response = await api.patch<EmployerOpportunityDto>(
       `/employer/opportunities/${id}`,
       payload,
@@ -100,6 +105,14 @@ export const employerApiService = {
     const response = await api.patch(`/employer/referrals/${referralId}/reject`, {
       remark,
     });
+    return response.data;
+  },
+
+  async withdrawAcceptance(referralId: number): Promise<any> {
+    const response = await api.patch(
+      `/employer/referrals/${referralId}/withdraw-acceptance`,
+      {},
+    );
     return response.data;
   },
 
@@ -161,6 +174,16 @@ export const employerApiService = {
       `/employer/internships/${assignmentId}/complete`,
       {},
     );
+    return response.data;
+  },
+
+  async deleteInternship(
+    assignmentId: number,
+  ): Promise<{ deleted: boolean; internshipAssignmentId: number }> {
+    const response = await api.delete<{
+      deleted: boolean;
+      internshipAssignmentId: number;
+    }>(`/employer/internships/${assignmentId}`);
     return response.data;
   },
 

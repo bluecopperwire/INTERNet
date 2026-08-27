@@ -11,6 +11,26 @@ import type {
   EmployerInternshipDetails,
   InternshipAssignment,
 } from '../types/employer.types';
+import type {
+  CreateOpportunityRequest,
+  UpdateOpportunityRequest,
+  WorkArrangement,
+} from '../../../types/api';
+
+function mapWorkArrangement(arrangement?: string): WorkArrangement {
+  if (arrangement === 'Remote' || arrangement === 'remote') return 'remote';
+  if (arrangement === 'Hybrid' || arrangement === 'hybrid') return 'hybrid';
+  return 'onsite';
+}
+
+function mapAllowance(allowance?: string | number | null): string | null {
+  if (!allowance) return null;
+  const trimmed = String(allowance).trim();
+  if (!trimmed || trimmed.toLowerCase() === 'none' || trimmed.toLowerCase() === 'n/a') {
+    return null;
+  }
+  return trimmed;
+}
 
 export function isOpportunityDeadlineExpired(applicationDeadline: string): boolean {
   if (!applicationDeadline) return false;
@@ -77,12 +97,40 @@ export const employerService = {
     return adaptEmployerOpportunity(opp);
   },
 
-  async saveOpportunity(opp: any): Promise<void> {
+  async saveOpportunity(opp: Partial<Opportunity>): Promise<void> {
     const store = useEmployerStore.getState();
     if (opp.id) {
-      await store.updateOpportunity(Number(opp.id), opp);
+      const updatePayload: UpdateOpportunityRequest = {};
+      if (opp.title !== undefined) updatePayload.title = opp.title.trim();
+      if (opp.department !== undefined) updatePayload.department = opp.department.trim();
+      if (opp.workArrangement !== undefined) {
+        updatePayload.workArrangement = mapWorkArrangement(opp.workArrangement);
+      }
+      if (opp.duration !== undefined) updatePayload.minimumRequiredHours = Number(opp.duration);
+      if (opp.slots !== undefined) updatePayload.offeredSlots = Number(opp.slots);
+      if (opp.allowance !== undefined) updatePayload.allowance = mapAllowance(opp.allowance);
+      if (opp.jobDescription !== undefined) updatePayload.description = opp.jobDescription.trim();
+      if (opp.qualifications !== undefined) {
+        const q = opp.qualifications.trim();
+        updatePayload.qualification = q && q.toLowerCase() !== 'none specified' ? q : null;
+      }
+      if (opp.applicationDeadline !== undefined) {
+        updatePayload.applicationDeadline = opp.applicationDeadline;
+      }
+      await store.updateOpportunity(Number(opp.id), updatePayload);
     } else {
-      await store.createOpportunity(opp);
+      const createPayload: CreateOpportunityRequest = {
+        title: (opp.title || '').trim(),
+        department: (opp.department || '').trim(),
+        workArrangement: mapWorkArrangement(opp.workArrangement),
+        minimumRequiredHours: Number(opp.duration || 0),
+        offeredSlots: Number(opp.slots || 0),
+        allowance: mapAllowance(opp.allowance),
+        description: (opp.jobDescription || '').trim(),
+        qualification: opp.qualifications?.trim() ? opp.qualifications.trim() : null,
+        applicationDeadline: opp.applicationDeadline || '',
+      };
+      await store.createOpportunity(createPayload);
     }
   },
 
@@ -113,6 +161,11 @@ export const employerService = {
     } else if (status === 'Rejected') {
       await store.rejectReferral(Number(id), rejectionRemark);
     }
+  },
+
+  async withdrawAcceptance(referralId: string): Promise<void> {
+    const store = useEmployerStore.getState();
+    await store.withdrawAcceptance(Number(referralId));
   },
 
   async getApplicantsForOpportunity(opportunityId: string): Promise<Applicant[]> {
@@ -148,9 +201,9 @@ export const employerService = {
     return useEmployerStore.getState().internships.find((i) => i.applicantId === applicantId);
   },
 
-  async deleteInternshipDetails(_applicantId: string): Promise<void> {
-    // Record deletion not supported by backend schema; remains for audit history
-    return Promise.resolve();
+  async deleteInternshipDetails(applicantId: string): Promise<void> {
+    const store = useEmployerStore.getState();
+    await store.deleteInternship(Number(applicantId));
   },
 
   async getInternshipAssignments(): Promise<InternshipAssignment[]> {

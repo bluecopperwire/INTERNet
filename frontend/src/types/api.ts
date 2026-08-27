@@ -360,6 +360,30 @@ export interface EmployerOpportunityDto {
   totalApplicantCount: number;
 }
 
+export interface CreateOpportunityRequest {
+  title: string;
+  department: string;
+  workArrangement: WorkArrangement;
+  minimumRequiredHours: number;
+  offeredSlots: number;
+  allowance?: string | null;
+  description: string;
+  qualification: string | null;
+  applicationDeadline: string;
+}
+
+export interface UpdateOpportunityRequest {
+  title?: string;
+  department?: string;
+  workArrangement?: WorkArrangement;
+  minimumRequiredHours?: number;
+  offeredSlots?: number;
+  allowance?: string | null;
+  description?: string;
+  qualification?: string | null;
+  applicationDeadline?: string;
+}
+
 export interface EmployerReferralListItemDto {
   referralId: number;
   opportunityId: number;

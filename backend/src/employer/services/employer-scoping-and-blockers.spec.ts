@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import { NotFoundException, ServiceUnavailableException } from '@nestjs/common';
-import type { DataSource } from 'typeorm';
+import type { DataSource, QueryRunner } from 'typeorm';
+import { WorkArrangement } from '../dto';
 import { EmployerOpportunityService } from './employer-opportunity.service';
 import { EmployerReferralService } from './employer-referral.service';
 import { EmployerInternshipService } from './employer-internship.service';
@@ -104,7 +105,7 @@ describe('employer scoping and DB migration blockers', () => {
     const result = await service.create(310, {
       title: 'Intern',
       department: 'IT',
-      workArrangement: 'onsite' as const,
+      workArrangement: WorkArrangement.ONSITE,
       minimumRequiredHours: 400,
       offeredSlots: 1,
       allowance: 'PHP 500 per day',
@@ -193,9 +194,7 @@ describe('employer scoping and DB migration blockers', () => {
 
     const service = new EmployerReferralService(dataSource, resolver());
     jest.spyOn(service, 'getById').mockResolvedValue({ referralId: 2 } as any);
-    const result = await service.withdrawAcceptance(310, 2, {
-      remark: 'Candidate declined offer',
-    });
+    const result = await service.withdrawAcceptance(310, 2);
     expect(result).toBeDefined();
   });
 

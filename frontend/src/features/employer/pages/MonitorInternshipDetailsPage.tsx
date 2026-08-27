@@ -63,10 +63,15 @@ export function MonitorInternshipDetailsPage() {
 
   const deleteRecord = async () => {
     if (!applicantId) return
+    if (!window.confirm('Are you sure you want to delete this internship record?')) {
+      return
+    }
     setSaving(true)
     try {
       await employerService.deleteInternshipDetails(applicantId)
       navigate('/employer/manage-internship')
+    } catch (err: any) {
+      alert(err?.message || 'Failed to delete internship record. Only terminal assignments can be deleted.')
     } finally {
       setSaving(false)
     }

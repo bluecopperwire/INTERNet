@@ -3,7 +3,7 @@ import { ConflictException } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import type { DataSource, QueryRunner } from 'typeorm';
-import { CreateAssignmentDto } from '../dto';
+import { CreateAssignmentDto, EmployerWorkingDays } from '../dto';
 import { EmployerInternshipService } from './employer-internship.service';
 import type { EmployerCompanyResolver } from './company-resolver.service';
 
@@ -53,7 +53,7 @@ describe('EmployerInternshipService', () => {
       const service = new EmployerInternshipService(dataSource, resolver);
       await expect(
         service.createAssignment(50, 2, {
-          workingDays: 'weekdays' as const,
+          workingDays: EmployerWorkingDays.WEEKDAYS,
           requiredHours: 400,
           startDate: '2026-09-01',
           startShift: '08:00',

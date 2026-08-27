@@ -90,9 +90,9 @@ From `backend/`:
 npm run migration:show
 ```
 
-On a new database, the initial migration should appear as pending.
+On a new database, the migrations `InitialSchema1785860400000` and `ApprovedDatabaseRedesign1787788800000` should appear as pending.
 
-Apply it:
+Apply them:
 
 ```powershell
 npm run migration:run
@@ -102,6 +102,12 @@ Then verify:
 
 ```powershell
 npm run migration:show
+```
+
+Validate the PostgreSQL schema objects against the approved contract:
+
+```powershell
+npm run database:validate
 ```
 
 TypeORM schema synchronization must remain disabled:
