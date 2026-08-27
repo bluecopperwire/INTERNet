@@ -12,7 +12,6 @@ import type {
   UpdateOpportunityDto,
 } from '../dto';
 import { EmployerCompanyResolver } from './company-resolver.service';
-import { dbMigrationPending } from '../utils/errors.utils';
 import { assertValidDate, currentManilaDate } from '../utils/time.utils';
 import { asNumber, paginate } from '../utils/response.utils';
 
@@ -72,25 +71,10 @@ export class EmployerOpportunityService {
       throw new ConflictException('applicationDeadline cannot be in the past.');
     }
 
-    let hasAllowance = false;
-    let allowanceNum: number | null = null;
-    if (dto.hasAllowance !== undefined) {
-      hasAllowance = Boolean(dto.hasAllowance);
-    } else if (dto.allowance !== null && dto.allowance !== undefined && dto.allowance !== '') {
-      hasAllowance = true;
-    }
-
-    if (hasAllowance) {
-      if (dto.allowance !== null && dto.allowance !== undefined && dto.allowance !== '') {
-        const parsed = Number(dto.allowance);
-        if (isNaN(parsed) || parsed < 0) {
-          throw new ConflictException('Allowance must be a valid positive amount.');
-        }
-        allowanceNum = parsed;
-      }
-    } else {
-      allowanceNum = null;
-    }
+    const allowance = this.normalizeAllowance(
+      dto.allowance,
+      dto.hasAllowance,
+    );
 
     let createdId: number;
     await withStatusActor(this.dataSource, userAccountId, async (runner) => {
@@ -103,13 +87,12 @@ export class EmployerOpportunityService {
             work_arrangement,
             minimum_required_hours,
             offered_slots,
-            has_allowance,
             allowance,
             description,
             qualification,
             application_deadline,
             opportunity_status
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'open')
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'open')
           RETURNING opportunity_id
         `,
         [
@@ -119,8 +102,7 @@ export class EmployerOpportunityService {
           dto.workArrangement,
           dto.minimumRequiredHours,
           dto.offeredSlots,
-          hasAllowance,
-          allowanceNum,
+          allowance,
           dto.description.trim(),
           dto.qualification ? dto.qualification.trim() : null,
           dto.applicationDeadline,
@@ -185,27 +167,15 @@ export class EmployerOpportunityService {
         params.push(dto.offeredSlots);
       }
       if (dto.hasAllowance !== undefined || dto.allowance !== undefined) {
-        let hasAllowance = dto.hasAllowance !== undefined ? Boolean(dto.hasAllowance) : Boolean(existing.has_allowance);
-        let allowanceNum: number | null = null;
-        if (dto.allowance !== undefined) {
-          if (dto.allowance !== null && dto.allowance !== '') {
-            hasAllowance = true;
-            const parsed = Number(dto.allowance);
-            if (isNaN(parsed) || parsed < 0) {
-              throw new ConflictException('Allowance must be a valid positive amount.');
-            }
-            allowanceNum = parsed;
-          } else {
-            allowanceNum = null;
-          }
-        } else {
-          allowanceNum = hasAllowance && existing.allowance !== null ? Number(existing.allowance) : null;
-        }
-
-        updates.push(`has_allowance = $${pIdx++}`);
-        params.push(hasAllowance);
         updates.push(`allowance = $${pIdx++}`);
-        params.push(hasAllowance ? allowanceNum : null);
+        params.push(
+          dto.allowance !== undefined
+            ? this.normalizeAllowance(dto.allowance, dto.hasAllowance)
+            : this.normalizeAllowance(
+                existing.allowance as string | number | null,
+                dto.hasAllowance,
+              ),
+        );
       }
       if (dto.description !== undefined) {
         updates.push(`description = $${pIdx++}`);
@@ -317,7 +287,7 @@ export class EmployerOpportunityService {
       workArrangement: row.work_arrangement,
       offeredSlots: asNumber(row.offered_slots),
       allowance:
-        row.has_allowance === true && row.allowance !== null
+        row.allowance !== null
           ? typeof row.allowance === 'string'
             ? row.allowance
             : typeof row.allowance === 'number'
@@ -328,5 +298,27 @@ export class EmployerOpportunityService {
       opportunityStatus: row.opportunity_status,
       totalApplicantCount: asNumber(row.total_applicant_count),
     };
+  }
+
+  private normalizeAllowance(
+    value: string | number | null | undefined,
+    hasAllowance?: boolean,
+  ): string | null {
+    const normalized =
+      value === null || value === undefined ? '' : String(value).trim();
+    if (hasAllowance === false) {
+      if (normalized) {
+        throw new ConflictException(
+          'allowance must be empty when hasAllowance is false.',
+        );
+      }
+      return null;
+    }
+    if (hasAllowance === true && !normalized) {
+      throw new ConflictException(
+        'allowance is required when hasAllowance is true.',
+      );
+    }
+    return normalized || null;
   }
 }

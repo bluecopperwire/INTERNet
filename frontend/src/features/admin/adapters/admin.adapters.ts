@@ -33,38 +33,56 @@ export function adaptAdminDashboardSummary(
 }
 
 export function adaptAdminStudentItem(dto: AdminStudentListItemDto): StudentRecord {
+  const data = dto as AdminStudentListItemDto & Record<string, any>;
   const statusMap: Record<string, any> = {
     active: 'Active',
     suspended: 'Suspended',
     archived: 'Deactivated',
   };
+  const preferred = Array.isArray(data.preferredIndustries)
+    ? data.preferredIndustries
+    : [];
+  const custom = preferred.find((item: any) => item.customIndustryName);
 
   return {
-    id: String(dto.userAccountId),
+    id: String(dto.studentId),
+    userAccountId: String(dto.userAccountId),
     studentId: String(dto.studentId),
     fullName: dto.fullName,
     email: dto.accountEmail,
     status: statusMap[dto.accountStatus] || 'Active',
+    suspensionDaysRemaining: remainingDays(data.suspendedUntil),
     dateCreated: new Date(dto.createdAt).toLocaleDateString(),
     role: 'Student',
-    sex: 'Other',
-    birthdate: 'N/A',
-    contactNumber: 'N/A',
-    fullAddress: 'Quezon City',
+    firstName: data.firstName,
+    middleName: data.middleName || '',
+    lastName: data.lastName,
+    suffix: data.extensionName || '',
+    sex: data.sex === 'Male' || data.sex === 'Female' ? data.sex : 'Other',
+    birthdate: data.birthDate || 'N/A',
+    contactNumber: data.contactNumber || 'N/A',
+    fullAddress: [data.addressLine, data.addressBarangay, data.addressDistrict, data.addressCity].filter(Boolean).join(', ') || 'Quezon City',
+    addressStreet: data.addressLine || '',
+    addressBarangay: data.addressBarangay || '',
+    addressDistrict: data.addressDistrict || '',
+    addressCity: data.addressCity || '',
+    linkedinUrl: data.linkedinUrl || '',
     inquiryVia: 'online',
-    schoolName: 'N/A',
-    programStrand: 'N/A',
-    yearLevel: 'N/A',
-    requiredHours: '0',
-    flexibleAssignment: false,
-    preferredIndustries: [],
-    scheduleAvailability: ['weekdays'],
-    startDate: 'N/A',
-    hostOrgType: 'private',
+    schoolName: data.schoolName || 'N/A',
+    programStrand: data.strandProgram || 'N/A',
+    yearLevel: yearLevelToUi(data.yearLevel),
+    requiredHours: String(data.requiredHours || 0),
+    flexibleAssignment: Boolean(data.allowsOutsidePreferredField),
+    preferredIndustries: preferred.map((item: any) => item.customIndustryName ? 'Other' : item.industryName),
+    otherPreferredField: custom?.customIndustryName || '',
+    scheduleAvailability: [scheduleToUi(data.availableDays)],
+    startDate: data.startDate || 'N/A',
+    hostOrgType: data.preferredCompanyType === 'government' ? 'Government' : 'Private',
   };
 }
 
 export function adaptAdminEmployerItem(dto: AdminEmployerListItemDto): EmployerRecord {
+  const data = dto as AdminEmployerListItemDto & Record<string, any>;
   const statusMap: Record<string, any> = {
     active: 'Active',
     suspended: 'Suspended',
@@ -72,27 +90,40 @@ export function adaptAdminEmployerItem(dto: AdminEmployerListItemDto): EmployerR
   };
 
   return {
-    id: String(dto.userAccountId),
+    id: String(dto.companyId),
+    userAccountId: String(dto.userAccountId),
     companyId: String(dto.companyId),
     fullName: dto.companyName,
     companyName: dto.companyName,
     email: dto.accountEmail,
     status: statusMap[dto.accountStatus] || 'Active',
+    suspensionDaysRemaining: remainingDays(data.suspendedUntil),
     dateCreated: new Date(dto.createdAt).toLocaleDateString(),
     role: 'Employer',
-    industry: 'N/A',
-    companyType: 'Private',
-    location: 'Quezon City',
-    companyWebsite: 'N/A',
-    yearEstablished: 'N/A',
-    companySize: 'N/A',
-    contactPerson: 'N/A',
-    contactNumber: 'N/A',
+    industry: data.industryName || 'N/A',
+    companyType: data.companyType === 'government' ? 'Government' : 'Private',
+    location: [data.addressLine, data.addressBarangay, data.addressDistrict, data.addressCity].filter(Boolean).join(', ') || 'Quezon City',
+    addressLine: data.addressLine || '',
+    addressBarangay: data.addressBarangay || '',
+    addressDistrict: data.addressDistrict || '',
+    addressCity: data.addressCity || '',
+    description: data.description || '',
+    companyWebsite: data.websiteUrl || '',
+    yearEstablished: String(data.yearEstablished || ''),
+    companySize: String(data.companySize || ''),
+    contactPerson: data.contactPersonFullName || 'N/A',
+    contactFirstName: data.contactPersonFirstName || '',
+    contactMiddleName: data.contactPersonMiddleName || '',
+    contactLastName: data.contactPersonLastName || '',
+    contactSuffix: data.contactPersonExtensionName || '',
+    contactEmail: data.contactEmail || '',
+    contactNumber: data.contactNumber || 'N/A',
     verificationStatus: 'Verified',
   };
 }
 
 export function adaptAdminPesoItem(dto: AdminPesoListItemDto): QCPesoRecord {
+  const data = dto as AdminPesoListItemDto & Record<string, any>;
   const statusMap: Record<string, any> = {
     active: 'Active',
     suspended: 'Suspended',
@@ -100,20 +131,55 @@ export function adaptAdminPesoItem(dto: AdminPesoListItemDto): QCPesoRecord {
   };
 
   return {
-    id: String(dto.userAccountId),
+    id: String(dto.pesoPersonnelId),
+    userAccountId: String(dto.userAccountId),
     fullName: dto.fullName,
-    firstName: dto.fullName.split(' ')[0] || '',
-    middleName: '',
-    lastName: dto.fullName.split(' ').slice(1).join(' ') || '',
     email: dto.accountEmail,
     employeeId: dto.employeeId,
     status: statusMap[dto.accountStatus] || 'Active',
+    suspensionDaysRemaining: remainingDays(data.suspendedUntil),
     dateCreated: new Date(dto.createdAt).toLocaleDateString(),
     role: 'QC PESO Personnel',
-    birthdate: 'N/A',
-    position: 'PESO Officer',
-    department: 'PESO',
-    contactNumber: 'N/A',
+    firstName: data.firstName || dto.fullName.split(' ')[0] || '',
+    middleName: data.middleName || '',
+    lastName: data.lastName || dto.fullName.split(' ').slice(1).join(' ') || '',
+    suffix: data.extensionName || '',
+    birthdate: data.birthDate || 'N/A',
+    sex: data.sex === 'Male' || data.sex === 'Female' ? data.sex : 'Other',
+    addressLine: data.addressLine || '',
+    barangay: data.addressBarangay || '',
+    district: data.addressDistrict || '',
+    city: data.addressCity || '',
+    position: data.position || 'PESO Officer',
+    department: data.department || 'PESO',
+    contactNumber: data.contactNumber || 'N/A',
+    contactEmail: data.contactEmail || '',
     verificationStatus: 'Approved',
   };
+}
+
+function remainingDays(value?: string | null): number | undefined {
+  if (!value) return undefined;
+  return Math.max(0, Math.ceil((new Date(value).getTime() - Date.now()) / 86_400_000));
+}
+
+function yearLevelToUi(value?: string): string {
+  const labels: Record<string, string> = {
+    grade_11: 'Grade 11',
+    grade_12: 'Grade 12',
+    first_year_college: '1st Year',
+    second_year_college: '2nd Year',
+    third_year_college: '3rd Year',
+    fourth_year_college: '4th Year',
+  };
+  return value ? labels[value] || value : 'N/A';
+}
+
+function scheduleToUi(value?: string): string {
+  const labels: Record<string, string> = {
+    weekdays: 'Weekdays',
+    weekends: 'Weekends',
+    flexible: 'Flexible',
+  };
+  return value ? labels[value] || value : 'Weekdays';
 }

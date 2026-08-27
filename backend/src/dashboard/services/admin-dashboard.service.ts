@@ -206,7 +206,11 @@ export class AdminDashboardService {
         await runner.query(
           `UPDATE public.user_account 
            SET account_status = $1,
-               deleted_at = CASE WHEN $1 = 'archived' THEN CURRENT_TIMESTAMP ELSE NULL END
+               deleted_at = CASE WHEN $1 = 'archived' THEN CURRENT_TIMESTAMP ELSE NULL END,
+               suspended_until = CASE
+                 WHEN $1 = 'suspended' THEN CURRENT_TIMESTAMP + INTERVAL '1 day'
+                 ELSE NULL
+               END
            WHERE user_account_id = $2`,
           [dto.accountStatus, userAccountId],
         );
@@ -435,7 +439,11 @@ export class AdminDashboardService {
         await runner.query(
           `UPDATE public.user_account 
            SET account_status = $1,
-               deleted_at = CASE WHEN $1 = 'archived' THEN CURRENT_TIMESTAMP ELSE NULL END
+               deleted_at = CASE WHEN $1 = 'archived' THEN CURRENT_TIMESTAMP ELSE NULL END,
+               suspended_until = CASE
+                 WHEN $1 = 'suspended' THEN CURRENT_TIMESTAMP + INTERVAL '1 day'
+                 ELSE NULL
+               END
            WHERE user_account_id = $2`,
           [dto.accountStatus, userAccountId],
         );
@@ -558,7 +566,7 @@ export class AdminDashboardService {
         ua.email AS "email",
         pp.position AS "position",
         pp.department AS "department",
-        pp.verification_status AS "verificationStatus",
+        'approved'::text AS "verificationStatus",
         ua.created_at AS "dateRegistered",
         ua.account_status AS "accountStatus"
       FROM public.user_account ua
@@ -605,10 +613,10 @@ export class AdminDashboardService {
         pp.employee_id AS "employeeId",
         pp.position AS "position",
         pp.department AS "department",
-        pp.verification_status AS "verificationStatus",
-        pp.reviewed_at AS "reviewedAt",
-        pp.reviewed_by_user_account_id AS "reviewedByUserAccountId",
-        pp.verification_remark AS "verificationRemark"
+        'approved'::text AS "verificationStatus",
+        NULL::timestamptz AS "reviewedAt",
+        NULL::integer AS "reviewedByUserAccountId",
+        NULL::text AS "verificationRemark"
       FROM public.user_account ua
       JOIN public.peso_personnel pp ON pp.user_account_id = ua.user_account_id
       WHERE ua.user_account_id = $1 AND ua.user_role = 'peso_personnel' AND ua.deleted_at IS NULL
@@ -634,7 +642,7 @@ export class AdminDashboardService {
       await setStatusActor(runner, adminAccountId);
 
       const personnelRows = await runner.query(
-        `SELECT pp.peso_personnel_id, pp.verification_status, ua.account_status 
+        `SELECT pp.peso_personnel_id, ua.account_status 
          FROM public.peso_personnel pp 
          JOIN public.user_account ua ON ua.user_account_id = pp.user_account_id
          WHERE pp.user_account_id = $1 AND ua.user_role = 'peso_personnel' AND ua.deleted_at IS NULL
@@ -646,7 +654,6 @@ export class AdminDashboardService {
         throw new NotFoundException('PESO personnel account not found.');
       }
       const personnelId = personnelRows[0].peso_personnel_id;
-      const currentVerificationStatus = personnelRows[0].verification_status;
 
       if (
         dto.accountStatus &&
@@ -655,7 +662,11 @@ export class AdminDashboardService {
         await runner.query(
           `UPDATE public.user_account 
            SET account_status = $1,
-               deleted_at = CASE WHEN $1 = 'archived' THEN CURRENT_TIMESTAMP ELSE NULL END
+               deleted_at = CASE WHEN $1 = 'archived' THEN CURRENT_TIMESTAMP ELSE NULL END,
+               suspended_until = CASE
+                 WHEN $1 = 'suspended' THEN CURRENT_TIMESTAMP + INTERVAL '1 day'
+                 ELSE NULL
+               END
            WHERE user_account_id = $2`,
           [dto.accountStatus, userAccountId],
         );
@@ -724,19 +735,6 @@ export class AdminDashboardService {
       if (dto.addressCity !== undefined) {
         updates.push(`address_city = $${pIdx++}`);
         params.push(dto.addressCity);
-      }
-
-      if (
-        dto.verificationStatus &&
-        dto.verificationStatus !== currentVerificationStatus
-      ) {
-        updates.push(`verification_status = $${pIdx++}`);
-        params.push(dto.verificationStatus);
-        updates.push(`reviewed_at = CURRENT_TIMESTAMP`);
-        updates.push(`reviewed_by_user_account_id = $${pIdx++}`);
-        params.push(adminAccountId);
-        updates.push(`verification_remark = $${pIdx++}`);
-        params.push(dto.verificationRemark?.trim() || null);
       }
 
       if (updates.length > 0) {

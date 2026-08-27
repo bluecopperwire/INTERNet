@@ -164,32 +164,17 @@ async function main() {
       'All three students need complete profiles.',
     );
 
-    const verification = await client.query(
-      `SELECT ua.email, pp.verification_status, pp.reviewed_at,
-              reviewer.email AS reviewer_email
+    const personnel = await client.query(
+      `SELECT ua.email, pp.employee_id
          FROM public.peso_personnel pp
          JOIN public.user_account ua ON ua.user_account_id = pp.user_account_id
-         LEFT JOIN public.user_account reviewer
-           ON reviewer.user_account_id = pp.reviewed_by_user_account_id
         WHERE ua.email LIKE 'peso.%@internet.local'`,
     );
-    const states = new Map(verification.rows.map((row) => [row.email, row]));
     assert(
-      states.get('peso.pending@internet.local').verification_status ===
-        'pending',
-      'Pending PESO fixture is invalid.',
+      personnel.rowCount === 3 &&
+        personnel.rows.every((row) => row.employee_id),
+      'All three operational PESO fixtures require employee IDs.',
     );
-    for (const state of ['approved', 'rejected']) {
-      const row = states.get(`peso.${state}@internet.local`);
-      assert(
-        row.verification_status === state,
-        `PESO ${state} state is invalid.`,
-      );
-      assert(
-        row.reviewed_at && row.reviewer_email === 'admin.dev@internet.local',
-        `PESO ${state} review metadata is invalid.`,
-      );
-    }
 
     const noTransientAuth = await client.query(
       `SELECT
@@ -209,7 +194,7 @@ async function main() {
     );
 
     const opportunities = await client.query(
-      `SELECT opportunity_status, work_arrangement, has_allowance, allowance,
+      `SELECT opportunity_status, work_arrangement, allowance,
               minimum_required_hours, offered_slots
          FROM public.opportunity WHERE title LIKE 'DEV %'`,
     );
@@ -231,13 +216,13 @@ async function main() {
     );
     assert(
       opportunities.rows.some(
-        (row) => row.has_allowance && row.allowance !== null,
+        (row) => row.allowance !== null,
       ),
       'Allowance fixture is missing.',
     );
     assert(
       opportunities.rows.some(
-        (row) => !row.has_allowance && row.allowance === null,
+        (row) => row.allowance === null,
       ),
       'No-allowance fixture is missing.',
     );
@@ -393,8 +378,7 @@ async function main() {
       `SELECT
         (SELECT count(*)::integer FROM public.application_status_history) AS applications,
         (SELECT count(*)::integer FROM public.referral_status_history) AS referrals,
-        (SELECT count(*)::integer FROM public.internship_assignment_status_history) AS assignments,
-        (SELECT count(*)::integer FROM public.peso_personnel_verification_history) AS verifications`,
+        (SELECT count(*)::integer FROM public.internship_assignment_status_history) AS assignments`,
     );
     assert(
       Object.values(histories.rows[0]).every((count) => count > 0),
@@ -414,8 +398,7 @@ async function main() {
         'feedback', (SELECT count(*) FROM public.internship_feedback),
         'application_history', (SELECT count(*) FROM public.application_status_history),
         'referral_history', (SELECT count(*) FROM public.referral_status_history),
-        'assignment_history', (SELECT count(*) FROM public.internship_assignment_status_history),
-        'verification_history', (SELECT count(*) FROM public.peso_personnel_verification_history)
+        'assignment_history', (SELECT count(*) FROM public.internship_assignment_status_history)
       ) AS counts`,
     );
     console.log(JSON.stringify(counts.rows[0].counts));

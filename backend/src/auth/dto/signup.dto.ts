@@ -49,10 +49,6 @@ export class PesoRegistrationDto {
   @IsString() @IsNotEmpty() employeeId: string;
   @IsString() @IsNotEmpty() position: string;
   @IsString() @IsNotEmpty() department: string;
-  @IsString() @IsNotEmpty() employeeIdFileBase64: string;
-  @IsIn(['image/jpeg', 'image/png', 'application/pdf'])
-  employeeIdFileMimeType: string;
-  @IsOptional() @IsString() employeeIdFileName?: string;
   @IsOptional() @IsString() photoFilePath?: string;
 }
 

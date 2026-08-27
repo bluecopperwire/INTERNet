@@ -50,7 +50,7 @@ export function adaptEmployerOpportunity(
     workArrangement: workSetupMap[dto.workArrangement] || 'On-site',
     slots: dto.offeredSlots,
     duration: dto.minimumRequiredHours,
-    allowance: dto.allowance ? `PHP ${dto.allowance}` : 'None',
+    allowance: dto.allowance ? String(dto.allowance) : 'None',
     applicationDeadline: dto.applicationDeadline,
     jobDescription: dto.description,
     qualifications: dto.qualification || 'None specified',

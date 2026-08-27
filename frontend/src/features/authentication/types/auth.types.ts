@@ -67,9 +67,6 @@ export interface PesoRegisterRequest {
   employeeId: string;
   position: string;
   department: string;
-  employeeIdFileName: string;
-  employeeIdFileMimeType: string;
-  employeeIdFileBase64: string;
 }
 
 export interface GoogleStudentCompletionRequest {

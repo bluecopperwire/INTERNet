@@ -36,11 +36,9 @@ export function adaptOpportunity(
     hybrid: 'Hybrid',
   };
 
-  const allowanceStr = dto.hasAllowance
-    ? dto.allowance !== null
-      ? `PHP ${Number(dto.allowance).toLocaleString()}`
-      : 'Allowance Provided'
-    : 'No Allowance';
+  const allowanceStr = dto.allowance === null
+    ? 'No Allowance'
+    : String(dto.allowance);
 
   return {
     id: String(dto.opportunityId),
@@ -77,14 +75,12 @@ const YEAR_LEVEL_MAP_TO_UI: Record<string, string> = {
   second_year_college: '2nd Year',
   third_year_college: '3rd Year',
   fourth_year_college: '4th Year',
-  fifth_year_college: '5th Year',
   'Grade 11': 'Grade 11',
   'Grade 12': 'Grade 12',
   '1st Year': '1st Year',
   '2nd Year': '2nd Year',
   '3rd Year': '3rd Year',
   '4th Year': '4th Year',
-  '5th Year': '5th Year',
 };
 
 const YEAR_LEVEL_MAP_TO_DTO: Record<string, string> = {
@@ -94,14 +90,12 @@ const YEAR_LEVEL_MAP_TO_DTO: Record<string, string> = {
   '2nd Year': 'second_year_college',
   '3rd Year': 'third_year_college',
   '4th Year': 'fourth_year_college',
-  '5th Year': 'fifth_year_college',
   grade_11: 'grade_11',
   grade_12: 'grade_12',
   first_year_college: 'first_year_college',
   second_year_college: 'second_year_college',
   third_year_college: 'third_year_college',
   fourth_year_college: 'fourth_year_college',
-  fifth_year_college: 'fifth_year_college',
 };
 
 const SCHEDULE_MAP_TO_UI: Record<string, string> = {

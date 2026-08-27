@@ -1,13 +1,10 @@
 import {
   ConflictException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { DataSource } from 'typeorm';
-import { setStatusActor } from '../database/status-actor.transaction';
-import { StorageService } from '../storage/private-file-storage';
 import {
   AccountStatus,
   Company,
@@ -26,10 +23,7 @@ import {
 
 @Injectable()
 export class AccountManagementService {
-  constructor(
-    private readonly dataSource: DataSource,
-    private readonly storage: StorageService,
-  ) {}
+  constructor(private readonly dataSource: DataSource) {}
 
   async createCompany(
     dto: CreateCompanyAccountDto,
@@ -86,7 +80,7 @@ export class AccountManagementService {
           addressBarangay: dto.addressBarangay,
           addressDistrict: dto.addressDistrict ?? null,
           addressCity: dto.addressCity,
-          logoFilePath: dto.logoFilePath,
+          logoFilePath: dto.logoFilePath ?? null,
         }),
       );
       return {
@@ -96,19 +90,20 @@ export class AccountManagementService {
     });
   }
 
-  async verificationStatus(userAccountId: number): Promise<PesoPersonnel> {
+  async verificationStatus(userAccountId: number) {
     const personnel = await this.dataSource
       .getRepository(PesoPersonnel)
       .findOne({ where: { userAccountId } });
     if (!personnel) throw new NotFoundException('QC PESO profile not found');
-    return personnel;
+    return {
+      verificationStatus: PersonnelVerificationStatus.APPROVED,
+      reviewedAt: null,
+      verificationRemark: null,
+    };
   }
 
-  pendingVerifications(): Promise<PesoPersonnel[]> {
-    return this.dataSource.getRepository(PesoPersonnel).find({
-      where: { verificationStatus: PersonnelVerificationStatus.PENDING },
-      order: { createdAt: 'ASC' },
-    });
+  pendingVerifications(): PesoPersonnel[] {
+    return [];
   }
 
   async decideVerification(
@@ -119,32 +114,16 @@ export class AccountManagementService {
       | PersonnelVerificationStatus.REJECTED,
     remark?: string,
   ): Promise<void> {
-    const runner = this.dataSource.createQueryRunner();
-    await runner.connect();
-    await runner.startTransaction();
-    try {
-      await setStatusActor(runner, adminAccountId);
-      const result = await runner.manager.update(
-        PesoPersonnel,
-        {
-          pesoPersonnelId,
-          verificationStatus: PersonnelVerificationStatus.PENDING,
-        },
-        {
-          verificationStatus: status,
-          reviewedAt: new Date(),
-          reviewedByUserAccountId: adminAccountId,
-          verificationRemark: remark?.trim() || null,
-        },
+    void adminAccountId;
+    void remark;
+    const personnel = await this.dataSource
+      .getRepository(PesoPersonnel)
+      .findOne({ where: { pesoPersonnelId } });
+    if (!personnel) throw new NotFoundException('QC PESO profile not found');
+    if (status === PersonnelVerificationStatus.REJECTED) {
+      throw new ConflictException(
+        'QC PESO account verification has been retired; manage account access through account status.',
       );
-      if (!result.affected)
-        throw new ConflictException('Verification is not pending');
-      await runner.commitTransaction();
-    } catch (error) {
-      await runner.rollbackTransaction();
-      throw error;
-    } finally {
-      await runner.release();
     }
   }
 
@@ -152,93 +131,26 @@ export class AccountManagementService {
     userAccountId: number,
     dto: CorrectPesoPersonnelDto,
   ): Promise<void> {
-    const repo = this.dataSource.getRepository(PesoPersonnel);
-    const current = await repo.findOne({ where: { userAccountId } });
-    if (
-      !current ||
-      current.verificationStatus !== PersonnelVerificationStatus.REJECTED
-    ) {
-      throw new ForbiddenException(
-        'Corrections are available only after rejection',
-      );
-    }
-    let newKey: string | undefined;
-    if (dto.employeeIdFileBase64 && dto.employeeIdFileMimeType) {
-      newKey = await this.storage.storeEmployeeId({
-        data: Buffer.from(dto.employeeIdFileBase64, 'base64'),
-        mimeType: dto.employeeIdFileMimeType,
-        originalName: dto.employeeIdFileName,
-      });
-    }
-    try {
-      await repo.update(
-        { pesoPersonnelId: current.pesoPersonnelId },
-        {
-          ...(dto.employeeId ? { employeeId: dto.employeeId } : {}),
-          ...(dto.position ? { position: dto.position } : {}),
-          ...(dto.department ? { department: dto.department } : {}),
-          ...(dto.contactNumber ? { contactNumber: dto.contactNumber } : {}),
-          ...(dto.addressLine ? { addressLine: dto.addressLine } : {}),
-          ...(dto.addressBarangay
-            ? { addressBarangay: dto.addressBarangay }
-            : {}),
-          ...(dto.addressDistrict
-            ? { addressDistrict: dto.addressDistrict }
-            : {}),
-          ...(dto.addressCity ? { addressCity: dto.addressCity } : {}),
-          ...(newKey ? { employeeIdFilePath: newKey } : {}),
-        },
-      );
-      if (newKey) await this.storage.delete(current.employeeIdFilePath);
-    } catch (error) {
-      if (newKey) await this.storage.delete(newKey);
-      throw error;
-    }
+    void userAccountId;
+    void dto;
+    throw new ConflictException(
+      'QC PESO verification corrections are no longer required.',
+    );
   }
 
   async resubmit(userAccountId: number): Promise<void> {
-    const runner = this.dataSource.createQueryRunner();
-    await runner.connect();
-    await runner.startTransaction();
-    try {
-      await setStatusActor(runner, userAccountId);
-      const result = await runner.manager.update(
-        PesoPersonnel,
-        {
-          userAccountId,
-          verificationStatus: PersonnelVerificationStatus.REJECTED,
-        },
-        {
-          verificationStatus: PersonnelVerificationStatus.PENDING,
-          reviewedAt: null,
-          reviewedByUserAccountId: null,
-          verificationRemark: null,
-        },
-      );
-      if (!result.affected)
-        throw new ConflictException(
-          'Only a rejected verification can be resubmitted',
-        );
-      await runner.commitTransaction();
-    } catch (error) {
-      await runner.rollbackTransaction();
-      throw error;
-    } finally {
-      await runner.release();
-    }
+    void userAccountId;
+    throw new ConflictException(
+      'QC PESO verification resubmission is no longer required.',
+    );
   }
 
   async createPesoPersonnel(
     dto: CreatePesoPersonnelAccountDto,
     adminAccountId: number,
   ): Promise<{ userAccountId: number; pesoPersonnelId: number }> {
-    const fileKey = await this.storage.storeEmployeeId({
-      data: Buffer.from(dto.employeeIdFileBase64, 'base64'),
-      mimeType: dto.employeeIdFileMimeType,
-      originalName: dto.employeeIdFileName,
-    });
-    try {
-      return await this.dataSource.transaction(async (manager) => {
+    void adminAccountId;
+    return this.dataSource.transaction(async (manager) => {
         const existing = await manager
           .getRepository(UserAccount)
           .createQueryBuilder('a')
@@ -282,23 +194,14 @@ export class AccountManagementService {
             employeeId: dto.employeeId,
             position: dto.position,
             department: dto.department,
-            employeeIdFilePath: fileKey,
             photoFilePath: dto.photoFilePath ?? null,
-            verificationStatus: PersonnelVerificationStatus.APPROVED,
-            reviewedAt: new Date(),
-            reviewedByUserAccountId: adminAccountId,
-            verificationRemark: null,
           }),
         );
         return {
           userAccountId: account.userAccountId,
           pesoPersonnelId: personnel.pesoPersonnelId,
         };
-      });
-    } catch (error) {
-      await this.storage.delete(fileKey);
-      throw error;
-    }
+    });
   }
 
   async getPesoProfile(userAccountId: number) {
@@ -327,11 +230,10 @@ export class AccountManagementService {
       employeeId: peso.employeeId,
       position: peso.position,
       department: peso.department,
-      employeeIdFilePath: peso.employeeIdFilePath,
       photoFilePath: peso.photoFilePath,
-      verificationStatus: peso.verificationStatus,
-      reviewedAt: peso.reviewedAt,
-      verificationRemark: peso.verificationRemark,
+      verificationStatus: PersonnelVerificationStatus.APPROVED,
+      reviewedAt: null,
+      verificationRemark: null,
       email: account?.email,
       accountStatus: account?.accountStatus,
     };

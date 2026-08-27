@@ -17,7 +17,6 @@ import type {
 import { InterviewMode } from '../dto';
 import { EmployerCompanyResolver } from './company-resolver.service';
 import { asNumber, paginate } from '../utils/response.utils';
-import { dbMigrationPending } from '../utils/errors.utils';
 import { manilaDateTimeToIso } from '../utils/time.utils';
 
 type ReferralRow = Record<string, unknown>;
@@ -248,23 +247,35 @@ export class EmployerReferralService {
   async withdrawAcceptance(
     userAccountId: number,
     referralId: number,
-  ): Promise<never> {
+  ) {
     const company = await this.companyResolver.resolve(userAccountId);
-    const row = await this.findScoped(
-      this.dataSource,
-      company.companyId,
-      referralId,
-    );
-    if (row.company_response !== 'accepted') {
-      throw new ConflictException(
-        'Only an accepted referral can be withdrawn.',
+    await withStatusActor(this.dataSource, userAccountId, async (runner) => {
+      const row = await this.findScoped(
+        runner,
+        company.companyId,
+        referralId,
+        true,
       );
-    }
-    // TODO(DB-EMP-002): Implement after the accepted -> rejected workflow is migrated.
-    throw dbMigrationPending(
-      'DB-EMP-002',
-      'Acceptance withdrawal is temporarily unavailable pending an approved database migration.',
-    );
+      if (row.company_response !== 'accepted') {
+        throw new ConflictException(
+          'Only an accepted referral can be withdrawn.',
+        );
+      }
+      if (row.student_response !== 'pending') {
+        throw new ConflictException(
+          'Acceptance cannot be withdrawn after the student has responded.',
+        );
+      }
+      await runner.query(
+        `UPDATE public.referral
+         SET referral_status = 'closed',
+             company_response = 'rejected',
+             company_responded_at = CURRENT_TIMESTAMP
+         WHERE referral_id = $1`,
+        [referralId],
+      );
+    });
+    return this.getById(userAccountId, referralId);
   }
 
   async getDocumentDownload(

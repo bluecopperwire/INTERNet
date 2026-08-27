@@ -3,8 +3,8 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-  ServiceUnavailableException,
 } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { DataSource, QueryRunner } from 'typeorm';
 import { withStatusActor } from '../../database/status-actor.transaction';
 import { AccountStatus, UserRole } from '../../users/entities/account.entities';
@@ -52,7 +52,7 @@ export class AdminUserManagementService {
         `SELECT s.student_id AS "studentId", ua.user_account_id AS "userAccountId",
                 concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS "fullName",
                 ua.email AS "accountEmail", ua.created_at AS "createdAt",
-                ua.account_status AS "accountStatus"
+                ua.account_status AS "accountStatus", ua.suspended_until AS "suspendedUntil"
          FROM public.user_account ua
          JOIN public.student s ON s.user_account_id = ua.user_account_id
          WHERE ua.user_role = 'student' ${filter.sql}
@@ -68,7 +68,7 @@ export class AdminUserManagementService {
     this.assertPositiveId(studentId, 'studentId');
     const rows = await this.dataSource.query(
       `SELECT s.student_id AS "studentId", ua.user_account_id AS "userAccountId",
-              ua.email AS "accountEmail", ua.account_status AS "accountStatus", ua.created_at AS "createdAt",
+              ua.email AS "accountEmail", ua.account_status AS "accountStatus", ua.suspended_until AS "suspendedUntil", ua.created_at AS "createdAt",
               s.first_name AS "firstName", s.middle_name AS "middleName", s.last_name AS "lastName",
               s.extension_name AS "extensionName",
               concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS "fullName",
@@ -206,7 +206,7 @@ export class AdminUserManagementService {
       this.dataSource.query(
         `SELECT c.company_id AS "companyId", ua.user_account_id AS "userAccountId",
                 c.company_name AS "companyName", ua.email AS "accountEmail",
-                ua.created_at AS "createdAt", ua.account_status AS "accountStatus"
+                ua.created_at AS "createdAt", ua.account_status AS "accountStatus", ua.suspended_until AS "suspendedUntil"
          FROM public.user_account ua JOIN public.company c ON c.user_account_id = ua.user_account_id
          WHERE ua.user_role = 'company' ${filter.sql}
          ORDER BY ua.created_at DESC, c.company_id DESC
@@ -221,7 +221,7 @@ export class AdminUserManagementService {
     this.assertPositiveId(companyId, 'companyId');
     const rows = await this.dataSource.query(
       `SELECT c.company_id AS "companyId", ua.user_account_id AS "userAccountId",
-              ua.email AS "accountEmail", ua.account_status AS "accountStatus", ua.created_at AS "createdAt",
+              ua.email AS "accountEmail", ua.account_status AS "accountStatus", ua.suspended_until AS "suspendedUntil", ua.created_at AS "createdAt",
               c.company_name AS "companyName", c.company_type AS "companyType",
               c.industry_id AS "industryId", i.industry_name AS "industryName",
               c.company_size AS "companySize", c.year_established AS "yearEstablished",
@@ -245,13 +245,64 @@ export class AdminUserManagementService {
     return rows[0];
   }
 
-  createEmployer(dto: CreateAdminEmployerDto): never {
-    void dto;
-    // TODO(DB-ADMIN-002): Implement after company.logo_file_path becomes nullable.
-    throw this.pendingMigration(
-      'DB-ADMIN-002',
-      'Employer account creation is temporarily unavailable pending an approved database migration.',
-    );
+  async createEmployer(dto: CreateAdminEmployerDto) {
+    const companyId = await this.dataSource.transaction(async (manager) => {
+      await this.validateCompanyIndustry(manager, dto.industryId);
+      const duplicate = await manager.query(
+        'SELECT 1 FROM public.user_account WHERE lower(email) = lower($1)',
+        [dto.accountEmail],
+      );
+      if (duplicate.length)
+        throw new ConflictException('Account email is already in use.');
+
+      const accounts = await manager.query(
+        `INSERT INTO public.user_account (email, user_role)
+         VALUES (lower($1), 'company')
+         RETURNING user_account_id`,
+        [dto.accountEmail],
+      );
+      const userAccountId = Number(accounts[0].user_account_id);
+      await manager.query(
+        `INSERT INTO public.local_authentication_credential (user_account_id, password_hash)
+         VALUES ($1, $2)`,
+        [userAccountId, await bcrypt.hash(dto.initialPassword, 10)],
+      );
+      const companies = await manager.query(
+        `INSERT INTO public.company (
+           user_account_id, industry_id, company_name, company_type,
+           description, website_url, year_established, company_size,
+           contact_email, contact_number, contact_person_first_name,
+           contact_person_middle_name, contact_person_last_name,
+           contact_person_extension_name, address_line, address_barangay,
+           address_district, address_city, logo_file_path
+         ) VALUES (
+           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+           $14, $15, $16, $17, $18, NULL
+         ) RETURNING company_id`,
+        [
+          userAccountId,
+          dto.industryId,
+          dto.companyName,
+          dto.companyType,
+          dto.description,
+          dto.websiteUrl ?? null,
+          dto.yearEstablished,
+          dto.companySize,
+          dto.contactEmail,
+          dto.contactNumber,
+          dto.contactPersonFirstName,
+          dto.contactPersonMiddleName ?? null,
+          dto.contactPersonLastName,
+          dto.contactPersonExtensionName ?? null,
+          dto.addressLine,
+          dto.addressBarangay,
+          dto.addressDistrict ?? null,
+          dto.addressCity,
+        ],
+      );
+      return Number(companies[0].company_id);
+    });
+    return this.getEmployer(companyId);
   }
 
   async updateEmployer(companyId: number, dto: UpdateAdminEmployerDto) {
@@ -320,7 +371,7 @@ export class AdminUserManagementService {
         `SELECT p.peso_personnel_id AS "pesoPersonnelId", ua.user_account_id AS "userAccountId",
                 concat_ws(' ', p.first_name, p.middle_name, p.last_name, p.extension_name) AS "fullName",
                 ua.email AS "accountEmail", p.employee_id AS "employeeId",
-                ua.created_at AS "createdAt", ua.account_status AS "accountStatus"
+                ua.created_at AS "createdAt", ua.account_status AS "accountStatus", ua.suspended_until AS "suspendedUntil"
          FROM public.user_account ua JOIN public.peso_personnel p ON p.user_account_id = ua.user_account_id
          WHERE ua.user_role = 'peso_personnel' ${filter.sql}
          ORDER BY ua.created_at DESC, p.peso_personnel_id DESC
@@ -335,7 +386,7 @@ export class AdminUserManagementService {
     this.assertPositiveId(pesoPersonnelId, 'pesoPersonnelId');
     const rows = await this.dataSource.query(
       `SELECT p.peso_personnel_id AS "pesoPersonnelId", ua.user_account_id AS "userAccountId",
-              ua.email AS "accountEmail", ua.account_status AS "accountStatus", ua.created_at AS "createdAt",
+              ua.email AS "accountEmail", ua.account_status AS "accountStatus", ua.suspended_until AS "suspendedUntil", ua.created_at AS "createdAt",
               p.first_name AS "firstName", p.middle_name AS "middleName", p.last_name AS "lastName",
               p.extension_name AS "extensionName",
               concat_ws(' ', p.first_name, p.middle_name, p.last_name, p.extension_name) AS "fullName",
@@ -355,13 +406,71 @@ export class AdminUserManagementService {
     return rows[0];
   }
 
-  createPesoPersonnel(dto: CreateAdminPesoPersonnelDto): never {
-    void dto;
-    // TODO(DB-ADMIN-003): Implement after obsolete employee-ID-file and verification requirements are removed.
-    throw this.pendingMigration(
-      'DB-ADMIN-003',
-      'QC PESO account creation is temporarily unavailable pending an approved database migration.',
+  async createPesoPersonnel(dto: CreateAdminPesoPersonnelDto) {
+    this.assertPastBirthDate(dto.birthDate);
+    const pesoPersonnelId = await this.dataSource.transaction(
+      async (manager) => {
+        const duplicate = await manager.query(
+          `SELECT 1
+           WHERE EXISTS (
+             SELECT 1 FROM public.user_account
+             WHERE lower(email) = lower($1)
+           ) OR EXISTS (
+             SELECT 1 FROM public.peso_personnel
+             WHERE lower(employee_id) = lower($2)
+           )`,
+          [dto.accountEmail, dto.employeeId],
+        );
+        if (duplicate.length)
+          throw new ConflictException(
+            'Account email or employee ID is already in use.',
+          );
+
+        const accounts = await manager.query(
+          `INSERT INTO public.user_account (email, user_role)
+           VALUES (lower($1), 'peso_personnel')
+           RETURNING user_account_id`,
+          [dto.accountEmail],
+        );
+        const userAccountId = Number(accounts[0].user_account_id);
+        await manager.query(
+          `INSERT INTO public.local_authentication_credential (user_account_id, password_hash)
+           VALUES ($1, $2)`,
+          [userAccountId, await bcrypt.hash(dto.initialPassword, 10)],
+        );
+        const profiles = await manager.query(
+          `INSERT INTO public.peso_personnel (
+             user_account_id, first_name, middle_name, last_name,
+             extension_name, sex, birth_date, address_line,
+             address_barangay, address_district, address_city, contact_number,
+             contact_email, employee_id, position, department
+           ) VALUES (
+             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+             $14, $15, $16
+           ) RETURNING peso_personnel_id`,
+          [
+            userAccountId,
+            dto.firstName,
+            dto.middleName ?? null,
+            dto.lastName,
+            dto.extensionName ?? null,
+            dto.sex,
+            dto.birthDate,
+            dto.addressLine,
+            dto.addressBarangay,
+            dto.addressDistrict,
+            dto.addressCity,
+            dto.contactNumber,
+            dto.contactEmail,
+            dto.employeeId,
+            dto.position,
+            dto.department,
+          ],
+        );
+        return Number(profiles[0].peso_personnel_id);
+      },
     );
+    return this.getPesoPersonnel(pesoPersonnelId);
   }
 
   async updatePesoPersonnel(
@@ -449,11 +558,6 @@ export class AdminUserManagementService {
           throw this.invalidTransition(current, dto.status);
         if (current !== AccountStatus.ACTIVE)
           throw this.invalidTransition(current, dto.status);
-        // TODO(DB-ADMIN-001): Persist suspended_until after the approved column is available.
-        throw this.pendingMigration(
-          'DB-ADMIN-001',
-          'Timed account suspension is temporarily unavailable pending an approved database migration.',
-        );
       }
 
       if (
@@ -475,11 +579,23 @@ export class AdminUserManagementService {
              deleted_at = CASE
                WHEN $2::public.account_status_enum = 'archived' THEN CURRENT_TIMESTAMP
                ELSE NULL
+             END,
+             suspended_until = CASE
+               WHEN $2::public.account_status_enum = 'suspended'
+                 THEN CURRENT_TIMESTAMP + make_interval(days => $3::integer)
+               ELSE NULL
              END
          WHERE user_account_id = $1`,
-        [userAccountId, dto.status],
+        [userAccountId, dto.status, dto.suspensionDays ?? null],
       );
-      return { userAccountId, accountStatus: dto.status };
+      const updated = await runner.query(
+        `SELECT user_account_id AS "userAccountId",
+                account_status AS "accountStatus",
+                suspended_until AS "suspendedUntil"
+         FROM public.user_account WHERE user_account_id = $1`,
+        [userAccountId],
+      );
+      return updated[0];
     });
   }
 
@@ -648,11 +764,4 @@ export class AdminUserManagementService {
     });
   }
 
-  private pendingMigration(dependency: string, message: string) {
-    return new ServiceUnavailableException({
-      code: 'DB_MIGRATION_PENDING',
-      dependency,
-      message,
-    });
-  }
 }

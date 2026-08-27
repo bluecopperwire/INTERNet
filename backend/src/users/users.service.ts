@@ -33,14 +33,30 @@ export class UsersService {
     private readonly companies: Repository<Company>,
   ) {}
 
-  findByEmail(email: string): Promise<UserAccount | null> {
+  async findByEmail(email: string): Promise<UserAccount | null> {
+    await this.accounts.query(
+      `UPDATE public.user_account
+       SET account_status = 'active', suspended_until = NULL
+       WHERE lower(email) = lower($1)
+         AND account_status = 'suspended'
+         AND suspended_until <= CURRENT_TIMESTAMP`,
+      [email.trim()],
+    );
     return this.accounts
       .createQueryBuilder('account')
       .where('lower(account.email) = lower(:email)', { email: email.trim() })
       .getOne();
   }
 
-  findById(userAccountId: number): Promise<UserAccount | null> {
+  async findById(userAccountId: number): Promise<UserAccount | null> {
+    await this.accounts.query(
+      `UPDATE public.user_account
+       SET account_status = 'active', suspended_until = NULL
+       WHERE user_account_id = $1
+         AND account_status = 'suspended'
+         AND suspended_until <= CURRENT_TIMESTAMP`,
+      [userAccountId],
+    );
     return this.accounts.findOne({ where: { userAccountId } });
   }
 
@@ -100,7 +116,9 @@ export class UsersService {
 
     if (account.userRole === UserRole.PESO_PERSONNEL) {
       const peso = await this.personnel.findOne({ where: { userAccountId } });
-      verificationStatus = peso?.verificationStatus ?? null;
+      verificationStatus = peso
+        ? PersonnelVerificationStatus.APPROVED
+        : null;
       pesoPersonnelId = peso?.pesoPersonnelId ?? null;
     } else if (account.userRole === UserRole.STUDENT) {
       const student = await this.students.findOne({ where: { userAccountId } });

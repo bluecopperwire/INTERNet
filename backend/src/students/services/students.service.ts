@@ -1094,6 +1094,7 @@ export class StudentsService {
         JOIN public.company c ON c.company_id = o.company_id
         LEFT JOIN public.vw_attendance_summary ats ON ats.internship_assignment_id = ia.internship_assignment_id
         WHERE a.student_id = $1
+          AND ia.deleted_at IS NULL
         ORDER BY 
           CASE WHEN ia.assignment_status = 'ongoing' THEN 1 
                WHEN ia.assignment_status = 'pending' THEN 2 
@@ -1249,6 +1250,7 @@ export class StudentsService {
         JOIN public.referral r ON r.referral_id = ia.referral_id
         JOIN public.application a ON a.application_id = r.application_id
         WHERE ia.internship_assignment_id = $1 AND a.student_id = $2
+          AND ia.deleted_at IS NULL
       `,
       [assignmentId, studentId],
     );

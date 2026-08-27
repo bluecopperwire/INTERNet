@@ -398,29 +398,32 @@ student.dual@internet.local -> local + Google
 
 The seeded Google identities are synthetic development identities. No real Google OAuth token is stored.
 
-## 7.4 Check QC PESO verification states
+## 7.4 Check QC PESO personnel accounts
 
 Run:
 
 ```sql
 SELECT
     ua.email,
-    pp.verification_status,
-    pp.reviewed_at,
-    pp.reviewed_by_user_account_id
+    ua.account_status,
+    pp.first_name,
+    pp.last_name,
+    pp.employee_id
 FROM peso_personnel pp
 JOIN user_account ua
     ON ua.user_account_id = pp.user_account_id
 ORDER BY ua.email;
 ```
 
-Expected states:
+Expected:
 
 ```text
-peso.approved@internet.local -> approved
-peso.pending@internet.local  -> pending
-peso.rejected@internet.local -> rejected
+peso.approved@internet.local  -> active
+peso.pending@internet.local   -> active
+peso.rejected@internet.local  -> active
 ```
+
+QC PESO personnel accounts are directly active without verification barriers.
 
 Exit PostgreSQL when finished:
 

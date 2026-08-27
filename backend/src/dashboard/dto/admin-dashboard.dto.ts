@@ -9,10 +9,7 @@ import {
   IsString,
   Min,
 } from 'class-validator';
-import {
-  AccountStatus,
-  PersonnelVerificationStatus,
-} from '../../users/entities/account.entities';
+import { AccountStatus } from '../../users/entities/account.entities';
 
 export class AdminDashboardMetricsDto {
   totalRegistered: number;
@@ -91,7 +88,6 @@ export class UpdateStudentAccountDto {
     'second_year_college',
     'third_year_college',
     'fourth_year_college',
-    'fifth_year_college',
   ])
   yearLevel?: string;
 
@@ -239,11 +235,4 @@ export class UpdatePesoPersonnelAccountDto {
   @IsString()
   addressCity?: string;
 
-  @IsOptional()
-  @IsEnum(PersonnelVerificationStatus)
-  verificationStatus?: PersonnelVerificationStatus;
-
-  @IsOptional()
-  @IsString()
-  verificationRemark?: string;
 }

@@ -201,16 +201,15 @@ export class EmployerFixtureFactory {
     const status = options.status ?? 'open';
     const rows = await this.db.query(
       `INSERT INTO public.opportunity
-        (company_id,title,department,description,qualification,has_allowance,allowance,
+        (company_id,title,department,description,qualification,allowance,
          minimum_required_hours,work_arrangement,offered_slots,application_deadline,opportunity_status)
-       VALUES ($1,$2,'Engineering','E2E opportunity','Qualified',$3,$4,$5,'hybrid',$6,
-         COALESCE($7::timestamptz, CURRENT_TIMESTAMP + INTERVAL '365 days'),$8)
+       VALUES ($1,$2,'Engineering','E2E opportunity','Qualified',$3,$4,'hybrid',$5,
+         COALESCE($6::timestamptz, CURRENT_TIMESTAMP + INTERVAL '365 days'),$7)
        RETURNING opportunity_id`,
       [
         companyId,
         options.title ?? `Opportunity ${n}`,
-        options.allowance != null,
-        options.allowance,
+        options.allowance ?? null,
         options.requiredHours ?? 80,
         options.offeredSlots ?? 2,
         options.deadline ?? null,
@@ -454,10 +453,9 @@ export class EmployerFixtureFactory {
       await m.query(
         `INSERT INTO public.peso_personnel
           (user_account_id,first_name,last_name,sex,birth_date,address_line,address_barangay,address_district,
-           address_city,contact_number,contact_email,employee_id,position,department,employee_id_file_path,
-           verification_status)
+           address_city,contact_number,contact_email,employee_id,position,department)
          VALUES ($1,'Pat','Officer','N/A','1990-01-01','1 PESO','Central','D1','QC','0900','peso@test.invalid',
-           'PESO-1','Officer','PESO','peso.pdf','pending')`,
+           'PESO-1','Officer','PESO')`,
         [accountId],
       );
     });

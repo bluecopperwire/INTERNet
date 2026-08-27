@@ -123,7 +123,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
   setStudentAccountStatus: async (userAccountId: number, status: string) => {
     try {
-      await adminApiService.setStudentStatus(userAccountId, status);
+      await adminApiService.setAccountStatus(userAccountId, status);
       await get().fetchStudents();
     } catch (err: any) {
       const norm = normalizeApiError(err);
@@ -133,7 +133,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
   setEmployerAccountStatus: async (userAccountId: number, status: string) => {
     try {
-      await adminApiService.setEmployerStatus(userAccountId, status);
+      await adminApiService.setAccountStatus(userAccountId, status);
       await get().fetchEmployers();
     } catch (err: any) {
       const norm = normalizeApiError(err);
@@ -143,7 +143,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
   setPesoAccountStatus: async (userAccountId: number, status: string) => {
     try {
-      await adminApiService.setPesoStatus(userAccountId, status);
+      await adminApiService.setAccountStatus(userAccountId, status);
       await get().fetchPesoUsers();
     } catch (err: any) {
       const norm = normalizeApiError(err);

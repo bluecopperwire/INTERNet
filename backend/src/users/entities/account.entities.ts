@@ -63,6 +63,9 @@ export class UserAccount {
 
   @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz', nullable: true })
   deletedAt: Date | null;
+
+  @Column({ name: 'suspended_until', type: 'timestamptz', nullable: true })
+  suspendedUntil: Date | null;
 }
 
 @Entity({ schema: 'public', name: 'local_authentication_credential' })
@@ -288,7 +291,8 @@ export class Company {
   @Column({ name: 'address_district', type: 'text', nullable: true })
   addressDistrict: string | null;
   @Column({ name: 'address_city', type: 'text' }) addressCity: string;
-  @Column({ name: 'logo_file_path', type: 'text' }) logoFilePath: string;
+  @Column({ name: 'logo_file_path', type: 'text', nullable: true })
+  logoFilePath: string | null;
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
@@ -317,60 +321,12 @@ export class PesoPersonnel {
   @Column({ name: 'employee_id', type: 'text' }) employeeId: string;
   @Column({ name: 'position', type: 'text' }) position: string;
   @Column({ name: 'department', type: 'text' }) department: string;
-  @Column({ name: 'employee_id_file_path', type: 'text' })
-  employeeIdFilePath: string;
   @Column({ name: 'photo_file_path', type: 'text', nullable: true })
   photoFilePath: string | null;
-  @Column({
-    name: 'verification_status',
-    type: 'enum',
-    enum: PersonnelVerificationStatus,
-    enumName: 'personnel_verification_status_enum',
-  })
-  verificationStatus: PersonnelVerificationStatus;
-  @Column({ name: 'reviewed_at', type: 'timestamptz', nullable: true })
-  reviewedAt: Date | null;
-  @Column({
-    name: 'reviewed_by_user_account_id',
-    type: 'integer',
-    nullable: true,
-  })
-  reviewedByUserAccountId: number | null;
-  @Column({ name: 'verification_remark', type: 'text', nullable: true })
-  verificationRemark: string | null;
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
-}
-
-@Entity({ schema: 'public', name: 'peso_personnel_verification_history' })
-export class PesoPersonnelVerificationHistory {
-  @PrimaryGeneratedColumn({
-    name: 'peso_personnel_verification_history_id',
-    type: 'integer',
-  })
-  pesoPersonnelVerificationHistoryId: number;
-  @Column({ name: 'peso_personnel_id', type: 'integer' })
-  pesoPersonnelId: number;
-  @Column({
-    name: 'previous_verification_status',
-    type: 'enum',
-    enum: PersonnelVerificationStatus,
-    enumName: 'personnel_verification_status_enum',
-  })
-  previousVerificationStatus: PersonnelVerificationStatus;
-  @Column({
-    name: 'new_verification_status',
-    type: 'enum',
-    enum: PersonnelVerificationStatus,
-    enumName: 'personnel_verification_status_enum',
-  })
-  newVerificationStatus: PersonnelVerificationStatus;
-  @Column({ name: 'changed_by_user_account_id', type: 'integer' })
-  changedByUserAccountId: number;
-  @CreateDateColumn({ name: 'changed_at', type: 'timestamptz' })
-  changedAt: Date;
 }
 
 export const AUTH_REGISTRATION_ENTITIES = [
@@ -383,5 +339,4 @@ export const AUTH_REGISTRATION_ENTITIES = [
   Company,
   PesoPersonnel,
   Industry,
-  PesoPersonnelVerificationHistory,
 ] as const;

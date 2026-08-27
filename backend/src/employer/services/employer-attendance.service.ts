@@ -109,6 +109,7 @@ export class EmployerAttendanceService {
           LIMIT 1
         ) terminal_transition ON true
         WHERE ia.internship_assignment_id = $1 AND o.company_id = $2
+          AND ia.deleted_at IS NULL
       `,
       [internshipAssignmentId, company.companyId],
     );
@@ -240,6 +241,7 @@ export class EmployerAttendanceService {
           ON ar.internship_assignment_id = ia.internship_assignment_id
          AND ar.attendance_date = $2::date
         WHERE o.company_id = $1
+          AND ia.deleted_at IS NULL
           AND ia.start_date <= $2::date
           AND ($4::boolean = false OR ia.assignment_status = 'ongoing')
           AND ($3::text IS NULL OR concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) ILIKE '%' || $3 || '%' OR o.title ILIKE '%' || $3 || '%')

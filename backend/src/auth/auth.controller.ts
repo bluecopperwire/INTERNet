@@ -77,7 +77,7 @@ export class AuthController {
   ) {
     const tokens = await this.auth.registerPeso(dto);
     this.setRefreshCookie(res, tokens.refreshToken);
-    return { accessToken: tokens.accessToken, verificationStatus: 'pending' };
+    return { accessToken: tokens.accessToken, verificationStatus: 'approved' };
   }
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })

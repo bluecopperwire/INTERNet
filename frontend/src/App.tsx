@@ -4,7 +4,6 @@ import SignUpPage from './features/authentication/components/SignUpPage'
 import { AuthCallbackPage } from './features/authentication/components/AuthCallbackPage'
 import { ProtectedRoute } from './components/routing/ProtectedRoute'
 import { RoleRoute } from './components/routing/RoleRoute'
-import { PesoVerificationGate } from './features/authentication/components/PesoVerificationGate'
 
 // Intern Seeker
 import InternSeekerLayout from './features/intern-seeker/components/InternSeekerLayout'
@@ -108,9 +107,7 @@ function App() {
           element={
             <ProtectedRoute>
               <RoleRoute allowedRoles={['peso_personnel']}>
-                <PesoVerificationGate>
-                  <QCPesoLayout />
-                </PesoVerificationGate>
+                <QCPesoLayout />
               </RoleRoute>
             </ProtectedRoute>
           }

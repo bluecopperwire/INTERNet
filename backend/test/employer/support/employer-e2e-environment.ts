@@ -31,7 +31,7 @@ export class EmployerE2eEnvironment {
       .withPassword(randomUUID())
       .start();
 
-    this.testCwd = mkdtempSync(join(tmpdir(), 'internet-employer-e2e-'));
+    this.testCwd = mkdtempSync(join(this.originalCwd, '.tmp-employer-e2e-'));
     this.uploadRoot = join(this.testCwd, 'public-uploads');
     this.documentRoot = join(this.testCwd, 'uploads', 'requirements');
     process.chdir(this.testCwd);

@@ -5,5 +5,4 @@ export enum YearLevel {
   SECOND_YEAR_COLLEGE = 'second_year_college',
   THIRD_YEAR_COLLEGE = 'third_year_college',
   FOURTH_YEAR_COLLEGE = 'fourth_year_college',
-  FIFTH_YEAR_COLLEGE = 'fifth_year_college',
 }

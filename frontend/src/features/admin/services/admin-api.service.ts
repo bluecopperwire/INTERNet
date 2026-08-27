@@ -86,53 +86,25 @@ export const adminApiService = {
     return response.data;
   },
 
-  async setStudentStatus(userAccountId: number, status: string): Promise<any> {
+  async setAccountStatus(
+    userAccountId: number,
+    status: string,
+    suspensionDays?: number,
+  ): Promise<any> {
     const response = await api.patch(
-      `/dashboard/admin/students/${userAccountId}`,
-      { accountStatus: status },
-    );
-    return response.data;
-  },
-
-  async setEmployerStatus(userAccountId: number, status: string): Promise<any> {
-    const response = await api.patch(
-      `/dashboard/admin/employers/${userAccountId}`,
-      { accountStatus: status },
-    );
-    return response.data;
-  },
-
-  async setPesoStatus(userAccountId: number, status: string): Promise<any> {
-    const response = await api.patch(
-      `/dashboard/admin/peso-personnel/${userAccountId}`,
-      { accountStatus: status },
+      `/admin/accounts/${userAccountId}/status`,
+      { status, ...(suspensionDays === undefined ? {} : { suspensionDays }) },
     );
     return response.data;
   },
 
   async createPesoUser(payload: any): Promise<any> {
-    const response = await api.post('/users/peso-personnel', payload);
+    const response = await api.post('/admin/qc-peso', payload);
     return response.data;
   },
 
   async createCompanyUser(payload: any): Promise<any> {
-    const response = await api.post('/users/companies', payload);
-    return response.data;
-  },
-
-  async approvePesoVerification(id: number, remark?: string): Promise<any> {
-    const response = await api.post(
-      `/users/admin/peso-verifications/${id}/approve`,
-      { remark },
-    );
-    return response.data;
-  },
-
-  async rejectPesoVerification(id: number, remark?: string): Promise<any> {
-    const response = await api.post(
-      `/users/admin/peso-verifications/${id}/reject`,
-      { remark },
-    );
+    const response = await api.post('/admin/employers', payload);
     return response.data;
   },
 };

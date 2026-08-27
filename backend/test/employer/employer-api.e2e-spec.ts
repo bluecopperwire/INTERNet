@@ -279,29 +279,30 @@ describe('opportunity APIs', () => {
     );
   });
 
-  test('E2E-OPP-007..009 POST validates before returning DB-EMP-001 and never inserts', async () => {
+  test('E2E-OPP-007..009 POST validates and creates opportunity with free-text allowance', async () => {
     const valid = {
-      title: 'Blocked',
+      title: 'Created Opportunity',
       department: 'IT',
       workArrangement: 'remote',
       minimumRequiredHours: 80,
       offeredSlots: 1,
-      allowance: null,
-      description: 'Blocked create',
+      allowance: 'PHP 5,000 monthly',
+      description: 'Active create test',
       qualification: null,
       applicationDeadline: '2026-09-30',
     };
     const countBefore = Number(
       (await db.query('SELECT count(*) AS n FROM public.opportunity'))[0].n,
     );
-    const blocked = await request(env.app.getHttpServer())
+    const created = await request(env.app.getHttpServer())
       .post('/employer/opportunities')
       .set(auth(companyA.token))
       .send(valid)
-      .expect(503);
-    expect(blocked.body).toMatchObject({
-      code: 'DB_MIGRATION_PENDING',
-      dependency: 'DB-EMP-001',
+      .expect(201);
+    expect(created.body).toMatchObject({
+      title: 'Created Opportunity',
+      allowance: 'PHP 5,000 monthly',
+      opportunityStatus: 'open',
     });
     await request(env.app.getHttpServer())
       .post('/employer/opportunities')
@@ -312,10 +313,10 @@ describe('opportunity APIs', () => {
       Number(
         (await db.query('SELECT count(*) AS n FROM public.opportunity'))[0].n,
       ),
-    ).toBe(countBefore);
+    ).toBe(countBefore + 1);
   });
 
-  test('E2E-OPP-010..016 detail/update scoping and blocker behavior', async () => {
+  test('E2E-OPP-010..016 detail/update scoping and successful updates', async () => {
     const own = await fixtures.opportunity(companyA.companyId, {
       title: 'Own Detail',
     });
@@ -334,22 +335,17 @@ describe('opportunity APIs', () => {
       .get('/employer/opportunities/999999')
       .set(auth(companyA.token))
       .expect(404);
-    const before = await db.query(
+    const updated = await request(env.app.getHttpServer())
+      .patch(`/employer/opportunities/${own}`)
+      .set(auth(companyA.token))
+      .send({ title: 'Updated Title' })
+      .expect(200);
+    expect(updated.body.title).toBe('Updated Title');
+    const after = await db.query(
       'SELECT title FROM public.opportunity WHERE opportunity_id=$1',
       [own],
     );
-    const blocked = await request(env.app.getHttpServer())
-      .patch(`/employer/opportunities/${own}`)
-      .set(auth(companyA.token))
-      .send({ title: 'No Write' })
-      .expect(503);
-    expect(blocked.body.dependency).toBe('DB-EMP-001');
-    expect(
-      await db.query(
-        'SELECT title FROM public.opportunity WHERE opportunity_id=$1',
-        [own],
-      ),
-    ).toEqual(before);
+    expect(after[0].title).toBe('Updated Title');
     await request(env.app.getHttpServer())
       .patch(`/employer/opportunities/${foreign}`)
       .set(auth(companyA.token))
@@ -895,17 +891,20 @@ describe('assignment workflow APIs', () => {
       .expect(404);
   });
 
-  test('E2E-ASG-019..022 withdraw acceptance returns DB-EMP-002 only for accepted own referrals and never mutates', async () => {
+  test('E2E-ASG-019..022 withdraw acceptance transitions to rejected only for accepted own referrals', async () => {
     const accepted = await fixtures.referral(companyA.companyId, {
       response: 'accepted',
     });
-    const blocked = await request(env.app.getHttpServer())
+    const withdrawn = await request(env.app.getHttpServer())
       .patch(`/employer/referrals/${accepted.referralId}/withdraw-acceptance`)
       .set(auth(companyA.token))
-      .expect(503);
-    expect(blocked.body).toMatchObject({
-      code: 'DB_MIGRATION_PENDING',
-      dependency: 'DB-EMP-002',
+      .send({ remark: 'Company withdrew offer' })
+      .expect(200);
+    expect(withdrawn.body).toMatchObject({
+      referral: {
+        referralId: accepted.referralId,
+        companyResponse: 'rejected',
+      },
     });
     expect(
       (
@@ -914,7 +913,7 @@ describe('assignment workflow APIs', () => {
           [accepted.referralId],
         )
       )[0].company_response,
-    ).toBe('accepted');
+    ).toBe('rejected');
     const pending = await fixtures.referral(companyA.companyId);
     await request(env.app.getHttpServer())
       .patch(`/employer/referrals/${pending.referralId}/withdraw-acceptance`)
@@ -1730,27 +1729,23 @@ describe('manage internship APIs', () => {
       .expect(404);
   });
 
-  test('E2E-INT-049..055 delete returns DB-EMP-003 only for terminal own rows and never deletes', async () => {
+  test('E2E-INT-049..055 delete soft deletes only terminal own rows and sets deleted_at', async () => {
     for (const status of ['completed', 'cancelled', 'withdrawn'] as const) {
       const item = await makeInternship(status);
-      const blocked = await request(env.app.getHttpServer())
+      const deleted = await request(env.app.getHttpServer())
         .delete(`/employer/internships/${item.assignmentId}`)
         .set(auth(companyA.token))
-        .expect(503);
-      expect(blocked.body).toMatchObject({
-        code: 'DB_MIGRATION_PENDING',
-        dependency: 'DB-EMP-003',
+        .expect(200);
+      expect(deleted.body).toMatchObject({
+        deleted: true,
+        internshipAssignmentId: item.assignmentId,
       });
-      expect(
-        Number(
-          (
-            await db.query(
-              'SELECT count(*) AS n FROM public.internship_assignment WHERE internship_assignment_id=$1',
-              [item.assignmentId],
-            )
-          )[0].n,
-        ),
-      ).toBe(1);
+      const rows = await db.query(
+        'SELECT deleted_at FROM public.internship_assignment WHERE internship_assignment_id=$1',
+        [item.assignmentId],
+      );
+      expect(rows).toHaveLength(1);
+      expect(rows[0].deleted_at).not.toBeNull();
     }
     for (const status of ['pending', 'ongoing'] as const) {
       const item = await makeInternship(status);

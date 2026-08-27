@@ -63,12 +63,7 @@ export class UsersController {
   @Roles(UserRole.PESO_PERSONNEL)
   @Get('peso/verification-status')
   async verificationStatus(@CurrentUser('userAccountId') id: number) {
-    const p = await this.accounts.verificationStatus(id);
-    return {
-      verificationStatus: p.verificationStatus,
-      reviewedAt: p.reviewedAt,
-      verificationRemark: p.verificationRemark,
-    };
+    return this.accounts.verificationStatus(id);
   }
 
   @Roles(UserRole.PESO_PERSONNEL)

@@ -19,7 +19,6 @@ import {
   remainingHours,
   roundHours,
 } from '../utils/attendance.utils';
-import { dbMigrationPending } from '../utils/errors.utils';
 import { asNumber, paginate } from '../utils/response.utils';
 import {
   assertDateRange,
@@ -58,6 +57,11 @@ export class EmployerInternshipService {
         JOIN public.student s ON s.student_id = a.student_id
         WHERE o.company_id = $1
           AND r.company_response = 'accepted'
+          AND NOT EXISTS (
+            SELECT 1 FROM public.internship_assignment deleted_assignment
+            WHERE deleted_assignment.referral_id = r.referral_id
+              AND deleted_assignment.deleted_at IS NOT NULL
+          )
           AND ($2::text IS NULL OR a.student_response::text = $2)
           AND ($3::text IS NULL OR concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) ILIKE '%' || $3 || '%' OR o.title ILIKE '%' || $3 || '%')
       `,
@@ -79,6 +83,11 @@ export class EmployerInternshipService {
         LEFT JOIN public.internship_assignment ia ON ia.referral_id = r.referral_id
         WHERE o.company_id = $1
           AND r.company_response = 'accepted'
+          AND NOT EXISTS (
+            SELECT 1 FROM public.internship_assignment deleted_assignment
+            WHERE deleted_assignment.referral_id = r.referral_id
+              AND deleted_assignment.deleted_at IS NOT NULL
+          )
           AND ($2::text IS NULL OR a.student_response::text = $2)
           AND ($3::text IS NULL OR concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) ILIKE '%' || $3 || '%' OR o.title ILIKE '%' || $3 || '%')
         ORDER BY r.company_responded_at DESC, r.referral_id DESC
@@ -400,27 +409,32 @@ export class EmployerInternshipService {
   async softDelete(
     userAccountId: number,
     internshipAssignmentId: number,
-  ): Promise<never> {
+  ) {
     const company = await this.companyResolver.resolve(userAccountId);
-    const row = await this.findAssignmentScoped(
-      this.dataSource,
-      company.companyId,
-      internshipAssignmentId,
-    );
-    if (
-      !['completed', 'cancelled', 'withdrawn'].includes(
-        String(row.assignment_status),
-      )
-    ) {
-      throw new ConflictException(
-        'Only completed, cancelled, or withdrawn assignments can be deleted.',
+    await withStatusActor(this.dataSource, userAccountId, async (runner) => {
+      const row = await this.findAssignmentScoped(
+        runner,
+        company.companyId,
+        internshipAssignmentId,
+        true,
       );
-    }
-    // TODO(DB-EMP-003): Implement after internship_assignment.deleted_at is migrated.
-    throw dbMigrationPending(
-      'DB-EMP-003',
-      'Internship record deletion is temporarily unavailable pending an approved database migration.',
-    );
+      if (
+        !['completed', 'cancelled', 'withdrawn'].includes(
+          String(row.assignment_status),
+        )
+      ) {
+        throw new ConflictException(
+          'Only completed, cancelled, or withdrawn assignments can be deleted.',
+        );
+      }
+      await runner.query(
+        `UPDATE public.internship_assignment
+         SET deleted_at = CURRENT_TIMESTAMP
+         WHERE internship_assignment_id = $1`,
+        [internshipAssignmentId],
+      );
+    });
+    return { internshipAssignmentId, deleted: true };
   }
 
   private validateAssignmentInput(dto: {
@@ -454,6 +468,7 @@ export class EmployerInternshipService {
         JOIN public.company c ON c.company_id = o.company_id
         JOIN public.student s ON s.student_id = a.student_id
         WHERE c.company_id = $1
+          AND ia.deleted_at IS NULL
           AND ($2::text IS NULL OR concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) ILIKE '%' || $2 || '%' OR o.title ILIKE '%' || $2 || '%')
         ORDER BY ia.created_at DESC, ia.internship_assignment_id DESC
       `,
@@ -484,6 +499,7 @@ export class EmployerInternshipService {
         JOIN public.company c ON c.company_id = o.company_id
         JOIN public.student s ON s.student_id = a.student_id
         WHERE ia.internship_assignment_id = $1 AND c.company_id = $2
+          AND ia.deleted_at IS NULL
         ${forUpdate ? 'FOR UPDATE OF ia' : ''}
       `,
       [internshipAssignmentId, companyId],

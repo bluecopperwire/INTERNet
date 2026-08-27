@@ -1,5 +1,6 @@
 import { useAdminStore } from '../stores/useAdminStore';
 import { adminApiService } from './admin-api.service';
+import { referenceService } from '../../../services/reference.service';
 import {
   adaptAdminStudentItem,
   adaptAdminEmployerItem,
@@ -29,8 +30,40 @@ export const adminService = {
   },
 
   updateStudentRecord: async (id: string, updates: Partial<StudentRecord>): Promise<StudentRecord | null> => {
-    const raw = await adminApiService.updateStudent(Number(id), updates);
-    return adaptAdminStudentItem(raw);
+    const current = await adminApiService.getStudent(Number(id));
+    const payload: Record<string, unknown> = compact({
+      firstName: updates.firstName,
+      middleName: updates.middleName,
+      lastName: updates.lastName,
+      extensionName: updates.suffix,
+      birthDate: updates.birthdate,
+      sex: updates.sex,
+      addressLine: updates.addressStreet,
+      addressBarangay: updates.addressBarangay,
+      addressDistrict: updates.addressDistrict,
+      addressCity: updates.addressCity,
+      contactNumber: updates.contactNumber,
+      linkedinUrl: updates.linkedinUrl,
+      schoolName: updates.schoolName,
+      yearLevel: mapYearLevel(updates.yearLevel),
+      strandProgram: updates.programStrand,
+      requiredHours: updates.requiredHours ? Number(updates.requiredHours) : undefined,
+      availableDays: updates.scheduleAvailability?.[0]?.toLowerCase(),
+      startDate: updates.startDate,
+      preferredCompanyType: updates.hostOrgType?.toLowerCase(),
+      allowsOutsidePreferredField: updates.flexibleAssignment,
+    });
+    if (updates.preferredIndustries) {
+      payload.preferredIndustries = await mapPreferredIndustries(
+        updates.preferredIndustries,
+        updates.otherPreferredField,
+      );
+    }
+    if (Object.keys(payload).length) {
+      await adminApiService.updateStudent(Number(id), payload);
+    }
+    await applyStatusChange(current, updates);
+    return adaptAdminStudentItem(await adminApiService.getStudent(Number(id)));
   },
 
   getEmployerRecords: async (): Promise<EmployerRecord[]> => {
@@ -45,12 +78,57 @@ export const adminService = {
   },
 
   updateEmployerRecord: async (id: string, updates: Partial<EmployerRecord>): Promise<EmployerRecord | null> => {
-    const raw = await adminApiService.updateEmployer(Number(id), updates);
-    return adaptAdminEmployerItem(raw);
+    const current = await adminApiService.getEmployer(Number(id));
+    const payload: Record<string, unknown> = compact({
+      companyName: updates.companyName,
+      companyType: updates.companyType?.toLowerCase(),
+      companySize: updates.companySize ? Number(updates.companySize) : undefined,
+      yearEstablished: updates.yearEstablished ? Number(updates.yearEstablished) : undefined,
+      websiteUrl: updates.companyWebsite || undefined,
+      description: updates.description,
+      addressLine: updates.addressLine,
+      addressBarangay: updates.addressBarangay,
+      addressDistrict: updates.addressDistrict,
+      addressCity: updates.addressCity,
+      contactPersonFirstName: updates.contactFirstName,
+      contactPersonMiddleName: updates.contactMiddleName,
+      contactPersonLastName: updates.contactLastName,
+      contactPersonExtensionName: updates.contactSuffix,
+      contactEmail: updates.contactEmail,
+      contactNumber: updates.contactNumber,
+    });
+    if (updates.industry && updates.industry !== 'N/A') {
+      payload.industryId = await industryIdFor(updates.industry);
+    }
+    if (Object.keys(payload).length) {
+      await adminApiService.updateEmployer(Number(id), payload);
+    }
+    await applyStatusChange(current, updates);
+    return adaptAdminEmployerItem(await adminApiService.getEmployer(Number(id)));
   },
 
   createEmployerRecord: async (record: any): Promise<EmployerRecord> => {
-    const raw = await adminApiService.createCompanyUser(record);
+    const raw = await adminApiService.createCompanyUser({
+      accountEmail: record.email,
+      initialPassword: record.temporaryPassword,
+      companyName: record.companyName,
+      companyType: record.companyType.toLowerCase(),
+      industryId: await industryIdFor(record.industry),
+      companySize: Number(record.companySize),
+      yearEstablished: Number(record.yearEstablished),
+      websiteUrl: record.companyWebsite || null,
+      description: record.description,
+      addressLine: record.addressLine,
+      addressBarangay: record.addressBarangay,
+      addressDistrict: record.addressDistrict || null,
+      addressCity: record.addressCity,
+      contactPersonFirstName: record.contactFirstName,
+      contactPersonMiddleName: record.contactMiddleName || null,
+      contactPersonLastName: record.contactLastName,
+      contactPersonExtensionName: record.contactSuffix || null,
+      contactEmail: record.contactEmail,
+      contactNumber: record.contactNumber,
+    });
     return adaptAdminEmployerItem(raw);
   },
 
@@ -66,12 +144,51 @@ export const adminService = {
   },
 
   updateQCPesoRecord: async (id: string, updates: Partial<QCPesoRecord>): Promise<QCPesoRecord | null> => {
-    const raw = await adminApiService.updatePesoUser(Number(id), updates);
-    return adaptAdminPesoItem(raw);
+    const current = await adminApiService.getPesoUser(Number(id));
+    const payload = compact({
+      firstName: updates.firstName,
+      middleName: updates.middleName,
+      lastName: updates.lastName,
+      extensionName: updates.suffix,
+      birthDate: updates.birthdate,
+      sex: updates.sex,
+      addressLine: updates.addressLine,
+      addressBarangay: updates.barangay,
+      addressDistrict: updates.district,
+      addressCity: updates.city,
+      contactEmail: updates.contactEmail,
+      contactNumber: updates.contactNumber,
+      employeeId: updates.employeeId,
+      department: updates.department,
+      position: updates.position,
+    });
+    if (Object.keys(payload).length) {
+      await adminApiService.updatePesoUser(Number(id), payload);
+    }
+    await applyStatusChange(current, updates);
+    return adaptAdminPesoItem(await adminApiService.getPesoUser(Number(id)));
   },
 
   createQCPesoRecord: async (record: any): Promise<QCPesoRecord> => {
-    const raw = await adminApiService.createPesoUser(record);
+    const raw = await adminApiService.createPesoUser({
+      accountEmail: record.email,
+      initialPassword: record.temporaryPassword,
+      firstName: record.firstName,
+      middleName: record.middleName || null,
+      lastName: record.lastName,
+      extensionName: record.suffix || null,
+      addressLine: record.addressLine,
+      addressBarangay: record.barangay,
+      addressDistrict: record.district,
+      addressCity: record.city,
+      birthDate: record.birthdate,
+      sex: record.sex,
+      contactEmail: record.contactEmail,
+      contactNumber: record.contactNumber,
+      employeeId: record.employeeId,
+      department: record.department,
+      position: record.position,
+    });
     return adaptAdminPesoItem(raw);
   },
 
@@ -157,3 +274,72 @@ export const adminService = {
 };
 
 export default adminService;
+
+function compact(values: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(values).filter(([, value]) => value !== undefined),
+  );
+}
+
+function mapYearLevel(value?: string): string | undefined {
+  if (!value) return undefined;
+  const levels: Record<string, string> = {
+    'Grade 11': 'grade_11',
+    'Grade 12': 'grade_12',
+    '1st Year': 'first_year_college',
+    '2nd Year': 'second_year_college',
+    '3rd Year': 'third_year_college',
+    '4th Year': 'fourth_year_college',
+  };
+  return levels[value] || value;
+}
+
+function normalizeIndustryName(value: string): string {
+  return value.toLowerCase().replace(/\s*\/\s*/g, '/').trim();
+}
+
+async function industryIdFor(name: string): Promise<number> {
+  const industries = await referenceService.getIndustries();
+  const match = industries.find(
+    (item) => normalizeIndustryName(item.industryName) === normalizeIndustryName(name),
+  );
+  if (!match) throw new Error(`Unknown industry: ${name}`);
+  return match.industryId;
+}
+
+async function mapPreferredIndustries(names: string[], customName?: string) {
+  const industries = await referenceService.getIndustries();
+  return names.map((name) => {
+    if (name === 'Other') {
+      const custom = industries.find((item) => item.isCustomText);
+      if (!custom) throw new Error('The custom industry reference is not configured.');
+      return { industryId: custom.industryId, customIndustryName: customName };
+    }
+    const match = industries.find(
+      (item) => normalizeIndustryName(item.industryName) === normalizeIndustryName(name),
+    );
+    if (!match) throw new Error(`Unknown industry: ${name}`);
+    return { industryId: match.industryId };
+  });
+}
+
+async function applyStatusChange(
+  current: { userAccountId: number; accountStatus: string },
+  updates: { status?: AccountStatus; suspensionDaysRemaining?: number },
+) {
+  if (!updates.status) return;
+  const statuses: Record<AccountStatus, string> = {
+    Active: 'active',
+    Inactive: 'archived',
+    Suspended: 'suspended',
+    Deactivated: 'archived',
+    Pending: 'active',
+  };
+  const status = statuses[updates.status];
+  if (status === current.accountStatus) return;
+  await adminApiService.setAccountStatus(
+    Number(current.userAccountId),
+    status,
+    status === 'suspended' ? updates.suspensionDaysRemaining : undefined,
+  );
+}

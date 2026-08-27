@@ -19,7 +19,7 @@ export interface OpportunityCatalogItem {
   workArrangement: string;
   offeredSlots: number;
   hasAllowance: boolean;
-  allowance: number | null;
+  allowance: string | null;
   applicationDeadline: string;
   opportunityStatus: string;
   createdAt: string;
@@ -75,9 +75,9 @@ export class OpportunityCatalogService {
     }
 
     if (query.hasAllowance !== undefined) {
-      whereClauses.push(`o.has_allowance = $${paramIndex}`);
-      params.push(query.hasAllowance);
-      paramIndex++;
+      whereClauses.push(
+        query.hasAllowance ? 'o.allowance IS NOT NULL' : 'o.allowance IS NULL',
+      );
     }
 
     const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
@@ -121,7 +121,6 @@ export class OpportunityCatalogService {
         o.minimum_required_hours,
         o.work_arrangement,
         o.offered_slots,
-        o.has_allowance,
         o.allowance,
         o.application_deadline,
         o.opportunity_status,
@@ -158,8 +157,8 @@ export class OpportunityCatalogService {
       minimumRequiredHours: Number(row.minimum_required_hours),
       workArrangement: row.work_arrangement,
       offeredSlots: Number(row.offered_slots),
-      hasAllowance: Boolean(row.has_allowance),
-      allowance: row.allowance !== null ? Number(row.allowance) : null,
+      hasAllowance: row.allowance !== null,
+      allowance: row.allowance !== null ? String(row.allowance) : null,
       applicationDeadline: row.application_deadline instanceof Date 
         ? row.application_deadline.toISOString().split('T')[0]
         : String(row.application_deadline),
@@ -214,7 +213,6 @@ export class OpportunityCatalogService {
         o.minimum_required_hours,
         o.work_arrangement,
         o.offered_slots,
-        o.has_allowance,
         o.allowance,
         o.application_deadline,
         o.opportunity_status,
@@ -251,8 +249,8 @@ export class OpportunityCatalogService {
       minimumRequiredHours: Number(row.minimum_required_hours),
       workArrangement: row.work_arrangement,
       offeredSlots: Number(row.offered_slots),
-      hasAllowance: Boolean(row.has_allowance),
-      allowance: row.allowance !== null ? Number(row.allowance) : null,
+      hasAllowance: row.allowance !== null,
+      allowance: row.allowance !== null ? String(row.allowance) : null,
       applicationDeadline: row.application_deadline instanceof Date 
         ? row.application_deadline.toISOString().split('T')[0]
         : String(row.application_deadline),

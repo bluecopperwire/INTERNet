@@ -347,6 +347,7 @@ export class PesoDashboardService {
       FROM public.attendance_record ar
       JOIN public.internship_assignment ia ON ia.internship_assignment_id = ar.internship_assignment_id
       WHERE ar.rendered_hours_status = 'overtime'
+        AND ia.deleted_at IS NULL
     `;
     const overtimeRes = await this.dataSource.query(overtimeSql);
     const applicantsOvertime = Number(overtimeRes[0]?.count || 0);

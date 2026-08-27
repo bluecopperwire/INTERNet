@@ -278,16 +278,14 @@ async function ensurePersonnel(
     `INSERT INTO public.peso_personnel
        (user_account_id, first_name, last_name, sex, birth_date, address_line,
         address_barangay, address_district, address_city, contact_number,
-        contact_email, employee_id, position, department,
-        employee_id_file_path, photo_file_path)
+        contact_email, employee_id, position, department, photo_file_path)
      VALUES ($1, $2, 'Personnel', 'Prefer not to say', DATE '1990-06-15',
              '300 Development Road', 'Central', 'District 1', 'Quezon City',
-             $3, $4, $5, 'Employment Officer', 'QC PESO', $6, $7)
+             $3, $4, $5, 'Employment Officer', 'QC PESO', $6)
      ON CONFLICT (user_account_id) DO UPDATE SET
        first_name = EXCLUDED.first_name,
        contact_number = EXCLUDED.contact_number,
        contact_email = EXCLUDED.contact_email,
-       employee_id_file_path = EXCLUDED.employee_id_file_path,
        photo_file_path = EXCLUDED.photo_file_path
      RETURNING peso_personnel_id`,
     [
@@ -296,7 +294,6 @@ async function ensurePersonnel(
       `0918000000${key === 'approved' ? '1' : key === 'pending' ? '2' : '3'}`,
       `peso.${key}@internet.local`,
       `DEV-PESO-${key.toUpperCase()}`,
-      `${DEV_PREFIX}peso/${key}/employee-id.pdf`,
       `${DEV_PREFIX}peso/${key}/photo.jpg`,
     ],
     'peso_personnel_id',
@@ -355,55 +352,16 @@ async function seedAccounts(
       await removeGoogleIdentity(manager, accountId);
       personnel[key] = await ensurePersonnel(manager, accountId, key);
     }
+
+    await manager.query(
+      `DELETE FROM public.authentication_session s
+        USING public.user_account ua
+        WHERE s.user_account_id = ua.user_account_id
+          AND ua.email LIKE '%@internet.local'`,
+    );
+
     return { adminAccountId, students, companies, personnel };
   });
-}
-
-async function setPersonnelVerification(
-  dataSource: DataSource,
-  personnelId: number,
-  desired: 'approved' | 'rejected',
-  adminAccountId: number,
-): Promise<void> {
-  const runner = dataSource.createQueryRunner();
-  await runner.connect();
-  await runner.startTransaction();
-  try {
-    const rows = (await runner.query(
-      `SELECT verification_status FROM public.peso_personnel
-        WHERE peso_personnel_id = $1 FOR UPDATE`,
-      [personnelId],
-    )) as Array<{ verification_status: string }>;
-    if (rows[0]?.verification_status === 'pending') {
-      await setActor(runner, adminAccountId);
-      await runner.query(
-        `UPDATE public.peso_personnel
-            SET verification_status = $2,
-                reviewed_at = CURRENT_TIMESTAMP,
-                reviewed_by_user_account_id = $3,
-                verification_remark = $4
-          WHERE peso_personnel_id = $1`,
-        [
-          personnelId,
-          desired,
-          adminAccountId,
-          desired === 'approved'
-            ? 'Approved synthetic development account.'
-            : 'Rejected synthetic development account.',
-        ],
-      );
-    } else if (rows[0]?.verification_status !== desired) {
-      throw new Error(
-        `Personnel ${personnelId} has ${rows[0]?.verification_status}, expected ${desired}.`,
-      );
-    }
-    await runner.commitTransaction();
-  } catch (error) {
-    await runner.rollbackTransaction();
-    throw error;
-  } finally {
-    await runner.release();
-  }
 }
 
 async function ensureOpportunity(
@@ -426,16 +384,14 @@ async function ensureOpportunity(
     await manager.query(
       `UPDATE public.opportunity
           SET work_arrangement = $2,
-              has_allowance = $3,
-              allowance = $4,
-              minimum_required_hours = $5,
-              offered_slots = $6
+              allowance = $3,
+              minimum_required_hours = $4,
+              offered_slots = $5
         WHERE opportunity_id = $1`,
       [
         existing[0].opportunity_id,
         arrangement,
-        hasAllowance,
-        hasAllowance ? 5000 : null,
+        hasAllowance ? 'PHP 5,000 monthly' : null,
         minimumRequiredHours,
         offeredSlots,
       ],
@@ -446,18 +402,17 @@ async function ensureOpportunity(
     manager,
     `INSERT INTO public.opportunity
        (company_id, title, department, description, qualification,
-        has_allowance, allowance, minimum_required_hours, work_arrangement,
+        allowance, minimum_required_hours, work_arrangement,
         offered_slots, application_deadline)
      VALUES ($1, $2, 'Development Department', $3,
-             'Synthetic development applicants only.', $4, $5, $6, $7, $8,
+             'Synthetic development applicants only.', $4, $5, $6, $7,
              CURRENT_TIMESTAMP + INTERVAL '365 days')
      RETURNING opportunity_id`,
     [
       companyId,
       title,
       `Synthetic ${title} used only for development and tests.`,
-      hasAllowance,
-      hasAllowance ? 5000 : null,
+      hasAllowance ? 'PHP 5,000 monthly' : null,
       minimumRequiredHours,
       arrangement,
       offeredSlots,
@@ -503,6 +458,28 @@ async function ensureApplication(
     [studentId, opportunityId, desired],
   )) as Array<{ application_id: number }>;
   if (exact.length) return exact[0].application_id;
+
+  const active = (await runner.query(
+    `SELECT application_id, application_status FROM public.application
+      WHERE student_id = $1 AND opportunity_id = $2
+        AND application_status IN ('submitted', 'under_review', 'approved_for_referral')
+      ORDER BY application_id LIMIT 1`,
+    [studentId, opportunityId],
+  )) as Array<{ application_id: number; application_status: ApplicationStatus }>;
+
+  if (active.length) {
+    const app = active[0];
+    const canTransition: Record<string, string[]> = {
+      submitted: ['under_review', 'withdrawn', 'expired'],
+      under_review: ['approved_for_referral', 'rejected_for_referral', 'withdrawn', 'expired'],
+    };
+    if (canTransition[app.application_status]?.includes(desired)) {
+      await setActor(runner, adminAccountId);
+      await transitionApplication(runner, app.application_id, desired);
+    }
+    return app.application_id;
+  }
+
   await setActor(runner, adminAccountId);
   const applicationId = await oneId(
     runner.manager,
@@ -633,12 +610,14 @@ async function ensureAssignment(
     assignmentId = existing[0].internship_assignment_id;
     status = existing[0].assignment_status;
   } else {
+    const startDateSql =
+      desired === 'pending' ? 'CURRENT_DATE + 14' : 'CURRENT_DATE - 30';
     assignmentId = await oneId(
       runner.manager,
       `INSERT INTO public.internship_assignment
          (referral_id, required_hours, start_date, expected_end_date,
           working_days, start_shift, end_shift)
-       VALUES ($1, 400, CURRENT_DATE - 30, CURRENT_DATE + 90,
+       VALUES ($1, 400, ${startDateSql}, CURRENT_DATE + 90,
                'weekdays', TIME '09:00', TIME '17:00')
        RETURNING internship_assignment_id`,
       [referralId],
@@ -912,8 +891,13 @@ async function seedDomain(dataSource: DataSource, ids: SeedIds): Promise<void> {
       [-3, '09:30', '16:00', `${DEV_PREFIX}attendance/late.jpg`],
       [-2, '08:45', '18:00', `${DEV_PREFIX}attendance/overtime.jpg`],
       [-1, '09:15', null, `${DEV_PREFIX}attendance/incomplete.jpg`],
-      [0, '09:00', '17:00', `${DEV_PREFIX}attendance/today.jpg`],
     ] as const;
+    await runner.query(
+      `DELETE FROM public.attendance_record
+        WHERE internship_assignment_id = $1
+          AND photo_file_path LIKE 'dev-seed/%'`,
+      [ongoingAssignment],
+    );
     for (const [dayOffset, timeIn, timeOut, photoPath] of attendance) {
       await runner.query(
         `INSERT INTO public.attendance_record
@@ -987,18 +971,6 @@ export async function seedDevelopmentData(
   await seedReferenceData(dataSource);
   const passwordHash = await hashDevelopmentPassword(password);
   const ids = await seedAccounts(dataSource, passwordHash);
-  await setPersonnelVerification(
-    dataSource,
-    ids.personnel.approved,
-    'approved',
-    ids.adminAccountId,
-  );
-  await setPersonnelVerification(
-    dataSource,
-    ids.personnel.rejected,
-    'rejected',
-    ids.adminAccountId,
-  );
   await seedDomain(dataSource, ids);
   console.log(
     'Development seed completed (9 accounts; no sessions/onboarding).',
@@ -1017,12 +989,12 @@ export async function seedDevelopmentData(
     '- company.hospitality@internet.local | company | active | local',
   );
   console.log(
-    '- peso.approved@internet.local | peso_personnel | approved | local',
+    '- peso.approved@internet.local | peso_personnel | active | local',
   );
   console.log(
-    '- peso.pending@internet.local | peso_personnel | pending | local',
+    '- peso.pending@internet.local | peso_personnel | active | local',
   );
   console.log(
-    '- peso.rejected@internet.local | peso_personnel | rejected | local',
+    '- peso.rejected@internet.local | peso_personnel | active | local',
   );
 }

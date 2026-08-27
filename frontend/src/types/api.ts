@@ -405,6 +405,7 @@ export interface AdminStudentListItemDto {
   accountEmail: string;
   accountStatus: AccountStatus;
   createdAt: string;
+  suspendedUntil?: string | null;
 }
 
 export interface AdminEmployerListItemDto {
@@ -414,6 +415,7 @@ export interface AdminEmployerListItemDto {
   accountEmail: string;
   accountStatus: AccountStatus;
   createdAt: string;
+  suspendedUntil?: string | null;
 }
 
 export interface AdminPesoListItemDto {
@@ -424,4 +426,5 @@ export interface AdminPesoListItemDto {
   accountEmail: string;
   accountStatus: AccountStatus;
   createdAt: string;
+  suspendedUntil?: string | null;
 }
