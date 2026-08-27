@@ -98,7 +98,7 @@ All properties are optional, but unknown/ownership fields are rejected. Accepted
 }
 ```
 
-Valid year levels are `grade_11`, `grade_12`, and first through fourth year college. `fifth_year_college` is rejected now (`DB-ADMIN-004`) although removal from the database enum is pending. `requiredHours` and industry IDs must be positive. Work schedules are `weekdays`, `weekends`, or `flexible`. Preferred industry IDs must exist and be unique; custom text must follow the industry's `is_custom_text` rule. Updates spanning profile tables are transactional.
+Valid year levels are `grade_11`, `grade_12`, and first through fourth year college (`first_year_college` to `fourth_year_college`). `fifth_year_college` has been removed from the year-level enum. `requiredHours` and industry IDs must be positive. Work schedules are `weekdays`, `weekends`, or `flexible`. Preferred industry IDs must exist and be unique; custom text must follow the industry's `is_custom_text` rule. Updates spanning profile tables are transactional.
 
 Returns the updated detail response. Returns `409` for archived profiles, `404` if missing, and `400` for invalid or forbidden properties including `accountEmail`, IDs, status, and password fields.
 

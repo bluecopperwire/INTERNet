@@ -7,19 +7,14 @@ This backend uses PostgreSQL `user_account`, optional local credentials, optiona
 | Role           | Public local signup | Google signup | Creation                                 |
 | -------------- | ------------------: | ------------: | ---------------------------------------- |
 | student        |                 yes |           yes | complete self-registration               |
-<<<<<<< HEAD
-| peso_personnel |                 no |            no | active admin creates account and profile |
+| Role           | Public local signup | Google signup | Creation                                 |
+| -------------- | ------------------: | ------------: | ---------------------------------------- |
+| student        |                 yes |           yes | complete self-registration               |
+| peso_personnel |                  no |            no | active admin creates account and profile |
 | company        |                  no |            no | active admin creates account and profile |
 | admin          |                  no |            no | explicit `npm run bootstrap:admin`       |
 
-`POST /auth/signup` is the compatibility route for complete manual student registration; it no longer accepts an account-only payload. All required student profile fields are committed atomically with the account, credential, and first session. QC PESO personnel accounts are provisioned directly by an active admin (`POST /users/peso-personnel`), committing a complete profile starting as `pending`.
-=======
-| peso_personnel |                 yes |            no | complete signup, then admin verification |
-| company        |                  no |            no | active admin creates account and profile |
-| admin          |                  no |            no | explicit `npm run bootstrap:admin`       |
-
-`POST /auth/signup` is the compatibility route for complete manual student registration; it no longer accepts an account-only payload. All required student profile fields are committed atomically with the account, credential, and first session. QC PESO registration also commits a complete profile and begins as `pending`.
->>>>>>> 356f4ea08d5cd2e67b211deecbbf4c69488c9fdd
+`POST /auth/signup` is the compatibility route for complete manual student registration; it no longer accepts an account-only payload. All required student profile fields are committed atomically with the account, credential, and first session. QC PESO personnel accounts are provisioned directly by an active admin (`POST /users/peso-personnel`), committing a complete profile with active status.
 
 ## Cookies and tokens
 
@@ -38,16 +33,12 @@ JWT and Google secrets have no code fallback. Missing JWT secrets fail authentic
 | Method and path                                    | Authorization                   | Request / result                                                                                                              |
 | -------------------------------------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `POST /auth/signup`                                | public                          | Email, password, and complete student fields; returns access token and refresh cookie.                                        |
-<<<<<<< HEAD
-| `POST /users/peso-personnel`                       | active admin                    | Credentials, complete PESO fields, and base64 JPEG/PNG/PDF employee ID; returns pending status, access token, refresh cookie. |
-=======
-| `POST /auth/register/peso`                         | public                          | Credentials, complete PESO fields, and base64 JPEG/PNG/PDF employee ID; returns pending status, access token, refresh cookie. |
->>>>>>> 356f4ea08d5cd2e67b211deecbbf4c69488c9fdd
+| `POST /users/peso-personnel`                       | active admin                    | Credentials and complete PESO personnel fields; creates active personnel account.                                             |
 | `POST /auth/login`                                 | public/local                    | Email/password; local credential may coexist with Google.                                                                     |
 | `POST /auth/refresh`                               | refresh cookie                  | Rotates the same family; reuse revokes only that family.                                                                      |
 | `POST /auth/logout`                                | access token                    | Revokes current family and clears cookie.                                                                                     |
 | `POST /auth/logout-all`                            | access token                    | Revokes all account families.                                                                                                 |
-| `GET /auth/me`                                     | access token                    | Safe account fields and QC verification status only.                                                                          |
+| `GET /auth/me`                                     | access token                    | Safe account fields and profile metadata.                                                                                     |
 | `GET /auth/google`                                 | public                          | Google login redirect. Unknown identity produces `account-not-found`.                                                         |
 | `GET /auth/google/signup`                          | public                          | Explicit Google signup redirect. Existing identity produces `account-already-exists`; matching email requires explicit link.  |
 | `GET /auth/google/callback`                        | state cookie                    | Exchanges OAuth code and redirects according to signed intent.                                                                |
@@ -59,12 +50,6 @@ JWT and Google secrets have no code fallback. Missing JWT secrets fail authentic
 | `PATCH /auth/password`                             | access token                    | Current and replacement password.                                                                                             |
 | `DELETE /auth/password`                            | access token                    | Requires a remaining Google identity.                                                                                         |
 | `POST /users/companies`                            | active admin                    | Complete company, local credential, and non-custom industry.                                                                  |
-| `GET /users/peso/verification-status`              | PESO token                      | Pending/rejected/approved status and current review remark.                                                                   |
-| `PATCH /users/peso/rejected-correction`            | rejected PESO                   | Restricted employee/contact/address and employee-ID replacement. Status does not change.                                      |
-| `POST /users/peso/resubmit`                        | rejected PESO                   | Changes rejected to pending, clears current review metadata, records applicant actor.                                         |
-| `GET /users/admin/peso-verifications/pending`      | active admin                    | Pending review queue.                                                                                                         |
-| `POST /users/admin/peso-verifications/:id/approve` | active admin                    | Pending to approved; optional nonblank remark.                                                                                |
-| `POST /users/admin/peso-verifications/:id/reject`  | active admin                    | Pending to rejected; optional nonblank remark.                                                                                |
 
 The frontend must keep multi-step registration state in memory and must never put plaintext passwords in local/session storage. Google signup redirects to `/register/student/profile?source=google`; login redirects to `/auth/callback?status=success`, then calls `/auth/google/exchange`; linking redirects to `/settings/security?google=linked`.
 
@@ -72,7 +57,7 @@ Typical errors are `409 Email already in use`, `404 account-not-found`, `409 acc
 
 ## QC PESO access states
 
-Pending users may use verification status plus refresh/logout routes. Rejected users may additionally correct, replace employee ID, and resubmit. Only approved users qualify for future QC operational modules. This repository currently exposes no unrelated QC operational module.
+QC PESO personnel accounts created by an admin are directly active. The redesign dropped verification history and gating statuses.
 
 ## Storage and explicit data procedures
 

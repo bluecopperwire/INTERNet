@@ -36,11 +36,41 @@ async function main() {
     const migrations = await client.query(
       `SELECT name FROM public.migrations ORDER BY timestamp`,
     );
-    assert.deepEqual(
-      migrations.rows.map((row) => row.name),
-      ['InitialSchema1785860400000', 'ApprovedDatabaseRedesign1787788800000'],
-      'Migrations table must contain InitialSchema1785860400000 and ApprovedDatabaseRedesign1787788800000',
+    const migrationNames = migrations.rows.map((row) => row.name);
+    const requiredMigrations = [
+      'InitialSchema1785860400000',
+      'ApprovedDatabaseRedesign1787788800000',
+    ];
+    const recognizedHistoricalMigrations = new Set([
+      'AuthAlignmentV31786125600000',
+    ]);
+
+    for (const req of requiredMigrations) {
+      const count = migrationNames.filter((name) => name === req).length;
+      assert.equal(
+        count,
+        1,
+        `Required migration ${req} must be recorded exactly once. Found: ${count}`,
+      );
+    }
+
+    const unknownMigrations = migrationNames.filter(
+      (name) =>
+        !requiredMigrations.includes(name) &&
+        !recognizedHistoricalMigrations.has(name),
     );
+    assert.equal(
+      unknownMigrations.length,
+      0,
+      `Unsupported migration lineage detected with unknown migrations: ${unknownMigrations.join(', ')}`,
+    );
+
+    const hasAuthAlignment = migrationNames.includes('AuthAlignmentV31786125600000');
+    if (hasAuthAlignment) {
+      const authCount = migrationNames.filter((name) => name === 'AuthAlignmentV31786125600000').length;
+      assert.equal(authCount, 1, 'Historical AuthAlignmentV31786125600000 cannot appear more than once.');
+      pass('recognized historical migration AuthAlignmentV31786125600000 is present and valid');
+    }
     pass('initial and approved-redesign migrations are recorded');
 
     const removedColumns = await client.query(`

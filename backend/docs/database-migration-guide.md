@@ -83,11 +83,15 @@ npm run migration:run
 npm run database:validate
 ```
 
-### Step 4: Validate reference seed
+### Step 4: Seed and validate reference data
 ```powershell
 npm run seed:reference
-npm run database:validate-seeds
+npm run database:validate-reference-seeds
 ```
+
+> [!NOTE]
+> For production environments, only `seed:reference` and `database:validate-reference-seeds` should be executed.
+> In local development environments, `npm run seed:dev` followed by `npm run database:validate-dev-seeds` can be used to set up development accounts.
 
 ---
 

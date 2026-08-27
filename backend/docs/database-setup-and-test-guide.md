@@ -128,6 +128,7 @@ Run:
 
 ```powershell
 npm run seed:reference
+npm run database:validate-reference-seeds
 ```
 
 This inserts the approved industry lookup values:
@@ -160,6 +161,7 @@ $env:NODE_ENV='development'
 $env:ALLOW_DEV_SEED='true'
 $env:DEV_SEED_PASSWORD='TestPassword123'
 npm run seed:dev
+npm run database:validate-dev-seeds
 ```
 
 Use a local test password that satisfies the current password rules.

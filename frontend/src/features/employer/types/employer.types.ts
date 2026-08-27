@@ -118,7 +118,7 @@ export interface InternshipAssignment {
   company: string
   jobTitle: string
   acceptanceDate: string
-  studentResponse: 'Pending Response' | 'Accepted' | 'Rejected'
+  studentResponse: 'Pending Response' | 'Accepted' | 'Declined'
   workingDays: string
   requiredHours: number
   startDate: string

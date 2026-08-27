@@ -51,6 +51,21 @@ export function formatOpportunityDeadline(applicationDeadline: string): string {
   }).format(new Date(year, month - 1, day));
 }
 
+function mapStudentResponse(
+  response?: string | null,
+): 'Pending Response' | 'Accepted' | 'Declined' {
+  if (response === 'accepted') return 'Accepted';
+  if (response === 'declined') return 'Declined';
+  return 'Pending Response';
+}
+
+export function canWithdrawCandidate(candidate: {
+  studentResponse?: 'Pending Response' | 'Accepted' | 'Declined';
+  isWithdrawing?: boolean;
+}): boolean {
+  return candidate.studentResponse === 'Pending Response' && !candidate.isWithdrawing;
+}
+
 export const employerService = {
   async getDashboardSummary(): Promise<EmployerDashboardSummary> {
     const store = useEmployerStore.getState();
@@ -215,7 +230,7 @@ export const employerService = {
       company: 'Company',
       jobTitle: c.opportunityTitle,
       acceptanceDate: new Date(c.submittedAt || Date.now()).toLocaleDateString(),
-      studentResponse: c.studentResponse === 'accepted' ? 'Accepted' : 'Pending Response',
+      studentResponse: mapStudentResponse(c.studentResponse),
       workingDays: 'Weekdays',
       requiredHours: 200,
       startDate: new Date().toLocaleDateString(),

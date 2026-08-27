@@ -2,7 +2,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Eye, Search, SlidersHorizontal } 
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { EmployerHero } from '../components/EmployerHero'
-import { employerService } from '../services/employer.service'
+import { employerService, canWithdrawCandidate } from '../services/employer.service'
 import type { InternshipAssignment } from '../types/employer.types'
 import styles from './InternshipWorkflowPages.module.css'
 
@@ -109,7 +109,10 @@ export function ReviewInternshipAssignmentPage() {
   if (!assignment) return <main className={styles.assignmentFeedback}>Internship assignment not found.</main>
 
   const isAssignmentLocked = assignment.studentResponse !== 'Accepted'
-  const canWithdraw = assignment.studentResponse === 'Pending Response'
+  const canWithdraw = canWithdrawCandidate({
+    studentResponse: assignment.studentResponse,
+    isWithdrawing,
+  })
 
   const handleWithdrawAcceptance = async () => {
     if (!assignment.id) return

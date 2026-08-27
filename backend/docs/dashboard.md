@@ -894,42 +894,38 @@ curl -X GET "http://localhost:3000/dashboard/admin/peso-personnel?page=1&limit=1
   - `userAccountId` (required, integer)
 - **How to Use**:
 ```bash
-curl -X GET "http://localhost:3000/dashboard/admin/peso-personnel/8" \
+curl -X GET "http://localhost:3000/dashboard/admin/peso-personnel/7" \
   -H "Authorization: Bearer <ADMIN_JWT_TOKEN>"
 ```
 - **Intended Response (HTTP 200)**:
 ```json
 {
-  "pesoPersonnelId": 2,
-  "userAccountId": 8,
-  "email": "peso.pending@internet.local",
+  "pesoPersonnelId": 1,
+  "userAccountId": 7,
+  "email": "peso.approved@internet.local",
   "accountStatus": "active",
   "createdAt": "2026-08-14T02:46:40.000Z",
-  "firstName": "Penny",
+  "firstName": "April",
   "middleName": null,
   "lastName": "Personnel",
   "extensionName": null,
-  "sex": "Prefer not to say",
+  "sex": "Female",
   "birthDate": "1990-06-15",
   "addressLine": "300 Development Road",
   "addressBarangay": "Central",
   "addressDistrict": "District 1",
   "addressCity": "Quezon City",
-  "contactNumber": "09180000002",
-  "contactEmail": "peso.pending@internet.local",
-  "employeeId": "DEV-PESO-PENDING",
+  "contactNumber": "09180000001",
+  "contactEmail": "peso.approved@internet.local",
+  "employeeId": "DEV-PESO-001",
   "position": "Employment Officer",
-  "department": "QC PESO",
-  "verificationStatus": "pending",
-  "reviewedAt": null,
-  "reviewedByUserAccountId": null,
-  "verificationRemark": null
+  "department": "QC PESO"
 }
 ```
 
 ---
 
-### I3. Admin PATCH PESO Personnel & Verification Status
+### I3. Admin PATCH PESO Personnel Account Details
 - **Method & Route**: `PATCH /dashboard/admin/peso-personnel/:userAccountId`
 - **Required Role**: `admin`
 - **URL Parameters**:
@@ -938,16 +934,15 @@ curl -X GET "http://localhost:3000/dashboard/admin/peso-personnel/8" \
 ```json
 {
   "department": "QC PESO Employment & Quality Assurance Division",
-  "verificationStatus": "approved",
-  "verificationRemark": "Approved by Senior QA automated verification test suite."
+  "position": "Senior Employment Officer"
 }
 ```
 - **How to Use**:
 ```bash
-curl -X PATCH "http://localhost:3000/dashboard/admin/peso-personnel/8" \
+curl -X PATCH "http://localhost:3000/dashboard/admin/peso-personnel/7" \
   -H "Authorization: Bearer <ADMIN_JWT_TOKEN>" \
   -H "Content-Type: application/json" \
-  -d '{"department":"QC PESO Employment & Quality Assurance Division","verificationStatus":"approved","verificationRemark":"Approved by Senior QA automated verification test suite."}'
+  -d '{"department":"QC PESO Employment & Quality Assurance Division","position":"Senior Employment Officer"}'
 ```
 - **Intended Response (HTTP 200)**:
 ```json
@@ -955,7 +950,7 @@ curl -X PATCH "http://localhost:3000/dashboard/admin/peso-personnel/8" \
   "message": "PESO personnel account updated successfully."
 }
 ```
-- **Database Reflection**: Updates `verification_status`, `reviewed_at = CURRENT_TIMESTAMP`, `reviewed_by_user_account_id = adminId`, and `department` in `public.peso_personnel`.
+- **Database Reflection**: Updates reflected directly in `public.peso_personnel` and `public.user_account`.
 
 ---
 

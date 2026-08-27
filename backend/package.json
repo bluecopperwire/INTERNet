@@ -25,6 +25,8 @@
     "migration:run": "npm run typeorm -- migration:run --transaction none",
     "migration:revert": "npm run typeorm -- migration:revert --transaction none",
     "database:validate": "node test/database/initial-schema.validation.cjs",
+    "database:validate-reference-seeds": "node test/database/reference-seed.validation.cjs",
+    "database:validate-dev-seeds": "node test/database/development-seed.validation.cjs",
     "database:validate-seeds": "node test/database/development-seed.validation.cjs",
     "bootstrap:admin": "ts-node src/config/database-tasks.ts bootstrap:admin",
     "seed:reference": "ts-node src/config/database-tasks.ts seed:reference",

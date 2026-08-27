@@ -36,6 +36,8 @@ describe('Database migration paths and behavioral validation', () => {
       password: container.getPassword(),
       database: container.getDatabase(),
       synchronize: false,
+      migrations: [join(__dirname, 'migrations', '*{.ts,.js}')],
+      migrationsTransactionMode: 'none',
     });
     await dataSource.initialize();
   }, 120_000);
@@ -49,9 +51,17 @@ describe('Database migration paths and behavioral validation', () => {
     }
   });
 
-  it('Fresh path: executes 001 and 002 on an empty DB, validates final schema and seeds reference data idempotently', async () => {
-    await dataSource.query(migration001Sql);
-    await dataSource.query(migration002Sql);
+  it('Fresh path: executes migrations through runner on an empty DB, validates final schema and seeds reference data idempotently', async () => {
+    await dataSource.query(`DROP SCHEMA public CASCADE; CREATE SCHEMA public;`);
+
+    // Run migrations using TypeORM
+    await dataSource.runMigrations();
+
+    const migrationRows = await dataSource.query(`SELECT name FROM public.migrations ORDER BY timestamp`);
+    expect(migrationRows.map((r: any) => r.name)).toEqual([
+      'InitialSchema1785860400000',
+      'ApprovedDatabaseRedesign1787788800000',
+    ]);
 
     // Validate redesigned columns
     const columns: Array<{ table_name: string; column_name: string; data_type: string; is_nullable: string }> =
@@ -96,12 +106,24 @@ describe('Database migration paths and behavioral validation', () => {
     expect(industries[0].count).toBe(APPROVED_INDUSTRIES.length);
   });
 
-  it('Upgrade path: converts legacy fixtures, backfills suspension, recalculates attendance hours, and handles soft-delete', async () => {
-    // Reset schema to 001 legacy state
+  it('Historical AuthAlignmentV3 upgrade path: reproduces historical schema & data, runs redesign migration, preserves history, and validates', async () => {
+    // Reset schema to historical InitialSchema + AuthAlignmentV3 state
     await dataSource.query(`DROP SCHEMA public CASCADE; CREATE SCHEMA public;`);
     await dataSource.query(migration001Sql);
 
-    // 1. Insert legacy fixtures in a single transaction so deferred constraints/triggers validate at commit
+    // Setup TypeORM migrations table with historical InitialSchema + AuthAlignmentV3
+    await dataSource.query(`
+      CREATE TABLE IF NOT EXISTS public.migrations (
+        id SERIAL PRIMARY KEY,
+        timestamp BIGINT NOT NULL,
+        name VARCHAR NOT NULL
+      );
+      INSERT INTO public.migrations (timestamp, name) VALUES
+        (1785860400000, 'InitialSchema1785860400000'),
+        (1786125600000, 'AuthAlignmentV31786125600000');
+    `);
+
+    // Insert representative legacy fixtures
     await dataSource.query(`
       BEGIN;
 
@@ -195,11 +217,18 @@ describe('Database migration paths and behavioral validation', () => {
       COMMIT;
     `);
 
-    // Run migration 002
-    await dataSource.query(migration002Sql);
+    // Run pending migrations through TypeORM runner
+    await dataSource.runMigrations();
 
-    // 4. Assert conversion:
-    // Allowance text conversion
+    // Assert that AuthAlignmentV3 remains recorded and ApprovedDatabaseRedesign is appended
+    const updatedMigrations = await dataSource.query(`SELECT name FROM public.migrations ORDER BY timestamp`);
+    expect(updatedMigrations.map((r: any) => r.name)).toEqual([
+      'InitialSchema1785860400000',
+      'AuthAlignmentV31786125600000',
+      'ApprovedDatabaseRedesign1787788800000',
+    ]);
+
+    // Assert conversions
     const oppWithAllowance = await dataSource.query(`
       SELECT allowance, has_allowance FROM public.vw_opportunity_summary WHERE title = 'Paid Role'
     `);
@@ -225,7 +254,7 @@ describe('Database migration paths and behavioral validation', () => {
     expect(Number(attendance[0].hours_rendered)).toBe(8);
     expect(attendance[0].rendered_hours_status).toBe('complete');
 
-    // 5. Test soft delete behavior
+    // Test soft delete behavior
     const assignmentId = (await dataSource.query(`SELECT internship_assignment_id FROM public.internship_assignment LIMIT 1`))[0].internship_assignment_id;
     await dataSource.query(
       `UPDATE public.internship_assignment SET deleted_at = CURRENT_TIMESTAMP WHERE internship_assignment_id = $1`,
@@ -238,7 +267,11 @@ describe('Database migration paths and behavioral validation', () => {
     );
     expect(viewRows.length).toBe(0);
 
-    // 6. Test irreversible down migration constraint
+    // Test seed idempotency on upgraded database
+    const seedResult = await seedReferenceData(dataSource);
+    expect(seedResult.length).toBeGreaterThan(0);
+
+    // Test irreversible down migration constraint
     await expect(dataSource.query(migration002DownSql)).rejects.toThrow(/ApprovedDatabaseRedesign1787788800000 is irreversible/);
   });
 });
