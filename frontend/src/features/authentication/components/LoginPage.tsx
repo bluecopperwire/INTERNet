@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import googleLogo from '../../../assets/google-logo.svg'
 import leftPanelArtwork from '../../../assets/login_left-panel.svg'
@@ -25,7 +25,32 @@ function LoginPage() {
 
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { login } = useAuthStore()
+  const { login, user, status } = useAuthStore()
+
+  useEffect(() => {
+    if (status === 'authenticated' && user) {
+      const returnTo = searchParams.get('returnTo')
+      if (returnTo) {
+        navigate(decodeURIComponent(returnTo), { replace: true })
+        return
+      }
+
+      switch (user.userRole) {
+        case 'student':
+          navigate('/intern-seeker', { replace: true })
+          break
+        case 'company':
+          navigate('/employer/dashboard', { replace: true })
+          break
+        case 'peso_personnel':
+          navigate('/qcpeso/dashboard', { replace: true })
+          break
+        case 'admin':
+          navigate('/admin/dashboard', { replace: true })
+          break
+      }
+    }
+  }, [status, user, navigate, searchParams])
 
   const selectRole = (newRole: LoginTabRole) => {
     setRole(newRole)

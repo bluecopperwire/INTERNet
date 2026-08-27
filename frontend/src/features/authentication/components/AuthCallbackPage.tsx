@@ -17,7 +17,18 @@ export const AuthCallbackPage: React.FC = () => {
           const res = await authService.exchangeGoogleLogin();
           setAccessToken(res.accessToken);
           await loadMe();
-          navigate('/', { replace: true });
+          const currentUser = useAuthStore.getState().user;
+          if (currentUser?.userRole === 'student') {
+            navigate('/intern-seeker', { replace: true });
+          } else if (currentUser?.userRole === 'company') {
+            navigate('/employer/dashboard', { replace: true });
+          } else if (currentUser?.userRole === 'peso_personnel') {
+            navigate('/qcpeso/dashboard', { replace: true });
+          } else if (currentUser?.userRole === 'admin') {
+            navigate('/admin/dashboard', { replace: true });
+          } else {
+            navigate('/intern-seeker', { replace: true });
+          }
         } catch (err: any) {
           setError(err.message || 'Failed to complete Google authentication');
         }

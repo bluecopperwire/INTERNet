@@ -132,7 +132,7 @@ function SignUpPage() {
 
     try {
       if (isGoogle) {
-        await authService.completeGoogleSignup({
+        const res = await authService.completeGoogleSignup({
           firstName: data.firstName.trim(),
           middleName: data.middleName.trim() || undefined,
           lastName: data.lastName.trim(),
@@ -146,7 +146,8 @@ function SignUpPage() {
           addressCity: data.city.trim(),
           inquiryMethod: mapInquiryMethod(data.inquiryChannel),
         })
-        const { loadMe } = useAuthStore.getState()
+        const { setAccessToken, loadMe } = useAuthStore.getState()
+        setAccessToken(res.accessToken)
         await loadMe()
       } else {
         await registerStudent({
