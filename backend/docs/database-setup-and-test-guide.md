@@ -161,7 +161,7 @@ Do not reuse a real personal password.
 
 The development seed creates fake accounts and connected domain records such as:
 
-- development admin
+- four canonical local-login accounts: student, company, QC PESO personnel, and admin
 - manual student
 - Google-only student
 - dual-method student
@@ -338,7 +338,7 @@ FROM user_account
 ORDER BY user_account_id;
 ```
 
-You should find these nine development accounts:
+You should find these thirteen development accounts:
 
 ```text
 admin.dev@internet.local
@@ -350,7 +350,13 @@ company.hospitality@internet.local
 peso.approved@internet.local
 peso.pending@internet.local
 peso.rejected@internet.local
+student.dev@example.com
+company.dev@example.com
+peso.dev@example.com
+admin.dev@example.com
 ```
+
+The four `@example.com` accounts are the canonical local-login smoke-test fixtures. They are active, have no Google identity, and use the value supplied through `DEV_SEED_PASSWORD`.
 
 ## 7.2 Check manual credentials
 
@@ -367,6 +373,7 @@ ORDER BY ua.email;
 
 Expected:
 
+- `student.dev@example.com`, `company.dev@example.com`, `peso.dev@example.com`, and `admin.dev@example.com` each have a local credential.
 - `student.manual@internet.local` has a local credential.
 - `student.dual@internet.local` has a local credential.
 - `student.google@internet.local` does not have a local credential.
@@ -456,7 +463,7 @@ TestPassword123
 
 is used.
 
-**Rate-limiter warning.** The login endpoint enforces a limit of **5 requests per 60 seconds**. Sections 8 and 9 together contain six login calls, so running them all back-to-back will cause the last request to return `429 Too Many Requests` instead of the expected result. To avoid this, either:
+**Rate-limiter warning.** The login endpoint enforces a limit of **5 requests per 60 seconds**. Sections 8 and 9 together contain five login calls. Any additional login attempt within the same minute may return `429 Too Many Requests` instead of the expected result. To avoid this, either:
 
 - Wait at least one minute between section 8 and section 9, or
 - Restart the backend between the two sections (the throttle counter resets on restart).
@@ -474,7 +481,7 @@ Body:
 
 ```json
 {
-  "email": "admin.dev@internet.local",
+  "email": "admin.dev@example.com",
   "password": "TestPassword123"
 }
 ```
@@ -485,13 +492,13 @@ Expected:
 - access token returned
 - refresh cookie created
 
-## 8.2 Manual student login
+## 8.2 Student login
 
 Send the same `POST /auth/login` request with:
 
 ```json
 {
-  "email": "student.manual@internet.local",
+  "email": "student.dev@example.com",
   "password": "TestPassword123"
 }
 ```
@@ -502,25 +509,11 @@ Expected:
 - access token returned
 - refresh cookie created
 
-## 8.3 Dual-method student login
+## 8.3 Company login
 
 ```json
 {
-  "email": "student.dual@internet.local",
-  "password": "TestPassword123"
-}
-```
-
-Expected:
-
-- successful local login
-- this account also has a synthetic Google identity for development testing
-
-## 8.4 Company login
-
-```json
-{
-  "email": "company.tech@internet.local",
+  "email": "company.dev@example.com",
   "password": "TestPassword123"
 }
 ```
@@ -529,11 +522,11 @@ Expected:
 
 - successful login
 
-## 8.5 Approved QC PESO login
+## 8.4 QC PESO login
 
 ```json
 {
-  "email": "peso.approved@internet.local",
+  "email": "peso.dev@example.com",
   "password": "TestPassword123"
 }
 ```

@@ -23,6 +23,13 @@ type SeedIds = {
   personnel: Record<'approved' | 'pending' | 'rejected', number>;
 };
 
+const canonicalAccounts = {
+  student: 'student.dev@example.com',
+  company: 'company.dev@example.com',
+  personnel: 'peso.dev@example.com',
+  admin: 'admin.dev@example.com',
+} as const;
+
 async function oneId(
   manager: EntityManager,
   sql: string,
@@ -134,6 +141,34 @@ async function removeGoogleIdentity(
       WHERE user_account_id = $1 AND authentication_provider = 'google'`,
     [accountId],
   );
+}
+
+async function assertAccountProfileShape(
+  manager: EntityManager,
+  accountId: number,
+  expectedRole: AccountRole,
+): Promise<void> {
+  const rows: Array<Record<'student' | 'company' | 'peso_personnel', boolean>> =
+    await manager.query(
+      `SELECT
+       EXISTS (SELECT 1 FROM public.student WHERE user_account_id = $1) AS student,
+       EXISTS (SELECT 1 FROM public.company WHERE user_account_id = $1) AS company,
+       EXISTS (SELECT 1 FROM public.peso_personnel WHERE user_account_id = $1) AS peso_personnel`,
+      [accountId],
+    );
+  const profiles = rows[0];
+  const expectedProfile = expectedRole === 'admin' ? null : expectedRole;
+  const actualProfiles = (
+    ['student', 'company', 'peso_personnel'] as const
+  ).filter((profile) => profiles[profile]);
+  if (
+    actualProfiles.length > (expectedProfile ? 1 : 0) ||
+    (actualProfiles.length === 1 && actualProfiles[0] !== expectedProfile)
+  ) {
+    throw new Error(
+      `Seed account ${accountId} has profile collision (${actualProfiles.join(', ') || 'none'}), expected ${expectedProfile || 'no profile'}.`,
+    );
+  }
 }
 
 async function industryId(
@@ -300,16 +335,167 @@ async function ensurePersonnel(
   );
 }
 
+async function ensureCanonicalStudent(
+  manager: EntityManager,
+  accountId: number,
+): Promise<void> {
+  await assertAccountProfileShape(manager, accountId, 'student');
+  const studentId = await oneId(
+    manager,
+    `INSERT INTO public.student
+       (user_account_id, first_name, middle_name, last_name, extension_name, sex,
+        birth_date, contact_number, contact_email, linkedin_url, address_line,
+        address_barangay, address_district, address_city, inquiry_method, photo_file_path)
+     VALUES ($1, 'Dev', NULL, 'Student', NULL, 'Prefer not to say', DATE '2002-01-15',
+             '09170000100', $2, NULL, '100 Development Street', 'Central',
+             'District 1', 'Quezon City', 'online', $3)
+     ON CONFLICT (user_account_id) DO UPDATE SET
+       first_name = EXCLUDED.first_name, middle_name = EXCLUDED.middle_name,
+       last_name = EXCLUDED.last_name, extension_name = EXCLUDED.extension_name,
+       sex = EXCLUDED.sex, birth_date = EXCLUDED.birth_date,
+       contact_number = EXCLUDED.contact_number, contact_email = EXCLUDED.contact_email,
+       linkedin_url = EXCLUDED.linkedin_url, address_line = EXCLUDED.address_line,
+       address_barangay = EXCLUDED.address_barangay,
+       address_district = EXCLUDED.address_district, address_city = EXCLUDED.address_city,
+       inquiry_method = EXCLUDED.inquiry_method, photo_file_path = EXCLUDED.photo_file_path
+     RETURNING student_id`,
+    [
+      accountId,
+      canonicalAccounts.student,
+      `${DEV_PREFIX}students/canonical/photo.jpg`,
+    ],
+    'student_id',
+  );
+  await manager.query(
+    `INSERT INTO public.student_academic_information
+       (student_id, school_name, year_level, strand_program)
+     VALUES ($1, 'Development State University', 'fourth_year_college',
+             'Bachelor of Science in Information Systems')
+     ON CONFLICT (student_id) DO UPDATE SET school_name = EXCLUDED.school_name,
+       year_level = EXCLUDED.year_level, strand_program = EXCLUDED.strand_program`,
+    [studentId],
+  );
+  await manager.query(
+    `INSERT INTO public.internship_preference
+       (student_id, required_hours, available_days, allows_outside_preferred_field,
+        start_date, preferred_company_type)
+     VALUES ($1, 400, 'weekdays', true, CURRENT_DATE + 14, 'private')
+     ON CONFLICT (student_id) DO UPDATE SET required_hours = EXCLUDED.required_hours,
+       available_days = EXCLUDED.available_days,
+       allows_outside_preferred_field = EXCLUDED.allows_outside_preferred_field,
+       start_date = EXCLUDED.start_date,
+       preferred_company_type = EXCLUDED.preferred_company_type`,
+    [studentId],
+  );
+  const informationTechnologyId = await industryId(
+    manager,
+    'Information Technology',
+  );
+  await manager.query(
+    `INSERT INTO public.student_preferred_industry (student_id, industry_id)
+     VALUES ($1, $2) ON CONFLICT (student_id, industry_id) DO NOTHING`,
+    [studentId, informationTechnologyId],
+  );
+}
+
+async function ensureCanonicalCompany(
+  manager: EntityManager,
+  accountId: number,
+): Promise<void> {
+  await assertAccountProfileShape(manager, accountId, 'company');
+  await manager.query(
+    `INSERT INTO public.company
+       (user_account_id, industry_id, company_name, company_type, description,
+        website_url, year_established, company_size, contact_email, contact_number,
+        contact_person_first_name, contact_person_middle_name, contact_person_last_name,
+        contact_person_extension_name, address_line, address_barangay, address_district,
+        address_city, logo_file_path)
+     VALUES ($1, $2, 'DevSeed Canonical Company', 'private',
+             'Canonical local-login development company.', 'https://company.dev-seed.invalid',
+             2018, 100, $3, '0210000100', 'Casey', NULL, 'Company', NULL,
+             '200 Development Avenue', 'Central', 'District 1', 'Quezon City', $4)
+     ON CONFLICT (user_account_id) DO UPDATE SET industry_id = EXCLUDED.industry_id,
+       company_name = EXCLUDED.company_name, company_type = EXCLUDED.company_type,
+       description = EXCLUDED.description, website_url = EXCLUDED.website_url,
+       year_established = EXCLUDED.year_established, company_size = EXCLUDED.company_size,
+       contact_email = EXCLUDED.contact_email, contact_number = EXCLUDED.contact_number,
+       contact_person_first_name = EXCLUDED.contact_person_first_name,
+       contact_person_middle_name = EXCLUDED.contact_person_middle_name,
+       contact_person_last_name = EXCLUDED.contact_person_last_name,
+       contact_person_extension_name = EXCLUDED.contact_person_extension_name,
+       address_line = EXCLUDED.address_line, address_barangay = EXCLUDED.address_barangay,
+       address_district = EXCLUDED.address_district, address_city = EXCLUDED.address_city,
+       logo_file_path = EXCLUDED.logo_file_path`,
+    [
+      accountId,
+      await industryId(manager, 'Information Technology'),
+      canonicalAccounts.company,
+      `${DEV_PREFIX}companies/canonical/logo.png`,
+    ],
+  );
+}
+
+async function ensureCanonicalPersonnel(
+  manager: EntityManager,
+  accountId: number,
+): Promise<void> {
+  await assertAccountProfileShape(manager, accountId, 'peso_personnel');
+  await manager.query(
+    `INSERT INTO public.peso_personnel
+       (user_account_id, first_name, middle_name, last_name, extension_name, sex,
+        birth_date, address_line, address_barangay, address_district, address_city,
+        contact_number, contact_email, employee_id, position, department,
+        photo_file_path)
+     VALUES ($1, 'Dev', NULL, 'Personnel', NULL, 'Prefer not to say', DATE '1990-06-15',
+             '300 Development Road', 'Central', 'District 1', 'Quezon City',
+             '09180000100', $2, 'DEV-PESO-CANONICAL', 'Employment Officer', 'QC PESO',
+             $3)
+     ON CONFLICT (user_account_id) DO UPDATE SET first_name = EXCLUDED.first_name,
+       middle_name = EXCLUDED.middle_name, last_name = EXCLUDED.last_name,
+       extension_name = EXCLUDED.extension_name, sex = EXCLUDED.sex,
+       birth_date = EXCLUDED.birth_date, address_line = EXCLUDED.address_line,
+       address_barangay = EXCLUDED.address_barangay,
+       address_district = EXCLUDED.address_district, address_city = EXCLUDED.address_city,
+       contact_number = EXCLUDED.contact_number, contact_email = EXCLUDED.contact_email,
+       employee_id = EXCLUDED.employee_id, position = EXCLUDED.position,
+       department = EXCLUDED.department, photo_file_path = EXCLUDED.photo_file_path`,
+    [
+      accountId,
+      canonicalAccounts.personnel,
+      `${DEV_PREFIX}peso/canonical/photo.jpg`,
+    ],
+  );
+}
+
 async function seedAccounts(
   dataSource: DataSource,
   passwordHash: string,
 ): Promise<SeedIds> {
   return dataSource.transaction(async (manager) => {
+    const seedOwnedAccountIds: number[] = [];
+    for (const [role, email] of Object.entries(canonicalAccounts) as Array<
+      [keyof typeof canonicalAccounts, string]
+    >) {
+      const accountRole: AccountRole =
+        role === 'personnel' ? 'peso_personnel' : role;
+      const accountId = await ensureAccount(manager, email, accountRole);
+      await ensureLocalCredential(manager, accountId, passwordHash);
+      await removeGoogleIdentity(manager, accountId);
+      if (role === 'student') await ensureCanonicalStudent(manager, accountId);
+      else if (role === 'company')
+        await ensureCanonicalCompany(manager, accountId);
+      else if (role === 'personnel')
+        await ensureCanonicalPersonnel(manager, accountId);
+      else await assertAccountProfileShape(manager, accountId, 'admin');
+      seedOwnedAccountIds.push(accountId);
+    }
+
     const adminAccountId = await ensureAccount(
       manager,
       'admin.dev@internet.local',
       'admin',
     );
+    seedOwnedAccountIds.push(adminAccountId);
     await ensureLocalCredential(manager, adminAccountId, passwordHash);
     await removeGoogleIdentity(manager, adminAccountId);
 
@@ -327,6 +513,7 @@ async function seedAccounts(
           email,
           `dev-seed-google-${key}-v1`,
         );
+      seedOwnedAccountIds.push(accountId);
       students[key] = await ensureStudent(
         manager,
         accountId,
@@ -341,6 +528,7 @@ async function seedAccounts(
       const accountId = await ensureAccount(manager, email, 'company');
       await ensureLocalCredential(manager, accountId, passwordHash);
       await removeGoogleIdentity(manager, accountId);
+      seedOwnedAccountIds.push(accountId);
       companies[key] = await ensureCompany(manager, accountId, key);
     }
 
@@ -350,14 +538,19 @@ async function seedAccounts(
       const accountId = await ensureAccount(manager, email, 'peso_personnel');
       await ensureLocalCredential(manager, accountId, passwordHash);
       await removeGoogleIdentity(manager, accountId);
+      seedOwnedAccountIds.push(accountId);
       personnel[key] = await ensurePersonnel(manager, accountId, key);
     }
 
     await manager.query(
-      `DELETE FROM public.authentication_session s
-        USING public.user_account ua
-        WHERE s.user_account_id = ua.user_account_id
-          AND ua.email LIKE '%@internet.local'`,
+      `DELETE FROM public.authentication_session
+        WHERE user_account_id = ANY($1::integer[])`,
+      [seedOwnedAccountIds],
+    );
+    await manager.query(
+      `DELETE FROM public.registration_onboarding
+        WHERE verified_email = ANY($1::text[])`,
+      [Object.values(canonicalAccounts)],
     );
 
     return { adminAccountId, students, companies, personnel };
@@ -465,13 +658,21 @@ async function ensureApplication(
         AND application_status IN ('submitted', 'under_review', 'approved_for_referral')
       ORDER BY application_id LIMIT 1`,
     [studentId, opportunityId],
-  )) as Array<{ application_id: number; application_status: ApplicationStatus }>;
+  )) as Array<{
+    application_id: number;
+    application_status: ApplicationStatus;
+  }>;
 
   if (active.length) {
     const app = active[0];
     const canTransition: Record<string, string[]> = {
       submitted: ['under_review', 'withdrawn', 'expired'],
-      under_review: ['approved_for_referral', 'rejected_for_referral', 'withdrawn', 'expired'],
+      under_review: [
+        'approved_for_referral',
+        'rejected_for_referral',
+        'withdrawn',
+        'expired',
+      ],
     };
     if (canTransition[app.application_status]?.includes(desired)) {
       await setActor(runner, adminAccountId);
@@ -973,9 +1174,13 @@ export async function seedDevelopmentData(
   const ids = await seedAccounts(dataSource, passwordHash);
   await seedDomain(dataSource, ids);
   console.log(
-    'Development seed completed (9 accounts; no sessions/onboarding).',
+    'Development seed completed (13 accounts; no sessions/onboarding).',
   );
   console.log('Usable development accounts (password: DEV_SEED_PASSWORD):');
+  console.log('- student.dev@example.com | student | active | local');
+  console.log('- company.dev@example.com | company | active | local');
+  console.log('- peso.dev@example.com | peso_personnel | active | local');
+  console.log('- admin.dev@example.com | admin | active | local');
   console.log('- admin.dev@internet.local | admin | active | local');
   console.log('- student.manual@internet.local | student | active | local');
   console.log(

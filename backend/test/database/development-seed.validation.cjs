@@ -1,4 +1,5 @@
 require('dotenv').config();
+const bcrypt = require('bcrypt');
 const { Client } = require('pg');
 
 const approvedIndustries = [
@@ -150,6 +151,173 @@ async function main() {
       assert(row.account_status === 'active', `${email} must be active.`);
     }
 
+    const canonicalAccounts = {
+      'student.dev@example.com': 'student',
+      'company.dev@example.com': 'company',
+      'peso.dev@example.com': 'peso_personnel',
+      'admin.dev@example.com': 'admin',
+    };
+    const canonicalEmails = Object.keys(canonicalAccounts);
+    const canonicalCount = await client.query(
+      `SELECT count(*)::integer AS count
+         FROM public.user_account
+        WHERE email = ANY($1::text[])`,
+      [canonicalEmails],
+    );
+    assert(
+      canonicalCount.rows[0].count === 4,
+      'Expected exactly four canonical development accounts.',
+    );
+    const canonicalProfiles = await client.query(
+      `SELECT ua.email, ua.user_role, ua.account_status, ua.deleted_at,
+              ua.suspended_until, lac.password_hash,
+              EXISTS (
+                SELECT 1 FROM public.external_authentication_identity eai
+                 WHERE eai.user_account_id = ua.user_account_id
+              ) AS has_google,
+              (SELECT count(*)::integer FROM public.student s
+                WHERE s.user_account_id = ua.user_account_id) AS student_profiles,
+              (SELECT count(*)::integer FROM public.company c
+                WHERE c.user_account_id = ua.user_account_id) AS company_profiles,
+              (SELECT count(*)::integer FROM public.peso_personnel pp
+                WHERE pp.user_account_id = ua.user_account_id) AS personnel_profiles,
+              EXISTS (
+                SELECT 1
+                  FROM public.student s
+                  JOIN public.student_academic_information sai USING (student_id)
+                  JOIN public.internship_preference ip USING (student_id)
+                 WHERE s.user_account_id = ua.user_account_id
+                   AND btrim(s.first_name) <> ''
+                   AND btrim(s.last_name) <> ''
+                   AND btrim(s.contact_number) <> ''
+                   AND btrim(s.contact_email) <> ''
+                   AND btrim(s.address_line) <> ''
+                   AND btrim(s.address_barangay) <> ''
+                   AND btrim(s.address_district) <> ''
+                   AND btrim(s.address_city) <> ''
+                   AND btrim(sai.school_name) <> ''
+                   AND btrim(sai.strand_program) <> ''
+                   AND ip.required_hours > 0
+                   AND EXISTS (
+                     SELECT 1 FROM public.student_preferred_industry spi
+                      WHERE spi.student_id = s.student_id
+                   )
+              ) AS has_complete_student_profile,
+              EXISTS (
+                SELECT 1 FROM public.company c
+                 WHERE c.user_account_id = ua.user_account_id
+                   AND btrim(c.company_name) <> ''
+                   AND btrim(c.description) <> ''
+                   AND btrim(c.contact_email) <> ''
+                   AND btrim(c.contact_number) <> ''
+                   AND btrim(c.contact_person_first_name) <> ''
+                   AND btrim(c.contact_person_last_name) <> ''
+                   AND btrim(c.address_line) <> ''
+                   AND btrim(c.address_barangay) <> ''
+                   AND btrim(c.address_city) <> ''
+              ) AS has_complete_company_profile,
+              EXISTS (
+                SELECT 1 FROM public.peso_personnel pp
+                 WHERE pp.user_account_id = ua.user_account_id
+                   AND btrim(pp.first_name) <> ''
+                   AND btrim(pp.last_name) <> ''
+                   AND btrim(pp.contact_number) <> ''
+                   AND btrim(pp.contact_email) <> ''
+                   AND btrim(pp.employee_id) <> ''
+                   AND btrim(pp.position) <> ''
+                   AND btrim(pp.department) <> ''
+                   AND btrim(pp.address_line) <> ''
+                   AND btrim(pp.address_barangay) <> ''
+                   AND btrim(pp.address_district) <> ''
+                   AND btrim(pp.address_city) <> ''
+              ) AS has_complete_personnel_profile
+         FROM public.user_account ua
+         LEFT JOIN public.local_authentication_credential lac
+           ON lac.user_account_id = ua.user_account_id
+        WHERE ua.email = ANY($1::text[])`,
+      [canonicalEmails],
+    );
+    assert(
+      canonicalProfiles.rowCount === 4,
+      'Each canonical development account must exist exactly once.',
+    );
+    const password = process.env.DEV_SEED_PASSWORD;
+    assert(
+      password,
+      'DEV_SEED_PASSWORD is required to validate canonical local credentials.',
+    );
+    for (const row of canonicalProfiles.rows) {
+      const expectedRole = canonicalAccounts[row.email];
+      assert(expectedRole, `Unexpected canonical account ${row.email}.`);
+      assert(
+        row.user_role === expectedRole,
+        `${row.email} must have the ${expectedRole} role.`,
+      );
+      assert(row.account_status === 'active', `${row.email} must be active.`);
+      assert(row.deleted_at === null, `${row.email} must not be deleted.`);
+      assert(
+        row.suspended_until === null,
+        `${row.email} must not be suspended.`,
+      );
+      assert(row.password_hash, `${row.email} requires a local credential.`);
+      assert(!row.has_google, `${row.email} must not have a Google identity.`);
+      assert(
+        await bcrypt.compare(password, row.password_hash),
+        `${row.email} local credential must match DEV_SEED_PASSWORD.`,
+      );
+
+      const profileCounts = [
+        row.student_profiles,
+        row.company_profiles,
+        row.personnel_profiles,
+      ];
+      if (expectedRole === 'admin') {
+        assert(
+          profileCounts.every((count) => count === 0),
+          'admin.dev@example.com must not have a domain profile.',
+        );
+      } else if (expectedRole === 'student') {
+        assert(
+          row.student_profiles === 1 &&
+            row.company_profiles === 0 &&
+            row.personnel_profiles === 0 &&
+            row.has_complete_student_profile,
+          'student.dev@example.com requires one complete student profile.',
+        );
+      } else if (expectedRole === 'company') {
+        assert(
+          row.student_profiles === 0 &&
+            row.company_profiles === 1 &&
+            row.personnel_profiles === 0 &&
+            row.has_complete_company_profile,
+          'company.dev@example.com requires one complete company profile.',
+        );
+      } else {
+        assert(
+          row.student_profiles === 0 &&
+            row.company_profiles === 0 &&
+            row.personnel_profiles === 1 &&
+            row.has_complete_personnel_profile,
+          'peso.dev@example.com requires one complete PESO personnel profile.',
+        );
+      }
+    }
+
+    const canonicalTransientAuth = await client.query(
+      `SELECT
+        (SELECT count(*)::integer FROM public.authentication_session s
+          JOIN public.user_account ua USING (user_account_id)
+         WHERE ua.email = ANY($1::text[])) AS sessions,
+        (SELECT count(*)::integer FROM public.registration_onboarding ro
+         WHERE ro.verified_email = ANY($1::text[])) AS onboarding`,
+      [canonicalEmails],
+    );
+    assert(
+      canonicalTransientAuth.rows[0].sessions === 0 &&
+        canonicalTransientAuth.rows[0].onboarding === 0,
+      'Canonical development accounts must not create sessions or onboarding rows.',
+    );
+
     const completedProfiles = await client.query(
       `SELECT count(*)::integer AS count
          FROM public.student s
@@ -215,15 +383,11 @@ async function main() {
       'Work arrangement coverage is incomplete.',
     );
     assert(
-      opportunities.rows.some(
-        (row) => row.allowance !== null,
-      ),
+      opportunities.rows.some((row) => row.allowance !== null),
       'Allowance fixture is missing.',
     );
     assert(
-      opportunities.rows.some(
-        (row) => row.allowance === null,
-      ),
+      opportunities.rows.some((row) => row.allowance === null),
       'No-allowance fixture is missing.',
     );
     assert(
