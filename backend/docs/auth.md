@@ -7,9 +7,6 @@ This backend uses PostgreSQL `user_account`, optional local credentials, optiona
 | Role           | Public local signup | Google signup | Creation                                 |
 | -------------- | ------------------: | ------------: | ---------------------------------------- |
 | student        |                 yes |           yes | complete self-registration               |
-| Role           | Public local signup | Google signup | Creation                                 |
-| -------------- | ------------------: | ------------: | ---------------------------------------- |
-| student        |                 yes |           yes | complete self-registration               |
 | peso_personnel |                  no |            no | active admin creates account and profile |
 | company        |                  no |            no | active admin creates account and profile |
 | admin          |                  no |            no | explicit `npm run bootstrap:admin`       |
@@ -55,13 +52,9 @@ The frontend must keep multi-step registration state in memory and must never pu
 
 Typical errors are `409 Email already in use`, `404 account-not-found`, `409 account-already-exists`, `409 matching-email-account-requires-explicit-linking`, `401 Account is not active`, `401 Refresh token reuse detected`, and `403` for role/state violations.
 
-## QC PESO access states
+## QC PESO access
 
-QC PESO personnel accounts created by an admin are directly active. The redesign dropped verification history and gating statuses.
-
-## Storage and explicit data procedures
-
-PostgreSQL stores an opaque private employee-ID key only. `local` and `test` drivers enforce JPEG/PNG/PDF and the configured byte limit, delete a new file after transaction failure, and delete the prior file after successful replacement. The `file-server` driver is an explicit unavailable boundary until protocol, endpoint/path, credentials, and a validation environment are supplied.
+QC PESO personnel accounts are provisioned by an active admin and are directly active. Account access is managed through the normal account-status controls; the retired verification workflow, employee-ID upload, and verification-history endpoints do not exist.
 
 - `npm run bootstrap:admin`: requires `BOOTSTRAP_ADMIN_EMAIL` and a 12+ character `BOOTSTRAP_ADMIN_PASSWORD`.
 - `npm run seed:reference`: transactionally inserts or safely corrects the eight
@@ -71,7 +64,7 @@ PostgreSQL stores an opaque private employee-ID key only. `local` and `test` dri
   production and requires both `ALLOW_DEV_SEED=true` and a non-secret
   `DEV_SEED_PASSWORD` containing at least eight characters, a letter, and a
   number. It creates the local/Google/dual student matrix, companies, QC PESO
-  verification states, opportunities, workflow histories, referrals,
+  personnel accounts, opportunities, workflow histories, referrals,
   interviews, assignments, derived attendance, and feedback. It creates no
   sessions or onboarding rows and is safe to run repeatedly.
 - `npm run database:validate-seeds`: validates the reference values, account and

@@ -1,5 +1,210 @@
 BEGIN;
 
+-- AuthAlignmentV3 used user_account.password_hash plus oauth_identity/auth_session.
+-- The application now uses dedicated credential, identity, and session tables.
+-- Normalize that supported historical lineage before making the redesign changes.
+CREATE TABLE IF NOT EXISTS public.local_authentication_credential (
+  user_account_id integer NOT NULL,
+  password_hash text NOT NULL,
+  password_changed_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT pk_local_auth_credential PRIMARY KEY (user_account_id),
+  CONSTRAINT ck_local_auth_credential_password_hash_not_blank CHECK (btrim(password_hash) <> '')
+);
+
+CREATE TABLE IF NOT EXISTS public.external_authentication_identity (
+  external_authentication_identity_id integer GENERATED ALWAYS AS IDENTITY,
+  user_account_id integer NOT NULL,
+  authentication_provider public.authentication_provider_enum NOT NULL DEFAULT 'google',
+  provider_subject text NOT NULL,
+  provider_email text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT pk_external_auth_identity PRIMARY KEY (external_authentication_identity_id),
+  CONSTRAINT uq_external_auth_identity_provider_subject UNIQUE (authentication_provider, provider_subject),
+  CONSTRAINT uq_external_auth_identity_account_provider UNIQUE (user_account_id, authentication_provider),
+  CONSTRAINT ck_external_auth_identity_subject_not_blank CHECK (btrim(provider_subject) <> ''),
+  CONSTRAINT ck_external_auth_identity_email_not_blank CHECK (btrim(provider_email) <> '')
+);
+
+CREATE TABLE IF NOT EXISTS public.authentication_session (
+  authentication_session_id integer GENERATED ALWAYS AS IDENTITY,
+  user_account_id integer NOT NULL,
+  token_family_id uuid NOT NULL,
+  refresh_token_hash text NOT NULL,
+  expires_at timestamptz NOT NULL,
+  last_used_at timestamptz,
+  revoked_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT pk_authentication_session PRIMARY KEY (authentication_session_id),
+  CONSTRAINT uq_authentication_session_token_family UNIQUE (token_family_id),
+  CONSTRAINT ck_authentication_session_token_hash_not_blank CHECK (btrim(refresh_token_hash) <> ''),
+  CONSTRAINT ck_authentication_session_expiry_after_creation CHECK (expires_at > created_at),
+  CONSTRAINT ck_authentication_session_last_used_at_valid CHECK (last_used_at IS NULL OR last_used_at >= created_at),
+  CONSTRAINT ck_authentication_session_revoked_at_valid CHECK (revoked_at IS NULL OR revoked_at >= created_at)
+);
+
+CREATE TABLE IF NOT EXISTS public.registration_onboarding (
+  registration_onboarding_id integer GENERATED ALWAYS AS IDENTITY,
+  onboarding_token_hash text NOT NULL,
+  authentication_provider public.authentication_provider_enum NOT NULL DEFAULT 'google',
+  provider_subject text NOT NULL,
+  verified_email text NOT NULL,
+  first_name text,
+  last_name text,
+  intended_user_role public.user_role_enum NOT NULL DEFAULT 'student',
+  expires_at timestamptz NOT NULL,
+  consumed_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT pk_registration_onboarding PRIMARY KEY (registration_onboarding_id),
+  CONSTRAINT uq_registration_onboarding_token_hash UNIQUE (onboarding_token_hash),
+  CONSTRAINT uq_registration_onboarding_provider_subject UNIQUE (authentication_provider, provider_subject),
+  CONSTRAINT ck_registration_onboarding_token_hash_not_blank CHECK (btrim(onboarding_token_hash) <> ''),
+  CONSTRAINT ck_registration_onboarding_provider_data_not_blank CHECK (btrim(provider_subject) <> '' AND btrim(verified_email) <> ''),
+  CONSTRAINT ck_registration_onboarding_first_name_not_blank CHECK (first_name IS NULL OR btrim(first_name) <> ''),
+  CONSTRAINT ck_registration_onboarding_last_name_not_blank CHECK (last_name IS NULL OR btrim(last_name) <> ''),
+  CONSTRAINT ck_registration_onboarding_student_role_only CHECK (intended_user_role = 'student'),
+  CONSTRAINT ck_registration_onboarding_expiry_after_creation CHECK (expires_at > created_at),
+  CONSTRAINT ck_registration_onboarding_consumed_at_valid CHECK (consumed_at IS NULL OR consumed_at >= created_at)
+);
+
+DO $$
+DECLARE
+  historical_auth boolean := to_regclass('public.oauth_identity') IS NOT NULL
+                             OR to_regclass('public.auth_session') IS NOT NULL;
+  canonical_auth boolean := to_regclass('public.local_authentication_credential') IS NOT NULL
+                            AND to_regclass('public.external_authentication_identity') IS NOT NULL
+                            AND to_regclass('public.authentication_session') IS NOT NULL
+                            AND to_regclass('public.registration_onboarding') IS NOT NULL;
+BEGIN
+  IF historical_auth AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'user_account' AND column_name = 'password_hash'
+  ) THEN
+    RAISE EXCEPTION 'Unsupported AuthAlignmentV3 schema: user_account.password_hash is missing';
+  END IF;
+  IF historical_auth AND NOT canonical_auth THEN
+    RAISE EXCEPTION 'Unable to create the canonical authentication schema';
+  END IF;
+END;
+$$;
+
+DO $$
+BEGIN
+  IF to_regclass('public.oauth_identity') IS NOT NULL THEN
+    INSERT INTO public.local_authentication_credential (user_account_id, password_hash, password_changed_at, created_at, updated_at)
+    SELECT user_account_id, password_hash, updated_at, created_at, updated_at
+    FROM public.user_account
+    WHERE password_hash IS NOT NULL
+    ON CONFLICT (user_account_id) DO NOTHING;
+
+    INSERT INTO public.external_authentication_identity
+      (user_account_id, authentication_provider, provider_subject, provider_email, created_at, updated_at)
+    SELECT user_account_id, authentication_provider, provider_subject, provider_email, created_at, updated_at
+    FROM public.oauth_identity
+    ON CONFLICT (authentication_provider, provider_subject) DO NOTHING;
+
+    INSERT INTO public.authentication_session
+      (user_account_id, token_family_id, refresh_token_hash, expires_at, last_used_at, revoked_at, created_at, updated_at)
+    SELECT user_account_id, token_family_id, refresh_token_hash, expires_at, NULL, revoked_at, created_at, updated_at
+    FROM public.auth_session
+    ON CONFLICT (token_family_id) DO NOTHING;
+
+    IF (SELECT count(*) FROM public.local_authentication_credential) <
+       (SELECT count(*) FROM public.user_account WHERE password_hash IS NOT NULL) THEN
+      RAISE EXCEPTION 'Historical password hashes were not fully converted';
+    END IF;
+    IF (SELECT count(*) FROM public.external_authentication_identity) <
+       (SELECT count(*) FROM public.oauth_identity) THEN
+      RAISE EXCEPTION 'Historical OAuth identities were not fully converted';
+    END IF;
+    IF (SELECT count(*) FROM public.authentication_session) <
+       (SELECT count(*) FROM public.auth_session) THEN
+      RAISE EXCEPTION 'Historical authentication sessions were not fully converted';
+    END IF;
+
+    DROP TRIGGER IF EXISTS trg_user_account_auth_method_integrity ON public.user_account;
+    DROP TABLE public.auth_session;
+    DROP TABLE public.oauth_identity;
+    DROP FUNCTION IF EXISTS public.fn_check_account_auth_method_integrity();
+    DROP FUNCTION IF EXISTS public.fn_validate_auth_session_account();
+    DROP FUNCTION IF EXISTS public.fn_validate_oauth_identity_account();
+    ALTER TABLE public.user_account DROP CONSTRAINT IF EXISTS ck_user_account_password_hash_not_blank;
+    ALTER TABLE public.user_account DROP COLUMN password_hash;
+  END IF;
+END;
+$$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_local_auth_credential_user_account') THEN
+    ALTER TABLE public.local_authentication_credential ADD CONSTRAINT fk_local_auth_credential_user_account
+      FOREIGN KEY (user_account_id) REFERENCES public.user_account(user_account_id) ON DELETE CASCADE;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_external_auth_identity_user_account') THEN
+    ALTER TABLE public.external_authentication_identity ADD CONSTRAINT fk_external_auth_identity_user_account
+      FOREIGN KEY (user_account_id) REFERENCES public.user_account(user_account_id) ON DELETE CASCADE;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_authentication_session_user_account') THEN
+    ALTER TABLE public.authentication_session ADD CONSTRAINT fk_authentication_session_user_account
+      FOREIGN KEY (user_account_id) REFERENCES public.user_account(user_account_id) ON DELETE CASCADE;
+  END IF;
+END;
+$$;
+
+CREATE INDEX IF NOT EXISTS ix_external_auth_identity_user_account ON public.external_authentication_identity (user_account_id);
+CREATE INDEX IF NOT EXISTS ix_authentication_session_user_account ON public.authentication_session (user_account_id);
+CREATE INDEX IF NOT EXISTS ix_authentication_session_account_revoked ON public.authentication_session (user_account_id, revoked_at);
+CREATE INDEX IF NOT EXISTS ix_authentication_session_expires_at ON public.authentication_session (expires_at);
+CREATE INDEX IF NOT EXISTS ix_registration_onboarding_expires_at ON public.registration_onboarding (expires_at);
+CREATE INDEX IF NOT EXISTS ix_registration_onboarding_consumed_at ON public.registration_onboarding (consumed_at);
+
+CREATE OR REPLACE FUNCTION public.fn_check_authentication_method_integrity()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE account_id integer; account_role public.user_role_enum; local_count integer; external_count integer;
+BEGIN
+  account_id := CASE WHEN TG_OP = 'DELETE' THEN OLD.user_account_id ELSE NEW.user_account_id END;
+  SELECT user_role INTO account_role FROM public.user_account WHERE user_account_id = account_id;
+  IF NOT FOUND THEN RETURN NULL; END IF;
+  SELECT count(*) INTO local_count FROM public.local_authentication_credential WHERE user_account_id = account_id;
+  SELECT count(*) INTO external_count FROM public.external_authentication_identity WHERE user_account_id = account_id;
+  IF local_count + external_count = 0 THEN RAISE EXCEPTION 'Account % must retain at least one authentication method', account_id; END IF;
+  IF external_count > 0 AND account_role <> 'student' THEN RAISE EXCEPTION 'External authentication identities are permitted only for student accounts'; END IF;
+  RETURN NULL;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.fn_revoke_account_sessions()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.account_status IS DISTINCT FROM OLD.account_status AND NEW.account_status IN ('suspended', 'archived') THEN
+    UPDATE public.authentication_session SET revoked_at = CURRENT_TIMESTAMP
+    WHERE user_account_id = NEW.user_account_id AND revoked_at IS NULL;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_local_auth_credential_updated_at ON public.local_authentication_credential;
+DROP TRIGGER IF EXISTS trg_external_auth_identity_updated_at ON public.external_authentication_identity;
+DROP TRIGGER IF EXISTS trg_authentication_session_updated_at ON public.authentication_session;
+DROP TRIGGER IF EXISTS trg_registration_onboarding_updated_at ON public.registration_onboarding;
+DROP TRIGGER IF EXISTS trg_user_account_auth_method_integrity ON public.user_account;
+DROP TRIGGER IF EXISTS trg_local_auth_method_integrity ON public.local_authentication_credential;
+DROP TRIGGER IF EXISTS trg_external_auth_method_integrity ON public.external_authentication_identity;
+DROP TRIGGER IF EXISTS trg_user_account_session_revocation ON public.user_account;
+CREATE TRIGGER trg_local_auth_credential_updated_at BEFORE UPDATE ON public.local_authentication_credential FOR EACH ROW EXECUTE FUNCTION public.fn_set_updated_at();
+CREATE TRIGGER trg_external_auth_identity_updated_at BEFORE UPDATE ON public.external_authentication_identity FOR EACH ROW EXECUTE FUNCTION public.fn_set_updated_at();
+CREATE TRIGGER trg_authentication_session_updated_at BEFORE UPDATE ON public.authentication_session FOR EACH ROW EXECUTE FUNCTION public.fn_set_updated_at();
+CREATE TRIGGER trg_registration_onboarding_updated_at BEFORE UPDATE ON public.registration_onboarding FOR EACH ROW EXECUTE FUNCTION public.fn_set_updated_at();
+CREATE CONSTRAINT TRIGGER trg_user_account_auth_method_integrity AFTER INSERT OR UPDATE OF user_role ON public.user_account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.fn_check_authentication_method_integrity();
+CREATE CONSTRAINT TRIGGER trg_local_auth_method_integrity AFTER INSERT OR UPDATE OF user_account_id OR DELETE ON public.local_authentication_credential DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.fn_check_authentication_method_integrity();
+CREATE CONSTRAINT TRIGGER trg_external_auth_method_integrity AFTER INSERT OR UPDATE OF user_account_id OR DELETE ON public.external_authentication_identity DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.fn_check_authentication_method_integrity();
+CREATE TRIGGER trg_user_account_session_revocation AFTER UPDATE OF account_status ON public.user_account FOR EACH ROW EXECUTE FUNCTION public.fn_revoke_account_sessions();
+
 -- Fail before destructive work if an application-only value still exists.
 DO $$
 BEGIN
@@ -63,26 +268,24 @@ ALTER TABLE public.opportunity
   );
 
 -- QC PESO accounts no longer require document submission or verification.
-DROP TRIGGER trg_peso_verification_history ON public.peso_personnel;
-DROP TRIGGER trg_peso_personnel_verification ON public.peso_personnel;
-DROP TRIGGER trg_peso_verification_history_append_only
-  ON public.peso_personnel_verification_history;
-DROP INDEX public.ix_peso_personnel_verification_status;
-DROP INDEX public.ix_peso_personnel_reviewed_by;
+DROP TRIGGER IF EXISTS trg_peso_verification_history ON public.peso_personnel;
+DROP TRIGGER IF EXISTS trg_peso_personnel_verification ON public.peso_personnel;
+DROP INDEX IF EXISTS public.ix_peso_personnel_verification_status;
+DROP INDEX IF EXISTS public.ix_peso_personnel_reviewed_by;
 ALTER TABLE public.peso_personnel
-  DROP CONSTRAINT fk_peso_personnel_reviewed_by;
-DROP TABLE public.peso_personnel_verification_history;
+  DROP CONSTRAINT IF EXISTS fk_peso_personnel_reviewed_by;
+DROP TABLE IF EXISTS public.peso_personnel_verification_history CASCADE;
 ALTER TABLE public.peso_personnel
-  DROP CONSTRAINT ck_peso_personnel_id_file_path_not_blank,
-  DROP CONSTRAINT ck_peso_personnel_verification_remark_not_blank,
-  DROP CONSTRAINT ck_peso_personnel_verification_review_consistency,
-  DROP COLUMN employee_id_file_path,
-  DROP COLUMN verification_status,
-  DROP COLUMN reviewed_at,
-  DROP COLUMN reviewed_by_user_account_id,
-  DROP COLUMN verification_remark;
-DROP FUNCTION public.fn_validate_peso_verification();
-DROP TYPE public.personnel_verification_status_enum;
+  DROP CONSTRAINT IF EXISTS ck_peso_personnel_id_file_path_not_blank,
+  DROP CONSTRAINT IF EXISTS ck_peso_personnel_verification_remark_not_blank,
+  DROP CONSTRAINT IF EXISTS ck_peso_personnel_verification_review_consistency,
+  DROP COLUMN IF EXISTS employee_id_file_path,
+  DROP COLUMN IF EXISTS verification_status,
+  DROP COLUMN IF EXISTS reviewed_at,
+  DROP COLUMN IF EXISTS reviewed_by_user_account_id,
+  DROP COLUMN IF EXISTS verification_remark;
+DROP FUNCTION IF EXISTS public.fn_validate_peso_verification();
+DROP TYPE IF EXISTS public.personnel_verification_status_enum;
 
 CREATE OR REPLACE FUNCTION public.fn_record_status_history()
 RETURNS trigger

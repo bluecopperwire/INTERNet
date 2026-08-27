@@ -54,13 +54,18 @@ Before executing migration `002`:
    SELECT count(*) FROM public.student_academic_information WHERE year_level::text = 'fifth_year_college';
    ```
    *If count > 0, update those rows to an approved year level before migrating.*
-3. **Record Table Baseline Counts**: Record row counts for `user_account`, `company`, `opportunity`, `peso_personnel`, `peso_personnel_verification_history`, `referral`, `internship_assignment`, and `attendance_record`.
-4. **Create Verified Backup**:
+3. **Confirm the supported migration lineage**:
+   ```sql
+   SELECT timestamp, name FROM public.migrations ORDER BY timestamp;
+   ```
+   Supported inputs are `InitialSchema1785860400000` alone, or it followed by `AuthAlignmentV31786125600000`. The historical AuthAlignment path is converted to the current dedicated credential, external-identity, and session tables during redesign. Do not remove the historical migration row.
+4. **Record Table Baseline Counts**: Record row counts for `user_account`, `company`, `opportunity`, `peso_personnel`, `referral`, `internship_assignment`, `attendance_record`, and any historical authentication tables (`oauth_identity`, `auth_session`).
+5. **Create Verified Backup**:
    ```powershell
    pg_dump -h localhost -p 5433 -U postgres -F c -b -v -f pre_migration_backup.dump internet_db
    ```
    Verify restoration of `pre_migration_backup.dump` in a disposable test database.
-5. **Schedule Maintenance Window**: Stop application traffic, as old and new application code are not dual-schema compatible.
+6. **Schedule Maintenance Window**: Stop application traffic, as old and new application code are not dual-schema compatible.
 
 ---
 

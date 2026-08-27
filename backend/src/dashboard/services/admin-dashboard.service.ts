@@ -66,7 +66,10 @@ export class AdminDashboardService {
     paginationDto: PaginationDto,
   ): Promise<PaginatedResponse<any>> {
     const page = Math.max(1, Number(paginationDto?.page) || 1);
-    const limit = Math.max(1, Math.min(100, Number(paginationDto?.limit) || 20));
+    const limit = Math.max(
+      1,
+      Math.min(100, Number(paginationDto?.limit) || 20),
+    );
     const offset = (page - 1) * limit;
 
     const countSql = `
@@ -326,7 +329,10 @@ export class AdminDashboardService {
     paginationDto: PaginationDto,
   ): Promise<PaginatedResponse<any>> {
     const page = Math.max(1, Number(paginationDto?.page) || 1);
-    const limit = Math.max(1, Math.min(100, Number(paginationDto?.limit) || 20));
+    const limit = Math.max(
+      1,
+      Math.min(100, Number(paginationDto?.limit) || 20),
+    );
     const offset = (page - 1) * limit;
 
     const countSql = `
@@ -541,12 +547,15 @@ export class AdminDashboardService {
     return this.getRoleDashboardMetrics(UserRole.PESO_PERSONNEL);
   }
 
-  // I2. GET all PESO accounts
+  // I2. GET all PESO accounts. QC PESO personnel are directly active; there is no verification state.
   async getAllPesoPersonnel(
     paginationDto: PaginationDto,
   ): Promise<PaginatedResponse<any>> {
     const page = Math.max(1, Number(paginationDto?.page) || 1);
-    const limit = Math.max(1, Math.min(100, Number(paginationDto?.limit) || 20));
+    const limit = Math.max(
+      1,
+      Math.min(100, Number(paginationDto?.limit) || 20),
+    );
     const offset = (page - 1) * limit;
 
     const countSql = `
@@ -566,7 +575,6 @@ export class AdminDashboardService {
         ua.email AS "email",
         pp.position AS "position",
         pp.department AS "department",
-        'approved'::text AS "verificationStatus",
         ua.created_at AS "dateRegistered",
         ua.account_status AS "accountStatus"
       FROM public.user_account ua
@@ -612,11 +620,7 @@ export class AdminDashboardService {
         pp.contact_email AS "contactEmail",
         pp.employee_id AS "employeeId",
         pp.position AS "position",
-        pp.department AS "department",
-        'approved'::text AS "verificationStatus",
-        NULL::timestamptz AS "reviewedAt",
-        NULL::integer AS "reviewedByUserAccountId",
-        NULL::text AS "verificationRemark"
+        pp.department AS "department"
       FROM public.user_account ua
       JOIN public.peso_personnel pp ON pp.user_account_id = ua.user_account_id
       WHERE ua.user_account_id = $1 AND ua.user_role = 'peso_personnel' AND ua.deleted_at IS NULL
@@ -628,7 +632,7 @@ export class AdminDashboardService {
     return rows[0];
   }
 
-  // I3. PATCH PESO account details / verification
+  // I3. PATCH PESO account details
   async updatePesoPersonnelAccount(
     userAccountId: number,
     adminAccountId: number,

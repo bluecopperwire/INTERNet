@@ -170,7 +170,6 @@ export const MOCK_QCPESO_RECORD: QCPesoRecord = {
   position: 'Employment Officer',
   department: 'QC PESO Internship Division',
   contactNumber: '09123456789',
-  verificationStatus: 'Approved',
 }
 
 export const MOCK_QCPESO_RECORDS: QCPesoRecord[] = [

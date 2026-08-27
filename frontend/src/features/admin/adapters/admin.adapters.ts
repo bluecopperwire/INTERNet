@@ -154,7 +154,6 @@ export function adaptAdminPesoItem(dto: AdminPesoListItemDto): QCPesoRecord {
     department: data.department || 'PESO',
     contactNumber: data.contactNumber || 'N/A',
     contactEmail: data.contactEmail || '',
-    verificationStatus: 'Approved',
   };
 }
 

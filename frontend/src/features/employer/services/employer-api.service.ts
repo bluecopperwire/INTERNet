@@ -7,6 +7,7 @@ import type {
   EmployerReferralListItemDto,
   EmployerAttendanceItemDto,
   EmployerInternshipListItemDto,
+  EmployerAssignmentCandidateDto,
   PaginatedResponse,
 } from '../../../types/api';
 
@@ -124,8 +125,8 @@ export const employerApiService = {
     return response.data;
   },
 
-  async getAssignmentCandidates(params?: any): Promise<PaginatedResponse<any>> {
-    const response = await api.get<PaginatedResponse<any>>(
+  async getAssignmentCandidates(params?: { page?: number; limit?: number; search?: string; studentResponse?: 'pending' | 'accepted' | 'declined' }): Promise<PaginatedResponse<EmployerAssignmentCandidateDto>> {
+    const response = await api.get<PaginatedResponse<EmployerAssignmentCandidateDto>>(
       '/employer/internship-assignment-candidates',
       { params },
     );

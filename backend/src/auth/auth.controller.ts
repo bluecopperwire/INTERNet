@@ -26,7 +26,6 @@ import {
   ChangePasswordDto,
   GoogleStudentCompletionDto,
   PasswordDto,
-  PesoRegistrationDto,
   SignupDto,
 } from './dto/signup.dto';
 import { UsersService } from '../users/users.service';
@@ -67,17 +66,6 @@ export class AuthController {
     const tokens = await this.auth.registerStudent(dto);
     this.setRefreshCookie(res, tokens.refreshToken);
     return { accessToken: tokens.accessToken };
-  }
-
-  @Throttle({ default: { limit: 3, ttl: 60_000 } })
-  @Post('register/peso')
-  async registerPeso(
-    @Body() dto: PesoRegistrationDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const tokens = await this.auth.registerPeso(dto);
-    this.setRefreshCookie(res, tokens.refreshToken);
-    return { accessToken: tokens.accessToken, verificationStatus: 'approved' };
   }
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
@@ -291,7 +279,6 @@ export class AuthController {
       email: current.account.email,
       userRole: current.account.userRole,
       accountStatus: current.account.accountStatus,
-      verificationStatus: current.verificationStatus,
       studentId: current.studentId,
       companyId: current.companyId,
       pesoPersonnelId: current.pesoPersonnelId,

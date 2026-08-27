@@ -1,7 +1,6 @@
 import type {
   UserRole as BackendRole,
   AccountStatus,
-  VerificationStatus,
 } from '../../../types/api';
 
 export type LoginTabRole = 'intern-seeker' | 'company' | 'qcpeso' | 'admin';
@@ -49,26 +48,6 @@ export interface StudentRegisterRequest {
   inquiryMethod: string;
 }
 
-export interface PesoRegisterRequest {
-  email: string;
-  password: string;
-  firstName: string;
-  middleName?: string;
-  lastName: string;
-  extensionName?: string;
-  sex: string;
-  birthDate: string;
-  addressLine: string;
-  addressBarangay: string;
-  addressDistrict: string;
-  addressCity: string;
-  contactNumber: string;
-  contactEmail?: string;
-  employeeId: string;
-  position: string;
-  department: string;
-}
-
 export interface GoogleStudentCompletionRequest {
   firstName: string;
   middleName?: string;
@@ -96,7 +75,6 @@ export interface AuthState {
     email: string;
     userRole: BackendRole;
     accountStatus: AccountStatus;
-    verificationStatus: VerificationStatus | null;
     studentId: number | null;
     companyId: number | null;
     pesoPersonnelId: number | null;

@@ -1,8 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import {
+  PostgreSqlContainer,
+  type StartedPostgreSqlContainer,
+} from '@testcontainers/postgresql';
 import { DataSource } from 'typeorm';
 import { seedReferenceData, APPROVED_INDUSTRIES } from './seeds/reference.seed';
+
+jest.setTimeout(60_000);
 
 describe('Database migration paths and behavioral validation', () => {
   let container: StartedPostgreSqlContainer;
@@ -18,6 +23,10 @@ describe('Database migration paths and behavioral validation', () => {
   );
   const migration002DownSql = readFileSync(
     join(__dirname, 'migrations', '002_approved_database_redesign.down.sql'),
+    'utf8',
+  );
+  const authAlignmentV3Sql = readFileSync(
+    join(__dirname, '../../test/database/fixtures/002_auth_alignment_v3.sql'),
     'utf8',
   );
 
@@ -57,15 +66,21 @@ describe('Database migration paths and behavioral validation', () => {
     // Run migrations using TypeORM
     await dataSource.runMigrations();
 
-    const migrationRows = await dataSource.query(`SELECT name FROM public.migrations ORDER BY timestamp`);
+    const migrationRows = await dataSource.query(
+      `SELECT name FROM public.migrations ORDER BY timestamp`,
+    );
     expect(migrationRows.map((r: any) => r.name)).toEqual([
       'InitialSchema1785860400000',
       'ApprovedDatabaseRedesign1787788800000',
     ]);
 
     // Validate redesigned columns
-    const columns: Array<{ table_name: string; column_name: string; data_type: string; is_nullable: string }> =
-      await dataSource.query(`
+    const columns: Array<{
+      table_name: string;
+      column_name: string;
+      data_type: string;
+      is_nullable: string;
+    }> = await dataSource.query(`
         SELECT table_name, column_name, data_type, is_nullable
         FROM information_schema.columns
         WHERE table_schema = 'public' AND (
@@ -110,6 +125,7 @@ describe('Database migration paths and behavioral validation', () => {
     // Reset schema to historical InitialSchema + AuthAlignmentV3 state
     await dataSource.query(`DROP SCHEMA public CASCADE; CREATE SCHEMA public;`);
     await dataSource.query(migration001Sql);
+    await dataSource.query(authAlignmentV3Sql);
 
     // Setup TypeORM migrations table with historical InitialSchema + AuthAlignmentV3
     await dataSource.query(`
@@ -130,17 +146,19 @@ describe('Database migration paths and behavioral validation', () => {
       INSERT INTO public.industry (industry_name, is_custom_text)
       VALUES ('Information Technology', false);
 
-      INSERT INTO public.user_account (email, user_role, account_status, deleted_at)
+      INSERT INTO public.user_account (email, password_hash, user_role, account_status, deleted_at)
       VALUES
-        ('legacy-active@example.test', 'student', 'active', NULL),
-        ('legacy-suspended@example.test', 'student', 'suspended', NULL),
-        ('legacy-archived@example.test', 'student', 'archived', CURRENT_TIMESTAMP),
-        ('legacy-company@example.test', 'company', 'active', NULL),
-        ('legacy-peso@example.test', 'peso_personnel', 'active', NULL);
+        ('legacy-active@example.test', '$2b$10$abcdefghijklmnopqrstuv', 'student', 'active', NULL),
+        ('legacy-suspended@example.test', '$2b$10$abcdefghijklmnopqrstuv', 'student', 'suspended', NULL),
+        ('legacy-archived@example.test', '$2b$10$abcdefghijklmnopqrstuv', 'student', 'archived', CURRENT_TIMESTAMP),
+        ('legacy-company@example.test', '$2b$10$abcdefghijklmnopqrstuv', 'company', 'active', NULL),
+        ('legacy-peso@example.test', '$2b$10$abcdefghijklmnopqrstuv', 'peso_personnel', 'active', NULL);
 
-      INSERT INTO public.local_authentication_credential (user_account_id, password_hash)
-      SELECT user_account_id, '$2b$10$abcdefghijklmnopqrstuv'
-      FROM public.user_account;
+      INSERT INTO public.oauth_identity (user_account_id, authentication_provider, provider_subject, provider_email)
+      VALUES ((SELECT user_account_id FROM public.user_account WHERE email = 'legacy-active@example.test'), 'google', 'legacy-active-google', 'legacy-active@example.test');
+
+      INSERT INTO public.auth_session (user_account_id, refresh_token_hash, token_family_id, expires_at)
+      VALUES ((SELECT user_account_id FROM public.user_account WHERE email = 'legacy-active@example.test'), 'legacy-refresh-hash', '00000000-0000-4000-8000-000000000001', CURRENT_TIMESTAMP + INTERVAL '1 day');
 
       INSERT INTO public.company (user_account_id, industry_id, company_name, company_type, description, address_line, address_barangay, address_city, contact_email, contact_number, contact_person_first_name, contact_person_last_name, logo_file_path)
       VALUES (
@@ -221,12 +239,42 @@ describe('Database migration paths and behavioral validation', () => {
     await dataSource.runMigrations();
 
     // Assert that AuthAlignmentV3 remains recorded and ApprovedDatabaseRedesign is appended
-    const updatedMigrations = await dataSource.query(`SELECT name FROM public.migrations ORDER BY timestamp`);
+    const updatedMigrations = await dataSource.query(
+      `SELECT name FROM public.migrations ORDER BY timestamp`,
+    );
     expect(updatedMigrations.map((r: any) => r.name)).toEqual([
       'InitialSchema1785860400000',
       'AuthAlignmentV31786125600000',
       'ApprovedDatabaseRedesign1787788800000',
     ]);
+
+    const canonicalAuth = await dataSource.query(`
+      SELECT
+        to_regclass('public.local_authentication_credential') AS local_credentials,
+        to_regclass('public.external_authentication_identity') AS external_identities,
+        to_regclass('public.authentication_session') AS sessions,
+        to_regclass('public.oauth_identity') AS legacy_oauth,
+        to_regclass('public.auth_session') AS legacy_sessions
+    `);
+    expect(canonicalAuth[0].local_credentials).not.toBeNull();
+    expect(canonicalAuth[0].external_identities).not.toBeNull();
+    expect(canonicalAuth[0].sessions).not.toBeNull();
+    expect(canonicalAuth[0].legacy_oauth).toBeNull();
+    expect(canonicalAuth[0].legacy_sessions).toBeNull();
+
+    const authCounts = await dataSource.query(`
+      SELECT
+        (SELECT count(*)::int FROM public.local_authentication_credential) AS local_count,
+        (SELECT count(*)::int FROM public.external_authentication_identity) AS oauth_count,
+        (SELECT count(*)::int FROM public.authentication_session) AS session_count,
+        (SELECT count(*)::int FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_account' AND column_name = 'password_hash') AS legacy_password_column_count
+    `);
+    expect(authCounts[0]).toMatchObject({
+      local_count: 5,
+      oauth_count: 1,
+      session_count: 1,
+      legacy_password_column_count: 0,
+    });
 
     // Assert conversions
     const oppWithAllowance = await dataSource.query(`
@@ -255,7 +303,11 @@ describe('Database migration paths and behavioral validation', () => {
     expect(attendance[0].rendered_hours_status).toBe('complete');
 
     // Test soft delete behavior
-    const assignmentId = (await dataSource.query(`SELECT internship_assignment_id FROM public.internship_assignment LIMIT 1`))[0].internship_assignment_id;
+    const assignmentId = (
+      await dataSource.query(
+        `SELECT internship_assignment_id FROM public.internship_assignment LIMIT 1`,
+      )
+    )[0].internship_assignment_id;
     await dataSource.query(
       `UPDATE public.internship_assignment SET deleted_at = CURRENT_TIMESTAMP WHERE internship_assignment_id = $1`,
       [assignmentId],
@@ -272,6 +324,8 @@ describe('Database migration paths and behavioral validation', () => {
     expect(seedResult.length).toBeGreaterThan(0);
 
     // Test irreversible down migration constraint
-    await expect(dataSource.query(migration002DownSql)).rejects.toThrow(/ApprovedDatabaseRedesign1787788800000 is irreversible/);
+    await expect(dataSource.query(migration002DownSql)).rejects.toThrow(
+      /ApprovedDatabaseRedesign1787788800000 is irreversible/,
+    );
   });
 });

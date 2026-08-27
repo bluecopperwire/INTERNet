@@ -8,7 +8,7 @@ Base path: `/employer`
 
 Every endpoint requires an access token in `Authorization: Bearer <token>` and the authenticated account must have `userRole = company`. The server derives `company_id` from `CurrentUser.userAccountId -> company.user_account_id`; clients cannot provide or override a company ID. A resource outside that company scope returns `404`, preventing ID enumeration.
 
-Unless stated otherwise, successful reads and mutations return `200`. Assignment creation returns the Nest default `201`. Validation errors return `400`, missing scoped resources return `404`, invalid workflow states return `409`, unsupported uploads return `415`, and the explicitly blocked operations return `503`.
+Unless stated otherwise, successful reads and mutations return `200`. Assignment creation returns the Nest default `201`. Validation errors return `400`, missing scoped resources return `404`, invalid workflow states return `409`, and unsupported uploads return `415`.
 
 ## Shared contracts
 
@@ -516,7 +516,7 @@ Other display values are `Pending`, `On Going`, `Completed`, `Withdrawn by Stude
 }
 ```
 
-`canEdit` is pending only; `canComplete` is eligible ongoing only; `canCancel` is pending/ongoing; `canDelete` describes the final terminal-state behavior even while endpoint 29 is blocked.
+`canEdit` is pending only; `canComplete` is eligible ongoing only; `canCancel` is pending/ongoing; `canDelete` describes the final terminal-state behavior.
 
 ### 26. PATCH `/employer/internships/:internshipAssignmentId`
 

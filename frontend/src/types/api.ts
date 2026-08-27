@@ -1,6 +1,5 @@
 export type UserRole = 'student' | 'company' | 'peso_personnel' | 'admin';
 export type AccountStatus = 'active' | 'suspended' | 'archived';
-export type VerificationStatus = 'pending' | 'approved' | 'rejected';
 export type CompanyType = 'government' | 'private';
 export type WorkArrangement = 'onsite' | 'remote' | 'hybrid';
 export type WorkSchedule = 'weekdays' | 'weekends' | 'flexible';
@@ -49,6 +48,20 @@ export interface PaginatedResponse<T> {
   meta: PageMeta;
 }
 
+export interface EmployerAssignmentCandidateDto {
+  referralId: number;
+  applicationId: number;
+  studentId: number;
+  studentFullName: string;
+  opportunityId: number;
+  jobTitle: string;
+  companyName: string;
+  acceptanceDate: string | null;
+  studentResponse: StudentResponse | null;
+  studentRespondedAt: string | null;
+  internshipAssignmentId: number | null;
+}
+
 export interface AdminSummary {
   total: number;
   active: number;
@@ -82,7 +95,6 @@ export interface CurrentUserResponse {
   email: string;
   userRole: UserRole;
   accountStatus: AccountStatus;
-  verificationStatus: VerificationStatus | null;
   studentId: number | null;
   companyId: number | null;
   pesoPersonnelId: number | null;

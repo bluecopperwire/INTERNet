@@ -37,7 +37,7 @@ All dashboard endpoints are secured using JSON Web Tokens (`JwtAuthGuard`), role
 | **I1** | `GET` | `/dashboard/admin/peso-personnel/metrics` | `admin` | PESO personnel account metrics | Implemented & Tested |
 | **I2** | `GET` | `/dashboard/admin/peso-personnel` | `admin` | Registered PESO personnel listing | Implemented & Tested |
 | **I4** | `GET` | `/dashboard/admin/peso-personnel/:userAccountId` | `admin` | PESO personnel full profile details | Implemented & Tested |
-| **I3** | `PATCH` | `/dashboard/admin/peso-personnel/:userAccountId` | `admin` | Update PESO personnel details & verification | Implemented & Tested |
+| **I3** | `PATCH` | `/dashboard/admin/peso-personnel/:userAccountId` | `admin` | Update PESO personnel details | Implemented & Tested |
 
 ---
 
@@ -871,7 +871,6 @@ curl -X GET "http://localhost:3000/dashboard/admin/peso-personnel?page=1&limit=1
       "email": "peso.approved@internet.local",
       "position": "Employment Officer",
       "department": "QC PESO",
-      "verificationStatus": "approved",
       "dateRegistered": "2026-08-14T02:46:40.000Z",
       "accountStatus": "active"
     }

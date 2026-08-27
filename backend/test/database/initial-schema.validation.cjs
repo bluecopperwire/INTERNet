@@ -73,6 +73,41 @@ async function main() {
     }
     pass('initial and approved-redesign migrations are recorded');
 
+    const canonicalAuthTables = await client.query(`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+        AND table_name IN (
+          'local_authentication_credential',
+          'external_authentication_identity',
+          'authentication_session',
+          'registration_onboarding'
+        )
+    `);
+    assert.equal(canonicalAuthTables.rowCount, 4, 'Canonical authentication tables must all exist.');
+    const retiredAuthObjects = await client.query(`
+      SELECT
+        to_regclass('public.oauth_identity') AS oauth_identity,
+        to_regclass('public.auth_session') AS auth_session,
+        EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'public' AND table_name = 'user_account' AND column_name = 'password_hash'
+        ) AS password_hash
+    `);
+    assert.equal(retiredAuthObjects.rows[0].oauth_identity, null, 'Historical oauth_identity table must be removed.');
+    assert.equal(retiredAuthObjects.rows[0].auth_session, null, 'Historical auth_session table must be removed.');
+    assert.equal(retiredAuthObjects.rows[0].password_hash, false, 'Historical user_account.password_hash column must be removed.');
+    const accountsWithoutAuth = await client.query(`
+      SELECT ua.user_account_id
+      FROM public.user_account ua
+      LEFT JOIN public.local_authentication_credential lac ON lac.user_account_id = ua.user_account_id
+      LEFT JOIN public.external_authentication_identity eai ON eai.user_account_id = ua.user_account_id
+      GROUP BY ua.user_account_id
+      HAVING count(lac.user_account_id) + count(eai.external_authentication_identity_id) = 0
+    `);
+    assert.equal(accountsWithoutAuth.rowCount, 0, 'Every account must retain a local credential or external identity.');
+    pass('canonical authentication schema is present and historical authentication objects are absent');
+
     const removedColumns = await client.query(`
       SELECT table_name, column_name
       FROM information_schema.columns

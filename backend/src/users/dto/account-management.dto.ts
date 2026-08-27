@@ -33,21 +33,6 @@ export class CreateCompanyAccountDto {
   @IsOptional() @IsString() @IsNotEmpty() logoFilePath?: string;
 }
 
-export class VerificationDecisionDto {
-  @IsOptional() @IsString() remark?: string;
-}
-
-export class CorrectPesoPersonnelDto {
-  @IsOptional() @IsString() @IsNotEmpty() employeeId?: string;
-  @IsOptional() @IsString() @IsNotEmpty() position?: string;
-  @IsOptional() @IsString() @IsNotEmpty() department?: string;
-  @IsOptional() @IsString() @IsNotEmpty() contactNumber?: string;
-  @IsOptional() @IsString() @IsNotEmpty() addressLine?: string;
-  @IsOptional() @IsString() @IsNotEmpty() addressBarangay?: string;
-  @IsOptional() @IsString() @IsNotEmpty() addressDistrict?: string;
-  @IsOptional() @IsString() @IsNotEmpty() addressCity?: string;
-}
-
 export class CreatePesoPersonnelAccountDto {
   @IsEmail() email: string;
   @IsString() @MinLength(8) password: string;

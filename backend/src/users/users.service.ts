@@ -7,7 +7,6 @@ import {
   Company,
   ExternalAuthenticationIdentity,
   LocalAuthenticationCredential,
-  PersonnelVerificationStatus,
   PesoPersonnel,
   Student,
   UserAccount,
@@ -102,23 +101,18 @@ export class UsersService {
 
   async getCurrentAccount(userAccountId: number): Promise<{
     account: UserAccount;
-    verificationStatus: PersonnelVerificationStatus | null;
     studentId: number | null;
     companyId: number | null;
     pesoPersonnelId: number | null;
   } | null> {
     const account = await this.findById(userAccountId);
     if (!account) return null;
-    let verificationStatus: PersonnelVerificationStatus | null = null;
     let studentId: number | null = null;
     let companyId: number | null = null;
     let pesoPersonnelId: number | null = null;
 
     if (account.userRole === UserRole.PESO_PERSONNEL) {
       const peso = await this.personnel.findOne({ where: { userAccountId } });
-      verificationStatus = peso
-        ? PersonnelVerificationStatus.APPROVED
-        : null;
       pesoPersonnelId = peso?.pesoPersonnelId ?? null;
     } else if (account.userRole === UserRole.STUDENT) {
       const student = await this.students.findOne({ where: { userAccountId } });
@@ -130,7 +124,6 @@ export class UsersService {
 
     return {
       account,
-      verificationStatus,
       studentId,
       companyId,
       pesoPersonnelId,

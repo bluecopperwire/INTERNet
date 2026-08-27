@@ -25,12 +25,6 @@ export enum AuthenticationProvider {
   GOOGLE = 'google',
 }
 
-export enum PersonnelVerificationStatus {
-  PENDING = 'pending',
-  APPROVED = 'approved',
-  REJECTED = 'rejected',
-}
-
 @Entity({ schema: 'public', name: 'user_account' })
 export class UserAccount {
   @PrimaryGeneratedColumn({ name: 'user_account_id', type: 'integer' })

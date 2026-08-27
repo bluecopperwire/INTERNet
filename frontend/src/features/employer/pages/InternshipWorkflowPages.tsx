@@ -111,6 +111,7 @@ export function ReviewInternshipAssignmentPage() {
   const isAssignmentLocked = assignment.studentResponse !== 'Accepted'
   const canWithdraw = canWithdrawCandidate({
     studentResponse: assignment.studentResponse,
+    internshipAssignmentId: assignment.internshipAssignmentId,
     isWithdrawing,
   })
 
@@ -129,6 +130,8 @@ export function ReviewInternshipAssignmentPage() {
       navigate('/employer/internship-assignments')
     } catch (err: any) {
       alert(err?.message || 'Failed to withdraw acceptance. The student may have already responded.')
+      const refreshed = await employerService.getInternshipAssignmentById(assignment.id)
+      setAssignment(refreshed ?? null)
     } finally {
       setIsWithdrawing(false)
     }

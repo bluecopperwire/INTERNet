@@ -5,7 +5,7 @@
 From `backend/`:
 
 ```powershell
-npm install
+npm ci
 ```
 
 Then create the local environment file:
@@ -48,19 +48,19 @@ Without these, the backend will start but login requests will fail at runtime wi
 Run this from the **repository root** (the directory containing `docker-compose.yml`, one level above `backend/`):
 
 ```powershell
-docker compose up -d postgres
+docker compose --env-file backend/.env up -d postgres
 ```
 
 Check it:
 
 ```powershell
-docker compose ps
+docker compose --env-file backend/.env ps
 ```
 
 Confirm the host port:
 
 ```powershell
-docker compose port postgres 5432
+docker compose --env-file backend/.env port postgres 5432
 ```
 
 The expected normal mapping is:
@@ -69,16 +69,7 @@ The expected normal mapping is:
 localhost:5433 -> postgres container:5432
 ```
 
-**Important: database password and Docker.** The `docker-compose.yml` reads its own `.env` from the repository root, not from `backend/.env`. If there is no `.env` in the repository root it falls back to `your_secure_password`. This means:
-
-- If you kept the default `DATABASE_PASSWORD=your_secure_password` in `backend/.env`, everything matches automatically.
-- If you changed `DATABASE_PASSWORD` in `backend/.env`, you must also pass the same password to Docker. The simplest way is to create a one-line `.env` in the repository root:
-
-```env
-DATABASE_PASSWORD=<same-value-as-backend/.env>
-```
-
-If the passwords do not match you will see `FATAL: password authentication failed for user "postgres"` when the backend tries to connect.
+**Important: one environment file.** Always pass `--env-file backend/.env` to Docker Compose. This keeps Compose and the backend CLI on the same credentials. Do not create a second root `.env` just for the database. If an old Docker volume was initialized with a different password, change the local `.env` back to that password or explicitly recreate the local volume only after backing up any data you need.
 
 ---
 
@@ -175,7 +166,7 @@ The development seed creates fake accounts and connected domain records such as:
 - Google-only student
 - dual-method student
 - companies
-- approved/pending/rejected QC PESO personnel
+- active QC PESO personnel test accounts
 - opportunities
 - applications
 - referrals

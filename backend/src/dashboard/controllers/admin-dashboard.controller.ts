@@ -115,7 +115,7 @@ export class AdminDashboardController {
     return this.adminService.getPesoPersonnelDetails(userAccountId);
   }
 
-  // I3. PATCH PESO account details / verification
+  // I3. PATCH PESO account details
   @Patch('peso-personnel/:userAccountId')
   updatePesoPersonnelAccount(
     @Param('userAccountId', ParseIntPipe) userAccountId: number,

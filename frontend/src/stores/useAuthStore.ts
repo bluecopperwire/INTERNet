@@ -5,7 +5,6 @@ import type {
   AuthState,
   LoginRequest,
   StudentRegisterRequest,
-  PesoRegisterRequest,
 } from '../features/authentication/types/auth.types';
 import type { UserRole } from '../types/api';
 
@@ -15,7 +14,6 @@ interface AuthStore extends AuthState {
   bootstrap: () => Promise<void>;
   login: (credentials: LoginRequest, expectedRole?: string) => Promise<UserRole>;
   registerStudent: (payload: StudentRegisterRequest) => Promise<void>;
-  registerPeso: (payload: PesoRegisterRequest) => Promise<string>;
   logout: () => Promise<void>;
   logoutAll: () => Promise<void>;
   setAccessToken: (token: string | null) => void;
@@ -121,21 +119,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     } catch (err: any) {
       const norm = normalizeApiError(err);
       set({ error: norm.message || 'Registration failed' });
-      throw err;
-    }
-  },
-
-  registerPeso: async (payload: PesoRegisterRequest) => {
-    set({ error: null });
-    try {
-      const res = await authService.registerPeso(payload);
-      get().setAccessToken(res.accessToken);
-      const user = await authService.getCurrentUser();
-      set({ user, status: 'authenticated', error: null });
-      return res.verificationStatus;
-    } catch (err: any) {
-      const norm = normalizeApiError(err);
-      set({ error: norm.message || 'PESO registration failed' });
       throw err;
     }
   },

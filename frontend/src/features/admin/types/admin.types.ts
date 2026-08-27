@@ -82,7 +82,6 @@ export interface QCPesoRecord extends BaseRecord {
   department: string
   contactNumber: string
   contactEmail?: string
-  verificationStatus: 'Approved' | 'Pending' | 'Rejected'
 }
 
 export type AdminRecord = StudentRecord | EmployerRecord | QCPesoRecord

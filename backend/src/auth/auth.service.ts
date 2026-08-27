@@ -17,7 +17,6 @@ import {
   AuthenticationSession,
   ExternalAuthenticationIdentity,
   LocalAuthenticationCredential,
-  PesoPersonnel,
   RegistrationOnboarding,
   Student,
   UserAccount,
@@ -25,7 +24,6 @@ import {
 } from '../users/entities/account.entities';
 import {
   GoogleStudentCompletionDto,
-  PesoRegistrationDto,
   SignupDto,
   StudentProfileDto,
 } from './dto/signup.dto';
@@ -191,53 +189,6 @@ export class AuthService {
         }),
       );
       await manager.save(Student, this.studentEntity(manager, account, dto));
-      return this.createSession(manager, account);
-    });
-  }
-
-  async registerPeso(dto: PesoRegistrationDto): Promise<Tokens> {
-    await this.ensureEmailAvailable(dto.email);
-    return this.dataSource.transaction(async (manager) => {
-      const account = await manager.save(
-        UserAccount,
-        manager.create(UserAccount, {
-          email: dto.email.trim().toLowerCase(),
-          userRole: UserRole.PESO_PERSONNEL,
-          accountStatus: AccountStatus.ACTIVE,
-          deletedAt: null,
-          suspendedUntil: null,
-        }),
-      );
-      await manager.save(
-        LocalAuthenticationCredential,
-        manager.create(LocalAuthenticationCredential, {
-          userAccountId: account.userAccountId,
-          passwordHash: await bcrypt.hash(dto.password, 10),
-          passwordChangedAt: new Date(),
-        }),
-      );
-      await manager.save(
-        PesoPersonnel,
-        manager.create(PesoPersonnel, {
-          userAccountId: account.userAccountId,
-          firstName: dto.firstName,
-          middleName: dto.middleName ?? null,
-          lastName: dto.lastName,
-          extensionName: dto.extensionName ?? null,
-          sex: dto.sex,
-          birthDate: dto.birthDate,
-          addressLine: dto.addressLine,
-          addressBarangay: dto.addressBarangay,
-          addressDistrict: dto.addressDistrict,
-          addressCity: dto.addressCity,
-          contactNumber: dto.contactNumber,
-          contactEmail: account.email,
-          employeeId: dto.employeeId,
-          position: dto.position,
-          department: dto.department,
-          photoFilePath: dto.photoFilePath ?? null,
-        }),
-      );
       return this.createSession(manager, account);
     });
   }

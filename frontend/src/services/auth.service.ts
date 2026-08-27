@@ -7,7 +7,6 @@ import type {
 import type {
   LoginRequest,
   StudentRegisterRequest,
-  PesoRegisterRequest,
   GoogleStudentCompletionRequest,
   ChangePasswordRequest,
 } from '../features/authentication/types/auth.types';
@@ -25,16 +24,6 @@ export const authService = {
     payload: StudentRegisterRequest,
   ): Promise<AuthTokenResponse> {
     const response = await api.post<AuthTokenResponse>('/auth/signup', payload);
-    return response.data;
-  },
-
-  async registerPeso(
-    payload: PesoRegisterRequest,
-  ): Promise<{ accessToken: string; verificationStatus: string }> {
-    const response = await api.post<{
-      accessToken: string;
-      verificationStatus: string;
-    }>('/auth/register/peso', payload);
     return response.data;
   },
 

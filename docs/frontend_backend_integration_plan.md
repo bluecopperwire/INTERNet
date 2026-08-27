@@ -3,8 +3,7 @@
 > [!NOTE]
 > **Historical Plan Notice**:
 > This document is a historical integration plan created during early development.
-> For current database architecture and migration procedures, refer to [database-migration-guide.md](file:///d:/files/Online%20Classes/College/3rd%20Year/Summer/INTERNet/backend/docs/database-migration-guide.md).
-> For current backend endpoints, see [auth.md](file:///d:/files/Online%20Classes/College/3rd%20Year/Summer/INTERNet/backend/docs/auth.md), [employer-api.md](file:///d:/files/Online%20Classes/College/3rd%20Year/Summer/INTERNet/backend/docs/employer-api.md), [admin-api.md](file:///d:/files/Online%20Classes/College/3rd%20Year/Summer/INTERNet/backend/docs/admin-api.md), and [dashboard.md](file:///d:/files/Online%20Classes/College/3rd%20Year/Summer/INTERNet/backend/docs/dashboard.md).
+> Do not implement the retired 503 or PESO-verification guidance below. For current database architecture, use [the migration guide](../backend/docs/database-migration-guide.md). For current endpoints, use [authentication](../backend/docs/auth.md), [Employer](../backend/docs/employer-api.md), [Admin](../backend/docs/admin-api.md), and [Dashboard](../backend/docs/dashboard.md) documentation.
 
 > Repository-specific implementation plan for Antigravity. This plan was derived from the current controllers, DTOs, services, frontend routes, feature services, and `Project_Memory.md`, not from the mock data alone.
 

@@ -114,11 +114,13 @@ export interface EmployerInternshipDetails {
 export interface InternshipAssignment {
   id: string
   applicantId: string
+  referralId: number
+  internshipAssignmentId: number | null
   studentName: string
   company: string
   jobTitle: string
   acceptanceDate: string
-  studentResponse: 'Pending Response' | 'Accepted' | 'Declined'
+  studentResponse: 'Pending Response' | 'Accepted' | 'Declined' | 'Unknown'
   workingDays: string
   requiredHours: number
   startDate: string

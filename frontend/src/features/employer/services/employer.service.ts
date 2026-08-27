@@ -15,6 +15,7 @@ import type {
   CreateOpportunityRequest,
   UpdateOpportunityRequest,
   WorkArrangement,
+  EmployerAssignmentCandidateDto,
 } from '../../../types/api';
 
 function mapWorkArrangement(arrangement?: string): WorkArrangement {
@@ -51,19 +52,49 @@ export function formatOpportunityDeadline(applicationDeadline: string): string {
   }).format(new Date(year, month - 1, day));
 }
 
-function mapStudentResponse(
-  response?: string | null,
-): 'Pending Response' | 'Accepted' | 'Declined' {
+export function mapStudentResponse(
+  response: unknown,
+): 'Pending Response' | 'Accepted' | 'Declined' | 'Unknown' {
+  if (response === 'pending') return 'Pending Response';
   if (response === 'accepted') return 'Accepted';
   if (response === 'declined') return 'Declined';
-  return 'Pending Response';
+  return 'Unknown';
 }
 
 export function canWithdrawCandidate(candidate: {
-  studentResponse?: 'Pending Response' | 'Accepted' | 'Declined';
+  studentResponse?: 'Pending Response' | 'Accepted' | 'Declined' | 'Unknown';
+  internshipAssignmentId?: number | null;
   isWithdrawing?: boolean;
 }): boolean {
-  return candidate.studentResponse === 'Pending Response' && !candidate.isWithdrawing;
+  return candidate.studentResponse === 'Pending Response'
+    && candidate.internshipAssignmentId === null
+    && !candidate.isWithdrawing;
+}
+
+function formatAcceptanceDate(value: string | null): string {
+  if (!value) return 'Not recorded';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString();
+}
+
+export function mapAssignmentCandidate(c: EmployerAssignmentCandidateDto): InternshipAssignment {
+  return {
+    id: String(c.referralId),
+    applicantId: String(c.applicationId),
+    referralId: c.referralId,
+    internshipAssignmentId: c.internshipAssignmentId,
+    studentName: c.studentFullName,
+    company: c.companyName,
+    jobTitle: c.jobTitle,
+    acceptanceDate: formatAcceptanceDate(c.acceptanceDate),
+    studentResponse: mapStudentResponse(c.studentResponse),
+    workingDays: 'Weekdays',
+    requiredHours: 200,
+    startDate: new Date().toLocaleDateString(),
+    expectedEndDate: new Date().toLocaleDateString(),
+    shiftStartTime: '08:00 AM',
+    shiftEndTime: '05:00 PM',
+  };
 }
 
 export const employerService = {
@@ -223,21 +254,7 @@ export const employerService = {
 
   async getInternshipAssignments(): Promise<InternshipAssignment[]> {
     const res = await employerApiService.getAssignmentCandidates();
-    return res.data.map((c: any) => ({
-      id: String(c.referralId || c.applicationId),
-      applicantId: String(c.referralId || c.applicationId),
-      studentName: c.studentFullName,
-      company: 'Company',
-      jobTitle: c.opportunityTitle,
-      acceptanceDate: new Date(c.submittedAt || Date.now()).toLocaleDateString(),
-      studentResponse: mapStudentResponse(c.studentResponse),
-      workingDays: 'Weekdays',
-      requiredHours: 200,
-      startDate: new Date().toLocaleDateString(),
-      expectedEndDate: new Date().toLocaleDateString(),
-      shiftStartTime: '08:00 AM',
-      shiftEndTime: '05:00 PM',
-    }));
+    return res.data.map(mapAssignmentCandidate);
   },
 
   async getInternshipAssignmentById(id: string): Promise<InternshipAssignment | undefined> {
