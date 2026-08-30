@@ -4,10 +4,11 @@ import { IsNull, Repository } from 'typeorm';
 import {
   AuthenticationProvider,
   AuthenticationSession,
+  Company,
   ExternalAuthenticationIdentity,
   LocalAuthenticationCredential,
-  PersonnelVerificationStatus,
   PesoPersonnel,
+  Student,
   UserAccount,
   UserRole,
 } from './entities/account.entities';
@@ -25,16 +26,36 @@ export class UsersService {
     private readonly sessions: Repository<AuthenticationSession>,
     @InjectRepository(PesoPersonnel)
     private readonly personnel: Repository<PesoPersonnel>,
+    @InjectRepository(Student)
+    private readonly students: Repository<Student>,
+    @InjectRepository(Company)
+    private readonly companies: Repository<Company>,
   ) {}
 
-  findByEmail(email: string): Promise<UserAccount | null> {
+  async findByEmail(email: string): Promise<UserAccount | null> {
+    await this.accounts.query(
+      `UPDATE public.user_account
+       SET account_status = 'active', suspended_until = NULL
+       WHERE lower(email) = lower($1)
+         AND account_status = 'suspended'
+         AND suspended_until <= CURRENT_TIMESTAMP`,
+      [email.trim()],
+    );
     return this.accounts
       .createQueryBuilder('account')
       .where('lower(account.email) = lower(:email)', { email: email.trim() })
       .getOne();
   }
 
-  findById(userAccountId: number): Promise<UserAccount | null> {
+  async findById(userAccountId: number): Promise<UserAccount | null> {
+    await this.accounts.query(
+      `UPDATE public.user_account
+       SET account_status = 'active', suspended_until = NULL
+       WHERE user_account_id = $1
+         AND account_status = 'suspended'
+         AND suspended_until <= CURRENT_TIMESTAMP`,
+      [userAccountId],
+    );
     return this.accounts.findOne({ where: { userAccountId } });
   }
 
@@ -80,17 +101,33 @@ export class UsersService {
 
   async getCurrentAccount(userAccountId: number): Promise<{
     account: UserAccount;
-    verificationStatus: PersonnelVerificationStatus | null;
+    studentId: number | null;
+    companyId: number | null;
+    pesoPersonnelId: number | null;
   } | null> {
     const account = await this.findById(userAccountId);
     if (!account) return null;
-    let verificationStatus: PersonnelVerificationStatus | null = null;
+    let studentId: number | null = null;
+    let companyId: number | null = null;
+    let pesoPersonnelId: number | null = null;
+
     if (account.userRole === UserRole.PESO_PERSONNEL) {
-      verificationStatus =
-        (await this.personnel.findOne({ where: { userAccountId } }))
-          ?.verificationStatus ?? null;
+      const peso = await this.personnel.findOne({ where: { userAccountId } });
+      pesoPersonnelId = peso?.pesoPersonnelId ?? null;
+    } else if (account.userRole === UserRole.STUDENT) {
+      const student = await this.students.findOne({ where: { userAccountId } });
+      studentId = student?.studentId ?? null;
+    } else if (account.userRole === UserRole.COMPANY) {
+      const comp = await this.companies.findOne({ where: { userAccountId } });
+      companyId = comp?.companyId ?? null;
     }
-    return { account, verificationStatus };
+
+    return {
+      account,
+      studentId,
+      companyId,
+      pesoPersonnelId,
+    };
   }
 
   async revokeSession(tokenFamilyId: string): Promise<void> {

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import { NotFoundException, ServiceUnavailableException } from '@nestjs/common';
-import type { DataSource } from 'typeorm';
+import type { DataSource, QueryRunner } from 'typeorm';
+import { WorkArrangement } from '../dto';
 import { EmployerOpportunityService } from './employer-opportunity.service';
 import { EmployerReferralService } from './employer-referral.service';
 import { EmployerInternshipService } from './employer-internship.service';
@@ -60,77 +61,174 @@ describe('employer scoping and DB migration blockers', () => {
     );
   });
 
-  it('returns DB-EMP-001 for opportunity create', async () => {
-    const service = new EmployerOpportunityService(
-      { query: jest.fn() } as unknown as DataSource,
-      resolver(),
-    );
-    await expect(
-      service.create(310, {
-        title: 'Intern',
-        department: 'IT',
-        workArrangement: 'onsite' as const,
-        minimumRequiredHours: 400,
-        offeredSlots: 1,
-        allowance: 'PHP 500 per day',
-        description: 'Role',
-        qualification: null,
-        applicationDeadline: '2099-01-01',
-      }),
-    ).rejects.toMatchObject({
-      response: expect.objectContaining({ dependency: 'DB-EMP-001' }),
+  it('creates an opportunity successfully without 503 blocker', async () => {
+    const query = jest.fn(async (sql: string) => {
+      if (sql.includes('set_config')) return [];
+      if (sql.includes('INSERT INTO public.opportunity'))
+        return [{ opportunity_id: 101 }];
+      if (sql.includes('SELECT o.*'))
+        return [
+          {
+            opportunity_id: 101,
+            company_id: 31,
+            title: 'Intern',
+            department: 'IT',
+            work_arrangement: 'onsite',
+            minimum_required_hours: 400,
+            offered_slots: 1,
+            allowance: 'PHP 500 per day',
+            description: 'Role',
+            qualification: null,
+            application_deadline: '2099-01-01',
+            opportunity_status: 'open',
+            deadline_date: '2099-01-01',
+            total_applicant_count: '0',
+          },
+        ];
+      return [];
     });
-  });
-
-  it('returns DB-EMP-001 for a scoped opportunity update', async () => {
+    const runner = {
+      isTransactionActive: true,
+      query,
+      connect: jest.fn(),
+      startTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      rollbackTransaction: jest.fn(),
+      release: jest.fn(),
+    } as unknown as QueryRunner;
     const dataSource = {
-      query: jest.fn().mockResolvedValue([
-        {
-          opportunity_id: 1,
-          company_id: 31,
-          deadline_date: '2099-01-01',
-          total_applicant_count: 0,
-        },
-      ]),
+      query,
+      createQueryRunner: jest.fn(() => runner),
     } as unknown as DataSource;
+
     const service = new EmployerOpportunityService(dataSource, resolver());
-    await expect(
-      service.update(310, 1, { title: 'Updated' }),
-    ).rejects.toMatchObject({
-      response: expect.objectContaining({ dependency: 'DB-EMP-001' }),
+    const result = await service.create(310, {
+      title: 'Intern',
+      department: 'IT',
+      workArrangement: WorkArrangement.ONSITE,
+      minimumRequiredHours: 400,
+      offeredSlots: 1,
+      allowance: 'PHP 500 per day',
+      description: 'Role',
+      qualification: null,
+      applicationDeadline: '2099-01-01',
     });
+    expect(result).toBeDefined();
+    expect(result.opportunityId).toBe(101);
   });
 
-  it('returns DB-EMP-002 for scoped accepted-referral withdrawal', async () => {
+  it('updates an opportunity successfully without 503 blocker', async () => {
+    const query = jest.fn(async (sql: string) => {
+      if (sql.includes('set_config')) return [];
+      if (sql.includes('UPDATE public.opportunity')) return [];
+      if (sql.includes('SELECT o.*'))
+        return [
+          {
+            opportunity_id: 1,
+            company_id: 31,
+            title: 'Updated',
+            department: 'IT',
+            work_arrangement: 'onsite',
+            minimum_required_hours: 400,
+            offered_slots: 1,
+            allowance: 'PHP 500 per day',
+            description: 'Role',
+            qualification: null,
+            application_deadline: '2099-01-01',
+            opportunity_status: 'open',
+            deadline_date: '2099-01-01',
+            total_applicant_count: '0',
+          },
+        ];
+      return [];
+    });
+    const runner = {
+      isTransactionActive: true,
+      query,
+      connect: jest.fn(),
+      startTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      rollbackTransaction: jest.fn(),
+      release: jest.fn(),
+    } as unknown as QueryRunner;
     const dataSource = {
-      query: jest
-        .fn()
-        .mockResolvedValue([{ referral_id: 2, company_response: 'accepted' }]),
+      query,
+      createQueryRunner: jest.fn(() => runner),
     } as unknown as DataSource;
+
+    const service = new EmployerOpportunityService(dataSource, resolver());
+    const result = await service.update(310, 1, { title: 'Updated' });
+    expect(result).toBeDefined();
+    expect(result.title).toBe('Updated');
+  });
+
+  it('withdraws accepted referral without 503 blocker', async () => {
+    const query = jest.fn(async (sql: string) => {
+      if (sql.includes('set_config')) return [];
+      if (sql.includes('SELECT r.referral_id'))
+        return [
+          {
+            referral_id: 2,
+            company_id: 31,
+            company_response: 'accepted',
+            student_response: 'pending',
+            referral_status: 'under_review',
+          },
+        ];
+      if (sql.includes('UPDATE public.referral')) return [];
+      return [];
+    });
+    const runner = {
+      isTransactionActive: true,
+      query,
+      connect: jest.fn(),
+      startTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      rollbackTransaction: jest.fn(),
+      release: jest.fn(),
+    } as unknown as QueryRunner;
+    const dataSource = {
+      query,
+      createQueryRunner: jest.fn(() => runner),
+    } as unknown as DataSource;
+
     const service = new EmployerReferralService(dataSource, resolver());
-    await expect(service.withdrawAcceptance(310, 2)).rejects.toMatchObject({
-      response: expect.objectContaining({ dependency: 'DB-EMP-002' }),
-    });
+    jest.spyOn(service, 'getById').mockResolvedValue({ referralId: 2 } as any);
+    const result = await service.withdrawAcceptance(310, 2);
+    expect(result).toBeDefined();
   });
 
-  it('returns DB-EMP-003 for scoped terminal internship deletion', async () => {
+  it('soft deletes terminal internship without 503 blocker', async () => {
+    const query = jest.fn(async (sql: string) => {
+      if (sql.includes('set_config')) return [];
+      if (sql.includes('SELECT ia.*'))
+        return [
+          {
+            internship_assignment_id: 3,
+            company_id: 31,
+            assignment_status: 'completed',
+          },
+        ];
+      if (sql.includes('UPDATE public.internship_assignment')) return [];
+      return [];
+    });
+    const runner = {
+      isTransactionActive: true,
+      query,
+      connect: jest.fn(),
+      startTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      rollbackTransaction: jest.fn(),
+      release: jest.fn(),
+    } as unknown as QueryRunner;
     const dataSource = {
-      query: jest
-        .fn()
-        .mockResolvedValue([
-          { internship_assignment_id: 3, assignment_status: 'completed' },
-        ]),
+      query,
+      createQueryRunner: jest.fn(() => runner),
     } as unknown as DataSource;
-    const service = new EmployerInternshipService(dataSource, resolver());
-    await expect(service.softDelete(310, 3)).rejects.toMatchObject({
-      response: expect.objectContaining({ dependency: 'DB-EMP-003' }),
-    });
-  });
 
-  it('uses an explicit 503 exception for all temporary blockers', () => {
-    const error = new ServiceUnavailableException({
-      code: 'DB_MIGRATION_PENDING',
-    });
-    expect(error.getStatus()).toBe(503);
+    const service = new EmployerInternshipService(dataSource, resolver());
+    const result = await service.softDelete(310, 3);
+    expect(result).toEqual({ deleted: true, internshipAssignmentId: 3 });
   });
 });
+

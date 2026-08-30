@@ -75,7 +75,7 @@ export class AttendanceQueryService {
     const limit = Math.max(1, Math.min(100, Number(paginationDto?.limit) || 20));
     const offset = (page - 1) * limit;
 
-    const whereClauses: string[] = [];
+    const whereClauses: string[] = ['ia.deleted_at IS NULL'];
     const params: any[] = [];
     let paramIndex = 1;
 
@@ -181,6 +181,7 @@ export class AttendanceQueryService {
       JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
       LEFT JOIN public.attendance_record ar ON ar.internship_assignment_id = ia.internship_assignment_id
       WHERE ia.internship_assignment_id = $1
+        AND ia.deleted_at IS NULL
       GROUP BY ia.internship_assignment_id, s.first_name, s.middle_name, s.last_name, s.extension_name, o.title, o.department, o.company_id, ia.start_date, ia.expected_end_date, ia.required_hours
     `;
 

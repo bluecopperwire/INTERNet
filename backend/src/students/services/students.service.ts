@@ -327,21 +327,115 @@ export class StudentsService {
       throw new NotFoundException('Student not found');
     }
 
-    // Verify student has uploaded a resume
-    const [resumeSubmission] = await this.dataSource.query(
+    // Validate student personal information completeness
+    if (
+      !student.firstName ||
+      !student.lastName ||
+      !student.sex ||
+      !student.birthDate ||
+      !student.contactNumber ||
+      !student.contactEmail ||
+      !student.addressLine ||
+      !student.addressBarangay ||
+      !student.addressCity
+    ) {
+      throw new BadRequestException(
+        'Incomplete personal information. Please complete your personal profile before applying.',
+      );
+    }
+
+    // Validate student academic information completeness
+    const [academic] = await this.dataSource.query(
       `
-        SELECT srs.student_requirement_submission_id
-        FROM public.student_requirement_submission srs
-        JOIN public.requirement_type rt ON rt.requirement_type_id = srs.requirement_type_id
-        WHERE srs.student_id = $1
-          AND rt.requirement_type_name = 'curriculum_vitae_resume'
+        SELECT school_name, year_level, strand_program
+        FROM public.student_academic_information
+        WHERE student_id = $1
       `,
       [studentId],
     );
 
-    if (!resumeSubmission) {
+    if (!academic || !academic.school_name || !academic.year_level || !academic.strand_program) {
       throw new BadRequestException(
-        'Resume submission (curriculum vitae/resume) is required before applying for an internship opportunity',
+        'Incomplete academic information. Please provide your school, year level, and program before applying.',
+      );
+    }
+
+    // Validate student internship preference completeness
+    const [preference] = await this.dataSource.query(
+      `
+        SELECT required_hours, available_days, start_date, preferred_company_type
+        FROM public.internship_preference
+        WHERE student_id = $1
+      `,
+      [studentId],
+    );
+
+    if (
+      !preference ||
+      !preference.required_hours ||
+      !preference.available_days ||
+      !preference.start_date ||
+      !preference.preferred_company_type
+    ) {
+      throw new BadRequestException(
+        'Incomplete internship preferences. Please configure your required hours, schedule, and preferences before applying.',
+      );
+    }
+
+    // Validate student preferred industry
+    const preferredIndustries = await this.dataSource.query(
+      `
+        SELECT industry_id
+        FROM public.student_preferred_industry
+        WHERE student_id = $1
+      `,
+      [studentId],
+    );
+
+    if (!preferredIndustries.length) {
+      throw new BadRequestException(
+        'Please select at least one preferred field of internship before applying.',
+      );
+    }
+
+    // Verify student has uploaded all 4 pre-referral requirements
+    const requiredTypes = [
+      'curriculum_vitae_resume',
+      'proof_of_residency',
+      'latest_credentials',
+      'letter_of_intent',
+    ];
+
+    const submissions = await this.dataSource.query(
+      `
+        SELECT rt.requirement_type_name
+        FROM public.student_requirement_submission srs
+        JOIN public.requirement_type rt ON rt.requirement_type_id = srs.requirement_type_id
+        WHERE srs.student_id = $1
+      `,
+      [studentId],
+    );
+
+    const submittedNames = submissions.map((s: any) =>
+      this.normalizeRequirementType(s.requirement_type_name),
+    );
+
+    const missingRequirements = requiredTypes.filter(
+      (type) => !submittedNames.includes(type),
+    );
+
+    if (missingRequirements.length > 0) {
+      const typeLabels: Record<string, string> = {
+        curriculum_vitae_resume: 'Curriculum Vitae / Resume',
+        proof_of_residency: 'Proof of Residency',
+        latest_credentials: 'Latest Academic Credentials',
+        letter_of_intent: 'Letter of Intent / Endorsement',
+      };
+      const missingLabels = missingRequirements
+        .map((t) => typeLabels[t] || t)
+        .join(', ');
+      throw new BadRequestException(
+        `All pre-referral requirements must be submitted before applying. Missing: ${missingLabels}`,
       );
     }
 
@@ -834,6 +928,47 @@ export class StudentsService {
     };
   }
 
+  async deleteStudentRequirement(studentId: number, requirementType: string) {
+    const student = await this.studentRepo.findOne({ where: { studentId } });
+    if (!student) throw new NotFoundException('Student not found');
+
+    const normalizedType = this.normalizeRequirementType(requirementType);
+
+    const [submission] = await this.dataSource.query(
+      `
+        SELECT srs.student_requirement_submission_id, srs.requirement_file_path
+        FROM public.student_requirement_submission srs
+        JOIN public.requirement_type rt ON rt.requirement_type_id = srs.requirement_type_id
+        WHERE srs.student_id = $1 AND lower(rt.requirement_type_name) = lower($2)
+      `,
+      [studentId, normalizedType],
+    );
+
+    if (!submission) {
+      throw new NotFoundException('Requirement submission not found');
+    }
+
+    const filePath = String(submission.requirement_file_path ?? '');
+    if (filePath.startsWith('/uploads/requirements/')) {
+      const filename = filePath.replace('/uploads/requirements/', '');
+      const fullPath = resolve(process.cwd(), 'uploads', 'requirements', filename);
+      if (existsSync(fullPath)) {
+        try {
+          unlinkSync(fullPath);
+        } catch {
+          // ignore error if file missing
+        }
+      }
+    }
+
+    await this.dataSource.query(
+      `DELETE FROM public.student_requirement_submission WHERE student_requirement_submission_id = $1`,
+      [submission.student_requirement_submission_id],
+    );
+
+    return { success: true, message: 'Requirement deleted successfully' };
+  }
+
   // Records the assignment clock-in for the current day and validates the assignment ownership.
   async timeInDtr(
     studentId: number,
@@ -930,6 +1065,160 @@ export class StudentsService {
     return updated;
   }
 
+  async getStudentAttendance(
+    studentId: number,
+    query?: { startDate?: string; endDate?: string },
+  ) {
+    // 1. Fetch current or latest assignment for the student
+    const assignmentRows = await this.dataSource.query(
+      `
+        SELECT 
+          ia.internship_assignment_id,
+          c.company_id,
+          c.company_name,
+          o.opportunity_id,
+          o.title AS job_title,
+          ia.working_days,
+          ia.required_hours,
+          ia.start_date,
+          ia.expected_end_date,
+          ia.end_date,
+          ia.start_shift,
+          ia.end_shift,
+          ia.assignment_status,
+          COALESCE(ats.total_rendered_hours, 0::numeric) AS total_rendered_hours
+        FROM public.internship_assignment ia
+        JOIN public.referral r ON r.referral_id = ia.referral_id
+        JOIN public.application a ON a.application_id = r.application_id
+        JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
+        JOIN public.company c ON c.company_id = o.company_id
+        LEFT JOIN public.vw_attendance_summary ats ON ats.internship_assignment_id = ia.internship_assignment_id
+        WHERE a.student_id = $1
+          AND ia.deleted_at IS NULL
+        ORDER BY 
+          CASE WHEN ia.assignment_status = 'ongoing' THEN 1 
+               WHEN ia.assignment_status = 'pending' THEN 2 
+               ELSE 3 END,
+          ia.created_at DESC
+        LIMIT 1
+      `,
+      [studentId],
+    );
+
+    if (!assignmentRows || assignmentRows.length === 0) {
+      return {
+        assignment: null,
+        today: null,
+        records: [],
+        summary: {
+          daysPresent: 0,
+          absences: 0,
+          lateArrivals: 0,
+          attendanceRate: 0,
+          totalRenderedHours: 0,
+        },
+      };
+    }
+
+    const rawAssignment = assignmentRows[0];
+    const totalRendered = Number(rawAssignment.total_rendered_hours || 0);
+    const requiredHours = Number(rawAssignment.required_hours || 0);
+    const remainingHours = Math.max(0, requiredHours - totalRendered);
+
+    const assignment = {
+      internshipAssignmentId: Number(rawAssignment.internship_assignment_id),
+      companyId: Number(rawAssignment.company_id),
+      companyName: rawAssignment.company_name,
+      opportunityId: Number(rawAssignment.opportunity_id),
+      jobTitle: rawAssignment.job_title,
+      workingDays: rawAssignment.working_days,
+      requiredHours,
+      startDate: rawAssignment.start_date instanceof Date ? rawAssignment.start_date.toISOString().split('T')[0] : String(rawAssignment.start_date),
+      expectedEndDate: rawAssignment.expected_end_date ? (rawAssignment.expected_end_date instanceof Date ? rawAssignment.expected_end_date.toISOString().split('T')[0] : String(rawAssignment.expected_end_date)) : null,
+      endDate: rawAssignment.end_date ? (rawAssignment.end_date instanceof Date ? rawAssignment.end_date.toISOString().split('T')[0] : String(rawAssignment.end_date)) : null,
+      startShift: rawAssignment.start_shift,
+      endShift: rawAssignment.end_shift,
+      assignmentStatus: rawAssignment.assignment_status,
+      totalRenderedHours: totalRendered,
+      remainingHours,
+    };
+
+    // 2. Fetch today's record
+    const todayRows = await this.dataSource.query(
+      `
+        SELECT *
+        FROM public.attendance_record
+        WHERE internship_assignment_id = $1 AND attendance_date = CURRENT_DATE
+      `,
+      [assignment.internshipAssignmentId],
+    );
+    const today = todayRows.length > 0 ? todayRows[0] : null;
+
+    // 3. Fetch records within query range or default
+    const whereConditions = ['internship_assignment_id = $1'];
+    const queryParams: any[] = [assignment.internshipAssignmentId];
+    let pIdx = 2;
+    if (query?.startDate) {
+      whereConditions.push(`attendance_date >= $${pIdx}`);
+      queryParams.push(query.startDate);
+      pIdx++;
+    }
+    if (query?.endDate) {
+      whereConditions.push(`attendance_date <= $${pIdx}`);
+      queryParams.push(query.endDate);
+      pIdx++;
+    }
+
+    const recordsRows = await this.dataSource.query(
+      `
+        SELECT *
+        FROM public.attendance_record
+        WHERE ${whereConditions.join(' AND ')}
+        ORDER BY attendance_date DESC
+      `,
+      queryParams,
+    );
+
+    const records = recordsRows.map((row: any) => ({
+      attendanceRecordId: Number(row.attendance_record_id),
+      date: row.attendance_date instanceof Date ? row.attendance_date.toISOString().split('T')[0] : String(row.attendance_date),
+      status: row.time_in_status === 'late' ? 'late' : 'present',
+      timeIn: row.time_in,
+      timeOut: row.time_out,
+      renderedHours: Number(row.hours_rendered || 0),
+      renderedHoursStatus: row.rendered_hours_status,
+    }));
+
+    // 4. Fetch summary from view
+    const summaryRows = await this.dataSource.query(
+      `
+        SELECT *
+        FROM public.vw_attendance_summary
+        WHERE internship_assignment_id = $1
+      `,
+      [assignment.internshipAssignmentId],
+    );
+
+    const summaryRow = summaryRows[0] || {};
+    const daysPresent = Number(summaryRow.attendance_record_count || 0);
+    const lateArrivals = Number(summaryRow.late_count || 0);
+    const absences = 0; // Schema does not record absent rows directly
+    const attendanceRate = daysPresent > 0 ? Math.round(((daysPresent - lateArrivals) / daysPresent) * 100) : 100;
+
+    return {
+      assignment,
+      today,
+      records,
+      summary: {
+        daysPresent,
+        absences,
+        lateArrivals,
+        attendanceRate,
+        totalRenderedHours: Number(summaryRow.total_rendered_hours || totalRendered),
+      },
+    };
+  }
+
   private normalizeRequirementType(value: string): string {
     const map: Record<string, string> = {
       'proof of residency': 'proof_of_residency',
@@ -961,6 +1250,7 @@ export class StudentsService {
         JOIN public.referral r ON r.referral_id = ia.referral_id
         JOIN public.application a ON a.application_id = r.application_id
         WHERE ia.internship_assignment_id = $1 AND a.student_id = $2
+          AND ia.deleted_at IS NULL
       `,
       [assignmentId, studentId],
     );

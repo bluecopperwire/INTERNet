@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/require-await, @typescript-eslint/unbound-method */
 import { ConflictException } from '@nestjs/common';
 import type { DataSource, QueryRunner } from 'typeorm';
+import { InterviewMode } from '../dto';
 import { EmployerReferralService } from './employer-referral.service';
 import type { EmployerCompanyResolver } from './company-resolver.service';
 
@@ -40,7 +41,7 @@ describe('EmployerReferralService workflows', () => {
         company_response: companyResponse,
       });
       const service = new EmployerReferralService(dataSource, resolver);
-      jest.spyOn(service, 'getById').mockResolvedValue({ accepted: true });
+      jest.spyOn(service, 'getById').mockResolvedValue({ accepted: true } as any);
 
       await expect(service.accept(70, 4)).resolves.toEqual({ accepted: true });
 
@@ -63,12 +64,12 @@ describe('EmployerReferralService workflows', () => {
       company_response: 'pending',
     });
     const service = new EmployerReferralService(dataSource, resolver);
-    jest.spyOn(service, 'getById').mockResolvedValue({ interview: {} });
+    jest.spyOn(service, 'getById').mockResolvedValue({ interview: {} } as any);
 
     await service.scheduleInterview(70, 4, {
       interviewDate: '2099-01-02',
       interviewTime: '09:30',
-      interviewMode: 'online' as const,
+      interviewMode: InterviewMode.ONLINE,
       onlineMeetingUrl: 'https://example.com/meeting',
     });
 
@@ -97,7 +98,7 @@ describe('EmployerReferralService workflows', () => {
       company_response: 'pending',
     });
     const service = new EmployerReferralService(dataSource, resolver);
-    jest.spyOn(service, 'getById').mockResolvedValue({ rejected: true });
+    jest.spyOn(service, 'getById').mockResolvedValue({ rejected: true } as any);
 
     await service.reject(70, 4, { remark: 'Not selected' });
 
@@ -128,7 +129,7 @@ describe('EmployerReferralService workflows', () => {
       service.scheduleInterview(70, 4, {
         interviewDate: '2099-01-02',
         interviewTime: '09:30',
-        interviewMode: 'physical' as const,
+        interviewMode: InterviewMode.PHYSICAL,
         physicalLocation: 'Office',
       }),
     ).rejects.toBeInstanceOf(ConflictException);

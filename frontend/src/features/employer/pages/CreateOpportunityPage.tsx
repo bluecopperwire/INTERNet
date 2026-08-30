@@ -42,18 +42,29 @@ export function CreateOpportunityPage() {
 
   const handleSave = async () => {
     // Basic validation
-    if (!formData.title || !formData.department || !formData.workArrangement || !formData.slots || !formData.duration || !formData.jobDescription) {
+    if (
+      !formData.title ||
+      !formData.department ||
+      !formData.workArrangement ||
+      !formData.slots ||
+      !formData.duration ||
+      !formData.jobDescription ||
+      (!isEditMode && !formData.applicationDeadline)
+    ) {
       setShowValidationModal(true)
       return
     }
 
     setIsSaving(true)
     try {
-      await employerService.saveOpportunity(formData as Opportunity)
+      await employerService.saveOpportunity(formData)
       navigate('/employer/opportunities')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save opportunity:', error)
-      alert('Failed to save opportunity.')
+      const message = error?.validationMessages?.length
+        ? error.validationMessages.join('\n')
+        : error?.message || 'Failed to save opportunity.'
+      alert(message)
     } finally {
       setIsSaving(false)
     }

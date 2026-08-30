@@ -2,6 +2,7 @@ export type AccountStatus = 'Active' | 'Inactive' | 'Suspended' | 'Deactivated' 
 
 export interface BaseRecord {
   id: string
+  userAccountId?: string
   fullName: string
   email: string
   status: AccountStatus
@@ -81,7 +82,6 @@ export interface QCPesoRecord extends BaseRecord {
   department: string
   contactNumber: string
   contactEmail?: string
-  verificationStatus: 'Approved' | 'Pending' | 'Rejected'
 }
 
 export type AdminRecord = StudentRecord | EmployerRecord | QCPesoRecord

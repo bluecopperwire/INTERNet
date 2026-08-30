@@ -11,18 +11,18 @@ Unauthenticated requests return `401`; authenticated non-Admin requests return `
 |---|---|---|---|
 | GET | `/admin/students` | Implemented | — |
 | GET | `/admin/students/:studentId` | Implemented | — |
-| PATCH | `/admin/students/:studentId` | Implemented | `DB-ADMIN-004` enforced at API level |
+| PATCH | `/admin/students/:studentId` | Implemented | — |
 | GET | `/admin/employers` | Implemented | — |
 | GET | `/admin/employers/:companyId` | Implemented | — |
-| POST | `/admin/employers` | Temporary DB Stub | `DB-ADMIN-002` |
+| POST | `/admin/employers` | Implemented | — |
 | PATCH | `/admin/employers/:companyId` | Implemented | — |
 | GET | `/admin/qc-peso` | Implemented | — |
 | GET | `/admin/qc-peso/:pesoPersonnelId` | Implemented | — |
-| POST | `/admin/qc-peso` | Temporary DB Stub | `DB-ADMIN-003` |
+| POST | `/admin/qc-peso` | Implemented | — |
 | PATCH | `/admin/qc-peso/:pesoPersonnelId` | Implemented | — |
 | PATCH | `/admin/accounts/:userAccountId/status` (`suspended -> active`) | Implemented | — |
 | PATCH | `/admin/accounts/:userAccountId/status` (`active/suspended -> archived`) | Implemented | — |
-| PATCH | `/admin/accounts/:userAccountId/status` (`active -> suspended`) | Temporary DB Stub | `DB-ADMIN-001` |
+| PATCH | `/admin/accounts/:userAccountId/status` (`active -> suspended`) | Implemented | — |
 
 Archived profiles remain readable from list/detail endpoints. An archived account is terminal in this API and its profile cannot be edited. Suspended profiles remain editable. Profile `contactEmail` is separate from immutable `user_account.email` (`accountEmail`).
 
@@ -98,7 +98,7 @@ All properties are optional, but unknown/ownership fields are rejected. Accepted
 }
 ```
 
-Valid year levels are `grade_11`, `grade_12`, and first through fourth year college. `fifth_year_college` is rejected now (`DB-ADMIN-004`) although removal from the database enum is pending. `requiredHours` and industry IDs must be positive. Work schedules are `weekdays`, `weekends`, or `flexible`. Preferred industry IDs must exist and be unique; custom text must follow the industry's `is_custom_text` rule. Updates spanning profile tables are transactional.
+Valid year levels are `grade_11`, `grade_12`, and first through fourth year college (`first_year_college` to `fourth_year_college`). `fifth_year_college` has been removed from the year-level enum. `requiredHours` and industry IDs must be positive. Work schedules are `weekdays`, `weekends`, or `flexible`. Preferred industry IDs must exist and be unique; custom text must follow the industry's `is_custom_text` rule. Updates spanning profile tables are transactional.
 
 Returns the updated detail response. Returns `409` for archived profiles, `404` if missing, and `400` for invalid or forbidden properties including `accountEmail`, IDs, status, and password fields.
 
@@ -116,9 +116,9 @@ Returns account fields; `companyName`, `companyType`, `industryId`, `industryNam
 
 Tables: `user_account`, `company`, `industry`.
 
-### POST `/admin/employers` — Temporary DB Stub (`DB-ADMIN-002`)
+### POST `/admin/employers` — Implemented
 
-Purpose: future transactional creation of `user_account`, `local_authentication_credential`, and `company`. The validated contract is:
+Purpose: Transactional creation of `user_account`, `local_authentication_credential`, and `company`. The validated contract is:
 
 ```json
 {
@@ -144,18 +144,7 @@ Purpose: future transactional creation of `user_account`, `local_authentication_
 }
 ```
 
-Emails/URLs, nonblank required strings, positive numeric size/industry ID, company type, password length, and a nonfuture year are validated before the stub executes. A valid request returns:
-
-```json
-{
-  "statusCode": 503,
-  "code": "DB_MIGRATION_PENDING",
-  "dependency": "DB-ADMIN-002",
-  "message": "Employer account creation is temporarily unavailable pending an approved database migration."
-}
-```
-
-Reason: `company.logo_file_path` is currently required and this contract does not require a logo. No fake path is supplied.
+Creates the employer user account with active status and an initial local password hash, and the company profile record without requiring a logo. Returns `201` with the created employer detail object.
 
 ### PATCH `/admin/employers/:companyId` — Implemented
 
@@ -175,7 +164,7 @@ Tables: `user_account`, `peso_personnel`. Verification state is neither selected
 
 Returns account fields; name components/full name; birth date and sex; four address fields; `contactEmail`, `contactNumber`; `employeeId`, `department`, `position`; and `photoFilePath`. It intentionally omits verification state and employee-ID document data. Archived profiles are returned; missing profiles return `404`.
 
-### POST `/admin/qc-peso` — Temporary DB Stub (`DB-ADMIN-003`)
+### POST `/admin/qc-peso` — Implemented
 
 Validated body:
 
@@ -201,7 +190,7 @@ Validated body:
 }
 ```
 
-A valid request returns `503` with `code: DB_MIGRATION_PENDING` and `dependency: DB-ADMIN-003`. The existing employee-ID-file and verification requirements prevent implementing the approved no-verification creation contract. No fake document or verification values are supplied.
+Transactionally creates the QC PESO user account with active status and password hash, and the personnel profile without verification barriers or employee ID upload requirements. Returns `201` with the created QC PESO detail object.
 
 ### PATCH `/admin/qc-peso/:pesoPersonnelId` — Implemented
 
@@ -221,31 +210,24 @@ Implemented requests:
 { "status": "active" }
 ```
 
-Allows only `suspended -> active`.
+Allows only `suspended -> active`, clearing `suspended_until`.
 
 ```json
 { "status": "archived" }
 ```
 
-Allows `active -> archived` and `suspended -> archived`. Archiving sets `deleted_at` and never physically deletes the profile. Existing database triggers append `user_account_status_history` with the Admin actor and revoke active authentication sessions when archiving. No authentication infrastructure changes were needed.
+Allows `active -> archived` and `suspended -> archived`. Archiving sets `deleted_at` and never physically deletes the profile. Existing database triggers append `user_account_status_history` with the Admin actor and revoke active authentication sessions when archiving.
 
-Timed suspension contract (Temporary DB Stub, `DB-ADMIN-001`):
+Timed suspension request:
 
 ```json
 { "status": "suspended", "suspensionDays": 7 }
 ```
 
-For an active managed account, a valid request returns `503`, `DB_MIGRATION_PENDING`, `DB-ADMIN-001` and performs no database mutation. `suspensionDays` must be a positive integer. `archived -> active`, `archived -> suspended`, same-state requests, and other invalid transitions return `409`.
+Suspends an active managed account, setting `suspended_until = CURRENT_TIMESTAMP + interval 'N days'`. In one transaction, `account_status` becomes `'suspended'`, status history logs the admin actor, and active sessions are revoked. `suspensionDays` must be a positive integer. `archived -> active`, `archived -> suspended`, same-state requests, and other invalid transitions return `409`.
 
 Tables: `user_account`; database triggers use `user_account_status_history` and `authentication_session`.
 
 ## Reference industries
 
 No general-purpose industry reference controller currently exists. Admin DTOs and services validate IDs against the existing `industry` table, but this task did not add a duplicate `/admin` endpoint or modify reference data. A separately approved read-only reference-data endpoint is needed if the frontend cannot obtain industry IDs from another existing flow.
-
-## Database dependencies after approval
-
-- `DB-ADMIN-001`: add approved `user_account.suspended_until`, implement persistence/expiry behavior, replace the timed-suspension stub, and update its tests/docs.
-- `DB-ADMIN-002`: make `company.logo_file_path` nullable, transactionally create account/credential/company with the established password hashing mechanism, and replace stub tests/docs with success/conflict tests.
-- `DB-ADMIN-003`: remove obsolete QC PESO employee-ID-file/verification requirements, transactionally create account/credential/profile, and replace stub tests/docs with success/conflict tests.
-- `DB-ADMIN-004`: remove `fifth_year_college` from the database enum. The Admin DTO already rejects it; retain that regression test and align the shared enum after migration approval.

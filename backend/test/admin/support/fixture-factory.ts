@@ -137,10 +137,10 @@ export class AdminFixtureFactory {
         `INSERT INTO public.peso_personnel
           (user_account_id, first_name, middle_name, last_name, sex, birth_date, address_line,
            address_barangay, address_district, address_city, contact_number, contact_email,
-           employee_id, position, department, employee_id_file_path, photo_file_path, verification_status)
+           employee_id, position, department, photo_file_path)
          VALUES ($1,$2,'Middle',$3,'Female','1990-01-01','3 PESO Street','Central','District 3',
            'Quezon City','09172222222',$4,$5,'Employment Officer','Internship Division',
-           'employee-id/document.pdf','peso/photo.png','pending')
+           'peso/photo.png')
          RETURNING peso_personnel_id`,
         [
           account.accountId,
@@ -165,9 +165,11 @@ export class AdminFixtureFactory {
     email = `${role}-${++this.serial}@test.invalid`,
   ): Promise<{ accountId: number; email: string }> {
     const rows = await manager.query(
-      `INSERT INTO public.user_account (email, user_role, account_status, deleted_at)
+      `INSERT INTO public.user_account (email, user_role, account_status, deleted_at, suspended_until)
        VALUES ($1,$2,$3::public.account_status_enum,
-         CASE WHEN $3::public.account_status_enum = 'archived' THEN CURRENT_TIMESTAMP ELSE NULL END)
+         CASE WHEN $3::public.account_status_enum = 'archived' THEN CURRENT_TIMESTAMP ELSE NULL END,
+         CASE WHEN $3::public.account_status_enum = 'suspended'
+           THEN CURRENT_TIMESTAMP + INTERVAL '7 days' ELSE NULL END)
        RETURNING user_account_id`,
       [email, role, status],
     );

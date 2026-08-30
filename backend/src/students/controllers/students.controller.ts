@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   ForbiddenException,
   Get,
   HttpCode,
@@ -10,6 +11,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -26,6 +28,7 @@ import {
   StudentProfileUpdateDto,
   StudentRequirementUploadDto,
 } from '../dto/students.dto';
+import { StudentAttendanceQueryDto } from '../dto/student-attendance-query.dto';
 import { requirementUploadOptions } from '../../storage/requirement-upload.config';
 
 
@@ -189,6 +192,30 @@ export class StudentsController {
   ) {
     await this.ensureStudentAccess(id, currentUser);
     return this.studentsService.uploadRequirementFile(id, file, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id/requirements/:requirementType')
+  @HttpCode(HttpStatus.OK)
+  async deleteStudentRequirement(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('requirementType') requirementType: string,
+    @CurrentUser() currentUser: any,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    return this.studentsService.deleteStudentRequirement(id, requirementType);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/attendance')
+  @HttpCode(HttpStatus.OK)
+  async getStudentAttendance(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() currentUser: any,
+    @Query() query: StudentAttendanceQueryDto,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    return this.studentsService.getStudentAttendance(id, query);
   }
 
   @UseGuards(JwtAuthGuard)

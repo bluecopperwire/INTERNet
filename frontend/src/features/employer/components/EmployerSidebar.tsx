@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import internetLogo from '../../../assets/internet-logo.svg'
+import { useAuthStore } from '../../../stores/useAuthStore'
 import styles from './EmployerSidebar.module.css'
 
 interface EmployerSidebarProps {
@@ -29,10 +30,12 @@ export function EmployerSidebar({ isOpen, onClose }: EmployerSidebarProps) {
   const [internsExpanded, setInternsExpanded] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
+  const { logout: authLogout } = useAuthStore()
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     onClose()
-    navigate('/')
+    await authLogout()
+    navigate('/', { replace: true })
   }
 
   const matchesSearch = (text: string) => {

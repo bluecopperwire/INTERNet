@@ -8,7 +8,7 @@ Base path: `/employer`
 
 Every endpoint requires an access token in `Authorization: Bearer <token>` and the authenticated account must have `userRole = company`. The server derives `company_id` from `CurrentUser.userAccountId -> company.user_account_id`; clients cannot provide or override a company ID. A resource outside that company scope returns `404`, preventing ID enumeration.
 
-Unless stated otherwise, successful reads and mutations return `200`. Assignment creation returns the Nest default `201`. Validation errors return `400`, missing scoped resources return `404`, invalid workflow states return `409`, unsupported uploads return `415`, and the explicitly blocked operations return `503`.
+Unless stated otherwise, successful reads and mutations return `200`. Assignment creation returns the Nest default `201`. Validation errors return `400`, missing scoped resources return `404`, invalid workflow states return `409`, and unsupported uploads return `415`.
 
 ## Shared contracts
 
@@ -123,7 +123,7 @@ Query: `status? = open | closed | archived`, `page?`, `limit?`.
       "minimumRequiredHours": 400,
       "workArrangement": "hybrid",
       "offeredSlots": 3,
-      "allowance": "500.00",
+      "allowance": "PHP 500 per day",
       "applicationDeadline": "2026-10-31",
       "opportunityStatus": "open",
       "totalApplicantCount": 8
@@ -133,11 +133,11 @@ Query: `status? = open | closed | archived`, `page?`, `limit?`.
 }
 ```
 
-While DB-EMP-001 is pending, legacy `has_allowance + numeric allowance` is read as a string or `null`. Legacy data has no unit, so the API cannot reconstruct “per day” or “per month.”
+`allowance` is stored as free-text (e.g. `'PHP 5,000 monthly'` or `'PHP 500 per day'`) or `null` for uncompensated opportunities.
 
-### 5. POST `/employer/opportunities` — temporarily unavailable
+### 5. POST `/employer/opportunities`
 
-Final request contract:
+Request contract:
 
 ```json
 {
@@ -153,24 +153,15 @@ Final request contract:
 }
 ```
 
-The DTO is validated and company authentication is resolved, but no insert occurs. Until DB-EMP-001 is migrated, the response is:
-
-```json
-{
-  "statusCode": 503,
-  "code": "DB_MIGRATION_PENDING",
-  "dependency": "DB-EMP-001",
-  "message": "Opportunity creation is temporarily unavailable pending the approved allowance migration."
-}
-```
+Creates a new opportunity owned by the authenticated company in `open` status. Returns `201` with the created opportunity resource.
 
 ### 6. GET `/employer/opportunities/:opportunityId`
 
 Returns the same opportunity fields as endpoint 4 plus the full description and qualification. The `opportunity` row must belong to the authenticated company.
 
-### 7. PATCH `/employer/opportunities/:opportunityId` — temporarily unavailable
+### 7. PATCH `/employer/opportunities/:opportunityId`
 
-The final editable body mirrors endpoint 5 and every property is optional for PATCH. The server first verifies ownership and validates supplied fields, then returns the DB-EMP-001 `503` response. It does not write the legacy numeric allowance model.
+Editable body mirrors endpoint 5 and every property is optional for PATCH. Updates the opportunity fields for the company-owned record. Returns `200` with the updated opportunity resource.
 
 ### 8. PATCH `/employer/opportunities/:opportunityId/close`
 
@@ -353,15 +344,13 @@ The raw student enum is `declined` (a UI may label it “Rejected”).
 
 Response uses the endpoint 25 detail shape.
 
-### 19. PATCH `/employer/referrals/:referralId/withdraw-acceptance` — temporarily unavailable
+### 19. PATCH `/employer/referrals/:referralId/withdraw-acceptance`
 
-The final action is `accepted -> rejected`, but current DB workflow constraints prohibit it. The server verifies company ownership and that the response is accepted, then returns `503` with `code = DB_MIGRATION_PENDING` and `dependency = DB-EMP-002`. It does not force an invalid transition.
+The employer withdraws a previously accepted referral, transitioning company response from `accepted -> rejected`. In one transaction, `referral.company_response` is set to `'rejected'`, `company_responded_at` is updated, and status history records the authenticated employer actor. Response returns `200` with the updated referral model.
 
 ## Attendance
 
-The implementation reads raw `attendance_record.time_in/time_out` and assignment shifts. It does not trust stored `hours_rendered`, `rendered_hours_status`, or `vw_attendance_summary.total_rendered_hours` while DB-EMP-004 is pending.
-
-For completed rows:
+The database trigger automatically computes attendance rendered hours, subtracting the fixed 1-hour lunch break:
 
 ```text
 renderedHours = max((timeOut - timeIn) - 1 hour, 0)
@@ -527,7 +516,7 @@ Other display values are `Pending`, `On Going`, `Completed`, `Withdrawn by Stude
 }
 ```
 
-`canEdit` is pending only; `canComplete` is eligible ongoing only; `canCancel` is pending/ongoing; `canDelete` describes the final terminal-state behavior even while endpoint 29 is blocked.
+`canEdit` is pending only; `canComplete` is eligible ongoing only; `canCancel` is pending/ongoing; `canDelete` describes the final terminal-state behavior.
 
 ### 26. PATCH `/employer/internships/:internshipAssignmentId`
 
@@ -543,9 +532,9 @@ Transactionally transitions company-owned `pending` or `ongoing` to `cancelled`,
 
 Requires persisted `ongoing` and recomputed rendered hours at least equal to required hours. In one actor-aware transaction it transitions to `completed` and sets `end_date` to the current Manila date. Otherwise it returns `409`. Response uses endpoint 25.
 
-### 29. DELETE `/employer/internships/:internshipAssignmentId` — temporarily unavailable
+### 29. DELETE `/employer/internships/:internshipAssignmentId`
 
-The server verifies ownership and requires `completed`, `cancelled`, or `withdrawn`. It then returns `503` with `code = DB_MIGRATION_PENDING` and `dependency = DB-EMP-003`. It never physically deletes. Final implementation will set `internship_assignment.deleted_at`.
+Soft deletes terminal assignments (`completed`, `cancelled`, or `withdrawn`). The server verifies company ownership and that the assignment is in a terminal status. It sets `internship_assignment.deleted_at = CURRENT_TIMESTAMP` and returns `200` with the soft-deleted assignment. Physical deletion is never used.
 
 ## Automatic assignment start
 
@@ -561,40 +550,13 @@ Referral interview: sent -> under_review
 Referral accept:    pending|for_interview -> accepted (under_review)
 Referral reject:    sent -> under_review -> closed
                     pending|for_interview -> rejected
+Referral withdraw:  accepted -> rejected
 
 Assignment: pending -> ongoing (scheduler)
             pending|ongoing -> cancelled
             ongoing -> completed (hours requirement met)
             withdrawn remains a student-side terminal state
+            terminal assignments -> soft deleted (deleted_at set)
 ```
 
 All multi-step workflow actions use transactions and the existing status-actor mechanism. Expected invalid states are reported as `409` rather than exposing database constraint text.
-
-## Database dependencies
-
-### DB-EMP-001 — opportunity allowance model
-
-Pending schema: change `opportunity.allowance` from numeric to nullable text and remove `has_allowance`, updating constraints/views. Blocked now: POST opportunity and PATCH opportunity. Reads remain operational with a unitless transitional legacy string/null.
-
-### DB-EMP-002 — withdraw acceptance
-
-Pending workflow: permit `referral.company_response accepted -> rejected` and reconcile student-response consistency. Blocked now: PATCH withdraw-acceptance.
-
-### DB-EMP-003 — internship soft delete
-
-Pending schema: add nullable `internship_assignment.deleted_at`. Blocked now: DELETE internship. Physical deletion is never used.
-
-### DB-EMP-004 — persisted attendance calculation
-
-Pending trigger/view correction: subtract the fixed one-hour break. No attendance or internship read API is blocked; all employer-visible hours, remaining hours, completion eligibility, awaiting-completion state, and summary counts are recomputed from raw times now.
-
-The common temporary error body is:
-
-```json
-{
-  "statusCode": 503,
-  "code": "DB_MIGRATION_PENDING",
-  "dependency": "DB-EMP-00X",
-  "message": "Feature-specific migration-pending message"
-}
-```

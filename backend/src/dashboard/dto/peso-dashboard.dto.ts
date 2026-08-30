@@ -97,3 +97,13 @@ export class PesoDtrDashboardMetricsDto {
   shortlisted: number;
   rejected: number;
 }
+
+export class UpdateApplicationStatusDto {
+  @IsEnum(ApplicationStatusFilter)
+  status: ApplicationStatusFilter;
+
+  @IsOptional()
+  @IsString()
+  remark?: string;
+}
+

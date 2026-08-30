@@ -29,7 +29,7 @@ export class AdminE2eEnvironment {
       .withPassword(randomUUID())
       .start();
 
-    this.testCwd = mkdtempSync(join(tmpdir(), 'internet-admin-e2e-'));
+    this.testCwd = mkdtempSync(join(this.originalCwd, '.tmp-admin-e2e-'));
     process.chdir(this.testCwd);
     process.env.NODE_ENV = 'test';
     process.env.DATABASE_HOST = this.container.getHost();

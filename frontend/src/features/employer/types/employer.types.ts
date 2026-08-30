@@ -31,6 +31,13 @@ export interface Applicant {
   availabilityDays: string
   availabilityDate: string
   rejectionRemark?: string
+  documents?: Array<{
+    submissionId?: number
+    requirementTypeId?: number
+    requirementTypeName?: string
+    requirementName?: string
+    filePath?: string
+  }>
 }
 
 export type RecentApplicant = Applicant
@@ -107,11 +114,13 @@ export interface EmployerInternshipDetails {
 export interface InternshipAssignment {
   id: string
   applicantId: string
+  referralId: number
+  internshipAssignmentId: number | null
   studentName: string
   company: string
   jobTitle: string
   acceptanceDate: string
-  studentResponse: 'Pending Response' | 'Accepted' | 'Rejected'
+  studentResponse: 'Pending Response' | 'Accepted' | 'Declined' | 'Unknown'
   workingDays: string
   requiredHours: number
   startDate: string

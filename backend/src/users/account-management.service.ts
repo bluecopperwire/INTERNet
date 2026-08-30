@@ -1,35 +1,27 @@
 import {
   ConflictException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { DataSource } from 'typeorm';
-import { setStatusActor } from '../database/status-actor.transaction';
-import { StorageService } from '../storage/private-file-storage';
 import {
   AccountStatus,
   Company,
   Industry,
   LocalAuthenticationCredential,
-  PersonnelVerificationStatus,
   PesoPersonnel,
   UserAccount,
   UserRole,
 } from './entities/account.entities';
 import {
-  CorrectPesoPersonnelDto,
   CreateCompanyAccountDto,
   CreatePesoPersonnelAccountDto,
 } from './dto/account-management.dto';
 
 @Injectable()
 export class AccountManagementService {
-  constructor(
-    private readonly dataSource: DataSource,
-    private readonly storage: StorageService,
-  ) {}
+  constructor(private readonly dataSource: DataSource) {}
 
   async createCompany(
     dto: CreateCompanyAccountDto,
@@ -86,7 +78,7 @@ export class AccountManagementService {
           addressBarangay: dto.addressBarangay,
           addressDistrict: dto.addressDistrict ?? null,
           addressCity: dto.addressCity,
-          logoFilePath: dto.logoFilePath,
+          logoFilePath: dto.logoFilePath ?? null,
         }),
       );
       return {
@@ -96,208 +88,128 @@ export class AccountManagementService {
     });
   }
 
-  async verificationStatus(userAccountId: number): Promise<PesoPersonnel> {
-    const personnel = await this.dataSource
-      .getRepository(PesoPersonnel)
-      .findOne({ where: { userAccountId } });
-    if (!personnel) throw new NotFoundException('QC PESO profile not found');
-    return personnel;
-  }
-
-  pendingVerifications(): Promise<PesoPersonnel[]> {
-    return this.dataSource.getRepository(PesoPersonnel).find({
-      where: { verificationStatus: PersonnelVerificationStatus.PENDING },
-      order: { createdAt: 'ASC' },
-    });
-  }
-
-  async decideVerification(
-    pesoPersonnelId: number,
-    adminAccountId: number,
-    status:
-      | PersonnelVerificationStatus.APPROVED
-      | PersonnelVerificationStatus.REJECTED,
-    remark?: string,
-  ): Promise<void> {
-    const runner = this.dataSource.createQueryRunner();
-    await runner.connect();
-    await runner.startTransaction();
-    try {
-      await setStatusActor(runner, adminAccountId);
-      const result = await runner.manager.update(
-        PesoPersonnel,
-        {
-          pesoPersonnelId,
-          verificationStatus: PersonnelVerificationStatus.PENDING,
-        },
-        {
-          verificationStatus: status,
-          reviewedAt: new Date(),
-          reviewedByUserAccountId: adminAccountId,
-          verificationRemark: remark?.trim() || null,
-        },
-      );
-      if (!result.affected)
-        throw new ConflictException('Verification is not pending');
-      await runner.commitTransaction();
-    } catch (error) {
-      await runner.rollbackTransaction();
-      throw error;
-    } finally {
-      await runner.release();
-    }
-  }
-
-  async correctRejected(
-    userAccountId: number,
-    dto: CorrectPesoPersonnelDto,
-  ): Promise<void> {
-    const repo = this.dataSource.getRepository(PesoPersonnel);
-    const current = await repo.findOne({ where: { userAccountId } });
-    if (
-      !current ||
-      current.verificationStatus !== PersonnelVerificationStatus.REJECTED
-    ) {
-      throw new ForbiddenException(
-        'Corrections are available only after rejection',
-      );
-    }
-    let newKey: string | undefined;
-    if (dto.employeeIdFileBase64 && dto.employeeIdFileMimeType) {
-      newKey = await this.storage.storeEmployeeId({
-        data: Buffer.from(dto.employeeIdFileBase64, 'base64'),
-        mimeType: dto.employeeIdFileMimeType,
-        originalName: dto.employeeIdFileName,
-      });
-    }
-    try {
-      await repo.update(
-        { pesoPersonnelId: current.pesoPersonnelId },
-        {
-          ...(dto.employeeId ? { employeeId: dto.employeeId } : {}),
-          ...(dto.position ? { position: dto.position } : {}),
-          ...(dto.department ? { department: dto.department } : {}),
-          ...(dto.contactNumber ? { contactNumber: dto.contactNumber } : {}),
-          ...(dto.addressLine ? { addressLine: dto.addressLine } : {}),
-          ...(dto.addressBarangay
-            ? { addressBarangay: dto.addressBarangay }
-            : {}),
-          ...(dto.addressDistrict
-            ? { addressDistrict: dto.addressDistrict }
-            : {}),
-          ...(dto.addressCity ? { addressCity: dto.addressCity } : {}),
-          ...(newKey ? { employeeIdFilePath: newKey } : {}),
-        },
-      );
-      if (newKey) await this.storage.delete(current.employeeIdFilePath);
-    } catch (error) {
-      if (newKey) await this.storage.delete(newKey);
-      throw error;
-    }
-  }
-
-  async resubmit(userAccountId: number): Promise<void> {
-    const runner = this.dataSource.createQueryRunner();
-    await runner.connect();
-    await runner.startTransaction();
-    try {
-      await setStatusActor(runner, userAccountId);
-      const result = await runner.manager.update(
-        PesoPersonnel,
-        {
-          userAccountId,
-          verificationStatus: PersonnelVerificationStatus.REJECTED,
-        },
-        {
-          verificationStatus: PersonnelVerificationStatus.PENDING,
-          reviewedAt: null,
-          reviewedByUserAccountId: null,
-          verificationRemark: null,
-        },
-      );
-      if (!result.affected)
-        throw new ConflictException(
-          'Only a rejected verification can be resubmitted',
-        );
-      await runner.commitTransaction();
-    } catch (error) {
-      await runner.rollbackTransaction();
-      throw error;
-    } finally {
-      await runner.release();
-    }
-  }
-
   async createPesoPersonnel(
     dto: CreatePesoPersonnelAccountDto,
     adminAccountId: number,
   ): Promise<{ userAccountId: number; pesoPersonnelId: number }> {
-    const fileKey = await this.storage.storeEmployeeId({
-      data: Buffer.from(dto.employeeIdFileBase64, 'base64'),
-      mimeType: dto.employeeIdFileMimeType,
-      originalName: dto.employeeIdFileName,
-    });
-    try {
-      return await this.dataSource.transaction(async (manager) => {
-        const existing = await manager
-          .getRepository(UserAccount)
-          .createQueryBuilder('a')
-          .where('lower(a.email)=lower(:email)', { email: dto.email })
-          .getOne();
-        if (existing) throw new ConflictException('Email already in use');
+    void adminAccountId;
+    return this.dataSource.transaction(async (manager) => {
+      const existing = await manager
+        .getRepository(UserAccount)
+        .createQueryBuilder('a')
+        .where('lower(a.email)=lower(:email)', { email: dto.email })
+        .getOne();
+      if (existing) throw new ConflictException('Email already in use');
 
-        const account = await manager.save(
-          UserAccount,
-          manager.create(UserAccount, {
-            email: dto.email.trim().toLowerCase(),
-            userRole: UserRole.PESO_PERSONNEL,
-            accountStatus: AccountStatus.ACTIVE,
-            deletedAt: null,
-          }),
-        );
-        await manager.save(
-          LocalAuthenticationCredential,
-          manager.create(LocalAuthenticationCredential, {
-            userAccountId: account.userAccountId,
-            passwordHash: await bcrypt.hash(dto.password, 10),
-            passwordChangedAt: new Date(),
-          }),
-        );
-        const personnel = await manager.save(
-          PesoPersonnel,
-          manager.create(PesoPersonnel, {
-            userAccountId: account.userAccountId,
-            firstName: dto.firstName,
-            middleName: dto.middleName ?? null,
-            lastName: dto.lastName,
-            extensionName: dto.extensionName ?? null,
-            sex: dto.sex,
-            birthDate: dto.birthDate,
-            addressLine: dto.addressLine,
-            addressBarangay: dto.addressBarangay,
-            addressDistrict: dto.addressDistrict,
-            addressCity: dto.addressCity,
-            contactNumber: dto.contactNumber,
-            contactEmail: account.email,
-            employeeId: dto.employeeId,
-            position: dto.position,
-            department: dto.department,
-            employeeIdFilePath: fileKey,
-            photoFilePath: dto.photoFilePath ?? null,
-            verificationStatus: PersonnelVerificationStatus.APPROVED,
-            reviewedAt: new Date(),
-            reviewedByUserAccountId: adminAccountId,
-            verificationRemark: null,
-          }),
-        );
-        return {
+      const account = await manager.save(
+        UserAccount,
+        manager.create(UserAccount, {
+          email: dto.email.trim().toLowerCase(),
+          userRole: UserRole.PESO_PERSONNEL,
+          accountStatus: AccountStatus.ACTIVE,
+          deletedAt: null,
+        }),
+      );
+      await manager.save(
+        LocalAuthenticationCredential,
+        manager.create(LocalAuthenticationCredential, {
           userAccountId: account.userAccountId,
-          pesoPersonnelId: personnel.pesoPersonnelId,
-        };
-      });
-    } catch (error) {
-      await this.storage.delete(fileKey);
-      throw error;
+          passwordHash: await bcrypt.hash(dto.password, 10),
+          passwordChangedAt: new Date(),
+        }),
+      );
+      const personnel = await manager.save(
+        PesoPersonnel,
+        manager.create(PesoPersonnel, {
+          userAccountId: account.userAccountId,
+          firstName: dto.firstName,
+          middleName: dto.middleName ?? null,
+          lastName: dto.lastName,
+          extensionName: dto.extensionName ?? null,
+          sex: dto.sex,
+          birthDate: dto.birthDate,
+          addressLine: dto.addressLine,
+          addressBarangay: dto.addressBarangay,
+          addressDistrict: dto.addressDistrict,
+          addressCity: dto.addressCity,
+          contactNumber: dto.contactNumber,
+          contactEmail: account.email,
+          employeeId: dto.employeeId,
+          position: dto.position,
+          department: dto.department,
+          photoFilePath: dto.photoFilePath ?? null,
+        }),
+      );
+      return {
+        userAccountId: account.userAccountId,
+        pesoPersonnelId: personnel.pesoPersonnelId,
+      };
+    });
+  }
+
+  async getPesoProfile(userAccountId: number) {
+    const pesoRepo = this.dataSource.getRepository(PesoPersonnel);
+    const accountRepo = this.dataSource.getRepository(UserAccount);
+    const peso = await pesoRepo.findOne({ where: { userAccountId } });
+    if (!peso) {
+      throw new NotFoundException('PESO personnel profile not found');
     }
+    const account = await accountRepo.findOne({ where: { userAccountId } });
+    return {
+      pesoPersonnelId: peso.pesoPersonnelId,
+      userAccountId: peso.userAccountId,
+      firstName: peso.firstName,
+      middleName: peso.middleName,
+      lastName: peso.lastName,
+      extensionName: peso.extensionName,
+      sex: peso.sex,
+      birthDate: peso.birthDate,
+      addressLine: peso.addressLine,
+      addressBarangay: peso.addressBarangay,
+      addressDistrict: peso.addressDistrict,
+      addressCity: peso.addressCity,
+      contactNumber: peso.contactNumber,
+      contactEmail: peso.contactEmail,
+      employeeId: peso.employeeId,
+      position: peso.position,
+      department: peso.department,
+      photoFilePath: peso.photoFilePath,
+      email: account?.email,
+      accountStatus: account?.accountStatus,
+    };
+  }
+
+  async updatePesoProfile(userAccountId: number, dto: any) {
+    const pesoRepo = this.dataSource.getRepository(PesoPersonnel);
+    const peso = await pesoRepo.findOne({ where: { userAccountId } });
+    if (!peso) {
+      throw new NotFoundException('PESO personnel profile not found');
+    }
+
+    const updates: Partial<PesoPersonnel> = {};
+    if (dto.firstName !== undefined) updates.firstName = dto.firstName;
+    if (dto.middleName !== undefined)
+      updates.middleName = dto.middleName ?? null;
+    if (dto.lastName !== undefined) updates.lastName = dto.lastName;
+    if (dto.extensionName !== undefined)
+      updates.extensionName = dto.extensionName ?? null;
+    if (dto.sex !== undefined) updates.sex = dto.sex;
+    if (dto.birthDate !== undefined) updates.birthDate = dto.birthDate;
+    if (dto.addressLine !== undefined) updates.addressLine = dto.addressLine;
+    if (dto.addressBarangay !== undefined)
+      updates.addressBarangay = dto.addressBarangay;
+    if (dto.addressDistrict !== undefined)
+      updates.addressDistrict = dto.addressDistrict;
+    if (dto.addressCity !== undefined) updates.addressCity = dto.addressCity;
+    if (dto.contactNumber !== undefined)
+      updates.contactNumber = dto.contactNumber;
+    if (dto.contactEmail !== undefined) updates.contactEmail = dto.contactEmail;
+    if (dto.position !== undefined) updates.position = dto.position;
+    if (dto.department !== undefined) updates.department = dto.department;
+    if (dto.photoFilePath !== undefined)
+      updates.photoFilePath = dto.photoFilePath;
+
+    await pesoRepo.update({ userAccountId }, updates);
+    return this.getPesoProfile(userAccountId);
   }
 }

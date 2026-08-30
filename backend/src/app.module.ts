@@ -8,12 +8,12 @@ import { ScheduleModule } from '@nestjs/schedule';
 import databaseConfig from './config/database.config';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
-import { StorageModule } from './storage/storage.module';
 import { ApplicationsModule } from './applications/applications.module';
 import { StudentsModule } from './students/students.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { EmployerModule } from './employer/employer.module';
 import { AdminModule } from './admin/admin.module';
+import { ReferenceModule } from './reference/reference.module';
 
 @Module({
   imports: [
@@ -37,12 +37,12 @@ import { AdminModule } from './admin/admin.module';
     ScheduleModule.forRoot(),
     AuthModule,
     UsersModule,
-    StorageModule,
     ApplicationsModule,
     StudentsModule,
     DashboardModule,
     EmployerModule,
     AdminModule,
+    ReferenceModule,
   ],
   providers: [
     {

@@ -18,10 +18,14 @@ const INDUSTRIES = [
 
 const SCHEDULES = ['Weekdays', 'Weekends', 'Flexible']
 
+import { useToastStore } from '../../../stores/useToastStore'
+
 export const ProfileEditorPage: React.FC = () => {
   const navigate = useNavigate()
   const { profile, saveProfile, isLoading } = useInternshipPortal()
   const [formData, setFormData] = useState<Partial<UserProfile>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const toast = useToastStore()
 
   useEffect(() => {
     if (profile) setFormData(profile)
@@ -77,10 +81,19 @@ export const ProfileEditorPage: React.FC = () => {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
-    const success = await saveProfile(formData)
-    if (success) {
-      alert('Profile saved successfully!')
-      navigate('/intern-seeker/profile')
+    setIsSubmitting(true)
+    try {
+      const success = await saveProfile(formData)
+      if (success) {
+        toast.success('Profile updated successfully!')
+        navigate('/intern-seeker/profile')
+      } else {
+        toast.error('Failed to update profile. Please verify your information.')
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save profile.')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -222,7 +235,9 @@ export const ProfileEditorPage: React.FC = () => {
 
         <footer className={styles.formFooter}>
           <button type="button" className={styles.cancelButton} onClick={() => navigate('/intern-seeker/profile')}>Cancel</button>
-          <button type="submit" className={styles.saveButton} disabled={isLoading}>Save Changes</button>
+          <button type="submit" className={styles.saveButton} disabled={isLoading || isSubmitting}>
+            {isSubmitting ? 'Saving Changes...' : 'Save Changes'}
+          </button>
         </footer>
       </form>
     </main>

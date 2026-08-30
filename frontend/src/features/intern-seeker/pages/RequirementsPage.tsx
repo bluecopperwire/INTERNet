@@ -12,8 +12,11 @@ const isAcceptedFile = (file: File) => {
   return ACCEPTED_EXTENSIONS.some((extension) => name.endsWith(extension)) && file.size <= MAX_FILE_SIZE
 }
 
+import { useToastStore } from '../../../stores/useToastStore'
+
 function RequirementsPage() {
   const { requirements, isLoading, uploadingId, error, setError, uploadRequirement, deleteRequirement } = useRequirements()
+  const toast = useToastStore()
 
   const submittedCount = useMemo(
     () => requirements.filter((requirement) => requirement.status === 'submitted').length,
@@ -29,10 +32,26 @@ function RequirementsPage() {
     event.target.value = ''
     if (!file) return
     if (!isAcceptedFile(file)) {
-      setError('Please select a PDF, DOC, DOCX, JPG, or PNG file no larger than 10 MB.')
+      const msg = 'Please select a PDF, DOC, DOCX, JPG, or PNG file no larger than 10 MB.'
+      setError(msg)
+      toast.error(msg)
       return
     }
-    await uploadRequirement(requirement.id, file)
+    const success = await uploadRequirement(requirement.id, file)
+    if (success) {
+      toast.success(`${requirement.title} uploaded successfully!`)
+    } else {
+      toast.error(`Failed to upload ${requirement.title}.`)
+    }
+  }
+
+  const handleDelete = async (requirement: InternshipRequirement) => {
+    const success = await deleteRequirement(requirement.id)
+    if (success) {
+      toast.success(`${requirement.title} deleted.`)
+    } else {
+      toast.error(`Failed to delete ${requirement.title}.`)
+    }
   }
 
   return (
@@ -69,7 +88,7 @@ function RequirementsPage() {
                   key={requirement.id}
                   requirement={requirement}
                   isUploading={uploadingId === requirement.id}
-                  onDelete={() => void deleteRequirement(requirement.id)}
+                  onDelete={() => void handleDelete(requirement)}
                   onFileSelection={(event) => void handleFileSelection(requirement, event)}
                 />
               ))}

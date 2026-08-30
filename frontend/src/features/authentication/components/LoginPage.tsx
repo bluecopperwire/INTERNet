@@ -1,41 +1,106 @@
-import { type FormEvent, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { type FormEvent, useEffect, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import googleLogo from '../../../assets/google-logo.svg'
 import leftPanelArtwork from '../../../assets/login_left-panel.svg'
-import type { LoginCredentials, UserRole } from '../types/auth.types'
+import { authService } from '../../../services/auth.service'
+import { normalizeApiError } from '../../../services/api'
+import { useAuthStore } from '../../../stores/useAuthStore'
+import type { LoginTabRole } from '../types/auth.types'
 import styles from './LoginPage.module.css'
 
-const ROLES: ReadonlyArray<{ label: string; value: UserRole }> = [
+const ROLES: ReadonlyArray<{ label: string; value: LoginTabRole }> = [
   { label: 'Intern Seeker', value: 'intern-seeker' },
   { label: 'Company', value: 'company' },
   { label: 'QCPESO', value: 'qcpeso' },
+  { label: 'Admin', value: 'admin' },
 ]
 
-const INITIAL_CREDENTIALS: LoginCredentials = {
-  email: '',
-  password: '',
-  rememberMe: true,
-  role: 'intern-seeker',
-}
-
 function LoginPage() {
-  const [credentials, setCredentials] = useState<LoginCredentials>(INITIAL_CREDENTIALS)
+  const [role, setRole] = useState<LoginTabRole>('intern-seeker')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(true)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const selectRole = (role: UserRole) => {
-    setCredentials((current) => ({ ...current, role }))
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const { login, user, status } = useAuthStore()
+
+  useEffect(() => {
+    if (status === 'authenticated' && user) {
+      const returnTo = searchParams.get('returnTo')
+      if (returnTo) {
+        navigate(decodeURIComponent(returnTo), { replace: true })
+        return
+      }
+
+      switch (user.userRole) {
+        case 'student':
+          navigate('/intern-seeker', { replace: true })
+          break
+        case 'company':
+          navigate('/employer/dashboard', { replace: true })
+          break
+        case 'peso_personnel':
+          navigate('/qcpeso/dashboard', { replace: true })
+          break
+        case 'admin':
+          navigate('/admin/dashboard', { replace: true })
+          break
+      }
+    }
+  }, [status, user, navigate, searchParams])
+
+  const selectRole = (newRole: LoginTabRole) => {
+    setRole(newRole)
     setError('')
   }
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleGoogleLogin = () => {
+    authService.startGoogleLogin()
+  }
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    if (!credentials.email.trim() || !credentials.password) {
+    if (!email.trim() || !password) {
       setError('Please enter your email address and password.')
       return
     }
 
     setError('')
+    setLoading(true)
+    try {
+      const userRole = await login({ email: email.trim(), password }, role)
+      const returnTo = searchParams.get('returnTo')
+      if (returnTo) {
+        navigate(decodeURIComponent(returnTo), { replace: true })
+        return
+      }
+
+      switch (userRole) {
+        case 'student':
+          navigate('/intern-seeker', { replace: true })
+          break
+        case 'company':
+          navigate('/employer/dashboard', { replace: true })
+          break
+        case 'peso_personnel':
+          navigate('/qcpeso/dashboard', { replace: true })
+          break
+        case 'admin':
+          navigate('/admin/dashboard', { replace: true })
+          break
+        default:
+          navigate('/', { replace: true })
+      }
+    } catch (err: any) {
+      const norm = normalizeApiError(err)
+      setError(norm.message || 'Login failed. Please check your credentials.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -47,24 +112,24 @@ function LoginPage() {
       <section className={styles.loginPanel} aria-labelledby="login-heading">
         <div className={styles.loginContent}>
           <div className={styles.roleTabs} aria-label="Select account type" role="group">
-            {ROLES.map((role) => (
+            {ROLES.map((r) => (
               <button
-                className={credentials.role === role.value ? styles.activeRole : styles.roleButton}
-                key={role.value}
-                onClick={() => selectRole(role.value)}
+                className={role === r.value ? styles.activeRole : styles.roleButton}
+                key={r.value}
+                onClick={() => selectRole(r.value)}
                 type="button"
-                aria-pressed={credentials.role === role.value}
+                aria-pressed={role === r.value}
               >
-                {role.label}
+                {r.label}
               </button>
             ))}
           </div>
 
           <h1 id="login-heading">Welcome Back!</h1>
 
-          {credentials.role === 'intern-seeker' && (
+          {role === 'intern-seeker' && (
             <>
-              <button className={styles.googleButton} type="button">
+              <button className={styles.googleButton} type="button" onClick={handleGoogleLogin}>
                 <img src={googleLogo} alt="" />
                 <span>Login with Google</span>
               </button>
@@ -75,7 +140,7 @@ function LoginPage() {
             </>
           )}
 
-          {credentials.role === 'intern-seeker' && (
+          {role === 'intern-seeker' && (
             <p className={styles.signupPrompt}>
               Don&apos;t have an account?{' '}
               <Link to="/sign-up">Sign Up</Link>
@@ -90,10 +155,8 @@ function LoginPage() {
               type="email"
               autoComplete="email"
               placeholder="Enter email address"
-              value={credentials.email}
-              onChange={(event) =>
-                setCredentials((current) => ({ ...current, email: event.target.value }))
-              }
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               aria-describedby={error ? 'login-error' : undefined}
             />
 
@@ -104,10 +167,8 @@ function LoginPage() {
               type="password"
               autoComplete="current-password"
               placeholder="Enter password"
-              value={credentials.password}
-              onChange={(event) =>
-                setCredentials((current) => ({ ...current, password: event.target.value }))
-              }
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
               aria-describedby={error ? 'login-error' : undefined}
             />
 
@@ -115,13 +176,8 @@ function LoginPage() {
               <label className={styles.rememberMe}>
                 <input
                   type="checkbox"
-                  checked={credentials.rememberMe}
-                  onChange={(event) =>
-                    setCredentials((current) => ({
-                      ...current,
-                      rememberMe: event.target.checked,
-                    }))
-                  }
+                  checked={rememberMe}
+                  onChange={(event) => setRememberMe(event.target.checked)}
                 />
                 <span>Remember me</span>
               </label>
@@ -137,8 +193,8 @@ function LoginPage() {
               </p>
             )}
 
-            <button className={styles.loginButton} type="submit">
-              Login
+            <button className={styles.loginButton} type="submit" disabled={loading}>
+              {loading ? 'Logging in...' : 'Login'}
             </button>
           </form>
 

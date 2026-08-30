@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsEnum,
+  IsBoolean,
   IsDefined,
   IsInt,
   IsNotEmpty,
@@ -61,12 +62,17 @@ export class CreateOpportunityDto {
   @Min(1)
   offeredSlots!: number;
 
+  @IsOptional()
+  @IsBoolean()
+  @ValidateIf((_object, value: unknown) => value !== undefined)
+  hasAllowance?: boolean;
+
+  @IsOptional()
   @NullableTrim()
-  @ValidateIf((_object, value: unknown) => value !== null)
-  @IsDefined()
+  @ValidateIf((_object, value: unknown) => value !== null && value !== undefined)
   @IsString()
   @IsNotEmpty()
-  allowance!: string | null;
+  allowance?: string | null;
 
   @Trim()
   @IsString()
@@ -114,7 +120,12 @@ export class UpdateOpportunityDto {
   offeredSlots?: number;
 
   @IsOptional()
+  @IsBoolean()
+  hasAllowance?: boolean;
+
+  @IsOptional()
   @NullableTrim()
+  @ValidateIf((_object, value: unknown) => value !== null && value !== undefined)
   @IsString()
   @IsNotEmpty()
   allowance?: string | null;

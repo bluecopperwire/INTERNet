@@ -311,15 +311,17 @@ describe('Admin Employer APIs', () => {
       .expect(400);
   });
 
-  test('validates the create contract then returns the DB-ADMIN-002 stub', async () => {
+  test('creates a company successfully without initial logo', async () => {
     const response = await request(env.app.getHttpServer())
       .post('/admin/employers')
       .set(auth(admin.token))
       .send(employerBody)
-      .expect(503);
+      .expect(201);
     expect(response.body).toMatchObject({
-      code: 'DB_MIGRATION_PENDING',
-      dependency: 'DB-ADMIN-002',
+      accountEmail: employerBody.accountEmail,
+      companyName: employerBody.companyName,
+      logoFilePath: null,
+      accountStatus: 'active',
     });
     await request(env.app.getHttpServer())
       .post('/admin/employers')
@@ -404,16 +406,19 @@ describe('Admin QC PESO APIs', () => {
       .expect(400);
   });
 
-  test('validates the create contract then returns the DB-ADMIN-003 stub', async () => {
+  test('creates a QC PESO account successfully without employee ID file or verification workflow', async () => {
     const response = await request(env.app.getHttpServer())
       .post('/admin/qc-peso')
       .set(auth(admin.token))
       .send(pesoBody)
-      .expect(503);
+      .expect(201);
     expect(response.body).toMatchObject({
-      code: 'DB_MIGRATION_PENDING',
-      dependency: 'DB-ADMIN-003',
+      accountEmail: pesoBody.accountEmail,
+      employeeId: pesoBody.employeeId,
+      accountStatus: 'active',
     });
+    expect(response.body).not.toHaveProperty('verificationStatus');
+    expect(response.body).not.toHaveProperty('employeeIdFilePath');
     await request(env.app.getHttpServer())
       .post('/admin/qc-peso')
       .set(auth(admin.token))
@@ -502,27 +507,29 @@ describe('shared Admin account status API', () => {
       .expect(409);
   });
 
-  test('returns DB-ADMIN-001 for timed suspension without mutating state', async () => {
+  test('implements timed suspension and records the Admin actor', async () => {
     const student = await fixtures.student('Active', 'active');
     const response = await request(env.app.getHttpServer())
       .patch(`/admin/accounts/${student.accountId}/status`)
       .set(auth(admin.token))
       .send({ status: 'suspended', suspensionDays: 7 })
-      .expect(503);
+      .expect(200);
     expect(response.body).toMatchObject({
-      code: 'DB_MIGRATION_PENDING',
-      dependency: 'DB-ADMIN-001',
+      userAccountId: student.accountId,
+      accountStatus: 'suspended',
     });
+    expect(response.body.suspendedUntil).toBeDefined();
     const rows = await db.query(
-      'SELECT account_status FROM public.user_account WHERE user_account_id=$1',
+      'SELECT account_status, suspended_until FROM public.user_account WHERE user_account_id=$1',
       [student.accountId],
     );
-    expect(rows[0].account_status).toBe('active');
+    expect(rows[0].account_status).toBe('suspended');
+    expect(rows[0].suspended_until).not.toBeNull();
     const history = await db.query(
-      'SELECT count(*) AS count FROM public.user_account_status_history WHERE user_account_id=$1',
+      'SELECT changed_by_user_account_id FROM public.user_account_status_history WHERE user_account_id=$1',
       [student.accountId],
     );
-    expect(Number(history[0].count)).toBe(0);
+    expect(Number(history[0].changed_by_user_account_id)).toBe(admin.accountId);
   });
 
   test('validates suspension days and refuses to manage Admin accounts', async () => {

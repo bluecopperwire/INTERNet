@@ -178,6 +178,7 @@ export class EmployerDashboardService {
       JOIN public.application a ON a.application_id = r.application_id
       JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
       WHERE o.company_id = $1 AND ia.assignment_status IN ('pending', 'ongoing')
+        AND ia.deleted_at IS NULL
     `;
     const activeInternsRes = await this.dataSource.query(activeInternsSql, [
       companyId,
@@ -211,6 +212,7 @@ export class EmployerDashboardService {
       JOIN public.application a ON a.application_id = r.application_id
       JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
       WHERE o.company_id = $1 AND ${dateCond}
+        AND ia.deleted_at IS NULL
     `;
     const presentRes = await this.dataSource.query(presentSql, dateParams);
     const totalPresent = Number(presentRes[0]?.count || 0);
@@ -224,6 +226,7 @@ export class EmployerDashboardService {
       JOIN public.application a ON a.application_id = r.application_id
       JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
       WHERE o.company_id = $1 AND ar.attendance_date = CURRENT_DATE
+        AND ia.deleted_at IS NULL
     `;
     const todayPresentRes = await this.dataSource.query(todayPresentSql, [
       companyId,
@@ -240,6 +243,7 @@ export class EmployerDashboardService {
       JOIN public.application a ON a.application_id = r.application_id
       JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
       WHERE o.company_id = $1 AND ar.time_in_status = 'late' AND ${dateCond}
+        AND ia.deleted_at IS NULL
     `;
     const lateRes = await this.dataSource.query(lateSql, dateParams);
     const totalLate = Number(lateRes[0]?.count || 0);

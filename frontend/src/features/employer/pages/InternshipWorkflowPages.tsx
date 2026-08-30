@@ -2,7 +2,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Eye, Search, SlidersHorizontal } 
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { EmployerHero } from '../components/EmployerHero'
-import { employerService } from '../services/employer.service'
+import { employerService, canWithdrawCandidate } from '../services/employer.service'
 import type { InternshipAssignment } from '../types/employer.types'
 import styles from './InternshipWorkflowPages.module.css'
 
@@ -93,6 +93,7 @@ export function ReviewInternshipAssignmentPage() {
   const navigate = useNavigate()
   const [assignment, setAssignment] = useState<InternshipAssignment | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isWithdrawing, setIsWithdrawing] = useState(false)
   const [formData, setFormData] = useState(createEmptyAssignmentForm)
 
   useEffect(() => {
@@ -108,6 +109,33 @@ export function ReviewInternshipAssignmentPage() {
   if (!assignment) return <main className={styles.assignmentFeedback}>Internship assignment not found.</main>
 
   const isAssignmentLocked = assignment.studentResponse !== 'Accepted'
+  const canWithdraw = canWithdrawCandidate({
+    studentResponse: assignment.studentResponse,
+    internshipAssignmentId: assignment.internshipAssignmentId,
+    isWithdrawing,
+  })
+
+  const handleWithdrawAcceptance = async () => {
+    if (!assignment.id) return
+    if (
+      !window.confirm(
+        'Are you sure you want to withdraw acceptance for this candidate? This will transition the referral to rejected status.',
+      )
+    ) {
+      return
+    }
+    setIsWithdrawing(true)
+    try {
+      await employerService.withdrawAcceptance(assignment.id)
+      navigate('/employer/internship-assignments')
+    } catch (err: any) {
+      alert(err?.message || 'Failed to withdraw acceptance. The student may have already responded.')
+      const refreshed = await employerService.getInternshipAssignmentById(assignment.id)
+      setAssignment(refreshed ?? null)
+    } finally {
+      setIsWithdrawing(false)
+    }
+  }
 
   return (
     <main className={styles.assignmentDetailPage}>
@@ -134,7 +162,16 @@ export function ReviewInternshipAssignmentPage() {
 
             <footer className={styles.assignmentDetailFooter}>
               <button type="submit" className={styles.createAssignmentButton} disabled={isAssignmentLocked}>Create Internship Assignment</button>
-              <button type="button" className={styles.withdrawInternshipButton}>Withdraw Acceptance</button>
+              {canWithdraw && (
+                <button
+                  type="button"
+                  className={styles.withdrawInternshipButton}
+                  disabled={isWithdrawing}
+                  onClick={handleWithdrawAcceptance}
+                >
+                  {isWithdrawing ? 'Withdrawing...' : 'Withdraw Acceptance'}
+                </button>
+              )}
             </footer>
           </form>
         </section>

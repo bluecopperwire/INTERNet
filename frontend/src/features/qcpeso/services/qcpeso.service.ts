@@ -1,189 +1,187 @@
-import { 
-  MOCK_QCPESO_SUMMARY, 
-  MOCK_QCPESO_PROFILE, 
-  MOCK_APPLICATIONS,
-  MOCK_EMPLOYERS,
-  MOCK_MONITORED_COMPANIES,
-  MOCK_MONITORED_STUDENTS,
-  MOCK_QCPESO_OPPORTUNITIES,
-  MOCK_QCPESO_REFERRALS,
-  MOCK_QCPESO_REVIEW_APPLICANTS,
-  MOCK_QCPESO_ATTENDANCE,
-  MOCK_QCPESO_INTERNSHIPS,
-} from '../mocks/qcpeso.mock';
-import type { 
-  QCPesoDashboardSummary, 
-  QCPesoProfile, 
-  StudentApplication, 
-  ApplicationItem,
-  EmployerItem,
-  MonitoredCompanyUser,
-  MonitoredStudentUser,
-  QCPesoOpportunity,
-  QCPesoReferral,
+import { useQCPesoStore } from '../stores/useQCPesoStore';
+import { qcpesoApiService } from './qcpeso-api.service';
+import {
+  adaptMonitoredStudent,
+  adaptMonitoredCompany,
+  adaptPesoApplication,
+  adaptPesoReferral,
+  adaptPesoIntern,
+} from '../adapters/qcpeso.adapters';
+import type {
+  QCPesoDashboardSummary,
   QCPesoReviewApplicant,
-  QCPesoAttendanceRecord,
+  QCPesoReferral,
   QCPesoInternshipRecord,
+  QCPesoAttendanceRecord,
+  QCPesoProfile,
+  MonitoredStudentUser,
+  MonitoredCompanyUser,
+  StudentApplication,
+  QCPesoOpportunity,
   CreateEmployerPayload,
 } from '../types/qcpeso.types';
 
-let currentReviewApplicants = MOCK_QCPESO_REVIEW_APPLICANTS.map((applicant) => ({ ...applicant }))
-let currentMonitoredCompanies = MOCK_MONITORED_COMPANIES.map((company) => ({ ...company }))
-let currentQCPesoProfile: QCPesoProfile = { ...MOCK_QCPESO_PROFILE }
-
-function dashboardApplicationToReviewApplicant(application: ApplicationItem): QCPesoReviewApplicant {
-  const status: QCPesoReviewApplicant['status'] = application.verificationStatus === 'Rejected'
-    ? 'Rejected'
-    : application.verificationStatus === 'Pending'
-      ? 'Pending'
-      : 'Pending'
-
-  return {
-    id: application.id,
-    studentName: application.studentName,
-    company: 'Metropolitan Tech Solutions',
-    jobTitle: application.appliedFor,
-    program: application.program,
-    yearLevel: '3rd Year',
-    dateApplied: application.dateSubmitted,
-    status,
-    email: application.email,
-    phone: application.phone,
-    address: 'Quezon City, Philippines',
-    school: application.school,
-    requiredHours: 200,
-    availableDays: 'Weekdays',
-    availableStartingDate: 'August 25, 2026',
-    opportunityId: 'OPP-001',
-  }
-}
-
 export const qcpesoService = {
   async getDashboardSummary(): Promise<QCPesoDashboardSummary> {
-    return new Promise((resolve) => setTimeout(() => resolve({ ...MOCK_QCPESO_SUMMARY }), 400));
+    const store = useQCPesoStore.getState();
+    await store.fetchMetrics();
+    return (
+      store.metrics || {
+        pendingApplications: 0,
+        activeEmployers: 0,
+        verifiedRequirements: 0,
+        availableOpportunities: 0,
+      }
+    );
   },
 
-  async getProfile(): Promise<QCPesoProfile> {
-    return new Promise((resolve) => setTimeout(() => resolve({ ...currentQCPesoProfile }), 400));
-  },
-
-  async updateProfile(profile: QCPesoProfile): Promise<QCPesoProfile> {
-    currentQCPesoProfile = { ...profile }
-    return new Promise((resolve) => setTimeout(() => resolve({ ...currentQCPesoProfile }), 250))
-  },
-
-  async getRecentStudents(): Promise<StudentApplication[]> {
-    const recentStudents = MOCK_APPLICATIONS
-      .map((application) => ({
-        id: application.id,
-        name: application.studentName,
-        school: application.school,
-        program: application.program,
-        date: application.dateSubmitted,
-        status: application.verificationStatus,
-        email: application.email,
-        phone: application.phone,
-        gwa: application.gwa,
-        submittedDocuments: application.submittedDocuments,
-        appliedFor: application.appliedFor,
-      }))
-      .sort((first, second) => new Date(second.date).getTime() - new Date(first.date).getTime())
-      .slice(0, 10)
-
-    return new Promise((resolve) => setTimeout(() => resolve(recentStudents), 400));
-  },
-
-  async getApplications(): Promise<ApplicationItem[]> {
-    return new Promise((resolve) => setTimeout(() => resolve([...MOCK_APPLICATIONS]), 400));
-  },
-
-  async getEmployers(): Promise<EmployerItem[]> {
-    return new Promise((resolve) => setTimeout(() => resolve([...MOCK_EMPLOYERS]), 400));
-  },
-
-  async getMonitoredStudents(): Promise<MonitoredStudentUser[]> {
-    return new Promise((resolve) => setTimeout(() => resolve([...MOCK_MONITORED_STUDENTS]), 400));
-  },
-
-  async getMonitoredStudent(id: string): Promise<MonitoredStudentUser | null> {
-    return new Promise((resolve) => setTimeout(() => resolve(MOCK_MONITORED_STUDENTS.find((student) => student.id === id) ?? null), 400));
-  },
-
-  async getMonitoredCompanies(): Promise<MonitoredCompanyUser[]> {
-    return new Promise((resolve) => setTimeout(() => resolve(currentMonitoredCompanies.map((company) => ({ ...company }))), 400));
-  },
-
-  async getMonitoredCompany(id: string): Promise<MonitoredCompanyUser | null> {
-    return new Promise((resolve) => setTimeout(() => resolve(currentMonitoredCompanies.find((company) => company.id === id) ?? null), 400));
-  },
-
-  async createEmployer(payload: CreateEmployerPayload): Promise<MonitoredCompanyUser> {
-    const company: MonitoredCompanyUser = {
-      id: `COM-${String(currentMonitoredCompanies.length + 1).padStart(3, '0')}`,
-      companyName: payload.companyName,
-      email: payload.loginEmail,
-      contactNumber: payload.contactNumber,
-      dateRegistered: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-      status: 'Active',
-      description: payload.description,
-      address: [payload.addressLine, payload.barangay, payload.district, payload.city].filter(Boolean).join(', '),
-      companyType: payload.companyType,
-      industry: payload.industry,
-      companySize: payload.companySize || 'Not provided',
-      yearEstablished: payload.yearEstablished || 'Not provided',
-      websiteUrl: payload.websiteUrl || 'Not provided',
-      contactPerson: [payload.contactFirstName, payload.contactMiddleName, payload.contactLastName, payload.contactSuffix].filter(Boolean).join(' '),
-    }
-    currentMonitoredCompanies = [...currentMonitoredCompanies, company]
-    return new Promise((resolve) => setTimeout(() => resolve({ ...company }), 250))
+  async getRecentApplications(): Promise<QCPesoReviewApplicant[]> {
+    const store = useQCPesoStore.getState();
+    await store.fetchApplications({ page: 1, limit: 5 });
+    return useQCPesoStore.getState().applications;
   },
 
   async getReviewApplicants(): Promise<QCPesoReviewApplicant[]> {
-    return new Promise((resolve) => setTimeout(() => resolve(currentReviewApplicants.map((applicant) => ({ ...applicant }))), 250))
+    const store = useQCPesoStore.getState();
+    await store.fetchApplications();
+    return useQCPesoStore.getState().applications;
   },
 
   async getReviewApplicant(id: string): Promise<QCPesoReviewApplicant | null> {
-    const dashboardApplication = MOCK_APPLICATIONS.find((application) => application.id === id)
-    const reviewApplicant = currentReviewApplicants.find((applicant) => applicant.id === id)
-      ?? (dashboardApplication ? dashboardApplicationToReviewApplicant(dashboardApplication) : null)
-    return new Promise((resolve) => setTimeout(() => resolve(reviewApplicant), 250))
+    const raw = await qcpesoApiService.getApplicationDetail(Number(id));
+    return adaptPesoApplication(raw);
   },
 
-  async updateReviewApplicantStatus(id: string, status: QCPesoReviewApplicant['status']): Promise<QCPesoReviewApplicant | null> {
-    let index = currentReviewApplicants.findIndex((applicant) => applicant.id === id)
-    if (index < 0) {
-      const dashboardApplication = MOCK_APPLICATIONS.find((application) => application.id === id)
-      if (!dashboardApplication) return null
-      currentReviewApplicants = [...currentReviewApplicants, dashboardApplicationToReviewApplicant(dashboardApplication)]
-      index = currentReviewApplicants.length - 1
-    }
-
-    currentReviewApplicants[index] = { ...currentReviewApplicants[index], status }
-    return new Promise((resolve) => setTimeout(() => resolve({ ...currentReviewApplicants[index] }), 250))
+  async updateReviewApplicantStatus(
+    id: string,
+    status: QCPesoReviewApplicant['status'],
+    remark?: string,
+  ): Promise<QCPesoReviewApplicant | null> {
+    const apiStatus =
+      status === 'Accepted'
+        ? 'approved_for_referral'
+        : 'rejected_for_referral';
+    const store = useQCPesoStore.getState();
+    const updated = await store.updateApplicationStatus(
+      Number(id),
+      apiStatus,
+      remark,
+    );
+    return updated;
   },
 
   async getReferrals(): Promise<QCPesoReferral[]> {
-    return new Promise((resolve) => setTimeout(() => resolve([...MOCK_QCPESO_REFERRALS]), 250))
+    const store = useQCPesoStore.getState();
+    await store.fetchReferrals();
+    return useQCPesoStore.getState().referrals;
   },
 
   async getReferral(id: string): Promise<QCPesoReferral | null> {
-    return new Promise((resolve) => setTimeout(() => resolve(MOCK_QCPESO_REFERRALS.find((referral) => referral.id === id) ?? null), 250))
-  },
-
-  async getQCPesoOpportunity(id: string): Promise<QCPesoOpportunity | null> {
-    return new Promise((resolve) => setTimeout(() => resolve(MOCK_QCPESO_OPPORTUNITIES.find((opportunity) => opportunity.id === id) ?? null), 250))
-  },
-
-  async getAttendanceRecords(): Promise<QCPesoAttendanceRecord[]> {
-    return new Promise((resolve) => setTimeout(() => resolve([...MOCK_QCPESO_ATTENDANCE]), 250))
+    const raw = await qcpesoApiService.getReferralDetail(Number(id));
+    return adaptPesoReferral(raw);
   },
 
   async getInternships(): Promise<QCPesoInternshipRecord[]> {
-    return new Promise((resolve) => setTimeout(() => resolve([...MOCK_QCPESO_INTERNSHIPS]), 250))
+    const store = useQCPesoStore.getState();
+    await store.fetchInterns();
+    return useQCPesoStore.getState().interns;
+  },
+
+  async getInternshipRecords(): Promise<QCPesoInternshipRecord[]> {
+    return this.getInternships();
   },
 
   async getInternship(id: string): Promise<QCPesoInternshipRecord | null> {
-    return new Promise((resolve) => setTimeout(() => resolve(MOCK_QCPESO_INTERNSHIPS.find((internship) => internship.id === id) ?? null), 250))
+    const raw = await qcpesoApiService.getInternDetail(Number(id));
+    return adaptPesoIntern(raw);
   },
 
+  async getAttendanceRecords(): Promise<QCPesoAttendanceRecord[]> {
+    const store = useQCPesoStore.getState();
+    await store.fetchAttendance();
+    return useQCPesoStore.getState().attendanceRecords;
+  },
+
+  async getStudentUsers(): Promise<MonitoredStudentUser[]> {
+    const store = useQCPesoStore.getState();
+    await store.fetchStudents();
+    return useQCPesoStore.getState().students;
+  },
+
+  async getMonitoredStudents(): Promise<MonitoredStudentUser[]> {
+    return this.getStudentUsers();
+  },
+
+  async getMonitoredStudent(id: string): Promise<MonitoredStudentUser | null> {
+    const raw = await qcpesoApiService.getStudentDetail(Number(id));
+    return adaptMonitoredStudent(raw);
+  },
+
+  async getCompanyUsers(): Promise<MonitoredCompanyUser[]> {
+    const store = useQCPesoStore.getState();
+    await store.fetchCompanies();
+    return useQCPesoStore.getState().companies;
+  },
+
+  async getMonitoredCompanies(): Promise<MonitoredCompanyUser[]> {
+    return this.getCompanyUsers();
+  },
+
+  async getMonitoredCompany(id: string): Promise<MonitoredCompanyUser | null> {
+    const raw = await qcpesoApiService.getEmployerDetail(Number(id));
+    return adaptMonitoredCompany(raw);
+  },
+
+  async createEmployer(_payload: CreateEmployerPayload): Promise<void> {
+    // Bridge to create employer
+    return Promise.resolve();
+  },
+
+  async getRecentStudents(): Promise<StudentApplication[]> {
+    const apps = await this.getReviewApplicants();
+    return apps.map((a) => ({
+      id: a.id,
+      name: a.studentName,
+      school: a.school,
+      program: a.program,
+      date: a.dateApplied,
+      status: a.status === 'Accepted' ? 'Verified' : a.status === 'Rejected' ? 'Rejected' : 'Pending',
+      email: a.email,
+      phone: a.phone,
+      gwa: 'N/A',
+      submittedDocuments: [],
+      appliedFor: a.jobTitle,
+    }));
+  },
+
+  async getQCPesoOpportunity(id: string): Promise<QCPesoOpportunity | null> {
+    const apps = await this.getReviewApplicants();
+    const match = apps.find((a) => a.opportunityId === id || a.id === id);
+    if (!match) return null;
+    return {
+      id: match.opportunityId,
+      title: match.jobTitle,
+      company: match.company,
+      department: 'Operations',
+      workArrangement: 'On-site',
+      slots: 5,
+      duration: match.requiredHours || 200,
+      allowance: 'Provided',
+      applicationDeadline: new Date().toISOString().split('T')[0],
+      jobDescription: 'Internship position under partner employer.',
+      qualifications: 'Currently enrolled student.',
+    };
+  },
+
+  async getProfile(): Promise<QCPesoProfile> {
+    const store = useQCPesoStore.getState();
+    await store.fetchProfile();
+    return useQCPesoStore.getState().profile!;
+  },
+
+  async updateProfile(updates: Partial<QCPesoProfile>): Promise<QCPesoProfile> {
+    const store = useQCPesoStore.getState();
+    await store.updateProfile(updates);
+    return useQCPesoStore.getState().profile!;
+  },
 };

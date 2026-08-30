@@ -1,6 +1,9 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import LoginPage from './features/authentication/components/LoginPage'
 import SignUpPage from './features/authentication/components/SignUpPage'
+import { AuthCallbackPage } from './features/authentication/components/AuthCallbackPage'
+import { ProtectedRoute } from './components/routing/ProtectedRoute'
+import { RoleRoute } from './components/routing/RoleRoute'
 
 // Intern Seeker
 import InternSeekerLayout from './features/intern-seeker/components/InternSeekerLayout'
@@ -68,9 +71,20 @@ function App() {
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/sign-up" element={<SignUpPage />} />
+        <Route path="/register/student/profile" element={<SignUpPage />} />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
         {/* Intern Seeker Routes */}
-        <Route path="/intern-seeker" element={<InternSeekerLayout />}>
+        <Route
+          path="/intern-seeker"
+          element={
+            <ProtectedRoute>
+              <RoleRoute allowedRoles={['student']}>
+                <InternSeekerLayout />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<InternshipPortalPage />} />
           <Route path="search" element={<InternshipSearchPage />} />
           <Route path="profile" element={<DashboardPage />} />
@@ -88,7 +102,16 @@ function App() {
         <Route path="/privacy-policy" element={<main aria-label="Privacy Policy" />} />
 
         {/* QCPESO Routes */}
-        <Route path="/qcpeso" element={<QCPesoLayout />}>
+        <Route
+          path="/qcpeso"
+          element={
+            <ProtectedRoute>
+              <RoleRoute allowedRoles={['peso_personnel']}>
+                <QCPesoLayout />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<QCPesoDashboardPage />} />
           <Route path="dashboard" element={<QCPesoDashboardPage />} />
           <Route path="profile" element={<QCPesoProfilePage />} />
@@ -113,7 +136,16 @@ function App() {
         </Route>
 
         {/* Employer Routes */}
-        <Route path="/employer" element={<EmployerLayout />}>
+        <Route
+          path="/employer"
+          element={
+            <ProtectedRoute>
+              <RoleRoute allowedRoles={['company']}>
+                <EmployerLayout />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<EmployerDashboardPage />} />
           <Route path="dashboard" element={<EmployerDashboardPage />} />
           <Route path="profile" element={<CompanyProfilePage />} />
@@ -136,7 +168,16 @@ function App() {
         </Route>
 
         {/* Admin Routes */}
-        <Route path="/admin" element={<AdminLayout />}>
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <RoleRoute allowedRoles={['admin']}>
+                <AdminLayout />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<AdminDashboardPage />} />
           <Route path="dashboard" element={<AdminDashboardPage />} />
           <Route path="audit-logs" element={<AuditLogsPage />} />

@@ -12,7 +12,6 @@ import type {
   UpdateOpportunityDto,
 } from '../dto';
 import { EmployerCompanyResolver } from './company-resolver.service';
-import { dbMigrationPending } from '../utils/errors.utils';
 import { assertValidDate, currentManilaDate } from '../utils/time.utils';
 import { asNumber, paginate } from '../utils/response.utils';
 
@@ -65,17 +64,54 @@ export class EmployerOpportunityService {
   async create(
     userAccountId: number,
     dto: CreateOpportunityDto,
-  ): Promise<never> {
-    await this.companyResolver.resolve(userAccountId);
+  ) {
+    const company = await this.companyResolver.resolve(userAccountId);
     assertValidDate(dto.applicationDeadline, 'applicationDeadline');
     if (dto.applicationDeadline < currentManilaDate()) {
       throw new ConflictException('applicationDeadline cannot be in the past.');
     }
-    // TODO(DB-EMP-001): Implement after the text allowance model is approved and migrated.
-    throw dbMigrationPending(
-      'DB-EMP-001',
-      'Opportunity creation is temporarily unavailable pending the approved allowance migration.',
+
+    const allowance = this.normalizeAllowance(
+      dto.allowance,
+      dto.hasAllowance,
     );
+
+    let createdId: number;
+    await withStatusActor(this.dataSource, userAccountId, async (runner) => {
+      const result = await runner.query(
+        `
+          INSERT INTO public.opportunity (
+            company_id,
+            title,
+            department,
+            work_arrangement,
+            minimum_required_hours,
+            offered_slots,
+            allowance,
+            description,
+            qualification,
+            application_deadline,
+            opportunity_status
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'open')
+          RETURNING opportunity_id
+        `,
+        [
+          company.companyId,
+          dto.title.trim(),
+          dto.department.trim(),
+          dto.workArrangement,
+          dto.minimumRequiredHours,
+          dto.offeredSlots,
+          allowance,
+          dto.description.trim(),
+          dto.qualification ? dto.qualification.trim() : null,
+          dto.applicationDeadline,
+        ],
+      );
+      createdId = asNumber(result[0]?.opportunity_id);
+    });
+
+    return this.getById(userAccountId, createdId!);
   }
 
   async getById(userAccountId: number, opportunityId: number) {
@@ -92,17 +128,82 @@ export class EmployerOpportunityService {
     userAccountId: number,
     opportunityId: number,
     dto: UpdateOpportunityDto,
-  ): Promise<never> {
+  ) {
     const company = await this.companyResolver.resolve(userAccountId);
-    await this.findScoped(this.dataSource, company.companyId, opportunityId);
+    const existing = await this.findScoped(this.dataSource, company.companyId, opportunityId);
+    if (existing.opportunity_status === 'archived') {
+      throw new ConflictException('Archived opportunities cannot be edited.');
+    }
     if (dto.applicationDeadline) {
       assertValidDate(dto.applicationDeadline, 'applicationDeadline');
+      if (dto.applicationDeadline < currentManilaDate()) {
+        throw new ConflictException('applicationDeadline cannot be in the past.');
+      }
     }
-    // TODO(DB-EMP-001): Implement after the text allowance model is approved and migrated.
-    throw dbMigrationPending(
-      'DB-EMP-001',
-      'Opportunity updates are temporarily unavailable pending the approved allowance migration.',
-    );
+
+    await withStatusActor(this.dataSource, userAccountId, async (runner) => {
+      const updates: string[] = [];
+      const params: any[] = [opportunityId, company.companyId];
+      let pIdx = 3;
+
+      if (dto.title !== undefined) {
+        updates.push(`title = $${pIdx++}`);
+        params.push(dto.title.trim());
+      }
+      if (dto.department !== undefined) {
+        updates.push(`department = $${pIdx++}`);
+        params.push(dto.department.trim());
+      }
+      if (dto.workArrangement !== undefined) {
+        updates.push(`work_arrangement = $${pIdx++}`);
+        params.push(dto.workArrangement);
+      }
+      if (dto.minimumRequiredHours !== undefined) {
+        updates.push(`minimum_required_hours = $${pIdx++}`);
+        params.push(dto.minimumRequiredHours);
+      }
+      if (dto.offeredSlots !== undefined) {
+        updates.push(`offered_slots = $${pIdx++}`);
+        params.push(dto.offeredSlots);
+      }
+      if (dto.hasAllowance !== undefined || dto.allowance !== undefined) {
+        updates.push(`allowance = $${pIdx++}`);
+        params.push(
+          dto.allowance !== undefined
+            ? this.normalizeAllowance(dto.allowance, dto.hasAllowance)
+            : this.normalizeAllowance(
+                existing.allowance as string | number | null,
+                dto.hasAllowance,
+              ),
+        );
+      }
+      if (dto.description !== undefined) {
+        updates.push(`description = $${pIdx++}`);
+        params.push(dto.description.trim());
+      }
+      if (dto.qualification !== undefined) {
+        updates.push(`qualification = $${pIdx++}`);
+        params.push(dto.qualification ? dto.qualification.trim() : null);
+      }
+      if (dto.applicationDeadline !== undefined) {
+        updates.push(`application_deadline = $${pIdx++}`);
+        params.push(dto.applicationDeadline);
+      }
+
+      if (updates.length > 0) {
+        updates.push(`updated_at = CURRENT_TIMESTAMP`);
+        await runner.query(
+          `
+            UPDATE public.opportunity
+            SET ${updates.join(', ')}
+            WHERE opportunity_id = $1 AND company_id = $2
+          `,
+          params,
+        );
+      }
+    });
+
+    return this.getById(userAccountId, opportunityId);
   }
 
   async close(userAccountId: number, opportunityId: number) {
@@ -186,7 +287,7 @@ export class EmployerOpportunityService {
       workArrangement: row.work_arrangement,
       offeredSlots: asNumber(row.offered_slots),
       allowance:
-        row.has_allowance === true && row.allowance !== null
+        row.allowance !== null
           ? typeof row.allowance === 'string'
             ? row.allowance
             : typeof row.allowance === 'number'
@@ -197,5 +298,27 @@ export class EmployerOpportunityService {
       opportunityStatus: row.opportunity_status,
       totalApplicantCount: asNumber(row.total_applicant_count),
     };
+  }
+
+  private normalizeAllowance(
+    value: string | number | null | undefined,
+    hasAllowance?: boolean,
+  ): string | null {
+    const normalized =
+      value === null || value === undefined ? '' : String(value).trim();
+    if (hasAllowance === false) {
+      if (normalized) {
+        throw new ConflictException(
+          'allowance must be empty when hasAllowance is false.',
+        );
+      }
+      return null;
+    }
+    if (hasAllowance === true && !normalized) {
+      throw new ConflictException(
+        'allowance is required when hasAllowance is true.',
+      );
+    }
+    return normalized || null;
   }
 }

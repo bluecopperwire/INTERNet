@@ -167,8 +167,30 @@ export function TrackingDataProvider({ children }: { children: ReactNode }) {
   return <TrackingDataContext.Provider value={value}>{children}</TrackingDataContext.Provider>
 }
 
+const fallbackTrackingContext: TrackingDataContextValue = {
+  requirements: [],
+  applications: [],
+  today: null,
+  internshipDetails: null,
+  attendanceMonths: {},
+  isInitializing: false,
+  requirementsError: null,
+  applicationsError: null,
+  attendanceError: null,
+  setRequirementsError: () => {},
+  uploadRequirement: async () => { throw new Error('TrackingDataProvider not available'); },
+  deleteRequirement: async () => { throw new Error('TrackingDataProvider not available'); },
+  withdrawApplication: async () => { throw new Error('TrackingDataProvider not available'); },
+  respondToOffer: async () => { throw new Error('TrackingDataProvider not available'); },
+  deleteApplication: async () => {},
+  loadAttendanceMonth: async () => {},
+  checkIn: async () => { throw new Error('TrackingDataProvider not available'); },
+};
+
 export function useTrackingData() {
   const context = useContext(TrackingDataContext)
-  if (!context) throw new Error('useTrackingData must be used within TrackingDataProvider.')
+  if (!context) {
+    return fallbackTrackingContext;
+  }
   return context
 }

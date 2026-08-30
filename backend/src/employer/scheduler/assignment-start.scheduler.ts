@@ -31,6 +31,7 @@ export class AssignmentStartScheduler implements OnModuleInit {
           SELECT internship_assignment_id
           FROM public.internship_assignment
           WHERE assignment_status = 'pending' AND start_date <= $1::date
+            AND deleted_at IS NULL
           ORDER BY internship_assignment_id
         `,
         [today],
@@ -50,6 +51,7 @@ export class AssignmentStartScheduler implements OnModuleInit {
                   WHERE internship_assignment_id = $1
                     AND assignment_status = 'pending'
                     AND start_date <= $2::date
+                    AND deleted_at IS NULL
                   RETURNING internship_assignment_id
                 `,
               [assignmentId, today],

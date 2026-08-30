@@ -19,17 +19,12 @@ import {
 } from 'lucide-react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import internetLogo from '../../../assets/internet-logo.svg'
+import { useAuthStore } from '../../../stores/useAuthStore'
 import styles from './QCPesoSidebar.module.css'
 
 interface QCPesoSidebarProps {
   isOpen: boolean
   onClose: () => void
-}
-
-const MOCK_USER = {
-  name: 'Kyle Ethan Porciuncula',
-  email: 'flowforgestd@gmail.com',
-  initials: 'KE',
 }
 
 function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
@@ -39,6 +34,7 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
   const [manageInternsOpen, setManageInternsOpen] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
+  const { user, logout: authLogout } = useAuthStore()
 
   const monitorUsersActive = location.pathname.startsWith('/qcpeso/monitor-users')
   const manageApplicantsActive = location.pathname.startsWith('/qcpeso/manage-applicants')
@@ -53,15 +49,19 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
   const matchesSearch = (text: string) => !search.trim() || text.toLowerCase().includes(search.trim().toLowerCase())
   const isProfileActive = location.pathname === '/qcpeso/profile'
 
-  const logout = () => {
+  const logout = async () => {
     onClose()
-    navigate('/')
+    await authLogout()
+    navigate('/', { replace: true })
   }
 
   const navigateToProfile = () => {
     onClose()
     navigate('/qcpeso/profile')
   }
+
+  const displayName = user?.email.split('@')[0] || 'PESO Personnel'
+  const userInitials = displayName.substring(0, 2).toUpperCase()
 
   return (
     <aside className={`${styles.sidebar} ${isOpen ? styles.open : ''}`} id="qcpeso-sidebar" aria-hidden={!isOpen}>
@@ -104,8 +104,8 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
 
       <div className={`${styles.userSummary} ${isProfileActive ? styles.userSummaryActive : ''}`} onClick={navigateToProfile} role="button" tabIndex={0}>
         <div className={styles.userLeft}>
-          <span className={styles.avatar} aria-hidden="true">{MOCK_USER.initials}</span>
-          <div className={styles.userText}><span className={styles.userName}>{MOCK_USER.name}</span><span className={styles.userEmail}>{MOCK_USER.email}</span></div>
+          <span className={styles.avatar} aria-hidden="true">{userInitials}</span>
+          <div className={styles.userText}><span className={styles.userName}>{displayName}</span><span className={styles.userEmail}>{user?.email}</span></div>
         </div>
         <ExternalLink size={16} aria-hidden="true" className={styles.externalIcon} />
       </div>

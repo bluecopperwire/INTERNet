@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import internetLogo from '../../../assets/internet-logo.svg'
+import { useAuthStore } from '../../../stores/useAuthStore'
 import styles from './InternSeekerSidebar.module.css'
 
 interface InternSeekerSidebarProps {
@@ -24,15 +25,10 @@ const NAVIGATION = [
   { label: 'Requirements', path: '/intern-seeker/requirements', icon: BriefcaseBusiness },
 ]
 
-const MOCK_USER = {
-  name: 'Kyle Ethan Porciuncula',
-  email: 'flowforgestd@gmail.com',
-  initials: 'KE',
-}
-
 function InternSeekerSidebar({ isOpen, onClose }: InternSeekerSidebarProps) {
   const [search, setSearch] = useState('')
   const navigate = useNavigate()
+  const { user, logout: authLogout } = useAuthStore()
 
   const filteredNavigation = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -41,10 +37,14 @@ function InternSeekerSidebar({ isOpen, onClose }: InternSeekerSidebarProps) {
       : NAVIGATION
   }, [search])
 
-  const logout = () => {
+  const logout = async () => {
     onClose()
-    navigate('/')
+    await authLogout()
+    navigate('/', { replace: true })
   }
+
+  const displayName = user?.email.split('@')[0] || 'Intern Seeker'
+  const userInitials = displayName.substring(0, 2).toUpperCase()
 
   return (
     <aside
@@ -96,10 +96,10 @@ function InternSeekerSidebar({ isOpen, onClose }: InternSeekerSidebarProps) {
         onClick={() => { onClose(); navigate('/intern-seeker/profile') }}
         tabIndex={isOpen ? 0 : -1}
       >
-        <span className={styles.avatar} aria-hidden="true">{MOCK_USER.initials}</span>
+        <span className={styles.avatar} aria-hidden="true">{userInitials}</span>
         <span className={styles.userText}>
-          <strong>{MOCK_USER.name}</strong>
-          <small>{MOCK_USER.email}</small>
+          <strong>{displayName}</strong>
+          <small>{user?.email}</small>
         </span>
         <ExternalLink aria-hidden="true" />
       </button>

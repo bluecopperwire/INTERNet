@@ -1,0 +1,18 @@
+{
+  "name": "internet-workspace",
+  "private": true,
+  "packageManager": "npm@11.6.2",
+  "engines": {
+    "node": ">=24.20.0 <25",
+    "npm": ">=11 <12"
+  },
+  "scripts": {
+    "doctor": "node scripts/dev-doctor.mjs",
+    "install:all": "npm ci --prefix backend && npm ci --prefix frontend",
+    "db:up": "docker compose --env-file backend/.env up -d postgres",
+    "db:down": "docker compose --env-file backend/.env down",
+    "db:migrate": "npm run migration:run --prefix backend",
+    "db:validate": "npm run database:validate --prefix backend",
+    "db:seed:reference": "npm run seed:reference --prefix backend && npm run database:validate-reference-seeds --prefix backend"
+  }
+}
