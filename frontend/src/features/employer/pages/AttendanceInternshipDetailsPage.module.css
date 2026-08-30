@@ -1,0 +1,166 @@
+.page,
+.feedback {
+  min-height: 100vh;
+  color: #160e6f;
+  background: #ffffff;
+  font-family: 'Poppins', sans-serif;
+}
+
+.page {
+  padding: 32px 48px 48px;
+}
+
+.feedback {
+  padding: 48px;
+  text-align: center;
+}
+
+.wrap {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 8px 0;
+  border: 0;
+  color: #160e6f;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.studentSummary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 20px 24px;
+  border: 1px solid #cfd5e6;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(22, 14, 111, 0.05);
+}
+
+.studentIcon {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+  color: #160e6f;
+  background: #ebeaf5;
+}
+
+.studentSummary h1,
+.studentSummary p,
+.hoursSummary strong,
+.hoursSummary span,
+.cardHeader h2,
+.cardHeader p {
+  margin: 0;
+}
+
+.studentSummary h1 { font-size: 20px; }
+.studentSummary p { margin-top: 3px; color: #625d7d; font-size: 14px; }
+
+.hoursSummary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-left: auto;
+  padding: 12px 15px;
+  border: 1px solid #d6d9e7;
+  border-radius: 7px;
+  background: #f8fafc;
+}
+
+.hoursSummary div { display: flex; flex-direction: column; gap: 2px; }
+.hoursSummary strong { font-size: 14px; }
+.hoursSummary span { color: #625d7d; font-size: 12px; }
+
+.detailCard {
+  overflow: hidden;
+  border: 1px solid #cfd5e6;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(22, 14, 111, 0.05);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 24px;
+  border-bottom: 2px solid #160e6f;
+  background: #f8fafc;
+}
+
+.cardHeader h2 { font-size: 24px; }
+.cardHeader p { margin-top: 6px; color: #625d7d; font-size: 14px; }
+
+.tableScroller { overflow-x: auto; }
+
+.attendanceTable {
+  width: 100%;
+  min-width: 840px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.attendanceTable th {
+  padding: 16px 20px;
+  border-bottom: 2px solid #160e6f;
+  background: #f8fafc;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.attendanceTable td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #28314e;
+  font-size: 14px;
+}
+
+.attendanceTable tbody tr:last-child td { border-bottom: 0; }
+.attendanceTable tbody tr:hover { background: #f8fafc; }
+
+.statusPill {
+  display: inline-flex;
+  padding: 6px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ontime,
+.complete { color: #16876c; background: #eaf9f5; }
+.late { color: #a56600; background: #fff4e6; }
+.absent,
+.incomplete { color: #e25555; background: #fff0ef; }
+.undertime { color: #a56600; background: #fff4e6; }
+.overtime { color: #6557a8; background: #f0eef9; }
+
+.noRecords {
+  margin: 0;
+  padding: 38px;
+  color: #625d7d;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .page { padding: 24px 20px 40px; }
+  .studentSummary { align-items: flex-start; flex-wrap: wrap; padding: 18px 20px; }
+  .hoursSummary { width: 100%; margin-left: 0; }
+  .cardHeader { padding: 18px 20px; }
+}

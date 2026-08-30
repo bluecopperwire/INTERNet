@@ -5,7 +5,7 @@
 From `backend/`:
 
 ```powershell
-npm install
+npm ci
 ```
 
 Then create the local environment file:
@@ -48,19 +48,19 @@ Without these, the backend will start but login requests will fail at runtime wi
 Run this from the **repository root** (the directory containing `docker-compose.yml`, one level above `backend/`):
 
 ```powershell
-docker compose up -d postgres
+docker compose --env-file backend/.env up -d postgres
 ```
 
 Check it:
 
 ```powershell
-docker compose ps
+docker compose --env-file backend/.env ps
 ```
 
 Confirm the host port:
 
 ```powershell
-docker compose port postgres 5432
+docker compose --env-file backend/.env port postgres 5432
 ```
 
 The expected normal mapping is:
@@ -69,16 +69,7 @@ The expected normal mapping is:
 localhost:5433 -> postgres container:5432
 ```
 
-**Important: database password and Docker.** The `docker-compose.yml` reads its own `.env` from the repository root, not from `backend/.env`. If there is no `.env` in the repository root it falls back to `your_secure_password`. This means:
-
-- If you kept the default `DATABASE_PASSWORD=your_secure_password` in `backend/.env`, everything matches automatically.
-- If you changed `DATABASE_PASSWORD` in `backend/.env`, you must also pass the same password to Docker. The simplest way is to create a one-line `.env` in the repository root:
-
-```env
-DATABASE_PASSWORD=<same-value-as-backend/.env>
-```
-
-If the passwords do not match you will see `FATAL: password authentication failed for user "postgres"` when the backend tries to connect.
+**Important: one environment file.** Always pass `--env-file backend/.env` to Docker Compose. This keeps Compose and the backend CLI on the same credentials. Do not create a second root `.env` just for the database. If an old Docker volume was initialized with a different password, change the local `.env` back to that password or explicitly recreate the local volume only after backing up any data you need.
 
 ---
 
@@ -90,9 +81,9 @@ From `backend/`:
 npm run migration:show
 ```
 
-On a new database, the initial migration should appear as pending.
+On a new database, the migrations `InitialSchema1785860400000` and `ApprovedDatabaseRedesign1787788800000` should appear as pending.
 
-Apply it:
+Apply them:
 
 ```powershell
 npm run migration:run
@@ -102,6 +93,12 @@ Then verify:
 
 ```powershell
 npm run migration:show
+```
+
+Validate the PostgreSQL schema objects against the approved contract:
+
+```powershell
+npm run database:validate
 ```
 
 TypeORM schema synchronization must remain disabled:
@@ -122,6 +119,7 @@ Run:
 
 ```powershell
 npm run seed:reference
+npm run database:validate-reference-seeds
 ```
 
 This inserts the approved industry lookup values:
@@ -154,6 +152,7 @@ $env:NODE_ENV='development'
 $env:ALLOW_DEV_SEED='true'
 $env:DEV_SEED_PASSWORD='TestPassword123'
 npm run seed:dev
+npm run database:validate-dev-seeds
 ```
 
 Use a local test password that satisfies the current password rules.
@@ -162,12 +161,12 @@ Do not reuse a real personal password.
 
 The development seed creates fake accounts and connected domain records such as:
 
-- development admin
+- four canonical local-login accounts: student, company, QC PESO personnel, and admin
 - manual student
 - Google-only student
 - dual-method student
 - companies
-- approved/pending/rejected QC PESO personnel
+- active QC PESO personnel test accounts
 - opportunities
 - applications
 - referrals
@@ -339,7 +338,7 @@ FROM user_account
 ORDER BY user_account_id;
 ```
 
-You should find these nine development accounts:
+You should find these thirteen development accounts:
 
 ```text
 admin.dev@internet.local
@@ -351,7 +350,13 @@ company.hospitality@internet.local
 peso.approved@internet.local
 peso.pending@internet.local
 peso.rejected@internet.local
+student.dev@example.com
+company.dev@example.com
+peso.dev@example.com
+admin.dev@example.com
 ```
+
+The four `@example.com` accounts are the canonical local-login smoke-test fixtures. They are active, have no Google identity, and use the value supplied through `DEV_SEED_PASSWORD`.
 
 ## 7.2 Check manual credentials
 
@@ -368,6 +373,7 @@ ORDER BY ua.email;
 
 Expected:
 
+- `student.dev@example.com`, `company.dev@example.com`, `peso.dev@example.com`, and `admin.dev@example.com` each have a local credential.
 - `student.manual@internet.local` has a local credential.
 - `student.dual@internet.local` has a local credential.
 - `student.google@internet.local` does not have a local credential.
@@ -398,29 +404,32 @@ student.dual@internet.local -> local + Google
 
 The seeded Google identities are synthetic development identities. No real Google OAuth token is stored.
 
-## 7.4 Check QC PESO verification states
+## 7.4 Check QC PESO personnel accounts
 
 Run:
 
 ```sql
 SELECT
     ua.email,
-    pp.verification_status,
-    pp.reviewed_at,
-    pp.reviewed_by_user_account_id
+    ua.account_status,
+    pp.first_name,
+    pp.last_name,
+    pp.employee_id
 FROM peso_personnel pp
 JOIN user_account ua
     ON ua.user_account_id = pp.user_account_id
 ORDER BY ua.email;
 ```
 
-Expected states:
+Expected:
 
 ```text
-peso.approved@internet.local -> approved
-peso.pending@internet.local  -> pending
-peso.rejected@internet.local -> rejected
+peso.approved@internet.local  -> active
+peso.pending@internet.local   -> active
+peso.rejected@internet.local  -> active
 ```
+
+QC PESO personnel accounts are directly active without verification barriers.
 
 Exit PostgreSQL when finished:
 
@@ -454,7 +463,7 @@ TestPassword123
 
 is used.
 
-**Rate-limiter warning.** The login endpoint enforces a limit of **5 requests per 60 seconds**. Sections 8 and 9 together contain six login calls, so running them all back-to-back will cause the last request to return `429 Too Many Requests` instead of the expected result. To avoid this, either:
+**Rate-limiter warning.** The login endpoint enforces a limit of **5 requests per 60 seconds**. Sections 8 and 9 together contain five login calls. Any additional login attempt within the same minute may return `429 Too Many Requests` instead of the expected result. To avoid this, either:
 
 - Wait at least one minute between section 8 and section 9, or
 - Restart the backend between the two sections (the throttle counter resets on restart).
@@ -472,7 +481,7 @@ Body:
 
 ```json
 {
-  "email": "admin.dev@internet.local",
+  "email": "admin.dev@example.com",
   "password": "TestPassword123"
 }
 ```
@@ -483,13 +492,13 @@ Expected:
 - access token returned
 - refresh cookie created
 
-## 8.2 Manual student login
+## 8.2 Student login
 
 Send the same `POST /auth/login` request with:
 
 ```json
 {
-  "email": "student.manual@internet.local",
+  "email": "student.dev@example.com",
   "password": "TestPassword123"
 }
 ```
@@ -500,25 +509,11 @@ Expected:
 - access token returned
 - refresh cookie created
 
-## 8.3 Dual-method student login
+## 8.3 Company login
 
 ```json
 {
-  "email": "student.dual@internet.local",
-  "password": "TestPassword123"
-}
-```
-
-Expected:
-
-- successful local login
-- this account also has a synthetic Google identity for development testing
-
-## 8.4 Company login
-
-```json
-{
-  "email": "company.tech@internet.local",
+  "email": "company.dev@example.com",
   "password": "TestPassword123"
 }
 ```
@@ -527,11 +522,11 @@ Expected:
 
 - successful login
 
-## 8.5 Approved QC PESO login
+## 8.4 QC PESO login
 
 ```json
 {
-  "email": "peso.approved@internet.local",
+  "email": "peso.dev@example.com",
   "password": "TestPassword123"
 }
 ```

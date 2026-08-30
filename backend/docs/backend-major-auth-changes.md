@@ -1,3 +1,5 @@
+> **Historical design note — not current implementation guidance.** The repository now uses the approved database redesign: QC PESO accounts are admin-provisioned and directly active, with no public registration, approval gate, employee-ID upload, or verification-history workflow. Use [auth.md](auth.md) and [database-migration-guide.md](database-migration-guide.md) for current behavior.
+
 # 1. Database entity alignment
 
 | Current backend design | Location observed | Approved DB v3 replacement |

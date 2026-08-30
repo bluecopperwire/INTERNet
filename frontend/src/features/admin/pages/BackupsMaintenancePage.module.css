@@ -1,0 +1,424 @@
+.pageContainer {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #ffffff;
+}
+
+.heroHeader {
+  position: relative;
+  width: 100%;
+  height: 290px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  padding: 0;
+}
+
+.heroBgImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(24,25,105,.36), rgba(255,214,27,.25)), linear-gradient(90deg, rgba(21,24,102,.22), transparent 58%);
+  z-index: 2;
+}
+
+.heroContent {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 48px;
+}
+
+.heroTitle {
+  font-size: clamp(42px, 4.4vw, 62px);
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -.035em;
+  line-height: 1.02;
+}
+
+.heroSubtitle {
+  font-size: clamp(16px, 1.55vw, 21px);
+  font-weight: 400;
+  color: #ffffff;
+  margin: 0;
+}
+
+.mainContent {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 32px 48px 48px;
+  max-width: 1320px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.sectionCard {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid rgba(22, 14, 111, .2);
+  border-radius: 8px;
+  padding: 20px 24px;
+  box-shadow: 0 4px 12px rgba(22, 14, 111, .05);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 2px solid #160e6f;
+}
+
+.cardTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cardTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #160e6f;
+  margin: 0;
+}
+
+.statusIndicatorBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+}
+
+/* System Status Grid */
+.statusGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.statusMetricBox {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #e1e4ec;
+  border-radius: 7px;
+  transition: transform 150ms ease, border-color 150ms ease;
+}
+
+.statusMetricBox:hover {
+  transform: translateY(-2px);
+  border-color: rgba(22,14,111,.42);
+}
+
+.metricTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.metricValue {
+  font-size: 18px;
+  font-weight: 700;
+  color: #160e6f;
+}
+
+.metricSubtext {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.progressBarTrack {
+  width: 100%;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 9999px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.progressBarFill {
+  height: 100%;
+  background: linear-gradient(90deg, #160e6f, #fdd116);
+  border-radius: 9999px;
+  transition: width 300ms ease;
+}
+
+/* Maintenance Tools Grid */
+.toolsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.toolCard {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  background: #f8fafc;
+  border: 1px solid #e1e4ec;
+  border-radius: 7px;
+  transition: all 150ms ease;
+}
+
+.toolCard:hover {
+  border-color: rgba(22,14,111,.42);
+  box-shadow: 0 6px 16px rgba(22, 14, 111, 0.08);
+  transform: translateY(-2px);
+}
+
+.toolHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.toolIconBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: #e8eaf5;
+  color: #160e6f;
+  flex-shrink: 0;
+}
+
+.toolTitleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.toolTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #160e6f;
+  margin: 0;
+}
+
+.toolDesc {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.toolActionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  border: 0;
+  min-height: 42px;
+  border-radius: 6px;
+  background: #160e6f;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease, transform 150ms ease;
+}
+
+.toolActionBtn:hover {
+  background: #21167b;
+  transform: translateY(-1px);
+}
+
+.toolActionBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.secondaryToolBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  border: 1px solid #160e6f;
+  min-height: 42px;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #160e6f;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.secondaryToolBtn:hover {
+  background: #160e6f;
+  color: #ffffff;
+}
+
+/* System Backups Table */
+.backupTableContainer {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid rgba(22,14,111,.2);
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  padding: 14px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #160e6f;
+  background: #f8fafc;
+  border-bottom: 2px solid #160e6f;
+}
+
+.table td {
+  padding: 14px 18px;
+  font-size: 13px;
+  color: #26324a;
+  border-bottom: 1px solid #dfe3eb;
+}
+
+.table tbody tr:hover {
+  background: #fafbff;
+}
+
+.triggerTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.triggerAutomated {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.triggerManual {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.statusPillSuccessful {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tableActionGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tableIconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #160e6f;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.tableIconBtn:hover {
+  border-color: #160e6f;
+  background: #160e6f;
+  color: #ffffff;
+}
+
+.tableIconBtnDelete:hover {
+  border-color: #cc0001;
+  background: #cc0001;
+  color: #ffffff;
+}
+
+.feedbackBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #e4f8f2;
+  border: 1px solid #bdebdc;
+  color: #008f70;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .heroHeader {
+    height: 220px;
+  }
+  .heroContent {
+    padding: 0 20px;
+  }
+  .mainContent {
+    padding: 20px;
+  }
+  .toolsGrid {
+    grid-template-columns: 1fr;
+  }
+}

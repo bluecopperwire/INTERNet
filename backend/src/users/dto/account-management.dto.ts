@@ -30,27 +30,7 @@ export class CreateCompanyAccountDto {
   @IsString() @IsNotEmpty() addressBarangay: string;
   @IsOptional() @IsString() addressDistrict?: string;
   @IsString() @IsNotEmpty() addressCity: string;
-  @IsString() @IsNotEmpty() logoFilePath: string;
-}
-
-export class VerificationDecisionDto {
-  @IsOptional() @IsString() remark?: string;
-}
-
-export class CorrectPesoPersonnelDto {
-  @IsOptional() @IsString() @IsNotEmpty() employeeId?: string;
-  @IsOptional() @IsString() @IsNotEmpty() position?: string;
-  @IsOptional() @IsString() @IsNotEmpty() department?: string;
-  @IsOptional() @IsString() @IsNotEmpty() contactNumber?: string;
-  @IsOptional() @IsString() @IsNotEmpty() addressLine?: string;
-  @IsOptional() @IsString() @IsNotEmpty() addressBarangay?: string;
-  @IsOptional() @IsString() @IsNotEmpty() addressDistrict?: string;
-  @IsOptional() @IsString() @IsNotEmpty() addressCity?: string;
-  @IsOptional() @IsString() employeeIdFileBase64?: string;
-  @IsOptional()
-  @IsIn(['image/jpeg', 'image/png', 'application/pdf'])
-  employeeIdFileMimeType?: string;
-  @IsOptional() @IsString() employeeIdFileName?: string;
+  @IsOptional() @IsString() @IsNotEmpty() logoFilePath?: string;
 }
 
 export class CreatePesoPersonnelAccountDto {
@@ -70,9 +50,5 @@ export class CreatePesoPersonnelAccountDto {
   @IsString() @IsNotEmpty() employeeId: string;
   @IsString() @IsNotEmpty() position: string;
   @IsString() @IsNotEmpty() department: string;
-  @IsString() @IsNotEmpty() employeeIdFileBase64: string;
-  @IsIn(['image/jpeg', 'image/png', 'application/pdf'])
-  employeeIdFileMimeType: string;
-  @IsOptional() @IsString() employeeIdFileName?: string;
   @IsOptional() @IsString() photoFilePath?: string;
 }

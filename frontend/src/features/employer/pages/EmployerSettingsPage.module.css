@@ -1,0 +1,181 @@
+.pageContainer {
+  min-height: 100vh;
+  background: #fff;
+}
+
+.settingsContent {
+  display: flex;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 44px 48px 72px;
+  flex-direction: column;
+  gap: 26px;
+  color: #160e6f;
+}
+
+.settingsSection {
+  overflow: hidden;
+  border: 1px solid rgba(22,14,111,.2);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(22,14,111,.05);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 24px;
+  border-bottom: 2px solid #160e6f;
+  background: #f8fafc;
+}
+
+.sectionIcon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: none;
+  place-items: center;
+  border-radius: 8px;
+  color: #fff;
+  background: #211578;
+}
+
+.sectionHeader h2 {
+  margin: 0 0 3px;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.sectionHeader p {
+  margin: 0;
+  color: #625d7d;
+  font-size: .85rem;
+  line-height: 1.5;
+}
+
+.sectionFooter {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 24px;
+  border-top: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.passwordButton {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border: 0;
+  border-radius: 6px;
+  color: #fff;
+  background: #211578;
+  font: inherit;
+  font-size: .84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms, transform 150ms;
+}
+
+.passwordButton:hover {
+  background: #160e6f;
+  transform: translateY(-1px);
+}
+
+.passwordForm {
+  display: flex;
+  flex-direction: column;
+}
+
+.passwordFields {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 20px;
+  padding: 26px 24px 16px;
+}
+
+.passwordFields label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.passwordFields label > span {
+  color: #4f5870;
+  font-size: .83rem;
+  font-weight: 600;
+}
+
+.passwordFields input {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid #d4d9e3;
+  border-radius: 6px;
+  color: #160e6f;
+  background: #fff;
+  font: inherit;
+  font-size: .88rem;
+  outline: none;
+}
+
+.passwordFields input::placeholder {
+  color: #a9b0c0;
+}
+
+.passwordFields input:focus {
+  border-color: #160e6f;
+  box-shadow: 0 0 0 3px rgba(22,14,111,.08);
+}
+
+.passwordHint {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 24px 24px;
+  color: #625d7d;
+  font-size: .78rem;
+}
+
+.passwordHint svg {
+  flex: none;
+  color: #34a98e;
+}
+
+.feedback {
+  min-height: 20px;
+  margin: -10px 0 0;
+  color: #625d7d;
+  font-size: .84rem;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .settingsContent {
+    padding: 30px 20px 52px;
+  }
+  .passwordFields {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .sectionHeader {
+    align-items: flex-start;
+    padding: 18px;
+  }
+  .passwordFields {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+  .sectionFooter {
+    padding: 14px 18px;
+  }
+  .passwordButton {
+    width: 100%;
+  }
+}

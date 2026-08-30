@@ -1,0 +1,397 @@
+.page {
+  min-height: 100%;
+  padding: 32px 48px 48px 104px;
+  background: #ffffff;
+  color: #160e6f;
+  font-family: 'Poppins', sans-serif;
+}
+
+.loading {
+  padding: 48px;
+  color: #160e6f;
+  font-family: 'Poppins', sans-serif;
+  text-align: center;
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 20px;
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  color: #160e6f;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.backButton:hover {
+  opacity: 0.75;
+  transform: translateX(-2px);
+}
+
+.formCard {
+  width: calc(100% - 48px);
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid rgba(22, 14, 111, 0.2);
+  border-radius: 9px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(22, 14, 111, 0.05);
+}
+
+.formHeader {
+  padding: 24px 30px;
+  border-bottom: 2px solid #160e6f;
+  background: #f8fafc;
+}
+
+.formHeader h1 {
+  margin: 0;
+  color: #160e6f;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.formHeader p {
+  margin: 5px 0 0;
+  color: #55627d;
+  font-size: 14px;
+}
+
+.formBody {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 28px 30px;
+}
+
+.section {
+  overflow: hidden;
+  border: 1px solid #d6daea;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 18px;
+  border-bottom: 2px solid #160e6f;
+  background: #f8fafc;
+}
+
+.sectionIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 7px;
+  background: #e8eaf5;
+  color: #160e6f;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+  color: #160e6f;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.sectionBody {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 22px 24px;
+}
+
+.fieldGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 24px;
+}
+
+.nameGrid {
+  display: grid;
+  grid-template-columns: 1.1fr 1.1fr 1.1fr 0.7fr;
+  gap: 18px 24px;
+}
+
+.addressGrid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 0.8fr 1fr;
+  gap: 18px 24px;
+}
+
+.personalDetailsGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px 24px;
+}
+
+.academicGrid {
+  grid-template-columns: 1.5fr 0.85fr 1.15fr;
+}
+
+.preferenceTopGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  color: #160e6f;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.field > span,
+.choiceField legend {
+  color: #160e6f;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.field em,
+.choiceField legend span {
+  margin-left: 3px;
+  color: #d13a42;
+  font-style: normal;
+}
+
+.field input,
+.field select,
+.field textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #cbd1e5;
+  border-radius: 6px;
+  outline: none;
+  background: #ffffff;
+  color: #1f2a44;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.field select {
+  appearance: auto;
+  cursor: pointer;
+}
+
+.field textarea {
+  min-height: 112px;
+  resize: vertical;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: #160e6f;
+  box-shadow: 0 0 0 3px rgba(22, 14, 111, 0.08);
+}
+
+.field input::placeholder {
+  color: #94a3b8;
+}
+
+.choiceField {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.choiceField legend {
+  margin-bottom: 10px;
+  padding: 0;
+}
+
+.radioGroup,
+.checkGroup,
+.industriesGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+}
+
+.industriesGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.radioGroup label,
+.checkGroup label,
+.industriesGrid label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #263554;
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.radioGroup input,
+.checkGroup input,
+.industriesGrid input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: #160e6f;
+}
+
+.otherIndustry {
+  grid-column: span 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.otherIndustry input[type='text'] {
+  width: 170px;
+  height: 32px;
+  padding: 6px 9px;
+  border: 1px solid #cbd1e5;
+  border-radius: 5px;
+  outline: none;
+  color: #1f2a44;
+  font: inherit;
+  font-size: 13px;
+}
+
+.otherIndustry input[type='text']:focus {
+  border-color: #160e6f;
+  box-shadow: 0 0 0 3px rgba(22, 14, 111, 0.08);
+}
+
+.otherIndustry input[type='text']:disabled {
+  background: #f5f6fa;
+  color: #9aa4b8;
+  cursor: not-allowed;
+}
+
+.formFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 18px 30px;
+  border-top: 1px solid #dfe3ed;
+  background: #f8fafc;
+}
+
+.cancelButton,
+.saveButton {
+  min-height: 43px;
+  padding: 0 20px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 150ms ease, transform 160ms ease;
+}
+
+.cancelButton {
+  border: 1px solid #160e6f;
+  background: #ffffff;
+  color: #160e6f;
+}
+
+.saveButton {
+  border: 1px solid #160e6f;
+  background: #160e6f;
+  color: #ffffff;
+}
+
+.cancelButton:hover,
+.saveButton:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.saveButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.preferenceError {
+  margin: 0;
+  color: #d13a42;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+@media (max-width: 1050px) {
+  .nameGrid,
+  .addressGrid,
+  .academicGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .industriesGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding: 88px 18px 32px;
+  }
+
+  .formHeader,
+  .formBody,
+  .formFooter {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+
+  .otherIndustry {
+    grid-column: auto;
+  }
+
+  .formCard {
+    width: 100%;
+  }
+
+  .formBody {
+    gap: 18px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+  }
+
+  .sectionBody {
+    gap: 18px;
+    padding: 18px;
+  }
+
+  .fieldGrid,
+  .nameGrid,
+  .addressGrid,
+  .personalDetailsGrid,
+  .academicGrid,
+  .preferenceTopGrid,
+  .industriesGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .formFooter {
+    flex-direction: column-reverse;
+  }
+
+  .cancelButton,
+  .saveButton {
+    width: 100%;
+  }
+}

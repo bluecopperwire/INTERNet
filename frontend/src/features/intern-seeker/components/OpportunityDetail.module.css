@@ -1,0 +1,190 @@
+.detailPanel {
+  padding: 34px 42px 48px;
+  color: #21167b;
+  background: #fbfcfc;
+}
+
+.detailHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.headerCopy {
+  min-width: 0;
+}
+
+.companyRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #21167b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.companyImage {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #d7dcea;
+  border-radius: 50%;
+  background: #edf0f7;
+  color: #21167b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.companyImage svg {
+  width: 15px;
+  height: 15px;
+}
+
+.detailHeader h1 {
+  margin: 10px 0 0;
+  color: #21167b;
+  font-size: 25px;
+  line-height: 1.25;
+}
+
+.applyButton {
+  min-width: 104px;
+  min-height: 42px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 7px;
+  background: #ffd514;
+  color: #21167b;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.applyButton:hover:not(:disabled) {
+  box-shadow: 0 8px 16px rgba(255, 213, 20, 0.35);
+  transform: translateY(-1px);
+}
+
+.appliedButton {
+  background: #e2e8f0;
+  color: #64748b;
+  cursor: default;
+  box-shadow: none;
+}
+
+.appliedButton:hover {
+  box-shadow: none;
+  transform: none;
+}
+
+.quickFacts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 48px;
+  margin: 34px 0 38px;
+  padding: 22px 24px;
+  border: 1px solid #d9deeb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.quickFacts div {
+  display: grid;
+  grid-template-columns: minmax(135px, 0.8fr) minmax(0, 1.2fr);
+  gap: 12px;
+  align-items: baseline;
+}
+
+.quickFacts .addressFact {
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(135px, 0.75fr) minmax(0, 3.25fr);
+}
+
+.quickFacts dt {
+  color: #21167b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.quickFacts dd {
+  margin: 0;
+  color: #3f4a64;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.detailTabs {
+  display: flex;
+  gap: 34px;
+  border-bottom: 1px solid #dfe2e6;
+}
+
+.detailTabs button {
+  padding: 0 0 10px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: #7d879a;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.detailTabs .activeTab {
+  border-bottom-color: #21167b;
+  color: #21167b;
+}
+
+.detailSection {
+  padding: 24px 0 8px;
+}
+
+.detailSection p {
+  margin: 0 0 12px;
+  color: #263554;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.detailSection p:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 700px) {
+  .detailPanel {
+    padding: 25px 18px 36px;
+  }
+
+  .detailHeader {
+    flex-direction: column;
+  }
+
+  .applyButton {
+    width: 100%;
+  }
+
+  .quickFacts {
+    grid-template-columns: 1fr;
+    gap: 13px;
+    padding: 18px;
+  }
+
+  .quickFacts div {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+
+  .detailTabs {
+    gap: 22px;
+  }
+}

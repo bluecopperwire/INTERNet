@@ -1,0 +1,354 @@
+.pageContainer {
+  min-height: 100vh;
+  background-color: #ffffff;
+  font-family: 'Poppins', sans-serif;
+  color: #160e6f;
+  padding-bottom: 64px;
+}
+
+/* White Header Section below Hero Banner */
+.headerSection {
+  background: #ffffff;
+  border-bottom: 1px solid rgba(22, 14, 111, 0.12);
+}
+
+.headerContainer {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  position: relative;
+  padding: 0 48px 28px;
+}
+
+.companyMainInfo {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+/* PFP Avatar: Smooth overlap with hero banner + camera badge */
+.pfpWrapper {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+  border: 4px solid #ffffff;
+  box-shadow: 0 10px 25px rgba(22, 14, 111, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: -64px;
+  z-index: 20;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pfpWrapper:hover {
+  transform: scale(1.02);
+  box-shadow: 0 12px 28px rgba(22, 14, 111, 0.22);
+}
+
+.pfpImage {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.pfpPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #eef2f6 0%, #e2e8f0 100%);
+  color: #160e6f;
+}
+
+/* Permanent camera icon badge at bottom right of avatar */
+.cameraBadge {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #160e6f;
+  border: 3px solid #ffffff;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+  transition: transform 0.2s ease, background 0.2s ease;
+  z-index: 25;
+}
+
+.pfpWrapper:hover .cameraBadge {
+  transform: scale(1.1);
+  background: #1d148e;
+}
+
+.pfpOverlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(22, 14, 111, 0.45);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.pfpWrapper:hover .pfpOverlay {
+  opacity: 1;
+}
+
+/* Company Meta - Perfectly balanced typography sitting on WHITE background */
+.companyMeta {
+  display: flex;
+  flex-direction: column;
+  margin-top: 18px;
+}
+
+.companyTitle {
+  margin: 0;
+  font-size: clamp(28px, 3vw, 36px);
+  font-weight: 700;
+  color: #160e6f;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.contactDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.contactDetails span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #160e6f;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.contactDetails span svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.editProfileBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border: 1.5px solid #160e6f;
+  border-radius: 64px;
+  background: #ffffff;
+  color: #160e6f;
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 18px;
+  box-shadow: 0 2px 8px rgba(22, 14, 111, 0.05);
+  transition: all 0.2s ease;
+}
+
+.editProfileBtn:hover {
+  background: #160e6f;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(22, 14, 111, 0.15);
+}
+
+/* Main Cards Content Container */
+.mainContent {
+  max-width: 1240px;
+  margin: 32px auto 0;
+  padding: 0 48px;
+}
+
+/* Two Column Card Layout */
+.profileGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+/* Card Common Styles */
+.card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(22, 14, 111, 0.2);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(22, 14, 111, 0.05);
+}
+
+.cardHeader {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border-bottom: 2px solid #160e6f;
+  background: #f8fafc;
+}
+
+.iconCircle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  border: 0;
+  color: #160e6f;
+  background: rgba(22, 14, 111, 0.1);
+  flex-shrink: 0;
+}
+
+.iconCircle svg {
+  width: 20px;
+  height: 20px;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #160e6f;
+}
+
+.aboutText {
+  margin: 0;
+  padding: 20px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #1e293b;
+  white-space: pre-line;
+}
+
+/* Details Card */
+.detailsList {
+  display: flex;
+  flex-direction: column;
+  margin: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(22, 14, 111, 0.2);
+  border-radius: 6px;
+}
+
+.detailItem {
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.detailItem:last-child {
+  border-bottom: 0;
+}
+
+.itemLabelGroup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.itemIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #160e6f;
+  width: 24px;
+}
+
+.itemLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: #160e6f;
+}
+
+.itemValue {
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #160e6f;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #160e6f;
+}
+
+@media (max-width: 1024px) {
+  .profileGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .headerSection {
+    padding: 0;
+  }
+  .mainContent {
+    padding: 0 20px;
+  }
+  .headerContainer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 0 20px 20px;
+  }
+  .companyMainInfo {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .pfpWrapper {
+    width: 130px;
+    height: 130px;
+    margin-top: -65px;
+  }
+  .companyMeta {
+    margin-top: 0;
+  }
+  .editProfileBtn {
+    width: 100%;
+    justify-content: center;
+    margin-top: 0;
+  }
+  .companyTitle {
+    font-size: 28px;
+  }
+}
