@@ -4,7 +4,6 @@ import QCPesoHero from "../components/QCPesoHero";
 import { authService } from "../../../services/auth.service";
 import { useToastStore } from "../../../stores/useToastStore";
 import styles from "./QCPesoSettingsPage.module.css";
-import { useToastStore } from "../../../stores/useToastStore";
 
 export function QCPesoSettingsPage() {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -12,7 +11,6 @@ export function QCPesoSettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const toast = useToastStore();
   const toast = useToastStore();
 
   const updatePassword = async (event: FormEvent<HTMLFormElement>) => {
