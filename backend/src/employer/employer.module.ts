@@ -6,7 +6,7 @@ import { EmployerOpportunityController } from './controllers/employer-opportunit
 import { EmployerProfileController } from './controllers/employer-profile.controller';
 import { EmployerReferralController } from './controllers/employer-referral.controller';
 import { AssignmentStartScheduler } from './scheduler/assignment-start.scheduler';
-import { EmployerLogoStorageService } from './storage/employer-logo-storage.service';
+import { ProfilePictureStorageModule } from '../storage/profile-picture-storage.module';
 import { EmployerAttendanceService } from './services/employer-attendance.service';
 import { EmployerCompanyResolver } from './services/company-resolver.service';
 import { EmployerInternshipService } from './services/employer-internship.service';
@@ -15,6 +15,7 @@ import { EmployerProfileService } from './services/employer-profile.service';
 import { EmployerReferralService } from './services/employer-referral.service';
 
 @Module({
+  imports: [ProfilePictureStorageModule],
   controllers: [
     EmployerProfileController,
     EmployerOpportunityController,
@@ -25,7 +26,6 @@ import { EmployerReferralService } from './services/employer-referral.service';
   ],
   providers: [
     EmployerCompanyResolver,
-    EmployerLogoStorageService,
     EmployerProfileService,
     EmployerOpportunityService,
     EmployerReferralService,

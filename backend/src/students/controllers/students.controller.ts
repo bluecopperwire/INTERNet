@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -11,6 +12,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Put,
   Query,
   UploadedFile,
   UseGuards,
@@ -30,7 +32,7 @@ import {
 } from '../dto/students.dto';
 import { StudentAttendanceQueryDto } from '../dto/student-attendance-query.dto';
 import { requirementUploadOptions } from '../../storage/requirement-upload.config';
-
+import { profilePictureUploadOptions } from '../../storage/profile-picture-upload.config';
 
 @Controller('students')
 export class StudentsController {
@@ -102,6 +104,22 @@ export class StudentsController {
   ) {
     await this.ensureStudentAccess(id, currentUser);
     return this.studentsService.upsertStudentProfile(id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put(':id/profile/image')
+  @UseInterceptors(FileInterceptor('image', profilePictureUploadOptions))
+  @HttpCode(HttpStatus.OK)
+  async replaceStudentProfilePicture(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() currentUser: any,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    if (!file) {
+      throw new BadRequestException('Multipart field "image" is required.');
+    }
+    return this.studentsService.replaceProfilePicture(id, file);
   }
 
   // Submits a new internship application for an open opportunity.
@@ -177,7 +195,6 @@ export class StudentsController {
       currentUser,
     );
   }
-
 
   // Accepts physical document upload (multipart/form-data) under backend/uploads/requirements.
   @UseGuards(JwtAuthGuard)

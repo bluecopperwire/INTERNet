@@ -5,7 +5,14 @@ import leftPanelArtwork from '../../../assets/login_left-panel.svg'
 import { authService } from '../../../services/auth.service'
 import { useAuthStore } from '../../../stores/useAuthStore'
 import type { SignUpData } from '../types/auth.types'
+import {
+  SIGNUP_INQUIRY_OPTIONS,
+  SIGNUP_SEX_OPTIONS,
+  toStudentInquiryMethod,
+  toStudentSex,
+} from '../signup-options'
 import styles from './SignUpPage.module.css'
+import { birthdateMaximum } from '../../../utils/date-only'
 
 const INITIAL_DATA: SignUpData = {
   role: 'intern-seeker',
@@ -95,21 +102,6 @@ function SignUpPage() {
     setStep(2)
   }
 
-  const mapInquiryMethod = (channel: string): string => {
-    const lower = channel.toLowerCase()
-    if (lower.includes('walk') || lower.includes('office')) return 'walk_in'
-    if (lower.includes('school')) return 'school'
-    if (lower.includes('phone')) return 'phone_call'
-    return 'online'
-  }
-
-  const mapSex = (s: string): string => {
-    const lower = s.toLowerCase()
-    if (lower.includes('female')) return 'female'
-    if (lower.includes('male')) return 'male'
-    return 'prefer_not_to_say'
-  }
-
   const saveProfile = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
@@ -127,6 +119,13 @@ function SignUpPage() {
       return
     }
 
+    const sex = toStudentSex(data.sex)
+    const inquiryMethod = toStudentInquiryMethod(data.inquiryChannel)
+    if (!sex || !inquiryMethod) {
+      setError('Please select valid sex and inquiry options.')
+      return
+    }
+
     setError('')
     setLoading(true)
 
@@ -137,14 +136,14 @@ function SignUpPage() {
           middleName: data.middleName.trim() || undefined,
           lastName: data.lastName.trim(),
           extensionName: data.extensionName.trim() || undefined,
-          sex: mapSex(data.sex),
+          sex,
           birthDate: data.birthDate,
           contactNumber: data.contactNumber.trim(),
           addressLine: data.streetAddress.trim(),
           addressBarangay: data.barangay.trim(),
           addressDistrict: data.district.trim(),
           addressCity: data.city.trim(),
-          inquiryMethod: mapInquiryMethod(data.inquiryChannel),
+          inquiryMethod,
         })
         const { setAccessToken, loadMe } = useAuthStore.getState()
         setAccessToken(res.accessToken)
@@ -157,14 +156,14 @@ function SignUpPage() {
           middleName: data.middleName.trim() || undefined,
           lastName: data.lastName.trim(),
           extensionName: data.extensionName.trim() || undefined,
-          sex: mapSex(data.sex),
+          sex,
           birthDate: data.birthDate,
           contactNumber: data.contactNumber.trim(),
           addressLine: data.streetAddress.trim(),
           addressBarangay: data.barangay.trim(),
           addressDistrict: data.district.trim(),
           addressCity: data.city.trim(),
-          inquiryMethod: mapInquiryMethod(data.inquiryChannel),
+          inquiryMethod,
         })
       }
       navigate('/intern-seeker', { replace: true })
@@ -297,8 +296,8 @@ function BasicProfileStep({ data, error, onChange, onNameChange, onSubmit, onBac
         <TextField id="middle-name" label="Middle Name" placeholder="Enter your middle name" value={data.middleName} onChange={(value) => onNameChange?.('middleName', value)} />
         <TextField id="last-name" label="Last Name" required placeholder="Enter your last name" value={data.lastName} onChange={(value) => onNameChange?.('lastName', value)} />
         <TextField id="extension-name" label="Extension Name" placeholder="Enter your extension name" value={data.extensionName} onChange={(value) => onNameChange?.('extensionName', value)} />
-        <SelectField id="sex" label="Sex" required value={data.sex} onChange={(value) => onChange('sex', value)} options={['Female', 'Male', 'Prefer not to say']} />
-        <TextField id="birth-date" label="Birth Date" required type="date" value={data.birthDate} onChange={(value) => onChange('birthDate', value)} />
+        <SelectField id="sex" label="Sex" required value={data.sex} onChange={(value) => onChange('sex', value)} options={[...SIGNUP_SEX_OPTIONS]} />
+        <TextField id="birth-date" label="Birth Date" required type="date" max={birthdateMaximum()} value={data.birthDate} onChange={(value) => onChange('birthDate', value)} />
         <FormError error={error} />
         <button className={styles.primaryButton} type="submit">Continue</button>
         <BackButton onClick={onBack} />
@@ -318,10 +317,10 @@ function LocationStep({ data, error, onChange, onSubmit, onBack }: StepProps) {
       <form className={styles.form} onSubmit={onSubmit} noValidate>
         <TextField id="contact-number" label="Contact Number" required type="tel" autoComplete="tel" placeholder="Enter your contact number" value={data.contactNumber} onChange={(value) => onChange('contactNumber', value)} />
         <TextField id="street-address" label="House/Block No./Street" required autoComplete="street-address" placeholder="Enter your street address" value={data.streetAddress} onChange={(value) => onChange('streetAddress', value)} />
-        <SelectField id="barangay" label="Barangay" required value={data.barangay} onChange={(value) => onChange('barangay', value)} options={['Bagumbayan', 'Batasan Hills', 'Commonwealth', 'Cubao', 'Diliman']} />
+        <TextField id="barangay" label="Barangay" required autoComplete="address-level3" placeholder="Enter barangay" value={data.barangay} onChange={(value) => onChange('barangay', value)} />
         <TextField id="district" label="District" required placeholder="Enter district" value={data.district} onChange={(value) => onChange('district', value)} />
         <TextField id="city" label="City" required autoComplete="address-level2" placeholder="Enter city" value={data.city} onChange={(value) => onChange('city', value)} />
-        <SelectField id="inquiry-channel" label="Inquiry via" required value={data.inquiryChannel} onChange={(value) => onChange('inquiryChannel', value)} options={['QC PESO Office', 'School', 'Social Media', 'Referral', 'Other']} />
+        <SelectField id="inquiry-channel" label="Inquiry via" required value={data.inquiryChannel} onChange={(value) => onChange('inquiryChannel', value)} options={[...SIGNUP_INQUIRY_OPTIONS]} />
         <FormError error={error} />
         <button className={styles.primaryButton} type="submit">Save and Continue</button>
         <BackButton onClick={onBack} />
@@ -348,9 +347,11 @@ interface TextFieldProps {
   type?: string
   placeholder?: string
   autoComplete?: string
+  min?: string
+  max?: string
 }
 
-function TextField({ id, label, value, onChange, required = false, type = 'text', placeholder, autoComplete }: TextFieldProps) {
+function TextField({ id, label, value, onChange, required = false, type = 'text', placeholder, autoComplete, min, max }: TextFieldProps) {
   return (
     <div className={styles.field}>
       <label htmlFor={id}>{label}{required && <span> *</span>}</label>
@@ -362,6 +363,8 @@ function TextField({ id, label, value, onChange, required = false, type = 'text'
         placeholder={placeholder}
         autoComplete={autoComplete}
         required={required}
+        min={min}
+        max={max}
         onChange={(event) => onChange(event.target.value)}
       />
     </div>

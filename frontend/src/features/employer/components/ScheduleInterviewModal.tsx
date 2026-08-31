@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CalendarDays, Clock3, MapPin, Video, X } from 'lucide-react'
 import styles from './ScheduleInterviewModal.module.css'
+import { todayDateOnly } from '../../../utils/date-only'
 
 interface ScheduleInterviewModalProps {
   applicantName: string
@@ -19,6 +20,14 @@ export function ScheduleInterviewModal({ applicantName, isSaving = false, onClos
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    const dateInput = event.currentTarget.elements.namedItem('interview-date') as HTMLInputElement
+    dateInput.setCustomValidity('')
+    const scheduledAt = new Date(`${date}T${time}:00+08:00`)
+    if (scheduledAt.getTime() <= Date.now()) {
+      dateInput.setCustomValidity('The interview schedule must be in the future.')
+      dateInput.reportValidity()
+      return
+    }
     onSchedule({ date, time, mode, meetingUrl: mode === 'online' ? meetingUrl : undefined, location: mode === 'in-person' ? location : undefined, remarks })
   }
 
@@ -32,7 +41,7 @@ export function ScheduleInterviewModal({ applicantName, isSaving = false, onClos
 
         <div className={styles.formBody}>
           <div className={styles.dateTimeGrid}>
-            <label className={styles.field}>Date<input type="date" value={date} onChange={(event) => setDate(event.target.value)} required /><CalendarDays aria-hidden="true" /></label>
+            <label className={styles.field}>Date<input name="interview-date" type="date" min={todayDateOnly()} value={date} onChange={(event) => { event.currentTarget.setCustomValidity(''); setDate(event.target.value) }} required /><CalendarDays aria-hidden="true" /></label>
             <label className={styles.field}>Time<input type="time" value={time} onChange={(event) => setTime(event.target.value)} required /><Clock3 aria-hidden="true" /></label>
           </div>
 

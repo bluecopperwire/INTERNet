@@ -248,10 +248,18 @@
   place-items: center;
   border: 2px solid rgba(255, 255, 255, 0.72);
   border-radius: 50%;
+  overflow: hidden;
   color: #21167b;
   background: #ffffff;
   font-size: 11px;
   font-weight: 700;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
 }
 
 .userText {

@@ -4,6 +4,9 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { adminService } from '../services/admin.service'
 import type { StudentRecord } from '../types/admin.types'
 import styles from '../../intern-seeker/pages/ProfileEditorPage.module.css'
+import { useToastStore } from '../../../stores/useToastStore'
+import { getErrorMessage } from '../../../utils/error-message'
+import { birthdateMaximum, todayDateOnly } from '../../../utils/date-only'
 
 const INDUSTRIES = [
   'Office Administration',
@@ -23,6 +26,7 @@ export function AdminStudentProfileEditorPage() {
   const navigate = useNavigate()
   const [student, setStudent] = useState<StudentRecord | null>(null)
   const [formData, setFormData] = useState<StudentRecord | null>(null)
+  const toast = useToastStore()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [preferenceError, setPreferenceError] = useState('')
@@ -76,7 +80,12 @@ export function AdminStudentProfileEditorPage() {
     setIsSaving(true)
     try {
       const updated = await adminService.updateStudentRecord(id, { ...formData, fullName, fullAddress })
-      if (updated) navigate(`/admin/manage-students/${updated.id}`)
+      if (updated) {
+        toast.success('Student profile updated successfully.')
+        navigate(`/admin/manage-students/${updated.id}`)
+      }
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update student profile.'))
     } finally {
       setIsSaving(false)
     }
@@ -116,7 +125,7 @@ export function AdminStudentProfileEditorPage() {
                 <Field label="City" required><input required value={formData.addressCity ?? ''} placeholder="Enter city" onChange={(event) => updateField('addressCity', event.target.value)} /></Field>
               </div>
               <div className={`${styles.fieldGrid} ${styles.personalDetailsGrid}`}>
-                <Field label="Birthdate" required><input required type="date" value={formData.birthdate} onChange={(event) => updateField('birthdate', event.target.value)} /></Field>
+              <Field label="Birthdate" required><input required type="date" max={birthdateMaximum()} title="Birthdate must be before today." value={formData.birthdate} onChange={(event) => updateField('birthdate', event.target.value)} /></Field>
                 <fieldset className={styles.choiceField}>
                   <legend>Sex <span>*</span></legend>
                   <div className={styles.radioGroup}>{(['Male', 'Female', 'Other'] as const).map((sex) => <label key={sex}><input required type="radio" name="sex" checked={formData.sex === sex} onChange={() => updateField('sex', sex)} />{sex}</label>)}</div>
@@ -152,7 +161,7 @@ export function AdminStudentProfileEditorPage() {
               </div>
               <div className={`${styles.fieldGrid} ${styles.preferenceTopGrid}`}>
                 <fieldset className={styles.choiceField}><legend>Internship Days Availability <span>*</span></legend><div className={styles.radioGroup}>{SCHEDULES.map((schedule) => <label key={schedule}><input required type="radio" name="schedule" checked={formData.scheduleAvailability[0] === schedule} onChange={() => { updateField('scheduleAvailability', [schedule]); setPreferenceError('') }} />{schedule}</label>)}</div></fieldset>
-                <Field label="Internship Start Date Availability" required><input required type="date" value={formData.startDate} onChange={(event) => updateField('startDate', event.target.value)} /></Field>
+                <Field label="Internship Start Date Availability" required><input required type="date" min={todayDateOnly()} title="The preferred internship start date cannot be in the past." value={formData.startDate} onChange={(event) => updateField('startDate', event.target.value)} /></Field>
               </div>
               <fieldset className={styles.choiceField}><legend>Preferred Field of Internship <span>*</span></legend><div className={styles.industriesGrid}>{INDUSTRIES.map((industry) => <label key={industry}><input type="checkbox" checked={formData.preferredIndustries.includes(industry)} onChange={() => toggleIndustry(industry)} />{industry}</label>)}<div className={styles.otherIndustry}><label><input type="checkbox" checked={formData.preferredIndustries.includes('Other')} onChange={() => toggleIndustry('Other')} />Other</label><input type="text" aria-label="Other preferred internship field" disabled={!formData.preferredIndustries.includes('Other')} value={formData.otherPreferredField ?? ''} placeholder="Please specify" onChange={(event) => { updateField('otherPreferredField', event.target.value); setPreferenceError('') }} /></div></div></fieldset>
               <fieldset className={styles.choiceField}><legend>Willing to be assigned outside of preferred field if not available? <span>*</span></legend><div className={styles.radioGroup}><label><input required type="radio" name="flexibleAssignment" checked={formData.flexibleAssignment} onChange={() => updateField('flexibleAssignment', true)} />Yes</label><label><input required type="radio" name="flexibleAssignment" checked={!formData.flexibleAssignment} onChange={() => updateField('flexibleAssignment', false)} />No</label></div></fieldset>

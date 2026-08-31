@@ -1,6 +1,10 @@
 import { useEmployerStore } from '../stores/useEmployerStore';
 import { employerApiService } from './employer-api.service';
-import { adaptEmployerOpportunity, adaptEmployerReferral, adaptEmployerInternship } from '../adapters/employer.adapters';
+import {
+  adaptEmployerOpportunity,
+  adaptEmployerReferral,
+  adaptEmployerInternship,
+} from '../adapters/employer.adapters';
 import type {
   Opportunity,
   Applicant,
@@ -27,13 +31,19 @@ function mapWorkArrangement(arrangement?: string): WorkArrangement {
 function mapAllowance(allowance?: string | number | null): string | null {
   if (!allowance) return null;
   const trimmed = String(allowance).trim();
-  if (!trimmed || trimmed.toLowerCase() === 'none' || trimmed.toLowerCase() === 'n/a') {
+  if (
+    !trimmed ||
+    trimmed.toLowerCase() === 'none' ||
+    trimmed.toLowerCase() === 'n/a'
+  ) {
     return null;
   }
   return trimmed;
 }
 
-export function isOpportunityDeadlineExpired(applicationDeadline: string): boolean {
+export function isOpportunityDeadlineExpired(
+  applicationDeadline: string,
+): boolean {
   if (!applicationDeadline) return false;
   const deadline = new Date(`${applicationDeadline}T00:00:00`);
   if (Number.isNaN(deadline.getTime())) return false;
@@ -66,18 +76,24 @@ export function canWithdrawCandidate(candidate: {
   internshipAssignmentId?: number | null;
   isWithdrawing?: boolean;
 }): boolean {
-  return candidate.studentResponse === 'Pending Response'
-    && candidate.internshipAssignmentId === null
-    && !candidate.isWithdrawing;
+  return (
+    candidate.studentResponse === 'Pending Response' &&
+    candidate.internshipAssignmentId === null &&
+    !candidate.isWithdrawing
+  );
 }
 
 function formatAcceptanceDate(value: string | null): string {
   if (!value) return 'Not recorded';
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString();
+  return Number.isNaN(date.getTime())
+    ? 'Invalid date'
+    : date.toLocaleDateString();
 }
 
-export function mapAssignmentCandidate(c: EmployerAssignmentCandidateDto): InternshipAssignment {
+export function mapAssignmentCandidate(
+  c: EmployerAssignmentCandidateDto,
+): InternshipAssignment {
   return {
     id: String(c.referralId),
     applicantId: String(c.applicationId),
@@ -126,9 +142,17 @@ export const employerService = {
     return useEmployerStore.getState().profile!;
   },
 
-  async updateCompanyProfile(updated: Partial<CompanyProfile>): Promise<CompanyProfile> {
+  async updateCompanyProfile(
+    updated: Partial<CompanyProfile>,
+  ): Promise<CompanyProfile> {
     const store = useEmployerStore.getState();
     await store.updateProfile(updated);
+    return useEmployerStore.getState().profile!;
+  },
+
+  async uploadCompanyProfilePicture(file: File): Promise<CompanyProfile> {
+    const store = useEmployerStore.getState();
+    await store.uploadLogo(file);
     return useEmployerStore.getState().profile!;
   },
 
@@ -148,17 +172,23 @@ export const employerService = {
     if (opp.id) {
       const updatePayload: UpdateOpportunityRequest = {};
       if (opp.title !== undefined) updatePayload.title = opp.title.trim();
-      if (opp.department !== undefined) updatePayload.department = opp.department.trim();
+      if (opp.department !== undefined)
+        updatePayload.department = opp.department.trim();
       if (opp.workArrangement !== undefined) {
         updatePayload.workArrangement = mapWorkArrangement(opp.workArrangement);
       }
-      if (opp.duration !== undefined) updatePayload.minimumRequiredHours = Number(opp.duration);
-      if (opp.slots !== undefined) updatePayload.offeredSlots = Number(opp.slots);
-      if (opp.allowance !== undefined) updatePayload.allowance = mapAllowance(opp.allowance);
-      if (opp.jobDescription !== undefined) updatePayload.description = opp.jobDescription.trim();
+      if (opp.duration !== undefined)
+        updatePayload.minimumRequiredHours = Number(opp.duration);
+      if (opp.slots !== undefined)
+        updatePayload.offeredSlots = Number(opp.slots);
+      if (opp.allowance !== undefined)
+        updatePayload.allowance = mapAllowance(opp.allowance);
+      if (opp.jobDescription !== undefined)
+        updatePayload.description = opp.jobDescription.trim();
       if (opp.qualifications !== undefined) {
         const q = opp.qualifications.trim();
-        updatePayload.qualification = q && q.toLowerCase() !== 'none specified' ? q : null;
+        updatePayload.qualification =
+          q && q.toLowerCase() !== 'none specified' ? q : null;
       }
       if (opp.applicationDeadline !== undefined) {
         updatePayload.applicationDeadline = opp.applicationDeadline;
@@ -173,7 +203,9 @@ export const employerService = {
         offeredSlots: Number(opp.slots || 0),
         allowance: mapAllowance(opp.allowance),
         description: (opp.jobDescription || '').trim(),
-        qualification: opp.qualifications?.trim() ? opp.qualifications.trim() : null,
+        qualification: opp.qualifications?.trim()
+          ? opp.qualifications.trim()
+          : null,
         applicationDeadline: opp.applicationDeadline || '',
       };
       await store.createOpportunity(createPayload);
@@ -214,8 +246,12 @@ export const employerService = {
     await store.withdrawAcceptance(Number(referralId));
   },
 
-  async getApplicantsForOpportunity(opportunityId: string): Promise<Applicant[]> {
-    const res = await employerApiService.getReferrals({ opportunityId: Number(opportunityId) });
+  async getApplicantsForOpportunity(
+    opportunityId: string,
+  ): Promise<Applicant[]> {
+    const res = await employerApiService.getReferrals({
+      opportunityId: Number(opportunityId),
+    });
     return res.data.map(adaptEmployerReferral);
   },
 
@@ -231,20 +267,38 @@ export const employerService = {
     return useEmployerStore.getState().internships;
   },
 
-  async getInternshipDetails(applicantId: string): Promise<EmployerInternshipDetails | undefined> {
+  async getInternshipDetails(
+    applicantId: string,
+  ): Promise<EmployerInternshipDetails | undefined> {
     const raw = await employerApiService.getInternship(Number(applicantId));
     if (raw) return adaptEmployerInternship(raw);
-    return useEmployerStore.getState().internships.find((i) => i.applicantId === applicantId);
+    return useEmployerStore
+      .getState()
+      .internships.find((i) => i.applicantId === applicantId);
   },
 
   async updateInternshipDetails(
     applicantId: string,
     updates: Partial<EmployerInternshipDetails>,
   ): Promise<EmployerInternshipDetails | undefined> {
-    await employerApiService.updateInternship(Number(applicantId), updates);
-    const store = useEmployerStore.getState();
-    await store.fetchInternships();
-    return useEmployerStore.getState().internships.find((i) => i.applicantId === applicantId);
+    const assignmentId = Number(applicantId);
+    let updated;
+    if (updates.status === 'Completed') {
+      updated = await employerApiService.completeInternship(assignmentId);
+    } else if (updates.status === 'Cancelled') {
+      updated = await employerApiService.cancelInternship(assignmentId);
+    } else {
+      updated = await employerApiService.updateInternship(assignmentId, {
+        workingDays: updates.workingDays,
+        requiredHours: updates.requiredHours,
+        startDate: updates.startDate,
+        expectedEndDate: updates.expectedEndDate || null,
+        startShift: updates.shiftStartTime,
+        endShift: updates.shiftEndTime,
+      });
+    }
+    await useEmployerStore.getState().fetchInternships();
+    return adaptEmployerInternship(updated);
   },
 
   async deleteInternshipDetails(applicantId: string): Promise<void> {
@@ -257,7 +311,9 @@ export const employerService = {
     return res.data.map(mapAssignmentCandidate);
   },
 
-  async getInternshipAssignmentById(id: string): Promise<InternshipAssignment | undefined> {
+  async getInternshipAssignmentById(
+    id: string,
+  ): Promise<InternshipAssignment | undefined> {
     const list = await this.getInternshipAssignments();
     return list.find((a) => a.id === id);
   },

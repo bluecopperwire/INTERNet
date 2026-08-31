@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { employerService } from '../services/employer.service'
 import type { CompanyProfile } from '../types/employer.types'
 import styles from '../../intern-seeker/pages/ProfileEditorPage.module.css'
+import { useToastStore } from '../../../stores/useToastStore'
+import { getErrorMessage } from '../../../utils/error-message'
 
 const INDUSTRIES = [
   'Office Administration',
@@ -22,6 +24,7 @@ export function CompanyProfileEditorPage() {
   const [formData, setFormData] = useState<CompanyProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const toast = useToastStore()
 
   useEffect(() => {
     employerService.getCompanyProfile()
@@ -56,7 +59,10 @@ export function CompanyProfileEditorPage() {
     setIsSaving(true)
     try {
       await employerService.updateCompanyProfile(formData)
+      toast.success('Company profile updated successfully.')
       navigate('/employer/profile')
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update company profile.'))
     } finally {
       setIsSaving(false)
     }

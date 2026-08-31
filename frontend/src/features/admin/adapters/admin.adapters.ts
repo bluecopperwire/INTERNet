@@ -10,6 +10,8 @@ import type {
   QCPesoRecord,
   AdminDashboardSummary,
 } from '../types/admin.types';
+import { publicUploadUrl } from '../../../utils/public-upload-url';
+import { toDateOnly } from '../../../utils/date-only';
 
 export function adaptAdminDashboardSummary(
   studentMetrics: AdminMetricsDto,
@@ -54,12 +56,16 @@ export function adaptAdminStudentItem(dto: AdminStudentListItemDto): StudentReco
     suspensionDaysRemaining: remainingDays(data.suspendedUntil),
     dateCreated: new Date(dto.createdAt).toLocaleDateString(),
     role: 'Student',
+    profileImageUrl: publicUploadUrl(
+      data.photoFilePath,
+      data.profileUpdatedAt,
+    ),
     firstName: data.firstName,
     middleName: data.middleName || '',
     lastName: data.lastName,
     suffix: data.extensionName || '',
     sex: data.sex === 'Male' || data.sex === 'Female' ? data.sex : 'Other',
-    birthdate: data.birthDate || 'N/A',
+    birthdate: toDateOnly(data.birthDate) || 'N/A',
     contactNumber: data.contactNumber || 'N/A',
     fullAddress: [data.addressLine, data.addressBarangay, data.addressDistrict, data.addressCity].filter(Boolean).join(', ') || 'Quezon City',
     addressStreet: data.addressLine || '',
@@ -76,7 +82,7 @@ export function adaptAdminStudentItem(dto: AdminStudentListItemDto): StudentReco
     preferredIndustries: preferred.map((item: any) => item.customIndustryName ? 'Other' : item.industryName),
     otherPreferredField: custom?.customIndustryName || '',
     scheduleAvailability: [scheduleToUi(data.availableDays)],
-    startDate: data.startDate || 'N/A',
+    startDate: toDateOnly(data.startDate) || 'N/A',
     hostOrgType: data.preferredCompanyType === 'government' ? 'Government' : 'Private',
   };
 }
@@ -100,6 +106,10 @@ export function adaptAdminEmployerItem(dto: AdminEmployerListItemDto): EmployerR
     suspensionDaysRemaining: remainingDays(data.suspendedUntil),
     dateCreated: new Date(dto.createdAt).toLocaleDateString(),
     role: 'Employer',
+    profileImageUrl: publicUploadUrl(
+      data.logoFilePath,
+      data.profileUpdatedAt,
+    ),
     industry: data.industryName || 'N/A',
     companyType: data.companyType === 'government' ? 'Government' : 'Private',
     location: [data.addressLine, data.addressBarangay, data.addressDistrict, data.addressCity].filter(Boolean).join(', ') || 'Quezon City',
@@ -140,11 +150,15 @@ export function adaptAdminPesoItem(dto: AdminPesoListItemDto): QCPesoRecord {
     suspensionDaysRemaining: remainingDays(data.suspendedUntil),
     dateCreated: new Date(dto.createdAt).toLocaleDateString(),
     role: 'QC PESO Personnel',
+    profileImageUrl: publicUploadUrl(
+      data.photoFilePath,
+      data.profileUpdatedAt,
+    ),
     firstName: data.firstName || dto.fullName.split(' ')[0] || '',
     middleName: data.middleName || '',
     lastName: data.lastName || dto.fullName.split(' ').slice(1).join(' ') || '',
     suffix: data.extensionName || '',
-    birthdate: data.birthDate || 'N/A',
+    birthdate: toDateOnly(data.birthDate) || 'N/A',
     sex: data.sex === 'Male' || data.sex === 'Female' ? data.sex : 'Other',
     addressLine: data.addressLine || '',
     barangay: data.addressBarangay || '',

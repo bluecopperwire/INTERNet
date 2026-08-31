@@ -64,6 +64,7 @@ export class StudentPreferredIndustryDto {
 
   @IsOptional()
   @IsString()
+  @IsNotEmpty()
   customIndustryName?: string;
 }
 
@@ -196,4 +197,3 @@ export class StudentAttendanceClockDto {
   @IsString()
   photoFilePath?: string;
 }
-

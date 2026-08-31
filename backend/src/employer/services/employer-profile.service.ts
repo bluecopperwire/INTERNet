@@ -3,7 +3,7 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import type { DataSource } from 'typeorm';
 import type { UpdateEmployerProfileDto } from '../dto';
 import { EmployerCompanyResolver } from './company-resolver.service';
-import { EmployerLogoStorageService } from '../storage/employer-logo-storage.service';
+import { ProfilePictureStorageService } from '../../storage/profile-picture-storage.service';
 import { currentManilaDate } from '../utils/time.utils';
 
 type ProfileRow = Record<string, unknown>;
@@ -13,7 +13,7 @@ export class EmployerProfileService {
   constructor(
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly companyResolver: EmployerCompanyResolver,
-    private readonly logoStorage: EmployerLogoStorageService,
+    private readonly profilePictures: ProfilePictureStorageService,
   ) {}
 
   async getProfile(userAccountId: number) {
@@ -125,25 +125,33 @@ export class EmployerProfileService {
 
   async replaceLogo(userAccountId: number, file: Express.Multer.File) {
     const company = await this.companyResolver.resolve(userAccountId);
-    const rows: Array<{ logo_file_path: string }> = await this.dataSource.query(
-      'SELECT logo_file_path FROM public.company WHERE company_id = $1',
-      [company.companyId],
-    );
+    const rows: Array<{ logo_file_path: string | null; company_name: string }> =
+      await this.dataSource.query(
+        'SELECT logo_file_path, company_name FROM public.company WHERE company_id = $1',
+        [company.companyId],
+      );
     const oldPath = rows[0]?.logo_file_path ?? null;
-    const newPath = await this.logoStorage.store(file);
+    const newPath = await this.profilePictures.storeCompany(file, {
+      userAccountId,
+      companyName: rows[0].company_name,
+    });
     try {
       await this.dataSource.query(
-        `UPDATE public.company SET logo_file_path = $2 WHERE company_id = $1`,
+        `UPDATE public.company
+         SET logo_file_path = $2, updated_at = CURRENT_TIMESTAMP
+         WHERE company_id = $1`,
         [company.companyId, newPath],
       );
     } catch (error) {
-      await this.logoStorage.delete(newPath);
+      if (oldPath !== newPath) await this.profilePictures.delete(newPath);
       throw error;
     }
-    try {
-      await this.logoStorage.delete(oldPath);
-    } catch {
-      // The new DB reference remains valid even if an obsolete local file cannot be removed.
+    if (oldPath !== newPath) {
+      try {
+        await this.profilePictures.delete(oldPath);
+      } catch {
+        // The new DB reference remains valid if an obsolete file cannot be removed.
+      }
     }
     return { logoFilePath: newPath };
   }
@@ -171,6 +179,7 @@ export class EmployerProfileService {
       contactPersonLastName: row.contact_person_last_name,
       contactPersonExtensionName: row.contact_person_extension_name,
       logoFilePath: row.logo_file_path,
+      updatedAt: row.updated_at,
     };
   }
 }

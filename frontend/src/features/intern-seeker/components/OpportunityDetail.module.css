@@ -43,6 +43,13 @@
   height: 15px;
 }
 
+.companyImage img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
 .detailHeader h1 {
   margin: 10px 0 0;
   color: #21167b;

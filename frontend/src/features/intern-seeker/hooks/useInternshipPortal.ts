@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { internshipPortalService } from '../services/internship-portal.service'
-import type { 
-  InternshipPortalData, 
+import type {
+  InternshipPortalData,
   OpportunitySearchParams,
-  UserProfile, 
-  Resume, 
-  UserApplication
- } from '../types/internship.types'
+  UserProfile,
+  Resume,
+  UserApplication,
+} from '../types/internship.types'
 
 const EMPTY_DATA: InternshipPortalData = { opportunities: [], companies: [] }
 
@@ -19,12 +19,12 @@ export function useInternshipPortal() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-const fetchDashboardData = useCallback(async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       const [profileData, resumesData, appsData] = await Promise.all([
         internshipPortalService.getUserProfile(),
         internshipPortalService.getUserResumes(),
-        internshipPortalService.getUserApplications()
+        internshipPortalService.getUserApplications(),
       ])
       setProfile(profileData)
       setResumes(resumesData)
@@ -39,10 +39,7 @@ const fetchDashboardData = useCallback(async () => {
     let isActive = true
     setIsLoading(true)
 
-    Promise.all([
-      internshipPortalService.getPortalData(),
-      fetchDashboardData()
-    ])
+    Promise.all([internshipPortalService.getPortalData(), fetchDashboardData()])
       .then(([portalData]) => {
         if (isActive) setData(portalData)
       })
@@ -86,9 +83,22 @@ const fetchDashboardData = useCallback(async () => {
     }
   }, [])
 
-  return { 
-    data, search, 
-    profile, resumes, applications, saveProfile, 
-    isLoading, error 
+  const uploadProfilePicture = useCallback(async (file: File) => {
+    setError(null)
+    const updated = await internshipPortalService.uploadProfilePicture(file)
+    setProfile(updated)
+    return updated
+  }, [])
+
+  return {
+    data,
+    search,
+    profile,
+    resumes,
+    applications,
+    saveProfile,
+    uploadProfilePicture,
+    isLoading,
+    error,
   }
 }

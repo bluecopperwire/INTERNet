@@ -4,6 +4,9 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { adminService } from '../services/admin.service'
 import type { StudentRecord } from '../types/admin.types'
 import styles from './AdminStudentDetailsPage.module.css'
+import { formatPreferredIndustries } from '../../../utils/preferred-industry-display'
+import { useToastStore } from '../../../stores/useToastStore'
+import { getErrorMessage } from '../../../utils/error-message'
 
 export function AdminStudentDetailsPage() {
   const { id } = useParams<{ id: string }>()
@@ -13,6 +16,7 @@ export function AdminStudentDetailsPage() {
   const [showSuspendDialog, setShowSuspendDialog] = useState(false)
   const [showUnsuspendDialog, setShowUnsuspendDialog] = useState(false)
   const [suspensionDays, setSuspensionDays] = useState('')
+  const toast = useToastStore()
 
   useEffect(() => {
     if (!id) return
@@ -23,19 +27,45 @@ export function AdminStudentDetailsPage() {
 
   const setStatus = async (status: StudentRecord['status']) => {
     if (!id) return
-    const updated = await adminService.updateStudentRecord(id, { status })
-    if (updated) {
-      setStudent(updated)
+    try {
+      const updated = await adminService.updateStudentRecord(id, { status })
+      if (updated) {
+        setStudent(updated)
+        toast.success(`Student account ${status.toLowerCase()}.`)
+      }
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update student account status.'))
     }
   }
 
   const suspend = async () => {
     if (!suspensionDays || Number(suspensionDays) < 1) return
     if (!id) return
-    const updated = await adminService.updateStudentRecord(id, { status: 'Suspended', suspensionDaysRemaining: Number(suspensionDays) })
-    if (updated) setStudent(updated)
-    setShowSuspendDialog(false)
-    setSuspensionDays('')
+    try {
+      const updated = await adminService.updateStudentRecord(id, { status: 'Suspended', suspensionDaysRemaining: Number(suspensionDays) })
+      if (updated) {
+        setStudent(updated)
+        setShowSuspendDialog(false)
+        setSuspensionDays('')
+        toast.success('Student account suspended.')
+      }
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to suspend student account.'))
+    }
+  }
+
+  const unsuspend = async () => {
+    if (!id) return
+    try {
+      const updated = await adminService.updateStudentRecord(id, { status: 'Active', suspensionDaysRemaining: undefined })
+      if (updated) {
+        setStudent(updated)
+        setShowUnsuspendDialog(false)
+        toast.success('Student account unsuspended.')
+      }
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to unsuspend student account.'))
+    }
   }
 
   if (isLoading) return <main className={styles.feedback}>Loading student profile...</main>
@@ -49,7 +79,7 @@ export function AdminStudentDetailsPage() {
           <header className={styles.profileHeader}><h1>Student Profile</h1><p>View and manage the student’s personal, academic, and internship preference details.</p></header>
           <div className={styles.body}>
             <section className={styles.summary}>
-              <span className={styles.avatar}><UserRound size={30} /></span>
+              <span className={styles.avatar}>{student.profileImageUrl ? <img src={student.profileImageUrl} alt={`${student.fullName} profile`} /> : <UserRound size={30} />}</span>
               <div className={styles.summaryInfo}><h2>{student.fullName}</h2><div><span><Mail size={16} />{student.email}</span><span><Phone size={16} />{student.contactNumber}</span></div><span><MapPin size={16} />{student.fullAddress}</span></div>
               <StatusPill status={student.status} />
             </section>
@@ -75,7 +105,7 @@ export function AdminStudentDetailsPage() {
               <Row label="Preferred Host Organization Type" value={student.hostOrgType} />
               <Row label="Internship Days Availability" value={student.scheduleAvailability.join(', ')} />
               <Row label="Internship Start Date Availability" value={student.startDate} />
-              <Row label="Preferred Field of Internship" value={student.preferredIndustries.join(', ')} />
+              <Row label="Preferred Field of Internship" value={formatPreferredIndustries(student.preferredIndustries, student.otherPreferredField)} />
               <Row label="Willing to Be Assigned Outside Preferred Field" value={student.flexibleAssignment ? 'Yes' : 'No'} />
             </InfoCard>
           </div>
@@ -88,7 +118,7 @@ export function AdminStudentDetailsPage() {
       </div>
 
       {showSuspendDialog && <div className={styles.dialogOverlay} onClick={() => setShowSuspendDialog(false)}><section className={styles.dialog} onClick={(event) => event.stopPropagation()}><header className={styles.dialogHeader}><div><h2>Suspend Student Account</h2><p>Set the suspension duration for {student.fullName}.</p></div><button type="button" className={styles.closeButton} aria-label="Close" onClick={() => setShowSuspendDialog(false)}><X size={19} /></button></header><div className={styles.dialogBody}><label>Suspension Duration (Days)<input autoFocus min="1" type="number" inputMode="numeric" value={suspensionDays} onChange={(event) => setSuspensionDays(event.target.value.replace(/\D/g, ''))} placeholder="Enter number of days" /></label><p className={styles.dialogHint}>The account will be marked as suspended for the selected duration.</p></div><footer className={styles.dialogActions}><button type="button" className={styles.cancelButton} onClick={() => setShowSuspendDialog(false)}>Cancel</button><button type="button" className={styles.confirmSuspend} onClick={suspend} disabled={!suspensionDays}>Suspend Account</button></footer></section></div>}
-      {showUnsuspendDialog && <div className={styles.dialogOverlay} onClick={() => setShowUnsuspendDialog(false)}><section className={styles.dialog} onClick={(event) => event.stopPropagation()}><header className={styles.dialogHeader}><div><h2>Unsuspend Student Account</h2><p>{student.fullName} has {student.suspensionDaysRemaining ?? 0} day(s) remaining on their suspension.</p></div><button type="button" className={styles.closeButton} aria-label="Close" onClick={() => setShowUnsuspendDialog(false)}><X size={19} /></button></header><div className={styles.dialogBody}><p className={styles.dialogHint}>Are you sure you want to restore this account now?</p></div><footer className={styles.dialogActions}><button type="button" className={styles.cancelButton} onClick={() => setShowUnsuspendDialog(false)}>Cancel</button><button type="button" className={styles.confirmSuspend} onClick={async () => { if (!id) return; const updated = await adminService.updateStudentRecord(id, { status: 'Active', suspensionDaysRemaining: undefined }); if (updated) setStudent(updated); setShowUnsuspendDialog(false) }}>Confirm Unsuspend</button></footer></section></div>}
+      {showUnsuspendDialog && <div className={styles.dialogOverlay} onClick={() => setShowUnsuspendDialog(false)}><section className={styles.dialog} onClick={(event) => event.stopPropagation()}><header className={styles.dialogHeader}><div><h2>Unsuspend Student Account</h2><p>{student.fullName} has {student.suspensionDaysRemaining ?? 0} day(s) remaining on their suspension.</p></div><button type="button" className={styles.closeButton} aria-label="Close" onClick={() => setShowUnsuspendDialog(false)}><X size={19} /></button></header><div className={styles.dialogBody}><p className={styles.dialogHint}>Are you sure you want to restore this account now?</p></div><footer className={styles.dialogActions}><button type="button" className={styles.cancelButton} onClick={() => setShowUnsuspendDialog(false)}>Cancel</button><button type="button" className={styles.confirmSuspend} onClick={() => void unsuspend()}>Confirm Unsuspend</button></footer></section></div>}
     </main>
   )
 }

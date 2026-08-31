@@ -72,6 +72,7 @@ describe('Database migration paths and behavioral validation', () => {
     expect(migrationRows.map((r: any) => r.name)).toEqual([
       'InitialSchema1785860400000',
       'ApprovedDatabaseRedesign1787788800000',
+      'AddStudentCustomIndustry1788134400000',
     ]);
 
     // Validate redesigned columns
@@ -119,6 +120,10 @@ describe('Database migration paths and behavioral validation', () => {
       `SELECT count(*)::int AS count FROM public.industry WHERE is_custom_text = false`,
     );
     expect(industries[0].count).toBe(APPROVED_INDUSTRIES.length);
+    const customIndustries = await dataSource.query(
+      `SELECT industry_name FROM public.industry WHERE is_custom_text = true`,
+    );
+    expect(customIndustries).toEqual([{ industry_name: 'Other' }]);
   });
 
   it('Historical AuthAlignmentV3 upgrade path: reproduces historical schema & data, runs redesign migration, preserves history, and validates', async () => {
@@ -246,6 +251,7 @@ describe('Database migration paths and behavioral validation', () => {
       'InitialSchema1785860400000',
       'AuthAlignmentV31786125600000',
       'ApprovedDatabaseRedesign1787788800000',
+      'AddStudentCustomIndustry1788134400000',
     ]);
 
     const canonicalAuth = await dataSource.query(`

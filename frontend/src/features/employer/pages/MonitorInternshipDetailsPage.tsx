@@ -4,6 +4,9 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { employerService } from '../services/employer.service'
 import type { EmployerInternshipDetails } from '../types/employer.types'
 import styles from './MonitorInternshipDetailsPage.module.css'
+import { useToastStore } from '../../../stores/useToastStore'
+import { getErrorMessage } from '../../../utils/error-message'
+import { isValidDateOnly, todayDateOnly } from '../../../utils/date-only'
 
 type InternshipForm = Pick<EmployerInternshipDetails, 'company' | 'jobTitle' | 'workingDays' | 'requiredHours' | 'startDate' | 'expectedEndDate' | 'shiftStartTime' | 'shiftEndTime'>
 
@@ -19,6 +22,8 @@ export function MonitorInternshipDetailsPage() {
   const [form, setForm] = useState<InternshipForm | null>(null)
   const [saving, setSaving] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [dateError, setDateError] = useState('')
+  const toast = useToastStore()
 
   useEffect(() => {
     if (!applicantId) return
@@ -34,6 +39,15 @@ export function MonitorInternshipDetailsPage() {
   const update = <K extends keyof InternshipForm>(key: K, value: InternshipForm[K]) => setForm((current) => current ? { ...current, [key]: value } : current)
   const save = async () => {
     if (!applicantId) return
+    if (!isValidDateOnly(form.startDate) || (form.expectedEndDate && !isValidDateOnly(form.expectedEndDate))) {
+      setDateError('Enter valid start and expected end dates.')
+      return
+    }
+    if (form.expectedEndDate && form.expectedEndDate < form.startDate) {
+      setDateError('Expected end date must be on or after the start date.')
+      return
+    }
+    setDateError('')
     setSaving(true)
     try {
       const saved = await employerService.updateInternshipDetails(applicantId, form)
@@ -41,7 +55,10 @@ export function MonitorInternshipDetailsPage() {
         setDetails(saved)
         setForm(toForm(saved))
         setIsEditing(false)
+        toast.success('Internship details updated.')
       }
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update internship details.'))
     } finally {
       setSaving(false)
     }
@@ -55,7 +72,10 @@ export function MonitorInternshipDetailsPage() {
       if (updated) {
         setDetails(updated)
         setForm(toForm(updated))
+        toast.success(`Internship status changed to ${status}.`)
       }
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update internship status.'))
     } finally {
       setSaving(false)
     }
@@ -69,9 +89,10 @@ export function MonitorInternshipDetailsPage() {
     setSaving(true)
     try {
       await employerService.deleteInternshipDetails(applicantId)
+      toast.success('Internship record deleted.')
       navigate('/employer/manage-internship')
-    } catch (err: any) {
-      alert(err?.message || 'Failed to delete internship record. Only terminal assignments can be deleted.')
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to delete internship record. Only terminal assignments can be deleted.'))
     } finally {
       setSaving(false)
     }
@@ -97,14 +118,15 @@ export function MonitorInternshipDetailsPage() {
         <div className={styles.formGrid}>
           <Field label="Company"><input value={form.company} readOnly={!isEditing} onChange={(event) => update('company', event.target.value)} /></Field>
           <Field label="Job Title"><input value={form.jobTitle} readOnly={!isEditing} onChange={(event) => update('jobTitle', event.target.value)} /></Field>
-          <Field label="Working Days">{isEditing ? <select value={form.workingDays} onChange={(event) => update('workingDays', event.target.value)}><option>Weekdays</option><option>Weekend</option><option>Flexible</option></select> : <input value={form.workingDays} readOnly />}</Field>
+          <Field label="Working Days">{isEditing ? <select value={form.workingDays} onChange={(event) => update('workingDays', event.target.value)}><option value="weekdays">Weekdays</option><option value="weekends">Weekends</option></select> : <input value={form.workingDays} readOnly />}</Field>
           <Field label="Required Hours"><input inputMode="numeric" value={form.requiredHours} readOnly={!isEditing} onChange={(event) => update('requiredHours', Number(event.target.value.replace(/\D/g, '')) || 0)} /></Field>
-          <Field label="Start Date"><input value={form.startDate} readOnly={!isEditing} onChange={(event) => update('startDate', event.target.value)} /></Field>
-          <Field label="Expected End Date"><input value={form.expectedEndDate} readOnly={!isEditing} onChange={(event) => update('expectedEndDate', event.target.value)} /></Field>
+          <Field label="Start Date"><input type="date" min={todayDateOnly()} value={form.startDate} readOnly={!isEditing} onChange={(event) => { setDateError(''); update('startDate', event.target.value) }} /></Field>
+          <Field label="Expected End Date"><input type="date" min={form.startDate} value={form.expectedEndDate} readOnly={!isEditing} onChange={(event) => { setDateError(''); update('expectedEndDate', event.target.value) }} /></Field>
           <Field label="Shift Start Time"><input value={form.shiftStartTime} readOnly={!isEditing} onChange={(event) => update('shiftStartTime', event.target.value)} /></Field>
           <Field label="Shift End Time"><input value={form.shiftEndTime} readOnly={!isEditing} onChange={(event) => update('shiftEndTime', event.target.value)} /></Field>
         </div>
-        {isEditing && <footer className={styles.footer}><button type="button" className={styles.cancelButton} onClick={() => { setForm(toForm(details)); setIsEditing(false) }}>Cancel</button><button type="button" className={styles.saveButton} disabled={saving} onClick={save}>{saving ? 'Saving...' : 'Save'}</button></footer>}
+        {dateError && <p className={styles.validationError} role="alert">{dateError}</p>}
+        {isEditing && <footer className={styles.footer}><button type="button" className={styles.cancelButton} onClick={() => { setForm(toForm(details)); setDateError(''); setIsEditing(false) }}>Cancel</button><button type="button" className={styles.saveButton} disabled={saving} onClick={save}>{saving ? 'Saving...' : 'Save'}</button></footer>}
       </section>
 
       <section className={styles.statusCard}>

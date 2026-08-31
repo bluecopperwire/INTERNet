@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   BriefcaseBusiness,
   ExternalLink,
@@ -11,6 +11,7 @@ import {
 import { NavLink, useNavigate } from 'react-router-dom'
 import internetLogo from '../../../assets/internet-logo.svg'
 import { useAuthStore } from '../../../stores/useAuthStore'
+import { useStudentStore } from '../stores/useStudentStore'
 import styles from './InternSeekerSidebar.module.css'
 
 interface InternSeekerSidebarProps {
@@ -29,6 +30,11 @@ function InternSeekerSidebar({ isOpen, onClose }: InternSeekerSidebarProps) {
   const [search, setSearch] = useState('')
   const navigate = useNavigate()
   const { user, logout: authLogout } = useAuthStore()
+  const { profile, fetchProfile } = useStudentStore()
+
+  useEffect(() => {
+    if (!profile) void fetchProfile()
+  }, [fetchProfile, profile])
 
   const filteredNavigation = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -43,7 +49,12 @@ function InternSeekerSidebar({ isOpen, onClose }: InternSeekerSidebarProps) {
     navigate('/', { replace: true })
   }
 
-  const displayName = user?.email.split('@')[0] || 'Intern Seeker'
+  const profileName = profile
+    ? [profile.firstName, profile.middleName, profile.lastName]
+        .filter(Boolean)
+        .join(' ')
+    : ''
+  const displayName = profileName || user?.email.split('@')[0] || 'Intern Seeker'
   const userInitials = displayName.substring(0, 2).toUpperCase()
 
   return (
@@ -96,7 +107,9 @@ function InternSeekerSidebar({ isOpen, onClose }: InternSeekerSidebarProps) {
         onClick={() => { onClose(); navigate('/intern-seeker/profile') }}
         tabIndex={isOpen ? 0 : -1}
       >
-        <span className={styles.avatar} aria-hidden="true">{userInitials}</span>
+        <span className={styles.avatar} aria-hidden="true">
+          {profile?.photoUrl ? <img src={profile.photoUrl} alt="" /> : userInitials}
+        </span>
         <span className={styles.userText}>
           <strong>{displayName}</strong>
           <small>{user?.email}</small>

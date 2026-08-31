@@ -5,8 +5,11 @@ import { adminService } from '../services/admin.service'
 import type { AuditLog } from '../types/admin.types'
 import { AuditLogDetailsModal } from '../components/AuditLogDetailsModal'
 import styles from './AuditLogsPage.module.css'
+import { useToastStore } from '../../../stores/useToastStore'
+import { todayDateOnly } from '../../../utils/date-only'
 
 export function AuditLogsPage() {
+  const toast = useToastStore()
   const [logs, setLogs] = useState<AuditLog[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null)
@@ -92,7 +95,7 @@ export function AuditLogsPage() {
 
   const handleExportCSV = () => {
     if (filteredLogs.length === 0) {
-      alert("No logs to export based on current filters.")
+      toast.info('No logs to export based on the current filters.')
       return
     }
 
@@ -121,6 +124,8 @@ export function AuditLogsPage() {
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+    toast.success('Audit logs exported to CSV.')
   }
 
   if (isLoading) {
@@ -164,6 +169,7 @@ export function AuditLogsPage() {
               type="date" 
               className={styles.dateInput} 
               value={startDate} 
+              max={endDate || todayDateOnly()}
               onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }}
             />
             <span>to</span>
@@ -171,6 +177,8 @@ export function AuditLogsPage() {
               type="date" 
               className={styles.dateInput} 
               value={endDate} 
+              min={startDate}
+              max={todayDateOnly()}
               onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }}
             />
           </div>

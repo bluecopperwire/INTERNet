@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { useApplications } from '../hooks/useApplications'
 import type { ApplicationDisplayStatus, ApplicationProgress, InterviewDetails, UserApplication } from '../types/application.types'
 import styles from './ApplicationStatusPage.module.css'
+import { useToastStore } from '../../../stores/useToastStore'
 
 type DialogState =
   | { type: 'remark'; title: string; remark: string }
@@ -16,13 +17,17 @@ function ApplicationStatusPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [dialog, setDialog] = useState<DialogState>(null)
   const [isUpdating, setIsUpdating] = useState(false)
+  const toast = useToastStore()
   const selectedApplication = applications.find((application) => application.id === selectedId) ?? applications[0]
 
-  const performUpdate = async (action: () => Promise<unknown>) => {
+  const performUpdate = async (action: () => Promise<unknown>, successMessage: string) => {
     setIsUpdating(true)
     try {
       await action()
       setDialog(null)
+      toast.success(successMessage)
+    } catch {
+      toast.error('The application could not be updated. Please try again.')
     } finally {
       setIsUpdating(false)
     }
@@ -46,11 +51,11 @@ function ApplicationStatusPage() {
             </div>
           </section>
 
-          {selectedApplication && <ApplicationProgress application={selectedApplication} isUpdating={isUpdating} onWithdraw={() => void performUpdate(() => withdrawApplication(selectedApplication.id))} onDelete={() => void performUpdate(() => deleteApplication(selectedApplication.id))} onOpenDialog={setDialog} />}
+          {selectedApplication && <ApplicationProgress application={selectedApplication} isUpdating={isUpdating} onWithdraw={() => void performUpdate(() => withdrawApplication(selectedApplication.id), 'Application withdrawn.')} onDelete={() => void performUpdate(() => deleteApplication(selectedApplication.id), 'Application deleted.')} onOpenDialog={setDialog} />}
         </div>
       )}
 
-      {dialog && <ApplicationDialog dialog={dialog} isUpdating={isUpdating} onClose={() => setDialog(null)} onDecision={(decision) => void performUpdate(() => respondToOffer(dialog.type === 'student-decision' ? dialog.application.id : '', decision))} />}
+      {dialog && <ApplicationDialog dialog={dialog} isUpdating={isUpdating} onClose={() => setDialog(null)} onDecision={(decision) => void performUpdate(() => respondToOffer(dialog.type === 'student-decision' ? dialog.application.id : '', decision), decision === 'accept' ? 'Internship offer accepted.' : 'Internship offer declined.')} />}
     </>
   )
 }

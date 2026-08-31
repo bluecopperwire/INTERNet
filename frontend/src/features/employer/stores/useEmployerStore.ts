@@ -131,7 +131,7 @@ export const useEmployerStore = create<EmployerState>((set, get) => ({
     } catch (err: any) {
       const norm = normalizeApiError(err);
       set({ error: norm.message, isLoadingProfile: false });
-      throw err;
+      throw new Error(norm.message);
     }
   },
 

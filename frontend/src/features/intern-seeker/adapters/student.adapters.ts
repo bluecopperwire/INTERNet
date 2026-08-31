@@ -1,3 +1,4 @@
+import { publicUploadUrl } from '../../../utils/public-upload-url';
 import { API_BASE_URL } from '../../../services/api';
 import type {
   StudentProfileResponse,
@@ -26,6 +27,7 @@ import type {
   AttendanceRecord,
   AttendanceSummary,
 } from '../types/attendance.types';
+import { todayDateOnly, toDateOnly } from '../../../utils/date-only';
 
 export function adaptOpportunity(
   dto: OpportunitySummaryDto,
@@ -36,14 +38,17 @@ export function adaptOpportunity(
     hybrid: 'Hybrid',
   };
 
-  const allowanceStr = dto.allowance === null
-    ? 'No Allowance'
-    : String(dto.allowance);
+  const allowanceStr =
+    dto.allowance === null ? 'No Allowance' : String(dto.allowance);
 
   return {
     id: String(dto.opportunityId),
     companyId: String(dto.companyId),
     companyName: dto.companyName,
+    companyLogoUrl: publicUploadUrl(
+      dto.companyLogoFilePath,
+      dto.companyProfileUpdatedAt,
+    ),
     position: dto.title,
     location: dto.companyAddressCity || 'Quezon City',
     workSetup: workSetupMap[dto.workArrangement] || 'On-site',
@@ -60,7 +65,7 @@ export function adaptOpportunity(
       department: dto.department,
       internshipDuration: `${dto.minimumRequiredHours} Hours`,
       numberOfSlots: dto.offeredSlots,
-      applicationDeadline: dto.applicationDeadline,
+      applicationDeadline: toDateOnly(dto.applicationDeadline),
       description: dto.description,
       qualifications: dto.qualification || 'No specific qualification listed.',
       allowance: allowanceStr,
@@ -130,6 +135,20 @@ const HOST_ORG_MAP_TO_DTO: Record<string, string> = {
   private: 'private',
 };
 
+const SEX_MAP_TO_UI: Record<string, string> = {
+  female: 'Female',
+  male: 'Male',
+  Female: 'Female',
+  Male: 'Male',
+};
+
+const SEX_MAP_TO_DTO: Record<string, string> = {
+  Female: 'female',
+  Male: 'male',
+  female: 'female',
+  male: 'male',
+};
+
 export function adaptStudentProfile(dto: StudentProfileResponse): UserProfile {
   const s = dto.student;
   const ac = dto.academic;
@@ -139,14 +158,19 @@ export function adaptStudentProfile(dto: StudentProfileResponse): UserProfile {
   const rawYear = ac?.year_level || '';
   const uiYear = YEAR_LEVEL_MAP_TO_UI[rawYear] || rawYear;
 
-  const rawSchedule = ip?.available_days || 'weekdays';
-  const uiSchedule = SCHEDULE_MAP_TO_UI[rawSchedule] || rawSchedule;
+  const rawSchedule = ip?.available_days || '';
+  const uiSchedule = rawSchedule
+    ? SCHEDULE_MAP_TO_UI[rawSchedule] || rawSchedule
+    : '';
 
-  const rawHostOrg = ip?.preferred_company_type || 'private';
-  const uiHostOrg = HOST_ORG_MAP_TO_UI[rawHostOrg] || rawHostOrg;
+  const rawHostOrg = ip?.preferred_company_type || '';
+  const uiHostOrg = rawHostOrg
+    ? HOST_ORG_MAP_TO_UI[rawHostOrg] || rawHostOrg
+    : '';
 
-  const birthDateStr = s.birth_date ? String(s.birth_date).split('T')[0] : '';
-  const startDateStr = ip?.start_date ? String(ip.start_date).split('T')[0] : '';
+  const birthDateStr = toDateOnly(s.birth_date);
+  const startDateStr = toDateOnly(ip?.start_date);
+  const photoUrl = publicUploadUrl(s.photo_file_path, s.updated_at);
 
   return {
     id: String(s.student_id),
@@ -155,11 +179,14 @@ export function adaptStudentProfile(dto: StudentProfileResponse): UserProfile {
     lastName: s.last_name || '',
     extensionName: s.extension_name || '',
     role: 'Intern Seeker',
-    location: `${s.address_barangay || ''}, ${s.address_city || ''}`.replace(/^, |, $/g, ''),
+    location: `${s.address_barangay || ''}, ${s.address_city || ''}`.replace(
+      /^, |, $/g,
+      '',
+    ),
     email: s.contact_email || '',
     linkedinUrl: s.linkedin_url || '',
     internshipStatus: 'Not Employed',
-    sex: s.sex || 'Male',
+    sex: SEX_MAP_TO_UI[s.sex] || s.sex || '',
     birthdate: birthDateStr,
     contactNumber: s.contact_number || '',
     address: {
@@ -169,6 +196,7 @@ export function adaptStudentProfile(dto: StudentProfileResponse): UserProfile {
       city: s.address_city || '',
     },
     inquiryVia: s.inquiry_method || 'online',
+    photoUrl,
     academic: {
       schoolName: ac?.school_name || '',
       program: ac?.strand_program || '',
@@ -176,10 +204,20 @@ export function adaptStudentProfile(dto: StudentProfileResponse): UserProfile {
     },
     preferences: {
       requiredHours: ip?.required_hours ?? '',
-      willingToAssignOutside: ip ? Boolean(ip.allows_outside_preferred_field) : false,
-      preferredIndustries: pi.map((p) => p.industry_name || p.custom_industry_name || String(p.industry_id || '')),
-      otherPreferredField: pi.find((p) => p.custom_industry_name)?.custom_industry_name || '',
-      schedule: [uiSchedule],
+      willingToAssignOutside:
+        ip?.allows_outside_preferred_field === true
+          ? true
+          : ip?.allows_outside_preferred_field === false
+            ? false
+            : null,
+      preferredIndustries: pi.map(
+        (p) =>
+          (p.custom_industry_name ? 'Other' : p.industry_name) ||
+          String(p.industry_id || ''),
+      ),
+      otherPreferredField:
+        pi.find((p) => p.custom_industry_name)?.custom_industry_name || '',
+      schedule: uiSchedule ? [uiSchedule] : [],
       startDate: startDateStr,
       hostOrgType: uiHostOrg,
     },
@@ -188,40 +226,44 @@ export function adaptStudentProfile(dto: StudentProfileResponse): UserProfile {
 
 export function adaptStudentProfileToUpdateDto(
   profile: Partial<UserProfile>,
-  referenceIndustries: Array<{ industryId: number; industryName: string; isCustomText?: boolean }> = [],
+  referenceIndustries: Array<{
+    industryId: number;
+    industryName: string;
+    isCustomText?: boolean;
+  }> = [],
 ) {
   const normYear =
-    YEAR_LEVEL_MAP_TO_DTO[profile.academic?.yearLevel || ''] || 'third_year_college';
+    YEAR_LEVEL_MAP_TO_DTO[profile.academic?.yearLevel || ''] || '';
   const normSchedule =
-    SCHEDULE_MAP_TO_DTO[profile.preferences?.schedule?.[0] || ''] || 'weekdays';
+    SCHEDULE_MAP_TO_DTO[profile.preferences?.schedule?.[0] || ''] || '';
   const normOrgType =
-    HOST_ORG_MAP_TO_DTO[profile.preferences?.hostOrgType || ''] || 'private';
+    HOST_ORG_MAP_TO_DTO[profile.preferences?.hostOrgType || ''] || '';
 
   const birthDateValue =
     profile.birthdate && profile.birthdate.trim()
-      ? profile.birthdate.split('T')[0]
+      ? toDateOnly(profile.birthdate)
       : '2002-01-01';
 
   const startDateValue =
     profile.preferences?.startDate && profile.preferences.startDate.trim()
-      ? profile.preferences.startDate.split('T')[0]
-      : new Date().toISOString().split('T')[0];
+      ? toDateOnly(profile.preferences.startDate)
+      : '';
 
-  const preferredIndustriesDto: Array<{ industryId: number; customIndustryName?: string }> = [];
+  const preferredIndustriesDto: Array<{
+    industryId: number;
+    customIndustryName?: string;
+  }> = [];
   const selectedIndustryNames = profile.preferences?.preferredIndustries || [];
 
   selectedIndustryNames.forEach((name) => {
     if (name === 'Other') {
       const customName = profile.preferences?.otherPreferredField?.trim();
-      const customInd = referenceIndustries.find((i) => i.isCustomText || i.industryName.toLowerCase() === 'other');
+      const customInd = referenceIndustries.find(
+        (i) => i.isCustomText || i.industryName.toLowerCase() === 'other',
+      );
       if (customInd) {
         preferredIndustriesDto.push({
           industryId: customInd.industryId,
-          customIndustryName: customName || undefined,
-        });
-      } else if (referenceIndustries.length > 0) {
-        preferredIndustriesDto.push({
-          industryId: referenceIndustries[0].industryId,
           customIndustryName: customName || undefined,
         });
       }
@@ -238,10 +280,6 @@ export function adaptStudentProfileToUpdateDto(
     }
   });
 
-  if (preferredIndustriesDto.length === 0 && referenceIndustries.length > 0) {
-    preferredIndustriesDto.push({ industryId: referenceIndustries[0].industryId });
-  }
-
   const allowedInquiries = ['walk_in', 'online', 'phone_call', 'school'];
   const inquiryMethod =
     profile.inquiryVia && allowedInquiries.includes(profile.inquiryVia)
@@ -253,7 +291,7 @@ export function adaptStudentProfileToUpdateDto(
     middleName: profile.middleName || undefined,
     lastName: profile.lastName || '',
     extensionName: profile.extensionName || undefined,
-    sex: profile.sex || 'Male',
+    sex: SEX_MAP_TO_DTO[profile.sex || ''] || profile.sex || '',
     birthDate: birthDateValue,
     contactNumber: profile.contactNumber || '',
     contactEmail: profile.email || '',
@@ -269,11 +307,12 @@ export function adaptStudentProfileToUpdateDto(
       yearLevel: normYear,
     },
     internshipPreference: {
-      requiredHours: Number(profile.preferences?.requiredHours) || 300,
+      requiredHours: Number(profile.preferences?.requiredHours),
       availableDays: normSchedule,
       preferredCompanyType: normOrgType,
       startDate: startDateValue,
-      allowsOutsidePreferredField: Boolean(profile.preferences?.willingToAssignOutside),
+      allowsOutsidePreferredField:
+        profile.preferences?.willingToAssignOutside ?? null,
     },
     preferredIndustries: preferredIndustriesDto,
   };
@@ -288,11 +327,13 @@ export function adaptApplicationDisplayStatus(
   if (app.referral) {
     if (app.referral.companyResponse === 'accepted') return 'Accepted';
     if (app.referral.companyResponse === 'rejected') return 'Rejected';
-    if (app.referral.companyResponse === 'for_interview') return 'Interview Scheduled';
+    if (app.referral.companyResponse === 'for_interview')
+      return 'Interview Scheduled';
     return 'Endorsed to Company';
   }
 
-  if (app.applicationStatus === 'approved_for_referral') return 'Endorsed to Company';
+  if (app.applicationStatus === 'approved_for_referral')
+    return 'Endorsed to Company';
   return 'For Review (QC PESO)';
 }
 
@@ -358,7 +399,8 @@ export function buildApplicationTimeline(
         interview: {
           date: new Date(app.interview.scheduled_at).toLocaleDateString(),
           time: new Date(app.interview.scheduled_at).toLocaleTimeString(),
-          mode: app.interview.interview_mode === 'online' ? 'online' : 'in-person',
+          mode:
+            app.interview.interview_mode === 'online' ? 'online' : 'in-person',
           meetingUrl: app.interview.online_meeting_url || undefined,
           location: app.interview.physical_location || undefined,
           remark: app.interview.remark || undefined,
@@ -373,7 +415,8 @@ export function buildApplicationTimeline(
     } else {
       steps.push({
         stage: 'Company Review',
-        state: app.referral.companyResponse === 'accepted' ? 'completed' : 'current',
+        state:
+          app.referral.companyResponse === 'accepted' ? 'completed' : 'current',
         message: 'Partner company is reviewing your qualifications',
       });
     }
@@ -393,14 +436,18 @@ export function buildApplicationTimeline(
         stage: 'Student Decision',
         state: 'completed',
         message: 'Offer accepted! Internship assignment confirmed.',
-        timestamp: app.studentRespondedAt ? new Date(app.studentRespondedAt).toLocaleDateString() : undefined,
+        timestamp: app.studentRespondedAt
+          ? new Date(app.studentRespondedAt).toLocaleDateString()
+          : undefined,
       });
     } else if (app.studentResponse === 'declined') {
       steps.push({
         stage: 'Student Decision',
         state: 'rejected',
         message: 'Offer declined by applicant.',
-        timestamp: app.studentRespondedAt ? new Date(app.studentRespondedAt).toLocaleDateString() : undefined,
+        timestamp: app.studentRespondedAt
+          ? new Date(app.studentRespondedAt).toLocaleDateString()
+          : undefined,
       });
     } else {
       steps.push({
@@ -544,7 +591,8 @@ export function adaptAttendance(res: StudentAttendanceResponse): {
 
   let todayAttendance: TodayAttendance | null = null;
   if (a) {
-    let todayStatus: 'not-checked-in' | 'checked-in' | 'checked-out' = 'not-checked-in';
+    let todayStatus: 'not-checked-in' | 'checked-in' | 'checked-out' =
+      'not-checked-in';
     if (res.today) {
       if (res.today.time_out) {
         todayStatus = 'checked-out';
@@ -554,14 +602,18 @@ export function adaptAttendance(res: StudentAttendanceResponse): {
     }
 
     todayAttendance = {
-      date: new Date().toISOString().split('T')[0],
+      date: todayDateOnly(),
       status: todayStatus,
       companyName: a.companyName,
       workingDays: a.workingDays,
       shiftStart: a.startShift,
       shiftEnd: a.endShift,
-      checkedInAt: res.today?.time_in ? String(res.today.time_in).substring(0, 5) : undefined,
-      checkedOutAt: res.today?.time_out ? String(res.today.time_out).substring(0, 5) : undefined,
+      checkedInAt: res.today?.time_in
+        ? String(res.today.time_in).substring(0, 5)
+        : undefined,
+      checkedOutAt: res.today?.time_out
+        ? String(res.today.time_out).substring(0, 5)
+        : undefined,
     };
   }
 

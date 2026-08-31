@@ -98,8 +98,16 @@
   flex: none;
   place-items: center;
   border-radius: 50%;
+  overflow: hidden;
   background: #ebeaf5;
   color: #160e6f;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
 }
 
 .summaryInfo {

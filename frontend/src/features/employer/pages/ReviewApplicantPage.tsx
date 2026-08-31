@@ -6,6 +6,8 @@ import type { Applicant } from '../types/employer.types'
 import { RejectApplicantModal } from '../components/RejectApplicantModal'
 import { ScheduleInterviewModal } from '../components/ScheduleInterviewModal'
 import styles from './ReviewApplicantPage.module.css'
+import { useToastStore } from '../../../stores/useToastStore'
+import { getErrorMessage } from '../../../utils/error-message'
 
 export function ReviewApplicantPage() {
   const { id } = useParams<{ id: string }>()
@@ -16,6 +18,7 @@ export function ReviewApplicantPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [showScheduleInterview, setShowScheduleInterview] = useState(false)
   const [showRejectModal, setShowRejectModal] = useState(false)
+  const toast = useToastStore()
 
   useEffect(() => {
     if (!id) return
@@ -39,6 +42,10 @@ export function ReviewApplicantPage() {
       await employerService.updateApplicantStatus(applicant.id, status, rejectionRemark)
       setApplicant((current) => current ? { ...current, status, rejectionRemark: status === 'Rejected' ? rejectionRemark?.trim() || undefined : undefined } : current)
       setShowRejectModal(false)
+      if (status === 'For Interview') setShowScheduleInterview(false)
+      toast.success(`Applicant status changed to ${status}.`)
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update applicant status.'))
     } finally {
       setIsSaving(false)
     }
@@ -46,7 +53,6 @@ export function ReviewApplicantPage() {
 
   const handleScheduleInterview = async () => {
     await updateStatus('For Interview')
-    setShowScheduleInterview(false)
   }
 
   const handleReject = async (remark: string) => {
@@ -93,7 +99,13 @@ export function ReviewApplicantPage() {
         <div className={styles.twoColumnGrid}>
           <aside className={styles.profileCard}>
             <div className={styles.profileAvatarRow}>
-              <div className={styles.avatarPlaceholder}><User size={34} /></div>
+              <div className={styles.avatarPlaceholder}>
+                {applicant.profileImageUrl ? (
+                  <img src={applicant.profileImageUrl} alt={`${applicant.name} profile`} />
+                ) : (
+                  <User size={34} />
+                )}
+              </div>
               <div className={styles.profileInfo}>
                 <h2>{applicant.name}</h2>
                 <div className={styles.contactMeta}>

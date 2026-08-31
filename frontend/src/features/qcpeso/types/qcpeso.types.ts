@@ -79,6 +79,7 @@ export interface MonitoredStudentUser {
   internshipStartDateAvailability: string
   preferredField: string
   willingOutsidePreferredField: string
+  profileImageUrl?: string
 }
 
 export interface MonitoredCompanyUser {
@@ -96,6 +97,7 @@ export interface MonitoredCompanyUser {
   yearEstablished: string
   websiteUrl: string
   contactPerson: string
+  profileImageUrl?: string
 }
 
 export interface CreateEmployerPayload {
@@ -147,6 +149,7 @@ export interface QCPesoReviewApplicant {
   availableDays: string
   availableStartingDate: string
   opportunityId: string
+  profileImageUrl?: string
   documents?: QCPesoDocument[]
 }
 
@@ -161,6 +164,7 @@ export interface QCPesoReferral {
   email: string
   phone: string
   address: string
+  profileImageUrl?: string
   documents?: QCPesoDocument[]
 }
 

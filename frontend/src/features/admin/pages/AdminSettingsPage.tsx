@@ -3,16 +3,18 @@ import { LockKeyhole, ShieldCheck } from 'lucide-react'
 import headerImage from '../../../assets/requirements-header-image.png'
 import adminStyles from './AuditLogsPage.module.css'
 import styles from '../../employer/pages/EmployerSettingsPage.module.css'
+import { useToastStore } from '../../../stores/useToastStore'
 
 export function AdminSettingsPage() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [message, setMessage] = useState('')
+  const toast = useToastStore()
   const updatePassword = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (newPassword.length < 8) return setMessage('Password must contain at least 8 characters.')
     if (newPassword !== confirmPassword) return setMessage('The passwords do not match.')
-    setNewPassword(''); setConfirmPassword(''); setMessage('Password updated successfully.')
+    setNewPassword(''); setConfirmPassword(''); setMessage(''); toast.success('Password updated successfully.')
   }
 
   return <main className={styles.pageContainer}>

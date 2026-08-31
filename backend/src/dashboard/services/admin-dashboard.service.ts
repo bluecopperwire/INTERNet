@@ -126,7 +126,7 @@ export class AdminDashboardService {
         s.last_name AS "lastName",
         s.extension_name AS "extensionName",
         s.sex AS "sex",
-        s.birth_date AS "birthDate",
+        s.birth_date::text AS "birthDate",
         s.contact_number AS "contactNumber",
         s.contact_email AS "contactEmail",
         s.linkedin_url AS "linkedinUrl",
@@ -141,7 +141,7 @@ export class AdminDashboardService {
         sai.strand_program AS "strandProgram",
         ip.required_hours AS "preferredRequiredHours",
         ip.available_days AS "preferredAvailableDays",
-        ip.start_date AS "preferredStartDate",
+        ip.start_date::text AS "preferredStartDate",
         ip.preferred_company_type AS "preferredCompanyType",
         ip.allows_outside_preferred_field AS "allowsOutsidePreferredField"
       FROM public.user_account ua
@@ -611,7 +611,7 @@ export class AdminDashboardService {
         pp.last_name AS "lastName",
         pp.extension_name AS "extensionName",
         pp.sex AS "sex",
-        pp.birth_date AS "birthDate",
+        pp.birth_date::text AS "birthDate",
         pp.address_line AS "addressLine",
         pp.address_barangay AS "addressBarangay",
         pp.address_district AS "addressDistrict",

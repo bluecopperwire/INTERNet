@@ -33,9 +33,7 @@ export const studentApiService = {
     return response.data;
   },
 
-  async getOpportunity(
-    opportunityId: number,
-  ): Promise<OpportunityCatalogItem> {
+  async getOpportunity(opportunityId: number): Promise<OpportunityCatalogItem> {
     const response = await api.get<OpportunityCatalogItem>(
       `/opportunities/${opportunityId}`,
     );
@@ -60,9 +58,20 @@ export const studentApiService = {
     return response.data;
   },
 
-  async getResume(
+  async uploadProfilePicture(
     studentId: number,
-  ): Promise<any> {
+    file: File,
+  ): Promise<StudentProfileResponse> {
+    const formData = new FormData();
+    formData.append('image', file);
+    const response = await api.put<StudentProfileResponse>(
+      `/students/${studentId}/profile/image`,
+      formData,
+    );
+    return response.data;
+  },
+
+  async getResume(studentId: number): Promise<any> {
     const response = await api.get(`/students/${studentId}/resume`);
     return response.data;
   },
@@ -126,10 +135,10 @@ export const studentApiService = {
     opportunityId: number,
     remark?: string,
   ): Promise<any> {
-    const response = await api.post(
-      `/students/${studentId}/applications`,
-      { opportunityId, remark },
-    );
+    const response = await api.post(`/students/${studentId}/applications`, {
+      opportunityId,
+      remark,
+    });
     return response.data;
   },
 

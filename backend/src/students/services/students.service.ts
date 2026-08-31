@@ -5,7 +5,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { existsSync, unlinkSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Student } from '../entities/student.entity';
@@ -16,7 +16,11 @@ import {
   StudentRequirementUploadDto,
 } from '../dto/students.dto';
 import { withStatusActor } from '../../database/status-actor.transaction';
-
+import { ProfilePictureStorageService } from '../../storage/profile-picture-storage.service';
+import {
+  assertValidDate,
+  currentManilaDate,
+} from '../../employer/utils/time.utils';
 
 @Injectable()
 export class StudentsService {
@@ -25,6 +29,7 @@ export class StudentsService {
     private readonly studentRepo: Repository<Student>,
     @InjectDataSource()
     private readonly dataSource: DataSource,
+    private readonly profilePictures: ProfilePictureStorageService,
   ) {}
 
   async findById(id: number): Promise<Student | null> {
@@ -35,7 +40,7 @@ export class StudentsService {
   async getStudentProfile(studentId: number) {
     const [student] = await this.dataSource.query(
       `
-        SELECT s.*
+        SELECT s.*, s.birth_date::text AS birth_date
         FROM public.student s
         WHERE s.student_id = $1
       `,
@@ -57,7 +62,7 @@ export class StudentsService {
 
     const [preference] = await this.dataSource.query(
       `
-        SELECT ip.*
+        SELECT ip.*, ip.start_date::text AS start_date
         FROM public.internship_preference ip
         WHERE ip.student_id = $1
       `,
@@ -147,14 +152,48 @@ export class StudentsService {
   }
 
   async upsertStudentProfile(studentId: number, dto: StudentProfileUpdateDto) {
+    assertValidDate(dto.birthDate, 'birthDate');
+    const today = currentManilaDate();
+    if (dto.birthDate >= today) {
+      throw new BadRequestException('birthDate must be in the past.');
+    }
+    if (dto.internshipPreference) {
+      assertValidDate(
+        dto.internshipPreference.startDate,
+        'internshipPreference.startDate',
+      );
+      if (dto.internshipPreference.startDate < today) {
+        throw new BadRequestException(
+          'internshipPreference.startDate cannot be in the past.',
+        );
+      }
+    }
     await this.dataSource.transaction(async (manager) => {
       const studentExists = await manager.query(
-        `SELECT student_id FROM public.student WHERE student_id = $1`,
+        `SELECT student_id, photo_file_path FROM public.student WHERE student_id = $1`,
         [studentId],
       );
 
       if (!studentExists.length) {
         throw new NotFoundException('Student not found');
+      }
+
+      const isSavingInternshipPreferences =
+        dto.internshipPreference !== undefined ||
+        dto.preferredIndustries !== undefined;
+      if (
+        isSavingInternshipPreferences &&
+        (!dto.internshipPreference || !dto.preferredIndustries)
+      ) {
+        throw new BadRequestException(
+          'Internship preferences and at least one preferred field are required together.',
+        );
+      }
+      if (dto.preferredIndustries) {
+        await this.validatePreferredIndustries(
+          manager,
+          dto.preferredIndustries,
+        );
       }
 
       await manager.query(
@@ -193,7 +232,9 @@ export class StudentsService {
           dto.addressDistrict,
           dto.addressCity,
           dto.inquiryMethod,
-          dto.photoFilePath ?? null,
+          dto.photoFilePath === undefined
+            ? studentExists[0].photo_file_path
+            : dto.photoFilePath,
         ],
       );
 
@@ -317,6 +358,86 @@ export class StudentsService {
     return this.getStudentProfile(studentId);
   }
 
+  private async validatePreferredIndustries(
+    manager: EntityManager,
+    preferredIndustries: Array<{
+      industryId: number;
+      customIndustryName?: string;
+    }>,
+  ): Promise<void> {
+    const industryIds = preferredIndustries.map((item) => item.industryId);
+    if (new Set(industryIds).size !== industryIds.length) {
+      throw new BadRequestException('Preferred industry IDs must be unique.');
+    }
+
+    const industries: Array<{
+      industry_id: number;
+      is_custom_text: boolean;
+    }> = await manager.query(
+      `
+        SELECT industry_id, is_custom_text
+        FROM public.industry
+        WHERE industry_id = ANY($1::int[])
+      `,
+      [industryIds],
+    );
+    if (industries.length !== industryIds.length) {
+      throw new BadRequestException('A preferred industry does not exist.');
+    }
+
+    const customByIndustryId = new Map(
+      industries.map((industry) => [
+        Number(industry.industry_id),
+        industry.is_custom_text,
+      ]),
+    );
+    for (const preferredIndustry of preferredIndustries) {
+      const isCustom = customByIndustryId.get(preferredIndustry.industryId);
+      const customName = preferredIndustry.customIndustryName?.trim();
+      if (isCustom && !customName) {
+        throw new BadRequestException(
+          'customIndustryName is required for the custom industry.',
+        );
+      }
+      if (!isCustom && preferredIndustry.customIndustryName !== undefined) {
+        throw new BadRequestException(
+          'customIndustryName is allowed only for the custom industry.',
+        );
+      }
+      if (isCustom) {
+        preferredIndustry.customIndustryName = customName;
+      }
+    }
+  }
+
+  async replaceProfilePicture(studentId: number, file: Express.Multer.File) {
+    const student = await this.studentRepo.findOne({ where: { studentId } });
+    if (!student) throw new NotFoundException('Student not found');
+
+    const oldPath = student.photoFilePath;
+    const newPath = await this.profilePictures.storePerson(file, {
+      userAccountId: student.userAccountId,
+      firstName: student.firstName,
+      lastName: student.lastName,
+    });
+
+    try {
+      await this.studentRepo.update({ studentId }, { photoFilePath: newPath });
+    } catch (error) {
+      if (oldPath !== newPath) await this.profilePictures.delete(newPath);
+      throw error;
+    }
+
+    if (oldPath !== newPath) {
+      try {
+        await this.profilePictures.delete(oldPath);
+      } catch {
+        // The new DB reference remains valid if an obsolete file cannot be removed.
+      }
+    }
+    return this.getStudentProfile(studentId);
+  }
+
   async createStudentApplication(
     studentId: number,
     dto: CreateStudentApplicationDto,
@@ -354,7 +475,12 @@ export class StudentsService {
       [studentId],
     );
 
-    if (!academic || !academic.school_name || !academic.year_level || !academic.strand_program) {
+    if (
+      !academic ||
+      !academic.school_name ||
+      !academic.year_level ||
+      !academic.strand_program
+    ) {
       throw new BadRequestException(
         'Incomplete academic information. Please provide your school, year level, and program before applying.',
       );
@@ -795,7 +921,6 @@ export class StudentsService {
     );
   }
 
-
   // Accepts physical multipart file upload, saves under backend/uploads/requirements, and persists metadata in DB.
   async uploadRequirementFile(
     studentId: number,
@@ -951,7 +1076,12 @@ export class StudentsService {
     const filePath = String(submission.requirement_file_path ?? '');
     if (filePath.startsWith('/uploads/requirements/')) {
       const filename = filePath.replace('/uploads/requirements/', '');
-      const fullPath = resolve(process.cwd(), 'uploads', 'requirements', filename);
+      const fullPath = resolve(
+        process.cwd(),
+        'uploads',
+        'requirements',
+        filename,
+      );
       if (existsSync(fullPath)) {
         try {
           unlinkSync(fullPath);
@@ -1080,9 +1210,9 @@ export class StudentsService {
           o.title AS job_title,
           ia.working_days,
           ia.required_hours,
-          ia.start_date,
-          ia.expected_end_date,
-          ia.end_date,
+          ia.start_date::text AS start_date,
+          ia.expected_end_date::text AS expected_end_date,
+          ia.end_date::text AS end_date,
           ia.start_shift,
           ia.end_shift,
           ia.assignment_status,
@@ -1133,9 +1263,13 @@ export class StudentsService {
       jobTitle: rawAssignment.job_title,
       workingDays: rawAssignment.working_days,
       requiredHours,
-      startDate: rawAssignment.start_date instanceof Date ? rawAssignment.start_date.toISOString().split('T')[0] : String(rawAssignment.start_date),
-      expectedEndDate: rawAssignment.expected_end_date ? (rawAssignment.expected_end_date instanceof Date ? rawAssignment.expected_end_date.toISOString().split('T')[0] : String(rawAssignment.expected_end_date)) : null,
-      endDate: rawAssignment.end_date ? (rawAssignment.end_date instanceof Date ? rawAssignment.end_date.toISOString().split('T')[0] : String(rawAssignment.end_date)) : null,
+      startDate: String(rawAssignment.start_date),
+      expectedEndDate: rawAssignment.expected_end_date
+        ? String(rawAssignment.expected_end_date)
+        : null,
+      endDate: rawAssignment.end_date
+        ? String(rawAssignment.end_date)
+        : null,
       startShift: rawAssignment.start_shift,
       endShift: rawAssignment.end_shift,
       assignmentStatus: rawAssignment.assignment_status,
@@ -1146,7 +1280,7 @@ export class StudentsService {
     // 2. Fetch today's record
     const todayRows = await this.dataSource.query(
       `
-        SELECT *
+        SELECT *, attendance_date::text AS attendance_date
         FROM public.attendance_record
         WHERE internship_assignment_id = $1 AND attendance_date = CURRENT_DATE
       `,
@@ -1171,7 +1305,7 @@ export class StudentsService {
 
     const recordsRows = await this.dataSource.query(
       `
-        SELECT *
+        SELECT *, attendance_date::text AS attendance_date
         FROM public.attendance_record
         WHERE ${whereConditions.join(' AND ')}
         ORDER BY attendance_date DESC
@@ -1181,7 +1315,7 @@ export class StudentsService {
 
     const records = recordsRows.map((row: any) => ({
       attendanceRecordId: Number(row.attendance_record_id),
-      date: row.attendance_date instanceof Date ? row.attendance_date.toISOString().split('T')[0] : String(row.attendance_date),
+      date: String(row.attendance_date),
       status: row.time_in_status === 'late' ? 'late' : 'present',
       timeIn: row.time_in,
       timeOut: row.time_out,
@@ -1203,7 +1337,10 @@ export class StudentsService {
     const daysPresent = Number(summaryRow.attendance_record_count || 0);
     const lateArrivals = Number(summaryRow.late_count || 0);
     const absences = 0; // Schema does not record absent rows directly
-    const attendanceRate = daysPresent > 0 ? Math.round(((daysPresent - lateArrivals) / daysPresent) * 100) : 100;
+    const attendanceRate =
+      daysPresent > 0
+        ? Math.round(((daysPresent - lateArrivals) / daysPresent) * 100)
+        : 100;
 
     return {
       assignment,
@@ -1214,7 +1351,9 @@ export class StudentsService {
         absences,
         lateArrivals,
         attendanceRate,
-        totalRenderedHours: Number(summaryRow.total_rendered_hours || totalRendered),
+        totalRenderedHours: Number(
+          summaryRow.total_rendered_hours || totalRendered,
+        ),
       },
     };
   }

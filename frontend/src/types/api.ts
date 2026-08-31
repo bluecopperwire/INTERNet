@@ -14,27 +14,17 @@ export type ApplicationStatus =
   | 'expired';
 
 export type ReferralStatus =
-  | 'sent'
-  | 'under_review'
-  | 'closed'
-  | 'withdrawn'
-  | 'expired';
+  'sent' | 'under_review' | 'closed' | 'withdrawn' | 'expired';
 
-export type CompanyResponse = 'pending' | 'for_interview' | 'accepted' | 'rejected';
+export type CompanyResponse =
+  'pending' | 'for_interview' | 'accepted' | 'rejected';
 export type StudentResponse = 'pending' | 'accepted' | 'declined';
 export type AssignmentStatus =
-  | 'pending'
-  | 'ongoing'
-  | 'completed'
-  | 'withdrawn'
-  | 'cancelled';
+  'pending' | 'ongoing' | 'completed' | 'withdrawn' | 'cancelled';
 
 export type TimeInStatus = 'on_time' | 'late';
 export type RenderedHoursStatus =
-  | 'complete'
-  | 'undertime'
-  | 'overtime'
-  | 'incomplete';
+  'complete' | 'undertime' | 'overtime' | 'incomplete';
 
 export interface PageMeta {
   page: number;
@@ -111,6 +101,8 @@ export interface OpportunitySummaryDto {
   companyId: number;
   companyName: string;
   companyType: CompanyType;
+  companyLogoFilePath?: string | null;
+  companyProfileUpdatedAt?: string;
   companyAddressCity: string;
   title: string;
   department: string;
@@ -152,6 +144,8 @@ export interface StudentProfileResponse {
     address_city: string;
     inquiry_method: string;
     linkedin_url?: string | null;
+    photo_file_path?: string | null;
+    updated_at?: string;
   };
   academic: {
     school_name: string;

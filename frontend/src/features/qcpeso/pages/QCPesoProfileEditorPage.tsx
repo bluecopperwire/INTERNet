@@ -4,12 +4,16 @@ import { useNavigate } from 'react-router-dom'
 import styles from '../../intern-seeker/pages/ProfileEditorPage.module.css'
 import { qcpesoService } from '../services/qcpeso.service'
 import type { QCPesoProfile } from '../types/qcpeso.types'
+import { useToastStore } from '../../../stores/useToastStore'
+import { getErrorMessage } from '../../../utils/error-message'
+import { birthdateMaximum } from '../../../utils/date-only'
 
 export function QCPesoProfileEditorPage() {
   const navigate = useNavigate()
   const [formData, setFormData] = useState<QCPesoProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const toast = useToastStore()
 
   useEffect(() => {
     qcpesoService.getProfile().then(setFormData).finally(() => setIsLoading(false))
@@ -28,9 +32,10 @@ export function QCPesoProfileEditorPage() {
     setIsSaving(true)
     try {
       await qcpesoService.updateProfile(formData)
+      toast.success('QC PESO profile updated successfully.')
       navigate('/qcpeso/profile')
-    } catch (err) {
-      console.error('Failed to update QC PESO profile:', err)
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update QC PESO profile.'))
     } finally {
       setIsSaving(false)
     }
@@ -65,7 +70,7 @@ export function QCPesoProfileEditorPage() {
                 <Field label="City" required><input required name="city" placeholder="Enter city" value={formData.city} onChange={handleChange} /></Field>
               </div>
               <div className={`${styles.fieldGrid} ${styles.personalDetailsGrid}`}>
-                <Field label="Birthdate" required><input required type="date" name="birthdate" value={formData.birthdate} onChange={handleChange} /></Field>
+                <Field label="Birthdate" required><input required type="date" name="birthdate" max={birthdateMaximum()} title="Birthdate must be before today." value={formData.birthdate} onChange={handleChange} /></Field>
                 <fieldset className={styles.choiceField}><legend>Sex<span>*</span></legend><div className={styles.radioGroup}><label><input type="radio" name="sex" value="Male" checked={formData.sex === 'Male'} onChange={handleChange} />Male</label><label><input type="radio" name="sex" value="Female" checked={formData.sex === 'Female'} onChange={handleChange} />Female</label></div></fieldset>
               </div>
             </div>

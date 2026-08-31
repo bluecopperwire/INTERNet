@@ -11,6 +11,7 @@ import {
 import { StudentsService } from './services/students.service';
 import { StudentsController } from './controllers/students.controller';
 import { ApplicationsModule } from '../applications/applications.module';
+import { ProfilePictureStorageModule } from '../storage/profile-picture-storage.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ApplicationsModule } from '../applications/applications.module';
       AttendanceRecord,
     ]),
     ApplicationsModule,
+    ProfilePictureStorageModule,
   ],
   controllers: [StudentsController],
   providers: [StudentsService],

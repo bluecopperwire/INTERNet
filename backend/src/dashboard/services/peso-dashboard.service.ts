@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import {
   PesoApplicationManagementMetricsDto,
@@ -265,7 +270,10 @@ export class PesoDashboardService {
     paginationDto: PaginationDto,
   ): Promise<PaginatedResponse<any>> {
     const page = Math.max(1, Number(paginationDto?.page) || 1);
-    const limit = Math.max(1, Math.min(100, Number(paginationDto?.limit) || 20));
+    const limit = Math.max(
+      1,
+      Math.min(100, Number(paginationDto?.limit) || 20),
+    );
     const offset = (page - 1) * limit;
 
     const whereClauses: string[] = [];
@@ -439,6 +447,8 @@ export class PesoDashboardService {
           s.address_barangay,
           s.address_district,
           s.address_city,
+          s.photo_file_path,
+          s.updated_at AS profile_updated_at,
           ip.required_hours AS student_required_hours,
           ip.available_days AS student_available_days,
           ip.start_date::text AS student_start_date
@@ -717,18 +727,18 @@ export class PesoDashboardService {
   async getReferralDetail(referralId: number) {
     const rows = await this.dataSource.query(
       `
-        SELECT 
-          rd.*,
-          s.address_line,
-          s.address_barangay,
-          s.address_district,
-          s.address_city,
-          s.birth_date,
-          s.sex,
-          s.photo_file_path
-        FROM public.vw_referral_details rd
-        JOIN public.student s ON s.student_id = rd.student_id
-        WHERE rd.referral_id = $1
+        SELECT referral_details.*,
+        s.address_line,
+              s.address_barangay,
+              s.address_district,
+              s.address_city,
+              s.birth_date,
+              s.sex,
+              s.photo_file_path,
+              s.updated_at AS profile_updated_at
+        FROM public.vw_referral_details referral_details
+        JOIN public.student s ON s.student_id = referral_details.student_id
+        WHERE referral_details.referral_id = $1
       `,
       [referralId],
     );
@@ -790,7 +800,10 @@ export class PesoDashboardService {
     const limit = query.limit && query.limit > 0 ? query.limit : 10;
     const offset = (page - 1) * limit;
 
-    const whereClauses: string[] = ['ua.account_status = \'active\'', 'ua.deleted_at IS NULL'];
+    const whereClauses: string[] = [
+      "ua.account_status = 'active'",
+      'ua.deleted_at IS NULL',
+    ];
     const params: any[] = [];
     let pIdx = 1;
 
@@ -802,7 +815,8 @@ export class PesoDashboardService {
       pIdx++;
     }
 
-    const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+    const whereSql =
+      whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
     const countRes = await this.dataSource.query(
       `
@@ -857,14 +871,14 @@ export class PesoDashboardService {
   async getStudentDetail(studentId: number) {
     const rows = await this.dataSource.query(
       `
-        SELECT 
-          spd.*,
+        SELECT profile.*, 
           s.sex,
           s.birth_date::text AS birth_date,
-          s.created_at
-        FROM public.vw_student_profile_details spd
-        JOIN public.student s ON s.student_id = spd.student_id
-        WHERE spd.student_id = $1
+          s.created_at,
+          s.updated_at AS profile_updated_at
+        FROM public.vw_student_profile_details profile
+        JOIN public.student s ON s.student_id = profile.student_id
+        WHERE profile.student_id = $1
       `,
       [studentId],
     );

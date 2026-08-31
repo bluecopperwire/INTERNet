@@ -20,6 +20,7 @@ import {
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import internetLogo from '../../../assets/internet-logo.svg'
 import { useAuthStore } from '../../../stores/useAuthStore'
+import { useQCPesoStore } from '../stores/useQCPesoStore'
 import styles from './QCPesoSidebar.module.css'
 
 interface QCPesoSidebarProps {
@@ -35,6 +36,11 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, logout: authLogout } = useAuthStore()
+  const { profile, fetchProfile } = useQCPesoStore()
+
+  useEffect(() => {
+    if (!profile) void fetchProfile()
+  }, [fetchProfile, profile])
 
   const monitorUsersActive = location.pathname.startsWith('/qcpeso/monitor-users')
   const manageApplicantsActive = location.pathname.startsWith('/qcpeso/manage-applicants')
@@ -60,7 +66,7 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
     navigate('/qcpeso/profile')
   }
 
-  const displayName = user?.email.split('@')[0] || 'PESO Personnel'
+  const displayName = profile?.fullName || user?.email.split('@')[0] || 'PESO Personnel'
   const userInitials = displayName.substring(0, 2).toUpperCase()
 
   return (
@@ -104,7 +110,9 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
 
       <div className={`${styles.userSummary} ${isProfileActive ? styles.userSummaryActive : ''}`} onClick={navigateToProfile} role="button" tabIndex={0}>
         <div className={styles.userLeft}>
-          <span className={styles.avatar} aria-hidden="true">{userInitials}</span>
+          <span className={styles.avatar} aria-hidden="true">
+            {profile?.avatarUrl ? <img src={profile.avatarUrl} alt="" /> : userInitials}
+          </span>
           <div className={styles.userText}><span className={styles.userName}>{displayName}</span><span className={styles.userEmail}>{user?.email}</span></div>
         </div>
         <ExternalLink size={16} aria-hidden="true" className={styles.externalIcon} />

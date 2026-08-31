@@ -1,4 +1,5 @@
-import { API_BASE_URL } from '../../../services/api';
+import { publicUploadUrl } from '../../../utils/public-upload-url';
+import { toDateOnly } from '../../../utils/date-only';
 import type {
   EmployerDashboardMetricsDto,
   EmployerOpportunityDto,
@@ -15,13 +16,38 @@ import type {
   EmployerInternshipDetails,
 } from '../types/employer.types';
 
+type EmployerInternshipDetailDto = {
+  intern: {
+    studentFullName: string;
+    jobTitle: string;
+    requiredHours: number;
+  };
+  assignment: {
+    internshipAssignmentId: number;
+    companyName: string;
+    jobTitle: string;
+    workingDays: string;
+    requiredHours: number;
+    startDate: unknown;
+    expectedEndDate: unknown;
+    startShift: string;
+    endShift: string;
+  };
+  status: {
+    assignmentStatus: string;
+    renderedHours: number;
+  };
+};
+
 export function adaptEmployerDashboardSummary(
   m: EmployerDashboardMetricsDto,
   companyName = 'Partner Company',
 ): EmployerDashboardSummary {
   const total = m.totalApplicants || 0;
-  const acceptedPct = total > 0 ? Math.round((m.acceptedCount / total) * 100) : 0;
-  const rejectedPct = total > 0 ? Math.round((m.rejectedCount / total) * 100) : 0;
+  const acceptedPct =
+    total > 0 ? Math.round((m.acceptedCount / total) * 100) : 0;
+  const rejectedPct =
+    total > 0 ? Math.round((m.rejectedCount / total) * 100) : 0;
 
   return {
     companyName,
@@ -51,7 +77,7 @@ export function adaptEmployerOpportunity(
     slots: dto.offeredSlots,
     duration: dto.minimumRequiredHours,
     allowance: dto.allowance ? String(dto.allowance) : '',
-    applicationDeadline: dto.applicationDeadline ? dto.applicationDeadline.split('T')[0] : '',
+    applicationDeadline: toDateOnly(dto.applicationDeadline),
     jobDescription: dto.description,
     qualifications: dto.qualification || '',
     status: dto.opportunityStatus === 'open' ? 'Open' : 'Closed',
@@ -80,12 +106,14 @@ export function adaptEmployerReferral(
   const oppTitle = opportunity.title || r.opportunityTitle || 'Opportunity';
   const strandProg = student.strandProgram || r.strandProgram || 'N/A';
   const yLevel = student.yearLevel || r.yearLevel || 'N/A';
-  const compResponse = referral.companyResponse || r.companyResponse || 'pending';
+  const compResponse =
+    referral.companyResponse || r.companyResponse || 'pending';
   const subAt = r.application?.submittedAt || r.submittedAt;
 
-  const address = [student.addressLine, student.addressBarangay, student.addressCity]
-    .filter(Boolean)
-    .join(', ') || 'Quezon City';
+  const address =
+    [student.addressLine, student.addressBarangay, student.addressCity]
+      .filter(Boolean)
+      .join(', ') || 'Quezon City';
 
   return {
     id: String(referralId),
@@ -109,7 +137,11 @@ export function adaptEmployerReferral(
     preferredField: 'N/A',
     requiredHours: Number(internshipPref.requiredHours || 0),
     availabilityDays: internshipPref.availableDays || 'Weekdays',
-    availabilityDate: internshipPref.startDate || 'N/A',
+    availabilityDate: toDateOnly(internshipPref.startDate) || 'N/A',
+    profileImageUrl: publicUploadUrl(
+      student.photoFilePath || r.photoFilePath,
+      student.profileUpdatedAt || r.profileUpdatedAt,
+    ),
     documents: Array.isArray(r.documents) ? r.documents : undefined,
   };
 }
@@ -139,9 +171,9 @@ export function adaptEmployerAttendance(
 }
 
 export function adaptEmployerInternship(
-  i: EmployerInternshipListItemDto,
+  i: EmployerInternshipListItemDto | EmployerInternshipDetailDto,
 ): EmployerInternshipDetails {
-  const statusMap: Record<string, any> = {
+  const statusMap: Record<string, EmployerInternshipDetails['status']> = {
     ongoing: 'On Going',
     completed: 'Completed',
     pending: 'Awaiting Completion',
@@ -149,27 +181,41 @@ export function adaptEmployerInternship(
     cancelled: 'Cancelled',
   };
 
+  const isDetail = 'assignment' in i;
+  const assignment = isDetail ? i.assignment : null;
+  const intern = isDetail ? i.intern : null;
+  const status = isDetail ? i.status : null;
+  const assignmentStatus = status?.assignmentStatus ??
+    (isDetail ? '' : i.assignmentStatus);
+
   return {
-    applicantId: String(i.internshipAssignmentId),
-    studentName: i.studentFullName,
-    company: 'Company',
-    jobTitle: i.jobTitle,
-    workingDays: 'Weekdays',
-    requiredHours: i.requiredHours,
-    startDate: 'N/A',
-    expectedEndDate: 'N/A',
-    shiftStartTime: '08:00 AM',
-    shiftEndTime: '05:00 PM',
-    status: statusMap[i.assignmentStatus] || 'On Going',
-    renderedHours: i.renderedHours,
+    applicantId: String(
+      assignment?.internshipAssignmentId ??
+        (isDetail ? '' : i.internshipAssignmentId),
+    ),
+    studentName: intern?.studentFullName ??
+      (isDetail ? 'Student Intern' : i.studentFullName),
+    company: assignment?.companyName ?? 'Company',
+    jobTitle: assignment?.jobTitle ?? intern?.jobTitle ??
+      (isDetail ? '' : i.jobTitle),
+    workingDays: assignment?.workingDays ?? 'weekdays',
+    requiredHours: Number(
+      assignment?.requiredHours ?? intern?.requiredHours ??
+        (isDetail ? 0 : i.requiredHours),
+    ),
+    startDate: toDateOnly(assignment?.startDate),
+    expectedEndDate: toDateOnly(assignment?.expectedEndDate),
+    shiftStartTime: String(assignment?.startShift ?? '08:00').slice(0, 5),
+    shiftEndTime: String(assignment?.endShift ?? '17:00').slice(0, 5),
+    status: statusMap[assignmentStatus] || 'On Going',
+    renderedHours: Number(
+      status?.renderedHours ?? (isDetail ? 0 : i.renderedHours),
+    ),
   };
 }
 
 export function adaptCompanyProfile(dto: any): CompanyProfile {
-  let logoUrl: string | undefined = undefined;
-  if (dto.logoFilePath) {
-    logoUrl = `${API_BASE_URL}/${dto.logoFilePath.replace(/^\/+/, '')}`;
-  }
+  const logoUrl = publicUploadUrl(dto.logoFilePath, dto.updatedAt);
 
   return {
     company_name: dto.companyName || '',

@@ -4,6 +4,9 @@ import { ArrowLeft, Calendar as CalendarIcon } from 'lucide-react'
 import { employerService } from '../services/employer.service'
 import type { Opportunity } from '../types/employer.types'
 import styles from './CreateOpportunityPage.module.css'
+import { useToastStore } from '../../../stores/useToastStore'
+import { getErrorMessage } from '../../../utils/error-message'
+import { opportunityDeadlineMinimum } from '../../../utils/date-only'
 
 export function CreateOpportunityPage() {
   const { id } = useParams<{ id: string }>()
@@ -25,6 +28,7 @@ export function CreateOpportunityPage() {
   const [isLoading, setIsLoading] = useState(isEditMode)
   const [isSaving, setIsSaving] = useState(false)
   const [showValidationModal, setShowValidationModal] = useState(false)
+  const toast = useToastStore()
 
   useEffect(() => {
     if (isEditMode && id) {
@@ -58,13 +62,11 @@ export function CreateOpportunityPage() {
     setIsSaving(true)
     try {
       await employerService.saveOpportunity(formData)
+      toast.success(isEditMode ? 'Opportunity updated successfully.' : 'Opportunity published successfully.')
       navigate('/employer/opportunities')
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to save opportunity:', error)
-      const message = error?.validationMessages?.length
-        ? error.validationMessages.join('\n')
-        : error?.message || 'Failed to save opportunity.'
-      alert(message)
+      toast.error(getErrorMessage(error, 'Failed to save opportunity.'))
     } finally {
       setIsSaving(false)
     }
@@ -143,7 +145,7 @@ export function CreateOpportunityPage() {
           <div className={`${styles.field} ${styles.fullWidth}`}>
             <label>Application Deadline</label>
             <div className={styles.dateInputWrapper}>
-              <input type="date" name="applicationDeadline" value={formData.applicationDeadline || ''} onChange={handleChange} />
+              <input required type="date" name="applicationDeadline" min={opportunityDeadlineMinimum()} title="The application deadline must be after today." value={formData.applicationDeadline || ''} onChange={handleChange} />
               <CalendarIcon className={styles.dateIcon} size={20} color="#160e6f" />
             </div>
           </div>

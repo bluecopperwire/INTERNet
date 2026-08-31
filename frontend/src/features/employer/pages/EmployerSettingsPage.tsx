@@ -2,11 +2,13 @@ import { useState, type FormEvent } from 'react'
 import { LockKeyhole, ShieldCheck } from 'lucide-react'
 import { EmployerHero } from '../components/EmployerHero'
 import styles from './EmployerSettingsPage.module.css'
+import { useToastStore } from '../../../stores/useToastStore'
 
 export function EmployerSettingsPage() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [message, setMessage] = useState('')
+  const toast = useToastStore()
 
   const updatePassword = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -14,7 +16,8 @@ export function EmployerSettingsPage() {
     if (newPassword !== confirmPassword) return setMessage('The passwords do not match.')
     setNewPassword('')
     setConfirmPassword('')
-    setMessage('Password updated successfully.')
+    setMessage('')
+    toast.success('Password updated successfully.')
   }
 
   return (

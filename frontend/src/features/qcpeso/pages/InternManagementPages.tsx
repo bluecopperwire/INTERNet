@@ -8,11 +8,7 @@ import attendanceStyles from '../../employer/pages/AttendanceMonitoringPage.modu
 import attendanceDetailStyles from '../../employer/pages/AttendanceInternshipDetailsPage.module.css'
 import internshipStyles from '../../employer/pages/MonitorInternshipPage.module.css'
 import internshipDetailStyles from '../../employer/pages/MonitorInternshipDetailsPage.module.css'
-
-const currentLocalDate = () => {
-  const now = new Date()
-  return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10)
-}
+import { todayDateOnly } from '../../../utils/date-only'
 
 function AttendanceSummaryCard({ label, value }: { label: string; value: number }) {
   return <article className={attendanceStyles.summaryCard}><h2>{label}</h2><p>{String(value).padStart(2, '0')}</p></article>
@@ -32,7 +28,7 @@ export function QCPesoAttendancePage() {
   const [internships, setInternships] = useState<QCPesoInternshipRecord[]>([])
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('All')
-  const [date, setDate] = useState(currentLocalDate)
+  const [date, setDate] = useState(() => todayDateOnly())
   const [page, setPage] = useState(1)
   const perPage = 7
 
@@ -118,7 +114,7 @@ export function QCPesoAttendancePage() {
             <input
               type="date"
               value={date}
-              max={currentLocalDate()}
+              max={todayDateOnly()}
               onChange={(event) => {
                 setDate(event.target.value)
                 setPage(1)

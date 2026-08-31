@@ -16,6 +16,8 @@ import {
   X,
 } from 'lucide-react'
 import { qcpesoService } from '../services/qcpeso.service'
+import { useToastStore } from '../../../stores/useToastStore'
+import { getErrorMessage } from '../../../utils/error-message'
 import type { QCPesoReferral, QCPesoReviewApplicant } from '../types/qcpeso.types'
 import QCPesoHero from '../components/QCPesoHero'
 import { RejectApplicantModal } from '../../employer/components/RejectApplicantModal'
@@ -435,6 +437,7 @@ export function ReviewApplicantDetailsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isUpdating, setIsUpdating] = useState(false)
   const [showRejectModal, setShowRejectModal] = useState(false)
+  const toast = useToastStore()
 
   useEffect(() => {
     if (id) {
@@ -520,8 +523,9 @@ export function ReviewApplicantDetailsPage() {
         setRecord(updated)
       }
       setShowRejectModal(false)
-    } catch (err: any) {
-      alert(err?.response?.data?.message || err?.message || 'Failed to update status')
+      toast.success(`Applicant status changed to ${status}.`)
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update applicant status.'))
     } finally {
       setIsUpdating(false)
     }
@@ -562,7 +566,11 @@ export function ReviewApplicantDetailsPage() {
           <aside className={detailStyles.profileCard}>
             <div className={detailStyles.profileAvatarRow}>
               <div className={detailStyles.avatarPlaceholder}>
-                <User size={34} />
+                {record.profileImageUrl ? (
+                  <img src={record.profileImageUrl} alt={`${record.studentName} profile`} />
+                ) : (
+                  <User size={34} />
+                )}
               </div>
               <div className={detailStyles.profileInfo}>
                 <h2>{record.studentName || 'N/A'}</h2>
@@ -767,7 +775,11 @@ export function ReferralDetailsPage() {
           <aside className={detailStyles.profileCard}>
             <div className={detailStyles.profileAvatarRow}>
               <div className={detailStyles.avatarPlaceholder}>
-                <User size={34} />
+                {record.profileImageUrl ? (
+                  <img src={record.profileImageUrl} alt={`${record.studentName} profile`} />
+                ) : (
+                  <User size={34} />
+                )}
               </div>
               <div className={detailStyles.profileInfo}>
                 <h2>{record.studentName || 'N/A'}</h2>

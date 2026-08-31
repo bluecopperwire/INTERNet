@@ -314,6 +314,14 @@
   background: #fff1f1;
 }
 
+.validationError {
+  margin: 0;
+  padding: 0 28px 18px;
+  color: #b42318;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 @media (max-width: 768px) {
   .page {
     padding: 24px 20px 40px;

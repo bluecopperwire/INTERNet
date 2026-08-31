@@ -18,6 +18,10 @@ import {
   UpdateAdminPesoPersonnelDto,
   UpdateAdminStudentDto,
 } from '../dto/admin-user-management.dto';
+import {
+  assertValidDate,
+  currentManilaDate,
+} from '../../employer/utils/time.utils';
 
 type SummaryRow = {
   total: string;
@@ -72,13 +76,14 @@ export class AdminUserManagementService {
               s.first_name AS "firstName", s.middle_name AS "middleName", s.last_name AS "lastName",
               s.extension_name AS "extensionName",
               concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS "fullName",
-              s.birth_date AS "birthDate", s.sex,
+              s.birth_date::text AS "birthDate", s.sex,
               s.address_line AS "addressLine", s.address_barangay AS "addressBarangay",
               s.address_district AS "addressDistrict", s.address_city AS "addressCity",
               s.contact_email AS "contactEmail", s.contact_number AS "contactNumber",
               s.linkedin_url AS "linkedinUrl", s.photo_file_path AS "photoFilePath",
+              s.updated_at AS "profileUpdatedAt",
               sai.school_name AS "schoolName", sai.year_level AS "yearLevel", sai.strand_program AS "strandProgram",
-              ip.required_hours AS "requiredHours", ip.available_days AS "availableDays", ip.start_date AS "startDate",
+              ip.required_hours AS "requiredHours", ip.available_days AS "availableDays", ip.start_date::text AS "startDate",
               ip.preferred_company_type AS "preferredCompanyType",
               ip.allows_outside_preferred_field AS "allowsOutsidePreferredField"
        FROM public.student s
@@ -104,6 +109,12 @@ export class AdminUserManagementService {
   async updateStudent(studentId: number, dto: UpdateAdminStudentDto) {
     this.assertPositiveId(studentId, 'studentId');
     this.assertPastBirthDate(dto.birthDate);
+    if (dto.startDate) {
+      assertValidDate(dto.startDate, 'startDate');
+      if (dto.startDate < currentManilaDate()) {
+        throw new BadRequestException('startDate cannot be in the past.');
+      }
+    }
     await this.dataSource.transaction(async (manager) => {
       const current: Array<{ account_status: AccountStatus }> =
         await manager.query(
@@ -226,6 +237,7 @@ export class AdminUserManagementService {
               c.industry_id AS "industryId", i.industry_name AS "industryName",
               c.company_size AS "companySize", c.year_established AS "yearEstablished",
               c.website_url AS "websiteUrl", c.description, c.logo_file_path AS "logoFilePath",
+              c.updated_at AS "profileUpdatedAt",
               c.address_line AS "addressLine", c.address_barangay AS "addressBarangay",
               c.address_district AS "addressDistrict", c.address_city AS "addressCity",
               c.contact_person_first_name AS "contactPersonFirstName",
@@ -390,12 +402,12 @@ export class AdminUserManagementService {
               p.first_name AS "firstName", p.middle_name AS "middleName", p.last_name AS "lastName",
               p.extension_name AS "extensionName",
               concat_ws(' ', p.first_name, p.middle_name, p.last_name, p.extension_name) AS "fullName",
-              p.birth_date AS "birthDate", p.sex,
+              p.birth_date::text AS "birthDate", p.sex,
               p.address_line AS "addressLine", p.address_barangay AS "addressBarangay",
               p.address_district AS "addressDistrict", p.address_city AS "addressCity",
               p.contact_email AS "contactEmail", p.contact_number AS "contactNumber",
               p.employee_id AS "employeeId", p.department, p.position,
-              p.photo_file_path AS "photoFilePath"
+              p.photo_file_path AS "photoFilePath", p.updated_at AS "profileUpdatedAt"
        FROM public.peso_personnel p
        JOIN public.user_account ua ON ua.user_account_id = p.user_account_id AND ua.user_role = 'peso_personnel'
        WHERE p.peso_personnel_id = $1`,
@@ -752,8 +764,11 @@ export class AdminUserManagementService {
   }
 
   private assertPastBirthDate(value?: string) {
-    if (value && value >= new Date().toISOString().slice(0, 10)) {
-      throw new BadRequestException('birthDate must be in the past.');
+    if (value) {
+      assertValidDate(value, 'birthDate');
+      if (value >= currentManilaDate()) {
+        throw new BadRequestException('birthDate must be in the past.');
+      }
     }
   }
 
