@@ -1,4 +1,5 @@
 import {
+  IsDateString,
   IsEmail,
   IsEnum,
   IsNotEmpty,
@@ -30,7 +31,7 @@ export class UpdatePesoProfileDto {
   sex?: string;
 
   @IsOptional()
-  @IsString()
+  @IsDateString({ strict: true })
   birthDate?: string;
 
   @IsOptional()

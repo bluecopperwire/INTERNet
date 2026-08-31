@@ -27,6 +27,7 @@ import type {
   AttendanceRecord,
   AttendanceSummary,
 } from '../types/attendance.types';
+import { todayDateOnly, toDateOnly } from '../../../utils/date-only';
 
 export function adaptOpportunity(
   dto: OpportunitySummaryDto,
@@ -64,7 +65,7 @@ export function adaptOpportunity(
       department: dto.department,
       internshipDuration: `${dto.minimumRequiredHours} Hours`,
       numberOfSlots: dto.offeredSlots,
-      applicationDeadline: dto.applicationDeadline,
+      applicationDeadline: toDateOnly(dto.applicationDeadline),
       description: dto.description,
       qualifications: dto.qualification || 'No specific qualification listed.',
       allowance: allowanceStr,
@@ -167,10 +168,8 @@ export function adaptStudentProfile(dto: StudentProfileResponse): UserProfile {
     ? HOST_ORG_MAP_TO_UI[rawHostOrg] || rawHostOrg
     : '';
 
-  const birthDateStr = s.birth_date ? String(s.birth_date).split('T')[0] : '';
-  const startDateStr = ip?.start_date
-    ? String(ip.start_date).split('T')[0]
-    : '';
+  const birthDateStr = toDateOnly(s.birth_date);
+  const startDateStr = toDateOnly(ip?.start_date);
   const photoUrl = publicUploadUrl(s.photo_file_path, s.updated_at);
 
   return {
@@ -242,12 +241,12 @@ export function adaptStudentProfileToUpdateDto(
 
   const birthDateValue =
     profile.birthdate && profile.birthdate.trim()
-      ? profile.birthdate.split('T')[0]
+      ? toDateOnly(profile.birthdate)
       : '2002-01-01';
 
   const startDateValue =
     profile.preferences?.startDate && profile.preferences.startDate.trim()
-      ? profile.preferences.startDate.split('T')[0]
+      ? toDateOnly(profile.preferences.startDate)
       : '';
 
   const preferredIndustriesDto: Array<{
@@ -603,7 +602,7 @@ export function adaptAttendance(res: StudentAttendanceResponse): {
     }
 
     todayAttendance = {
-      date: new Date().toISOString().split('T')[0],
+      date: todayDateOnly(),
       status: todayStatus,
       companyName: a.companyName,
       workingDays: a.workingDays,

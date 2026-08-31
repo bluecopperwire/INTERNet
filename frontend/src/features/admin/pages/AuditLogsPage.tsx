@@ -6,6 +6,7 @@ import type { AuditLog } from '../types/admin.types'
 import { AuditLogDetailsModal } from '../components/AuditLogDetailsModal'
 import styles from './AuditLogsPage.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
+import { todayDateOnly } from '../../../utils/date-only'
 
 export function AuditLogsPage() {
   const toast = useToastStore()
@@ -168,6 +169,7 @@ export function AuditLogsPage() {
               type="date" 
               className={styles.dateInput} 
               value={startDate} 
+              max={endDate || todayDateOnly()}
               onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }}
             />
             <span>to</span>
@@ -175,6 +177,8 @@ export function AuditLogsPage() {
               type="date" 
               className={styles.dateInput} 
               value={endDate} 
+              min={startDate}
+              max={todayDateOnly()}
               onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }}
             />
           </div>

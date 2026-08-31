@@ -281,12 +281,24 @@ export const employerService = {
     applicantId: string,
     updates: Partial<EmployerInternshipDetails>,
   ): Promise<EmployerInternshipDetails | undefined> {
-    await employerApiService.updateInternship(Number(applicantId), updates);
-    const store = useEmployerStore.getState();
-    await store.fetchInternships();
-    return useEmployerStore
-      .getState()
-      .internships.find((i) => i.applicantId === applicantId);
+    const assignmentId = Number(applicantId);
+    let updated;
+    if (updates.status === 'Completed') {
+      updated = await employerApiService.completeInternship(assignmentId);
+    } else if (updates.status === 'Cancelled') {
+      updated = await employerApiService.cancelInternship(assignmentId);
+    } else {
+      updated = await employerApiService.updateInternship(assignmentId, {
+        workingDays: updates.workingDays,
+        requiredHours: updates.requiredHours,
+        startDate: updates.startDate,
+        expectedEndDate: updates.expectedEndDate || null,
+        startShift: updates.shiftStartTime,
+        endShift: updates.shiftEndTime,
+      });
+    }
+    await useEmployerStore.getState().fetchInternships();
+    return adaptEmployerInternship(updated);
   },
 
   async deleteInternshipDetails(applicantId: string): Promise<void> {

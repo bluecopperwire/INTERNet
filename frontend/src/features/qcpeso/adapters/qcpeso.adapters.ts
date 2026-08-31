@@ -16,6 +16,12 @@ import type {
   MonitoredStudentUser,
   MonitoredCompanyUser,
 } from "../types/qcpeso.types";
+import { formatDateOnly, toDateOnly } from "../../../utils/date-only";
+
+function formatCalendarDate(value: unknown): string {
+  if (!value || value === "N/A") return "N/A";
+  return formatDateOnly(value) || String(value);
+}
 
 export function adaptPesoDashboardMetrics(
   m: PesoStudentMetricsDto,
@@ -106,31 +112,6 @@ export function adaptPesoApplication(
       .filter(Boolean)
       .join(", ") || "Quezon City";
 
-  const formatDisplayDate = (val: any) => {
-    if (!val || val === "N/A") return "N/A";
-    if (typeof val === "string") {
-      const dateOnly = val.includes("T") ? val.split("T")[0] : val;
-      const [y, m, day] = dateOnly.split("-").map(Number);
-      if (y && m && day) {
-        const parsed = new Date(y, m - 1, day);
-        return parsed.toLocaleDateString("en-US", {
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-        });
-      }
-      return val;
-    }
-    if (val instanceof Date && !isNaN(val.getTime())) {
-      return val.toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      });
-    }
-    return String(val);
-  };
-
   const rawYear = d.yearLevel || d.year_level;
   const rawDays =
     d.student_available_days ||
@@ -162,7 +143,7 @@ export function adaptPesoApplication(
         0,
     ),
     availableDays: formatScheduleDays(rawDays),
-    availableStartingDate: formatDisplayDate(rawStartDate),
+    availableStartingDate: formatCalendarDate(rawStartDate),
     opportunityId: String(d.opportunityId || d.opportunity_id || ""),
     profileImageUrl: publicUploadUrl(
       d.photoFilePath || d.photo_file_path,
@@ -283,31 +264,6 @@ export function adaptPesoIntern(
     s.latest_attendance_date ||
     "";
 
-  const formatDisplayDate = (d: any) => {
-    if (!d || d === "N/A") return "N/A";
-    if (typeof d === "string") {
-      const dateOnly = d.includes("T") ? d.split("T")[0] : d;
-      const [y, m, day] = dateOnly.split("-").map(Number);
-      if (y && m && day) {
-        const parsed = new Date(y, m - 1, day);
-        return parsed.toLocaleDateString("en-US", {
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-        });
-      }
-      return d;
-    }
-    if (d instanceof Date && !isNaN(d.getTime())) {
-      return d.toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      });
-    }
-    return String(d);
-  };
-
   return {
     id: String(s.internshipAssignmentId || s.internship_assignment_id || ""),
     studentName:
@@ -326,8 +282,8 @@ export function adaptPesoIntern(
     requiredHours: Number(
       s.requiredHours || s.required_hours || s.targetHours || 0,
     ),
-    startDate: formatDisplayDate(startDate),
-    expectedEndDate: formatDisplayDate(expectedEndDate),
+    startDate: formatCalendarDate(startDate),
+    expectedEndDate: formatCalendarDate(expectedEndDate),
     shiftStartTime:
       s.startShift || s.start_shift || s.shiftStartTime || "09:00 AM",
     shiftEndTime: s.endShift || s.end_shift || s.shiftEndTime || "05:00 PM",
@@ -351,12 +307,7 @@ export function adaptPesoDtr(d: PesoDtrEntryDto | any): QCPesoAttendanceRecord {
   };
 
   const rawDate = d.date || d.dtrDate || "";
-  let formattedDate = "";
-  if (typeof rawDate === "string") {
-    formattedDate = rawDate.includes("T") ? rawDate.split("T")[0] : rawDate;
-  } else if (rawDate instanceof Date) {
-    formattedDate = rawDate.toISOString().split("T")[0];
-  }
+  const formattedDate = toDateOnly(rawDate);
 
   const rawStatus = d.timeInStatus || d.status || "Present";
   const status = statusMap[rawStatus.toLowerCase()] || "Present";
@@ -414,16 +365,7 @@ export function adaptToPesoProfilePayload(
 export function adaptPesoProfile(p: any): QCPesoProfile {
   if (!p) return {} as any;
 
-  let birthdate = "";
-  if (p.birthDate) {
-    if (typeof p.birthDate === "string") {
-      birthdate = p.birthDate.includes("T")
-        ? p.birthDate.split("T")[0]
-        : p.birthDate;
-    } else if (p.birthDate instanceof Date) {
-      birthdate = p.birthDate.toISOString().split("T")[0];
-    }
-  }
+  const birthdate = toDateOnly(p.birthDate);
 
   const fullName =
     [p.firstName, p.middleName, p.lastName, p.extensionName]
@@ -471,31 +413,6 @@ export function adaptPesoProfile(p: any): QCPesoProfile {
 
 export function adaptMonitoredStudent(row: any): MonitoredStudentUser {
   if (!row) return {} as any;
-
-  const formatDisplayDate = (d: any) => {
-    if (!d || d === "N/A") return "N/A";
-    if (typeof d === "string") {
-      const dateOnly = d.includes("T") ? d.split("T")[0] : d;
-      const [y, m, day] = dateOnly.split("-").map(Number);
-      if (y && m && day) {
-        const parsed = new Date(y, m - 1, day);
-        return parsed.toLocaleDateString("en-US", {
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-        });
-      }
-      return d;
-    }
-    if (d instanceof Date && !isNaN(d.getTime())) {
-      return d.toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      });
-    }
-    return String(d);
-  };
 
   const address =
     [
@@ -566,14 +483,14 @@ export function adaptMonitoredStudent(row: any): MonitoredStudentUser {
     email: row.contact_email || row.contactEmail || row.email || "N/A",
     mobileNumber: row.contact_number || row.contactNumber || row.phone || "N/A",
     linkedIn: row.linkedin_url || row.linkedIn || "N/A",
-    dateRegistered: formatDisplayDate(row.created_at || row.createdAt),
+    dateRegistered: formatCalendarDate(row.created_at || row.createdAt),
     status:
       (row.account_status || row.accountStatus || "active").toLowerCase() ===
       "active"
         ? "Active"
         : "Suspended",
     address,
-    birthdate: formatDisplayDate(row.birth_date || row.birthDate),
+    birthdate: formatDateOnly(row.birth_date || row.birthDate) || "N/A",
     sex,
     school: row.school_name || row.schoolName || "N/A",
     program: row.strand_program || row.strandProgram || "N/A",
@@ -583,7 +500,7 @@ export function adaptMonitoredStudent(row: any): MonitoredStudentUser {
     internshipDaysAvailability: rawAvailableDays
       ? formatScheduleDays(rawAvailableDays)
       : "N/A",
-    internshipStartDateAvailability: formatDisplayDate(rawStartDate),
+    internshipStartDateAvailability: formatDateOnly(rawStartDate) || "N/A",
     preferredField: preferredIndustries,
     willingOutsidePreferredField: willingOutside,
     profileImageUrl: publicUploadUrl(

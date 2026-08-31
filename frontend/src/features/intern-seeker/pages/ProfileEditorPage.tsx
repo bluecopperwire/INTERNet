@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import styles from './ProfileEditorPage.module.css'
 import { useInternshipPortal } from '../hooks/useInternshipPortal'
 import type { UserProfile } from '../types/internship.types'
+import { birthdateMaximum, todayDateOnly } from '../../../utils/date-only'
 
 const INDUSTRIES = [
   'Office Administration',
@@ -145,7 +146,7 @@ export const ProfileEditorPage: React.FC = () => {
               </div>
 
               <div className={`${styles.fieldGrid} ${styles.personalDetailsGrid}`}>
-                <Field label="Birthdate" required><input required type="date" name="birthdate" value={formData.birthdate ?? ''} onChange={handleChange} /></Field>
+                <Field label="Birthdate" required><input required type="date" name="birthdate" max={birthdateMaximum()} title="Birthdate must be before today." value={formData.birthdate ?? ''} onChange={handleChange} /></Field>
                 <fieldset className={styles.choiceField}>
                   <legend>Sex <span>*</span></legend>
                   <div className={styles.radioGroup}>
@@ -210,7 +211,7 @@ export const ProfileEditorPage: React.FC = () => {
                     {SCHEDULES.map(item => <label key={item}><input required type="radio" name="internshipSchedule" checked={formData.preferences?.schedule?.[0] === item} onChange={() => selectSchedule(item)} />{item}</label>)}
                   </div>
                 </fieldset>
-                <Field label="Internship Start Date Availability" required><input required type="date" name="preferences.startDate" value={formData.preferences?.startDate ?? ''} onChange={handleChange} /></Field>
+                <Field label="Internship Start Date Availability" required><input required type="date" name="preferences.startDate" min={todayDateOnly()} title="The preferred internship start date cannot be in the past." value={formData.preferences?.startDate ?? ''} onChange={handleChange} /></Field>
               </div>
 
               <fieldset className={styles.choiceField}>

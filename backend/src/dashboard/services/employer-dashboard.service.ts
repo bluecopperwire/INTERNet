@@ -12,6 +12,7 @@ import { PaginatedResponse } from '../../common/interfaces/paginated-response.in
 import { ApplicationQueryService } from './shared/application-query.service';
 import { AttendanceQueryService } from './shared/attendance-query.service';
 import { getDateBoundaries } from '../../common/helpers/date-filter.helper';
+import { currentManilaDate } from '../../employer/utils/time.utils';
 
 @Injectable()
 export class EmployerDashboardService {
@@ -199,8 +200,8 @@ export class EmployerDashboardService {
       dateCond =
         'ar.attendance_date >= $2::date AND ar.attendance_date <= $3::date';
       dateParams.push(
-        boundaries.start.toISOString().split('T')[0],
-        boundaries.end.toISOString().split('T')[0],
+        currentManilaDate(boundaries.start),
+        currentManilaDate(boundaries.end),
       );
     }
 

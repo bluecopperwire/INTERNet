@@ -12,6 +12,7 @@ import {
   toStudentSex,
 } from '../signup-options'
 import styles from './SignUpPage.module.css'
+import { birthdateMaximum } from '../../../utils/date-only'
 
 const INITIAL_DATA: SignUpData = {
   role: 'intern-seeker',
@@ -296,7 +297,7 @@ function BasicProfileStep({ data, error, onChange, onNameChange, onSubmit, onBac
         <TextField id="last-name" label="Last Name" required placeholder="Enter your last name" value={data.lastName} onChange={(value) => onNameChange?.('lastName', value)} />
         <TextField id="extension-name" label="Extension Name" placeholder="Enter your extension name" value={data.extensionName} onChange={(value) => onNameChange?.('extensionName', value)} />
         <SelectField id="sex" label="Sex" required value={data.sex} onChange={(value) => onChange('sex', value)} options={[...SIGNUP_SEX_OPTIONS]} />
-        <TextField id="birth-date" label="Birth Date" required type="date" value={data.birthDate} onChange={(value) => onChange('birthDate', value)} />
+        <TextField id="birth-date" label="Birth Date" required type="date" max={birthdateMaximum()} value={data.birthDate} onChange={(value) => onChange('birthDate', value)} />
         <FormError error={error} />
         <button className={styles.primaryButton} type="submit">Continue</button>
         <BackButton onClick={onBack} />
@@ -346,9 +347,11 @@ interface TextFieldProps {
   type?: string
   placeholder?: string
   autoComplete?: string
+  min?: string
+  max?: string
 }
 
-function TextField({ id, label, value, onChange, required = false, type = 'text', placeholder, autoComplete }: TextFieldProps) {
+function TextField({ id, label, value, onChange, required = false, type = 'text', placeholder, autoComplete, min, max }: TextFieldProps) {
   return (
     <div className={styles.field}>
       <label htmlFor={id}>{label}{required && <span> *</span>}</label>
@@ -360,6 +363,8 @@ function TextField({ id, label, value, onChange, required = false, type = 'text'
         placeholder={placeholder}
         autoComplete={autoComplete}
         required={required}
+        min={min}
+        max={max}
         onChange={(event) => onChange(event.target.value)}
       />
     </div>

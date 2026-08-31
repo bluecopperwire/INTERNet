@@ -11,6 +11,7 @@ import type {
   AdminDashboardSummary,
 } from '../types/admin.types';
 import { publicUploadUrl } from '../../../utils/public-upload-url';
+import { toDateOnly } from '../../../utils/date-only';
 
 export function adaptAdminDashboardSummary(
   studentMetrics: AdminMetricsDto,
@@ -64,7 +65,7 @@ export function adaptAdminStudentItem(dto: AdminStudentListItemDto): StudentReco
     lastName: data.lastName,
     suffix: data.extensionName || '',
     sex: data.sex === 'Male' || data.sex === 'Female' ? data.sex : 'Other',
-    birthdate: data.birthDate || 'N/A',
+    birthdate: toDateOnly(data.birthDate) || 'N/A',
     contactNumber: data.contactNumber || 'N/A',
     fullAddress: [data.addressLine, data.addressBarangay, data.addressDistrict, data.addressCity].filter(Boolean).join(', ') || 'Quezon City',
     addressStreet: data.addressLine || '',
@@ -81,7 +82,7 @@ export function adaptAdminStudentItem(dto: AdminStudentListItemDto): StudentReco
     preferredIndustries: preferred.map((item: any) => item.customIndustryName ? 'Other' : item.industryName),
     otherPreferredField: custom?.customIndustryName || '',
     scheduleAvailability: [scheduleToUi(data.availableDays)],
-    startDate: data.startDate || 'N/A',
+    startDate: toDateOnly(data.startDate) || 'N/A',
     hostOrgType: data.preferredCompanyType === 'government' ? 'Government' : 'Private',
   };
 }
@@ -157,7 +158,7 @@ export function adaptAdminPesoItem(dto: AdminPesoListItemDto): QCPesoRecord {
     middleName: data.middleName || '',
     lastName: data.lastName || dto.fullName.split(' ').slice(1).join(' ') || '',
     suffix: data.extensionName || '',
-    birthdate: data.birthDate || 'N/A',
+    birthdate: toDateOnly(data.birthDate) || 'N/A',
     sex: data.sex === 'Male' || data.sex === 'Female' ? data.sex : 'Other',
     addressLine: data.addressLine || '',
     barangay: data.addressBarangay || '',

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -20,6 +21,10 @@ import {
 } from './dto/account-management.dto';
 import { UpdatePesoProfileDto } from './dto/peso-profile.dto';
 import { ProfilePictureStorageService } from '../storage/profile-picture-storage.service';
+import {
+  assertValidDate,
+  currentManilaDate,
+} from '../employer/utils/time.utils';
 
 @Injectable()
 export class AccountManagementService {
@@ -98,6 +103,10 @@ export class AccountManagementService {
     adminAccountId: number,
   ): Promise<{ userAccountId: number; pesoPersonnelId: number }> {
     void adminAccountId;
+    assertValidDate(dto.birthDate, 'birthDate');
+    if (dto.birthDate >= currentManilaDate()) {
+      throw new BadRequestException('birthDate must be in the past.');
+    }
     return this.dataSource.transaction(async (manager) => {
       const existing = await manager
         .getRepository(UserAccount)
@@ -186,6 +195,12 @@ export class AccountManagementService {
   }
 
   async updatePesoProfile(userAccountId: number, dto: UpdatePesoProfileDto) {
+    if (dto.birthDate) {
+      assertValidDate(dto.birthDate, 'birthDate');
+      if (dto.birthDate >= currentManilaDate()) {
+        throw new BadRequestException('birthDate must be in the past.');
+      }
+    }
     const pesoRepo = this.dataSource.getRepository(PesoPersonnel);
     const peso = await pesoRepo.findOne({ where: { userAccountId } });
     if (!peso) {
@@ -200,7 +215,7 @@ export class AccountManagementService {
     if (dto.extensionName !== undefined)
       updates.extensionName = dto.extensionName?.trim() || null;
     if (dto.sex !== undefined) updates.sex = dto.sex;
-    if (dto.birthDate !== undefined) updates.birthDate = dto.birthDate as any;
+    if (dto.birthDate !== undefined) updates.birthDate = dto.birthDate;
     if (dto.addressLine !== undefined) updates.addressLine = dto.addressLine;
     if (dto.addressBarangay !== undefined)
       updates.addressBarangay = dto.addressBarangay;

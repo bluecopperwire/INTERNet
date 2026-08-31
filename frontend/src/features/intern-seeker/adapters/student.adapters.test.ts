@@ -70,6 +70,48 @@ describe("student profile adapters", () => {
     });
   });
 
+  it("keeps birth and preferred start dates stable across repeated edits", () => {
+    const response = profileResponse({
+      student: {
+        ...profileResponse().student,
+        birth_date: "2004-05-16T16:00:00.000Z",
+      },
+      internshipPreference: {
+        required_hours: 400,
+        allows_outside_preferred_field: true,
+        preferred_company_type: "private",
+        available_days: "weekdays",
+        start_date: "2098-12-31T16:00:00.000Z",
+      },
+    });
+
+    const firstView = adaptStudentProfile(response);
+    expect(firstView.birthdate).toBe("2004-05-17");
+    expect(firstView.preferences.startDate).toBe("2099-01-01");
+
+    const firstSave = adaptStudentProfileToUpdateDto(firstView, []);
+    expect(firstSave.birthDate).toBe("2004-05-17");
+    expect(firstSave.internshipPreference.startDate).toBe("2099-01-01");
+
+    const secondView = adaptStudentProfile(
+      profileResponse({
+        student: {
+          ...profileResponse().student,
+          birth_date: firstSave.birthDate,
+        },
+        internshipPreference: {
+          required_hours: 400,
+          allows_outside_preferred_field: true,
+          preferred_company_type: "private",
+          available_days: "weekdays",
+          start_date: firstSave.internshipPreference.startDate,
+        },
+      }),
+    );
+    expect(secondView.birthdate).toBe("2004-05-17");
+    expect(secondView.preferences.startDate).toBe("2099-01-01");
+  });
+
   it("round-trips Other through the designated custom industry", () => {
     const profile = adaptStudentProfile(
       profileResponse({

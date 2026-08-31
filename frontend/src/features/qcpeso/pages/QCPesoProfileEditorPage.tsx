@@ -6,6 +6,7 @@ import { qcpesoService } from '../services/qcpeso.service'
 import type { QCPesoProfile } from '../types/qcpeso.types'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
+import { birthdateMaximum } from '../../../utils/date-only'
 
 export function QCPesoProfileEditorPage() {
   const navigate = useNavigate()
@@ -69,7 +70,7 @@ export function QCPesoProfileEditorPage() {
                 <Field label="City" required><input required name="city" placeholder="Enter city" value={formData.city} onChange={handleChange} /></Field>
               </div>
               <div className={`${styles.fieldGrid} ${styles.personalDetailsGrid}`}>
-                <Field label="Birthdate" required><input required type="date" name="birthdate" value={formData.birthdate} onChange={handleChange} /></Field>
+                <Field label="Birthdate" required><input required type="date" name="birthdate" max={birthdateMaximum()} title="Birthdate must be before today." value={formData.birthdate} onChange={handleChange} /></Field>
                 <fieldset className={styles.choiceField}><legend>Sex<span>*</span></legend><div className={styles.radioGroup}><label><input type="radio" name="sex" value="Male" checked={formData.sex === 'Male'} onChange={handleChange} />Male</label><label><input type="radio" name="sex" value="Female" checked={formData.sex === 'Female'} onChange={handleChange} />Female</label></div></fieldset>
               </div>
             </div>

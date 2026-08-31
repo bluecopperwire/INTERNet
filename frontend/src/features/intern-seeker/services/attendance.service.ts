@@ -4,6 +4,7 @@ import type {
   InternshipDetails,
   TodayAttendance,
 } from '../types/attendance.types';
+import { todayDateOnly } from '../../../utils/date-only';
 
 export const attendanceService = {
   async getToday(): Promise<TodayAttendance> {
@@ -12,7 +13,7 @@ export const attendanceService = {
     const today = useStudentTrackingStore.getState().todayAttendance;
     if (!today) {
       return {
-        date: new Date().toISOString().split('T')[0],
+        date: todayDateOnly(),
         status: 'not-checked-in',
         companyName: 'Not Assigned',
         workingDays: 'N/A',

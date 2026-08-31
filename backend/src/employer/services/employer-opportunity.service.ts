@@ -67,8 +67,8 @@ export class EmployerOpportunityService {
   ) {
     const company = await this.companyResolver.resolve(userAccountId);
     assertValidDate(dto.applicationDeadline, 'applicationDeadline');
-    if (dto.applicationDeadline < currentManilaDate()) {
-      throw new ConflictException('applicationDeadline cannot be in the past.');
+    if (dto.applicationDeadline <= currentManilaDate()) {
+      throw new ConflictException('applicationDeadline must be in the future.');
     }
 
     const allowance = this.normalizeAllowance(
@@ -136,8 +136,8 @@ export class EmployerOpportunityService {
     }
     if (dto.applicationDeadline) {
       assertValidDate(dto.applicationDeadline, 'applicationDeadline');
-      if (dto.applicationDeadline < currentManilaDate()) {
-        throw new ConflictException('applicationDeadline cannot be in the past.');
+      if (dto.applicationDeadline <= currentManilaDate()) {
+        throw new ConflictException('applicationDeadline must be in the future.');
       }
     }
 

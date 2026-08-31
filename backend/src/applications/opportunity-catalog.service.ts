@@ -124,7 +124,7 @@ export class OpportunityCatalogService {
         o.work_arrangement,
         o.offered_slots,
         o.allowance,
-        o.application_deadline,
+        (o.application_deadline AT TIME ZONE 'Asia/Manila')::date::text AS application_deadline,
         o.opportunity_status,
         o.created_at,
         o.updated_at,
@@ -164,9 +164,7 @@ export class OpportunityCatalogService {
       offeredSlots: Number(row.offered_slots),
       hasAllowance: row.allowance !== null,
       allowance: row.allowance !== null ? String(row.allowance) : null,
-      applicationDeadline: row.application_deadline instanceof Date 
-        ? row.application_deadline.toISOString().split('T')[0]
-        : String(row.application_deadline),
+      applicationDeadline: String(row.application_deadline),
       opportunityStatus: row.opportunity_status,
       createdAt: new Date(row.created_at).toISOString(),
       updatedAt: new Date(row.updated_at).toISOString(),
@@ -220,7 +218,7 @@ export class OpportunityCatalogService {
         o.work_arrangement,
         o.offered_slots,
         o.allowance,
-        o.application_deadline,
+        (o.application_deadline AT TIME ZONE 'Asia/Manila')::date::text AS application_deadline,
         o.opportunity_status,
         o.created_at,
         o.updated_at,
@@ -260,9 +258,7 @@ export class OpportunityCatalogService {
       offeredSlots: Number(row.offered_slots),
       hasAllowance: row.allowance !== null,
       allowance: row.allowance !== null ? String(row.allowance) : null,
-      applicationDeadline: row.application_deadline instanceof Date 
-        ? row.application_deadline.toISOString().split('T')[0]
-        : String(row.application_deadline),
+      applicationDeadline: String(row.application_deadline),
       opportunityStatus: row.opportunity_status,
       createdAt: new Date(row.created_at).toISOString(),
       updatedAt: new Date(row.updated_at).toISOString(),

@@ -7,6 +7,7 @@ import detailStyles from './AdminStudentDetailsPage.module.css'
 import formStyles from '../../intern-seeker/pages/ProfileEditorPage.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
+import { birthdateMaximum } from '../../../utils/date-only'
 
 const fullNameOf = (record: QCPesoRecord) =>
   [record.firstName, record.middleName, record.lastName, record.suffix].filter(Boolean).join(' ') ||
@@ -333,6 +334,8 @@ export function AdminQCPesoEditorPage() {
                 <input
                   required
                   type="date"
+                  max={birthdateMaximum()}
+                  title="Birthdate must be before today."
                   value={form.birthdate}
                   onChange={(e) => change('birthdate', e.target.value)}
                 />

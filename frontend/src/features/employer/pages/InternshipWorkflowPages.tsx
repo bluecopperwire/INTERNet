@@ -7,6 +7,7 @@ import type { InternshipAssignment } from '../types/employer.types'
 import styles from './InternshipWorkflowPages.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
+import { todayDateOnly } from '../../../utils/date-only'
 
 export function CreateInternshipAssignmentPage() {
   const navigate = useNavigate()
@@ -158,8 +159,8 @@ export function ReviewInternshipAssignmentPage() {
               <AssignmentField label="Job Title" name="jobTitle" value={formData.jobTitle} placeholder="Enter job title" disabled={isAssignmentLocked} onChange={setFormData} />
               <AssignmentField label="Working Days" name="workingDays" value={formData.workingDays} disabled={isAssignmentLocked} onChange={setFormData} />
               <AssignmentField label="Required Hours" name="requiredHours" value={formData.requiredHours} placeholder="Enter required hours" inputMode="numeric" disabled={isAssignmentLocked} onChange={setFormData} />
-              <AssignmentField label="Start Date" name="startDate" value={formData.startDate} type="date" disabled={isAssignmentLocked} onChange={setFormData} />
-              <AssignmentField label="Expected End Date" name="expectedEndDate" value={formData.expectedEndDate} type="date" disabled={isAssignmentLocked} onChange={setFormData} />
+              <AssignmentField label="Start Date" name="startDate" value={formData.startDate} type="date" min={todayDateOnly()} disabled={isAssignmentLocked} onChange={setFormData} />
+              <AssignmentField label="Expected End Date" name="expectedEndDate" value={formData.expectedEndDate} type="date" min={formData.startDate || todayDateOnly()} disabled={isAssignmentLocked} onChange={setFormData} />
               <AssignmentField label="Shift Start Time" name="shiftStartTime" value={formData.shiftStartTime} type="time" disabled={isAssignmentLocked} onChange={setFormData} />
               <AssignmentField label="Shift End Time" name="shiftEndTime" value={formData.shiftEndTime} type="time" disabled={isAssignmentLocked} onChange={setFormData} />
             </div>
@@ -208,11 +209,12 @@ interface AssignmentFieldProps {
   placeholder?: string
   type?: 'text' | 'date' | 'time'
   inputMode?: 'numeric'
+  min?: string
   disabled?: boolean
   onChange: Dispatch<SetStateAction<AssignmentFormData>>
 }
 
-function AssignmentField({ label, name, value, placeholder, type = 'text', inputMode, disabled = false, onChange }: AssignmentFieldProps) {
+function AssignmentField({ label, name, value, placeholder, type = 'text', inputMode, min, disabled = false, onChange }: AssignmentFieldProps) {
   const updateValue = (nextValue: string) => onChange((current) => ({ ...current, [name]: name === 'requiredHours' ? nextValue.replace(/\D/g, '') : nextValue }))
 
   return <label className={styles.assignmentField}>
@@ -220,10 +222,9 @@ function AssignmentField({ label, name, value, placeholder, type = 'text', input
     {name === 'workingDays' ? (
       <select name={name} value={value} disabled={disabled} onChange={(event) => updateValue(event.target.value)}>
         <option value="" disabled>Select working days</option>
-        <option value="Weekdays">Weekdays</option>
-        <option value="Weekend">Weekend</option>
-        <option value="Flexible">Flexible</option>
+        <option value="weekdays">Weekdays</option>
+        <option value="weekends">Weekends</option>
       </select>
-    ) : <input name={name} value={value} type={type} inputMode={inputMode} placeholder={placeholder} disabled={disabled} onChange={(event) => updateValue(event.target.value)} />}
+    ) : <input name={name} value={value} type={type} inputMode={inputMode} min={min} placeholder={placeholder} disabled={disabled} onChange={(event) => updateValue(event.target.value)} />}
   </label>
 }

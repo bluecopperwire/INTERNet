@@ -22,6 +22,7 @@ import type {
   QCPesoOpportunity,
   CreateEmployerPayload,
 } from '../types/qcpeso.types';
+import { todayDateOnly } from '../../../utils/date-only';
 
 export const qcpesoService = {
   async getDashboardSummary(): Promise<QCPesoDashboardSummary> {
@@ -234,7 +235,7 @@ export const qcpesoService = {
       slots: 5,
       duration: match.requiredHours || 200,
       allowance: 'Provided',
-      applicationDeadline: new Date().toISOString().split('T')[0],
+      applicationDeadline: todayDateOnly(),
       jobDescription: 'Internship position under partner employer.',
       qualifications: 'Currently enrolled student.',
     };

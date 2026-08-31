@@ -52,10 +52,11 @@ export class Student {
   })
   sex: string;
 
-  @CreateDateColumn({
+  @Column({
     name: 'birth_date',
+    type: 'date',
   })
-  birthDate: Date;
+  birthDate: string;
 
   @Column({
     name: 'contact_number',

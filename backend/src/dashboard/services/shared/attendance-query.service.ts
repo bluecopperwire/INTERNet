@@ -4,6 +4,7 @@ import { PaginationDto } from '../../../common/dto/pagination.dto';
 import { PaginatedResponse } from '../../../common/interfaces/paginated-response.interface';
 import { DateFilterDto } from '../../../common/dto/date-filter.dto';
 import { getDateBoundaries } from '../../../common/helpers/date-filter.helper';
+import { currentManilaDate } from '../../../employer/utils/time.utils';
 
 @Injectable()
 export class AttendanceQueryService {
@@ -95,8 +96,10 @@ export class AttendanceQueryService {
       );
 
       if (boundaries) {
-        const startStr = dateFilterDto.startDate || boundaries.start.toISOString().split('T')[0];
-        const endStr = dateFilterDto.endDate || boundaries.end.toISOString().split('T')[0];
+        const startStr =
+          dateFilterDto.startDate || currentManilaDate(boundaries.start);
+        const endStr =
+          dateFilterDto.endDate || currentManilaDate(boundaries.end);
         whereClauses.push(`ar.attendance_date >= $${paramIndex++}::date`);
         params.push(startStr);
         whereClauses.push(`ar.attendance_date <= $${paramIndex++}::date`);
@@ -244,8 +247,8 @@ export class AttendanceQueryService {
     );
 
     if (boundaries) {
-      const startStr = boundaries.start.toISOString().split('T')[0];
-      const endStr = boundaries.end.toISOString().split('T')[0];
+      const startStr = currentManilaDate(boundaries.start);
+      const endStr = currentManilaDate(boundaries.end);
       whereClauses.push(`ar.attendance_date >= $${paramIndex++}`);
       params.push(startStr);
       whereClauses.push(`ar.attendance_date <= $${paramIndex++}`);

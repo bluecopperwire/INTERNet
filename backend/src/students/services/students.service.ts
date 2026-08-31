@@ -17,6 +17,10 @@ import {
 } from '../dto/students.dto';
 import { withStatusActor } from '../../database/status-actor.transaction';
 import { ProfilePictureStorageService } from '../../storage/profile-picture-storage.service';
+import {
+  assertValidDate,
+  currentManilaDate,
+} from '../../employer/utils/time.utils';
 
 @Injectable()
 export class StudentsService {
@@ -36,7 +40,7 @@ export class StudentsService {
   async getStudentProfile(studentId: number) {
     const [student] = await this.dataSource.query(
       `
-        SELECT s.*
+        SELECT s.*, s.birth_date::text AS birth_date
         FROM public.student s
         WHERE s.student_id = $1
       `,
@@ -58,7 +62,7 @@ export class StudentsService {
 
     const [preference] = await this.dataSource.query(
       `
-        SELECT ip.*
+        SELECT ip.*, ip.start_date::text AS start_date
         FROM public.internship_preference ip
         WHERE ip.student_id = $1
       `,
@@ -148,6 +152,22 @@ export class StudentsService {
   }
 
   async upsertStudentProfile(studentId: number, dto: StudentProfileUpdateDto) {
+    assertValidDate(dto.birthDate, 'birthDate');
+    const today = currentManilaDate();
+    if (dto.birthDate >= today) {
+      throw new BadRequestException('birthDate must be in the past.');
+    }
+    if (dto.internshipPreference) {
+      assertValidDate(
+        dto.internshipPreference.startDate,
+        'internshipPreference.startDate',
+      );
+      if (dto.internshipPreference.startDate < today) {
+        throw new BadRequestException(
+          'internshipPreference.startDate cannot be in the past.',
+        );
+      }
+    }
     await this.dataSource.transaction(async (manager) => {
       const studentExists = await manager.query(
         `SELECT student_id, photo_file_path FROM public.student WHERE student_id = $1`,
@@ -1190,9 +1210,9 @@ export class StudentsService {
           o.title AS job_title,
           ia.working_days,
           ia.required_hours,
-          ia.start_date,
-          ia.expected_end_date,
-          ia.end_date,
+          ia.start_date::text AS start_date,
+          ia.expected_end_date::text AS expected_end_date,
+          ia.end_date::text AS end_date,
           ia.start_shift,
           ia.end_shift,
           ia.assignment_status,
@@ -1243,19 +1263,12 @@ export class StudentsService {
       jobTitle: rawAssignment.job_title,
       workingDays: rawAssignment.working_days,
       requiredHours,
-      startDate:
-        rawAssignment.start_date instanceof Date
-          ? rawAssignment.start_date.toISOString().split('T')[0]
-          : String(rawAssignment.start_date),
+      startDate: String(rawAssignment.start_date),
       expectedEndDate: rawAssignment.expected_end_date
-        ? rawAssignment.expected_end_date instanceof Date
-          ? rawAssignment.expected_end_date.toISOString().split('T')[0]
-          : String(rawAssignment.expected_end_date)
+        ? String(rawAssignment.expected_end_date)
         : null,
       endDate: rawAssignment.end_date
-        ? rawAssignment.end_date instanceof Date
-          ? rawAssignment.end_date.toISOString().split('T')[0]
-          : String(rawAssignment.end_date)
+        ? String(rawAssignment.end_date)
         : null,
       startShift: rawAssignment.start_shift,
       endShift: rawAssignment.end_shift,
@@ -1267,7 +1280,7 @@ export class StudentsService {
     // 2. Fetch today's record
     const todayRows = await this.dataSource.query(
       `
-        SELECT *
+        SELECT *, attendance_date::text AS attendance_date
         FROM public.attendance_record
         WHERE internship_assignment_id = $1 AND attendance_date = CURRENT_DATE
       `,
@@ -1292,7 +1305,7 @@ export class StudentsService {
 
     const recordsRows = await this.dataSource.query(
       `
-        SELECT *
+        SELECT *, attendance_date::text AS attendance_date
         FROM public.attendance_record
         WHERE ${whereConditions.join(' AND ')}
         ORDER BY attendance_date DESC
@@ -1302,10 +1315,7 @@ export class StudentsService {
 
     const records = recordsRows.map((row: any) => ({
       attendanceRecordId: Number(row.attendance_record_id),
-      date:
-        row.attendance_date instanceof Date
-          ? row.attendance_date.toISOString().split('T')[0]
-          : String(row.attendance_date),
+      date: String(row.attendance_date),
       status: row.time_in_status === 'late' ? 'late' : 'present',
       timeIn: row.time_in,
       timeOut: row.time_out,

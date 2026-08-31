@@ -5,6 +5,7 @@ import { employerService } from '../services/employer.service'
 import type { Applicant } from '../types/employer.types'
 import qcLogos from '../../../assets/qc-logos-2.png'
 import styles from './ReportsPage.module.css'
+import { todayDateOnly } from '../../../utils/date-only'
 
 const statusConfig = [
   { label: 'Pending', values: ['Pending', 'For Review', 'Under Review', 'Shortlisted'], color: '#4b4395' },
@@ -35,7 +36,7 @@ export function ReportsPage() {
     <EmployerHero title="Reports" subtitle="Generate and download reports" comfortableSpacing />
     <section className={styles.mainContent}>
       <section><h2 className={styles.summaryTitle}>Summary</h2><div className={styles.summaryGrid}><SummaryCard label="Total Applicants" value={summary.total} /><SummaryCard label="Accepted" value={summary.accepted} /><SummaryCard label="For Interview" value={summary.forInterview} /><SummaryCard label="Rejected" value={summary.rejected} /></div></section>
-      <div className={styles.reportingPeriodRow}><span className={styles.reportingPeriodTitle}>Reporting Period</span><label className={styles.reportingPeriod}><span className={styles.srOnly}>Select reporting period</span><div className={styles.dateRange}><input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /><em>to</em><input type="date" value={endDate} min={startDate} onChange={(event) => setEndDate(event.target.value)} /></div></label></div>
+      <div className={styles.reportingPeriodRow}><span className={styles.reportingPeriodTitle}>Reporting Period</span><label className={styles.reportingPeriod}><span className={styles.srOnly}>Select reporting period</span><div className={styles.dateRange}><input type="date" value={startDate} max={endDate || todayDateOnly()} onChange={(event) => setStartDate(event.target.value)} /><em>to</em><input type="date" value={endDate} min={startDate} max={todayDateOnly()} onChange={(event) => setEndDate(event.target.value)} /></div></label></div>
       <div className={styles.chartsGrid}>
         <article className={styles.chartPanel}><header className={styles.chartHeader}><div><h2>Applicants by Status</h2><p>Current application distribution</p></div></header><div className={styles.donutBody}><div className={styles.donut} style={{ background: donutGradient }}><div /></div><div className={styles.legend}>{statusData.map((item) => <div key={item.label}><span style={{ background: item.color }} />{item.label}<strong>{item.percentage}%</strong></div>)}</div></div></article>
         <article className={styles.chartPanel}><header className={styles.chartHeader}><div><h2>Applicants Over Time</h2><p>Daily application submissions</p></div></header><div className={styles.timelineBody}><span className={styles.yLabel}>Applicants</span><div className={styles.lineChart}><svg viewBox="0 0 600 220">{[40,75,110,145,180].map((y, index) => <g key={y}><text x="30" y={y + 4}>{Math.round(maxValue - maxValue * index / 4)}</text><line x1="44" x2="576" y1={y} y2={y} /></g>)}{points && <polyline points={points} />}{points.split(' ').filter(Boolean).map((point) => { const [cx, cy] = point.split(','); return <circle key={point} cx={cx} cy={cy} r="4" /> })}</svg><div className={styles.axisLabels}>{timeline.map(([day]) => <span key={day}>{day.slice(5).replace('-', '/')}</span>)}</div></div></div></article>

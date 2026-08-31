@@ -6,6 +6,7 @@ import type { Opportunity } from '../types/employer.types'
 import styles from './CreateOpportunityPage.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
+import { opportunityDeadlineMinimum } from '../../../utils/date-only'
 
 export function CreateOpportunityPage() {
   const { id } = useParams<{ id: string }>()
@@ -144,7 +145,7 @@ export function CreateOpportunityPage() {
           <div className={`${styles.field} ${styles.fullWidth}`}>
             <label>Application Deadline</label>
             <div className={styles.dateInputWrapper}>
-              <input type="date" name="applicationDeadline" value={formData.applicationDeadline || ''} onChange={handleChange} />
+              <input required type="date" name="applicationDeadline" min={opportunityDeadlineMinimum()} title="The application deadline must be after today." value={formData.applicationDeadline || ''} onChange={handleChange} />
               <CalendarIcon className={styles.dateIcon} size={20} color="#160e6f" />
             </div>
           </div>

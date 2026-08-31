@@ -124,6 +124,9 @@ export class EmployerInternshipService {
     dto: CreateAssignmentDto,
   ) {
     this.validateAssignmentInput(dto);
+    if (dto.startDate < currentManilaDate()) {
+      throw new ConflictException('startDate cannot be in the past.');
+    }
     const company = await this.companyResolver.resolve(userAccountId);
     const assignmentId = await withStatusActor(
       this.dataSource,
@@ -322,6 +325,9 @@ export class EmployerInternshipService {
         endShift: dto.endShift ?? String(row.end_shift).slice(0, 5),
       };
       this.validateAssignmentInput(values);
+      if (values.startDate < currentManilaDate()) {
+        throw new ConflictException('startDate cannot be in the past.');
+      }
       await runner.query(
         `
           UPDATE public.internship_assignment
