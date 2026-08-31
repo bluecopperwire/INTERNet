@@ -197,6 +197,17 @@ export function QCPesoAttendanceDetailsPage() {
   if (!internship) return <main className={attendanceDetailStyles.feedback}>Loading internship details...</main>
   const remaining = Math.max(internship.requiredHours - internship.renderedHours, 0)
 
+  const overviewFields: Array<[string, string]> = [
+    ['Student Name', internship.studentName],
+    ['Company', internship.company],
+    ['Job Title', internship.jobTitle],
+    ['Start Date', internship.startDate],
+    ['Expected End Date', internship.expectedEndDate],
+    ['Total Hours Rendered', `${internship.renderedHours} hours`],
+    ['Target Hours', `${internship.requiredHours} hours`],
+    ['Remaining Hours', `${remaining} hours`],
+  ]
+
   return (
     <main className={attendanceDetailStyles.page}>
       <div className={attendanceDetailStyles.wrap}>
@@ -205,6 +216,21 @@ export function QCPesoAttendanceDetailsPage() {
           Back to Monitor Attendance
         </button>
         <InternSummary styles={attendanceDetailStyles} internship={internship} remaining={remaining} />
+
+        <section className={internshipDetailStyles.detailCard} style={{ marginBottom: 20 }}>
+          <header className={internshipDetailStyles.cardHeader}>
+            <div>
+              <h2>Internship Overview</h2>
+              <p>Student internship placement and hours tracking summary.</p>
+            </div>
+          </header>
+          <div className={internshipDetailStyles.formGrid}>
+            {overviewFields.map(([label, value]) => (
+              <ReadonlyField key={label} styles={internshipDetailStyles} label={label} value={value} />
+            ))}
+          </div>
+        </section>
+
         <section className={attendanceDetailStyles.detailCard}>
           <header className={attendanceDetailStyles.cardHeader}>
             <div>
@@ -281,7 +307,7 @@ function Pager({ styles, page, totalPages, setPage }: { styles: Record<string, s
 }
 
 function InternSummary({ styles, internship, remaining }: { styles: Record<string, string>; internship: QCPesoInternshipRecord; remaining: number }) {
-  return <section className={styles.studentSummary}><span className={styles.studentIcon}><UserRound size={28} /></span><div><h1>{internship.studentName}</h1><p>{internship.jobTitle}</p></div><div className={styles.hoursSummary}><Clock3 size={19} /><div><strong>{internship.renderedHours} / {internship.requiredHours} hours</strong><span>{remaining} hours remaining</span></div></div></section>
+  return <section className={styles.studentSummary}><span className={styles.studentIcon}><UserRound size={28} /></span><div><h1>{internship.studentName}</h1><p>{internship.jobTitle} • {internship.company}</p></div><div className={styles.hoursSummary}><Clock3 size={19} /><div><strong>{internship.renderedHours} / {internship.requiredHours} hours</strong><span>{remaining} hours remaining</span></div></div></section>
 }
 
 function ReadonlyField({ styles, label, value }: { styles: Record<string, string>; label: string; value: string }) { return <label className={styles.field}><span>{label}</span><input value={value} readOnly /></label> }

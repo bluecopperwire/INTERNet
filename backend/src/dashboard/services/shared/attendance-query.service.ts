@@ -199,8 +199,9 @@ export class AttendanceQueryService {
         o.title AS "role",
         o.department AS "department",
         o.company_id AS "companyId",
-        ia.start_date AS "startDate",
-        ia.expected_end_date AS "expectedEndDate",
+        c.company_name AS "companyName",
+        ia.start_date::text AS "startDate",
+        ia.expected_end_date::text AS "expectedEndDate",
         ia.required_hours AS "targetHours",
         COALESCE(sum(ar.hours_rendered), 0::numeric) AS "totalRenderedTime"
       FROM public.internship_assignment ia
@@ -208,10 +209,11 @@ export class AttendanceQueryService {
       JOIN public.application a ON a.application_id = r.application_id
       JOIN public.student s ON s.student_id = a.student_id
       JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
+      JOIN public.company c ON c.company_id = o.company_id
       LEFT JOIN public.attendance_record ar ON ar.internship_assignment_id = ia.internship_assignment_id
       WHERE ia.internship_assignment_id = $1
         AND ia.deleted_at IS NULL
-      GROUP BY ia.internship_assignment_id, s.first_name, s.middle_name, s.last_name, s.extension_name, o.title, o.department, o.company_id, ia.start_date, ia.expected_end_date, ia.required_hours
+      GROUP BY ia.internship_assignment_id, s.first_name, s.middle_name, s.last_name, s.extension_name, o.title, o.department, o.company_id, c.company_name, ia.start_date, ia.expected_end_date, ia.required_hours
     `;
 
     const summaryRows = await this.dataSource.query(summarySql, [assignmentId]);

@@ -127,7 +127,8 @@ export function adaptPesoReferral(r: PesoReferralDto): QCPesoReferral {
   };
 }
 
-export function adaptPesoIntern(s: PesoInternSummaryDto): QCPesoInternshipRecord {
+export function adaptPesoIntern(s: PesoInternSummaryDto | any): QCPesoInternshipRecord {
+  if (!s) return {} as any;
   const statusMap: Record<string, any> = {
     ongoing: 'On Going',
     completed: 'Completed',
@@ -136,19 +137,40 @@ export function adaptPesoIntern(s: PesoInternSummaryDto): QCPesoInternshipRecord
     cancelled: 'Cancelled',
   };
 
+  const rawStatus = s.assignmentStatus || s.assignment_status || 'ongoing';
+  const startDate = s.startDate || s.start_date || s.firstAttendanceDate || s.first_attendance_date || '';
+  const expectedEndDate = s.expectedEndDate || s.expected_end_date || s.latestAttendanceDate || s.latest_attendance_date || '';
+
+  const formatDisplayDate = (d: any) => {
+    if (!d || d === 'N/A') return 'N/A';
+    if (typeof d === 'string') {
+      const dateOnly = d.includes('T') ? d.split('T')[0] : d;
+      const [y, m, day] = dateOnly.split('-').map(Number);
+      if (y && m && day) {
+        const parsed = new Date(y, m - 1, day);
+        return parsed.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      }
+      return d;
+    }
+    if (d instanceof Date && !isNaN(d.getTime())) {
+      return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    }
+    return String(d);
+  };
+
   return {
-    id: String(s.internshipAssignmentId),
-    studentName: s.studentFullName,
-    company: s.companyName,
-    jobTitle: s.opportunityTitle,
-    workingDays: 'Weekdays',
-    requiredHours: s.requiredHours,
-    startDate: s.firstAttendanceDate || 'N/A',
-    expectedEndDate: s.latestAttendanceDate || 'N/A',
-    shiftStartTime: '08:00 AM',
-    shiftEndTime: '05:00 PM',
-    status: statusMap[s.assignmentStatus] || 'On Going',
-    renderedHours: Number(s.totalRenderedHours || 0),
+    id: String(s.internshipAssignmentId || s.internship_assignment_id || ''),
+    studentName: s.studentFullName || s.student_full_name || s.studentName || 'Student Intern',
+    company: s.companyName || s.company_name || s.company || 'Partner Company',
+    jobTitle: s.opportunityTitle || s.opportunity_title || s.role || s.jobTitle || 'Internship Role',
+    workingDays: s.workingDays || s.working_days || 'Weekdays',
+    requiredHours: Number(s.requiredHours || s.required_hours || s.targetHours || 0),
+    startDate: formatDisplayDate(startDate),
+    expectedEndDate: formatDisplayDate(expectedEndDate),
+    shiftStartTime: s.startShift || s.start_shift || s.shiftStartTime || '09:00 AM',
+    shiftEndTime: s.endShift || s.end_shift || s.shiftEndTime || '05:00 PM',
+    status: statusMap[rawStatus.toLowerCase()] || 'On Going',
+    renderedHours: Number(s.totalRenderedHours || s.total_rendered_hours || s.totalRenderedTime || 0),
   };
 }
 
