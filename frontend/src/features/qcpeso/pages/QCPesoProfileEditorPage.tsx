@@ -4,12 +4,15 @@ import { useNavigate } from 'react-router-dom'
 import styles from '../../intern-seeker/pages/ProfileEditorPage.module.css'
 import { qcpesoService } from '../services/qcpeso.service'
 import type { QCPesoProfile } from '../types/qcpeso.types'
+import { useToastStore } from '../../../stores/useToastStore'
+import { getErrorMessage } from '../../../utils/error-message'
 
 export function QCPesoProfileEditorPage() {
   const navigate = useNavigate()
   const [formData, setFormData] = useState<QCPesoProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const toast = useToastStore()
 
   useEffect(() => {
     qcpesoService.getProfile().then(setFormData).finally(() => setIsLoading(false))
@@ -28,9 +31,10 @@ export function QCPesoProfileEditorPage() {
     setIsSaving(true)
     try {
       await qcpesoService.updateProfile(formData)
+      toast.success('QC PESO profile updated successfully.')
       navigate('/qcpeso/profile')
-    } catch (err) {
-      console.error('Failed to update QC PESO profile:', err)
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update QC PESO profile.'))
     } finally {
       setIsSaving(false)
     }

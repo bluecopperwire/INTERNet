@@ -34,7 +34,6 @@ function RequirementsPage() {
     if (!isAcceptedFile(file)) {
       const msg = 'Please select a PDF, DOC, DOCX, JPG, or PNG file no larger than 10 MB.'
       setError(msg)
-      toast.error(msg)
       return
     }
     const success = await uploadRequirement(requirement.id, file)

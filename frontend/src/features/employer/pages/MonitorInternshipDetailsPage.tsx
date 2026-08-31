@@ -4,6 +4,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { employerService } from '../services/employer.service'
 import type { EmployerInternshipDetails } from '../types/employer.types'
 import styles from './MonitorInternshipDetailsPage.module.css'
+import { useToastStore } from '../../../stores/useToastStore'
+import { getErrorMessage } from '../../../utils/error-message'
 
 type InternshipForm = Pick<EmployerInternshipDetails, 'company' | 'jobTitle' | 'workingDays' | 'requiredHours' | 'startDate' | 'expectedEndDate' | 'shiftStartTime' | 'shiftEndTime'>
 
@@ -19,6 +21,7 @@ export function MonitorInternshipDetailsPage() {
   const [form, setForm] = useState<InternshipForm | null>(null)
   const [saving, setSaving] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const toast = useToastStore()
 
   useEffect(() => {
     if (!applicantId) return
@@ -41,7 +44,10 @@ export function MonitorInternshipDetailsPage() {
         setDetails(saved)
         setForm(toForm(saved))
         setIsEditing(false)
+        toast.success('Internship details updated.')
       }
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update internship details.'))
     } finally {
       setSaving(false)
     }
@@ -55,7 +61,10 @@ export function MonitorInternshipDetailsPage() {
       if (updated) {
         setDetails(updated)
         setForm(toForm(updated))
+        toast.success(`Internship status changed to ${status}.`)
       }
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update internship status.'))
     } finally {
       setSaving(false)
     }
@@ -69,9 +78,10 @@ export function MonitorInternshipDetailsPage() {
     setSaving(true)
     try {
       await employerService.deleteInternshipDetails(applicantId)
+      toast.success('Internship record deleted.')
       navigate('/employer/manage-internship')
-    } catch (err: any) {
-      alert(err?.message || 'Failed to delete internship record. Only terminal assignments can be deleted.')
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to delete internship record. Only terminal assignments can be deleted.'))
     } finally {
       setSaving(false)
     }

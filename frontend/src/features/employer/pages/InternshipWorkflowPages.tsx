@@ -5,6 +5,8 @@ import { EmployerHero } from '../components/EmployerHero'
 import { employerService, canWithdrawCandidate } from '../services/employer.service'
 import type { InternshipAssignment } from '../types/employer.types'
 import styles from './InternshipWorkflowPages.module.css'
+import { useToastStore } from '../../../stores/useToastStore'
+import { getErrorMessage } from '../../../utils/error-message'
 
 export function CreateInternshipAssignmentPage() {
   const navigate = useNavigate()
@@ -95,6 +97,7 @@ export function ReviewInternshipAssignmentPage() {
   const [loading, setLoading] = useState(true)
   const [isWithdrawing, setIsWithdrawing] = useState(false)
   const [formData, setFormData] = useState(createEmptyAssignmentForm)
+  const toast = useToastStore()
 
   useEffect(() => {
     if (!id) {
@@ -127,9 +130,10 @@ export function ReviewInternshipAssignmentPage() {
     setIsWithdrawing(true)
     try {
       await employerService.withdrawAcceptance(assignment.id)
+      toast.success('Candidate acceptance withdrawn.')
       navigate('/employer/internship-assignments')
-    } catch (err: any) {
-      alert(err?.message || 'Failed to withdraw acceptance. The student may have already responded.')
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to withdraw acceptance. The student may have already responded.'))
       const refreshed = await employerService.getInternshipAssignmentById(assignment.id)
       setAssignment(refreshed ?? null)
     } finally {

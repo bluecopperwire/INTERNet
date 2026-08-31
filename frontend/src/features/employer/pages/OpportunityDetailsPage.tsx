@@ -4,6 +4,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { employerService, formatOpportunityDeadline, isOpportunityDeadlineExpired } from '../services/employer.service'
 import type { Opportunity } from '../types/employer.types'
 import styles from './OpportunityDetailsPage.module.css'
+import { useToastStore } from '../../../stores/useToastStore'
+import { getErrorMessage } from '../../../utils/error-message'
 
 interface FieldProps {
   label: string
@@ -26,6 +28,7 @@ export function OpportunityDetailsPage() {
   const [opportunity, setOpportunity] = useState<Opportunity | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isUpdating, setIsUpdating] = useState(false)
+  const toast = useToastStore()
 
   useEffect(() => {
     if (!id) {
@@ -52,6 +55,9 @@ export function OpportunityDetailsPage() {
       }
       await employerService.saveOpportunity(updatedOpportunity)
       setOpportunity(updatedOpportunity)
+      toast.success(`Opportunity ${updatedOpportunity.status === 'Open' ? 'opened' : 'closed'}.`)
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update opportunity status.'))
     } finally {
       setIsUpdating(false)
     }
@@ -63,7 +69,10 @@ export function OpportunityDetailsPage() {
     setIsUpdating(true)
     try {
       await employerService.deleteOpportunity(opportunity.id)
+      toast.success('Opportunity deleted.')
       navigate('/employer/opportunities')
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to delete opportunity.'))
     } finally {
       setIsUpdating(false)
     }

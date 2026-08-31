@@ -90,7 +90,6 @@ export function TrackingDataProvider({ children }: { children: ReactNode }) {
       setRequirements((current) => current?.map((item) => item.id === input.requirementId ? updatedRequirement : item) ?? [updatedRequirement])
       return updatedRequirement
     } catch {
-      setRequirementsError('The document could not be uploaded. Please try again.')
       throw new Error('Requirement upload failed.')
     }
   }, [])
@@ -102,7 +101,6 @@ export function TrackingDataProvider({ children }: { children: ReactNode }) {
       setRequirements((current) => current?.map((item) => item.id === requirementId ? updatedRequirement : item) ?? [updatedRequirement])
       return updatedRequirement
     } catch {
-      setRequirementsError('The document could not be deleted. Please try again.')
       throw new Error('Requirement deletion failed.')
     }
   }, [])
@@ -114,7 +112,6 @@ export function TrackingDataProvider({ children }: { children: ReactNode }) {
       setApplications((current) => current?.map((item) => item.id === applicationId ? updated : item) ?? [updated])
       return updated
     } catch {
-      setApplicationsError('Unable to update your application. Please try again.')
       throw new Error('Application update failed.')
     }
   }, [])
@@ -127,7 +124,6 @@ export function TrackingDataProvider({ children }: { children: ReactNode }) {
       await applicationsService.deleteApplication(applicationId)
       setApplications((current) => current?.filter((item) => item.id !== applicationId) ?? [])
     } catch {
-      setApplicationsError('Unable to delete your application. Please try again.')
       throw new Error('Application deletion failed.')
     }
   }, [])
@@ -139,7 +135,6 @@ export function TrackingDataProvider({ children }: { children: ReactNode }) {
       setToday(updatedToday)
       return updatedToday
     } catch {
-      setAttendanceError('Unable to check in.')
       throw new Error('Check-in failed.')
     }
   }, [])

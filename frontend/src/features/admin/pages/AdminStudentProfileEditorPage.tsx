@@ -4,6 +4,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { adminService } from '../services/admin.service'
 import type { StudentRecord } from '../types/admin.types'
 import styles from '../../intern-seeker/pages/ProfileEditorPage.module.css'
+import { useToastStore } from '../../../stores/useToastStore'
+import { getErrorMessage } from '../../../utils/error-message'
 
 const INDUSTRIES = [
   'Office Administration',
@@ -23,6 +25,7 @@ export function AdminStudentProfileEditorPage() {
   const navigate = useNavigate()
   const [student, setStudent] = useState<StudentRecord | null>(null)
   const [formData, setFormData] = useState<StudentRecord | null>(null)
+  const toast = useToastStore()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [preferenceError, setPreferenceError] = useState('')
@@ -76,7 +79,12 @@ export function AdminStudentProfileEditorPage() {
     setIsSaving(true)
     try {
       const updated = await adminService.updateStudentRecord(id, { ...formData, fullName, fullAddress })
-      if (updated) navigate(`/admin/manage-students/${updated.id}`)
+      if (updated) {
+        toast.success('Student profile updated successfully.')
+        navigate(`/admin/manage-students/${updated.id}`)
+      }
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update student profile.'))
     } finally {
       setIsSaving(false)
     }

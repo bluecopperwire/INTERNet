@@ -5,6 +5,8 @@ import { adminService } from '../services/admin.service'
 import type { QCPesoRecord } from '../types/admin.types'
 import detailStyles from './AdminStudentDetailsPage.module.css'
 import formStyles from '../../intern-seeker/pages/ProfileEditorPage.module.css'
+import { useToastStore } from '../../../stores/useToastStore'
+import { getErrorMessage } from '../../../utils/error-message'
 
 const fullNameOf = (record: QCPesoRecord) =>
   [record.firstName, record.middleName, record.lastName, record.suffix].filter(Boolean).join(' ') ||
@@ -46,6 +48,7 @@ export function AdminQCPesoDetailsPage() {
   const [record, setRecord] = useState<QCPesoRecord | null>(null)
   const [suspending, setSuspending] = useState(false)
   const [unsuspending, setUnsuspending] = useState(false)
+  const toast = useToastStore()
 
   useEffect(() => {
     if (id) {
@@ -57,10 +60,17 @@ export function AdminQCPesoDetailsPage() {
     return <main className={detailStyles.feedback}>Loading QC PESO profile...</main>
   }
 
-  const updateStatus = async (status: QCPesoRecord['status']) => {
+  const updateStatus = async (status: QCPesoRecord['status'], suspensionDaysRemaining?: number) => {
     if (!id) return
-    const updated = await adminService.updateQCPesoRecord(id, { status })
-    if (updated) setRecord(updated)
+    try {
+      const updated = await adminService.updateQCPesoRecord(id, { status, suspensionDaysRemaining })
+      if (updated) {
+        setRecord(updated)
+        toast.success(`QC PESO account ${status.toLowerCase()}.`)
+      }
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update QC PESO account status.'))
+    }
   }
 
   const name = fullNameOf(record)
@@ -162,12 +172,12 @@ export function AdminQCPesoDetailsPage() {
             onClose={() => setSuspending(false)}
             onConfirm={(days) => {
               if (!id) return
-              adminService.updateQCPesoRecord(id, { status: 'Suspended', suspensionDaysRemaining: days }).then((updated) => { if (updated) setRecord(updated) })
+              void updateStatus('Suspended', days)
               setSuspending(false)
             }}
           />
         )}
-        {unsuspending && <UnsuspendDialog subject={name} days={record.suspensionDaysRemaining ?? 0} onClose={() => setUnsuspending(false)} onConfirm={() => { if (!id) return; adminService.updateQCPesoRecord(id, { status: 'Active', suspensionDaysRemaining: undefined }).then((updated) => { if (updated) setRecord(updated) }); setUnsuspending(false) }} />}
+        {unsuspending && <UnsuspendDialog subject={name} days={record.suspensionDaysRemaining ?? 0} onClose={() => setUnsuspending(false)} onConfirm={() => { void updateStatus('Active'); setUnsuspending(false) }} />}
       </div>
     </main>
   )
@@ -178,6 +188,7 @@ export function AdminQCPesoEditorPage() {
   const navigate = useNavigate()
   const [form, setForm] = useState<QCPesoRecord | null>(null)
   const [saving, setSaving] = useState(false)
+  const toast = useToastStore()
 
   useEffect(() => {
     if (id) {
@@ -214,8 +225,11 @@ export function AdminQCPesoEditorPage() {
         fullName,
       })
       if (updated) {
+        toast.success('QC PESO profile updated successfully.')
         navigate(`/admin/manage-qcpeso/${updated.id}`)
       }
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update QC PESO profile.'))
     } finally {
       setSaving(false)
     }

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAttendance } from '../hooks/useAttendance'
 import type { AttendanceDayStatus, AttendanceMonth } from '../types/attendance.types'
 import styles from './AttendancePage.module.css'
+import { useToastStore } from '../../../stores/useToastStore'
 
 const INITIAL_MONTH = new Date(2026, 7, 1)
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'TH', 'F', 'ST']
@@ -11,6 +12,7 @@ const WEEKDAYS = ['S', 'M', 'T', 'W', 'TH', 'F', 'ST']
 function AttendancePage() {
   const [visibleMonth, setVisibleMonth] = useState(INITIAL_MONTH)
   const navigate = useNavigate()
+  const toast = useToastStore()
   const { today, monthData, isLoading, isCheckingIn, error, checkIn } = useAttendance(
     visibleMonth.getFullYear(),
     visibleMonth.getMonth(),
@@ -18,6 +20,15 @@ function AttendancePage() {
 
   const changeMonth = (amount: number) => {
     setVisibleMonth((current) => new Date(current.getFullYear(), current.getMonth() + amount, 1))
+  }
+
+  const handleCheckIn = async () => {
+    try {
+      await checkIn()
+      toast.success('Attendance check-in recorded.')
+    } catch {
+      toast.error('Unable to check in. Please try again.')
+    }
   }
 
   return (
@@ -49,7 +60,7 @@ function AttendancePage() {
                 </button>
               </section>
 
-              <button className={styles.checkInButton} type="button" disabled={today.status !== 'not-checked-in' || isCheckingIn} onClick={() => void checkIn()}>
+              <button className={styles.checkInButton} type="button" disabled={today.status !== 'not-checked-in' || isCheckingIn} onClick={() => void handleCheckIn()}>
                 {isCheckingIn ? 'Checking in...' : today.status === 'not-checked-in' ? 'Check in now' : `Checked in at ${today.checkedInAt}`}
               </button>
 

@@ -5,6 +5,8 @@ import { adminService } from '../services/admin.service'
 import type { EmployerRecord } from '../types/admin.types'
 import detailStyles from './AdminStudentDetailsPage.module.css'
 import formStyles from '../../intern-seeker/pages/ProfileEditorPage.module.css'
+import { useToastStore } from '../../../stores/useToastStore'
+import { getErrorMessage } from '../../../utils/error-message'
 
 const INDUSTRIES = [
   'Office Administration',
@@ -57,6 +59,7 @@ export function AdminEmployerDetailsPage() {
   const [record, setRecord] = useState<EmployerRecord | null>(null)
   const [suspending, setSuspending] = useState(false)
   const [unsuspending, setUnsuspending] = useState(false)
+  const toast = useToastStore()
 
   useEffect(() => {
     if (id) {
@@ -68,10 +71,17 @@ export function AdminEmployerDetailsPage() {
     return <main className={detailStyles.feedback}>Loading employer profile...</main>
   }
 
-  const updateStatus = async (status: EmployerRecord['status']) => {
+  const updateStatus = async (status: EmployerRecord['status'], suspensionDaysRemaining?: number) => {
     if (!id) return
-    const updated = await adminService.updateEmployerRecord(id, { status })
-    if (updated) setRecord(updated)
+    try {
+      const updated = await adminService.updateEmployerRecord(id, { status, suspensionDaysRemaining })
+      if (updated) {
+        setRecord(updated)
+        toast.success(`Employer account ${status.toLowerCase()}.`)
+      }
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update employer account status.'))
+    }
   }
 
   return (
@@ -175,12 +185,12 @@ export function AdminEmployerDetailsPage() {
             onClose={() => setSuspending(false)}
             onConfirm={(days) => {
               if (!id) return
-              adminService.updateEmployerRecord(id, { status: 'Suspended', suspensionDaysRemaining: days }).then((updated) => { if (updated) setRecord(updated) })
+              void updateStatus('Suspended', days)
               setSuspending(false)
             }}
           />
         )}
-        {unsuspending && <UnsuspendDialog subject={record.companyName} days={record.suspensionDaysRemaining ?? 0} onClose={() => setUnsuspending(false)} onConfirm={() => { if (!id) return; adminService.updateEmployerRecord(id, { status: 'Active', suspensionDaysRemaining: undefined }).then((updated) => { if (updated) setRecord(updated) }); setUnsuspending(false) }} />}
+        {unsuspending && <UnsuspendDialog subject={record.companyName} days={record.suspensionDaysRemaining ?? 0} onClose={() => setUnsuspending(false)} onConfirm={() => { void updateStatus('Active'); setUnsuspending(false) }} />}
       </div>
     </main>
   )
@@ -191,6 +201,7 @@ export function AdminEmployerEditorPage() {
   const navigate = useNavigate()
   const [form, setForm] = useState<EmployerRecord | null>(null)
   const [saving, setSaving] = useState(false)
+  const toast = useToastStore()
 
   useEffect(() => {
     if (id) {
@@ -229,8 +240,11 @@ export function AdminEmployerEditorPage() {
         contactPerson,
       })
       if (updated) {
+        toast.success('Employer profile updated successfully.')
         navigate(`/admin/manage-employers/${updated.id}`)
       }
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update employer profile.'))
     } finally {
       setSaving(false)
     }
