@@ -319,44 +319,109 @@ export function adaptPesoProfile(p: any): QCPesoProfile {
 }
 
 export function adaptMonitoredStudent(row: any): MonitoredStudentUser {
+  if (!row) return {} as any;
+
+  const formatDisplayDate = (d: any) => {
+    if (!d || d === 'N/A') return 'N/A';
+    if (typeof d === 'string') {
+      const dateOnly = d.includes('T') ? d.split('T')[0] : d;
+      const [y, m, day] = dateOnly.split('-').map(Number);
+      if (y && m && day) {
+        const parsed = new Date(y, m - 1, day);
+        return parsed.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      }
+      return d;
+    }
+    if (d instanceof Date && !isNaN(d.getTime())) {
+      return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    }
+    return String(d);
+  };
+
+  const address = [row.address_line, row.address_barangay, row.address_district, row.address_city]
+    .filter(Boolean)
+    .join(', ') || 'N/A';
+
+  const preferredIndustries = Array.isArray(row.preferred_industries) && row.preferred_industries.length > 0
+    ? row.preferred_industries
+        .map((ind: any) => (typeof ind === 'string' ? ind : ind.industry_name || ind.custom_industry_name || ''))
+        .filter(Boolean)
+        .join(', ')
+    : 'N/A';
+
+  let willingOutside = 'N/A';
+  if (row.allows_outside_preferred_field === true || row.allowsOutsidePreferredField === true) {
+    willingOutside = 'Yes';
+  } else if (row.allows_outside_preferred_field === false || row.allowsOutsidePreferredField === false) {
+    willingOutside = 'No';
+  }
+
+  let sex = 'N/A';
+  if (row.sex) {
+    sex = String(row.sex).toLowerCase() === 'female' ? 'Female' : 'Male';
+  }
+
+  const rawCompanyType = row.preferred_company_type || row.preferredCompanyType;
+  let preferredCompanyType = 'N/A';
+  if (rawCompanyType) {
+    preferredCompanyType = String(rawCompanyType).toLowerCase() === 'government' ? 'Government' : 'Private';
+  }
+
+  const requiredHours = row.preferred_required_hours != null || row.preferredRequiredHours != null
+    ? `${row.preferred_required_hours ?? row.preferredRequiredHours} Hours`
+    : 'N/A';
+
+  const rawAvailableDays = row.preferred_available_days || row.preferredAvailableDays;
+  const rawStartDate = row.preferred_start_date || row.preferredStartDate;
+
   return {
-    id: String(row.student_id),
-    studentName: row.full_name,
-    email: row.contact_email,
-    mobileNumber: row.contact_number,
-    linkedIn: '',
-    dateRegistered: new Date(row.created_at).toLocaleDateString(),
-    status: row.account_status === 'active' ? 'Active' : 'Suspended',
-    address: `${row.address_barangay || ''}, ${row.address_city || ''}`,
-    birthdate: 'N/A',
-    sex: 'N/A',
-    school: row.school_name || 'N/A',
-    program: row.strand_program || 'N/A',
-    yearLevel: formatYearLevel(row.year_level),
-    requiredHours: 'N/A',
-    preferredHostOrganizationType: 'N/A',
-    internshipDaysAvailability: 'N/A',
-    internshipStartDateAvailability: 'N/A',
-    preferredField: 'N/A',
-    willingOutsidePreferredField: 'N/A',
+    id: String(row.student_id || row.studentId || ''),
+    studentName: row.full_name || row.fullName || [row.first_name, row.last_name].filter(Boolean).join(' ') || 'Student',
+    email: row.contact_email || row.contactEmail || row.email || 'N/A',
+    mobileNumber: row.contact_number || row.contactNumber || row.phone || 'N/A',
+    linkedIn: row.linkedin_url || row.linkedIn || 'N/A',
+    dateRegistered: formatDisplayDate(row.created_at || row.createdAt),
+    status: (row.account_status || row.accountStatus || 'active').toLowerCase() === 'active' ? 'Active' : 'Suspended',
+    address,
+    birthdate: formatDisplayDate(row.birth_date || row.birthDate),
+    sex,
+    school: row.school_name || row.schoolName || 'N/A',
+    program: row.strand_program || row.strandProgram || 'N/A',
+    yearLevel: formatYearLevel(row.year_level || row.yearLevel),
+    requiredHours,
+    preferredHostOrganizationType: preferredCompanyType,
+    internshipDaysAvailability: rawAvailableDays ? formatScheduleDays(rawAvailableDays) : 'N/A',
+    internshipStartDateAvailability: formatDisplayDate(rawStartDate),
+    preferredField: preferredIndustries,
+    willingOutsidePreferredField: willingOutside,
   };
 }
 
 export function adaptMonitoredCompany(row: any): MonitoredCompanyUser {
+  if (!row) return {} as any;
+
+  const address = [row.address_line, row.address_barangay, row.address_district, row.address_city]
+    .filter(Boolean)
+    .join(', ') || 'N/A';
+
+  const contactPerson = [row.contact_person_first_name, row.contact_person_last_name]
+    .filter(Boolean)
+    .join(' ') || row.contactPerson || 'N/A';
+
   return {
-    id: String(row.company_id),
-    companyName: row.company_name,
-    email: row.contact_email,
-    contactNumber: row.contact_number,
-    dateRegistered: new Date(row.created_at).toLocaleDateString(),
-    status: row.account_status === 'active' ? 'Active' : 'Suspended',
+    id: String(row.company_id || row.companyId || ''),
+    companyName: row.company_name || row.companyName || 'Company',
+    email: row.contact_email || row.contactEmail || row.email || 'N/A',
+    contactNumber: row.contact_number || row.contactNumber || 'N/A',
+    dateRegistered: row.created_at ? new Date(row.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'N/A',
+    status: (row.account_status || row.accountStatus || 'active').toLowerCase() === 'active' ? 'Active' : 'Suspended',
     description: row.description || '',
-    address: `${row.address_barangay || ''}, ${row.address_city || ''}`,
-    companyType: row.company_type === 'government' ? 'Government' : 'Private',
-    industry: row.industry_name || 'N/A',
-    companySize: String(row.company_size || 'N/A'),
-    yearEstablished: String(row.year_established || 'N/A'),
-    websiteUrl: row.website_url || '',
-    contactPerson: `${row.contact_person_first_name || ''} ${row.contact_person_last_name || ''}`.trim(),
+    address,
+    companyType: String(row.company_type || row.companyType).toLowerCase() === 'government' ? 'Government' : 'Private',
+    industry: row.industry_name || row.industryName || 'N/A',
+    companySize: String(row.company_size || row.companySize || 'N/A'),
+    yearEstablished: String(row.year_established || row.yearEstablished || 'N/A'),
+    websiteUrl: row.website_url || row.websiteUrl || '',
+    contactPerson,
   };
 }

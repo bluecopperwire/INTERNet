@@ -706,14 +706,19 @@ export class PesoDashboardService {
   async getStudentDetail(studentId: number) {
     const rows = await this.dataSource.query(
       `
-        SELECT *
-        FROM public.vw_student_profile_details
-        WHERE student_id = $1
+        SELECT 
+          spd.*,
+          s.sex,
+          s.birth_date::text AS birth_date,
+          s.created_at
+        FROM public.vw_student_profile_details spd
+        JOIN public.student s ON s.student_id = spd.student_id
+        WHERE spd.student_id = $1
       `,
       [studentId],
     );
     if (!rows || rows.length === 0) {
-      throw new Error('Student not found');
+      throw new NotFoundException('Student not found');
     }
     return rows[0];
   }
