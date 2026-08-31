@@ -12,11 +12,14 @@ import { AttendanceQueryService } from './services/shared/attendance-query.servi
 import { CompanyResolverService } from './services/shared/company-resolver.service';
 
 import { AdminModule } from '../admin/admin.module';
+import { EmailModule } from '../email/email.module';
+import { ReferralPdfService } from '../storage/referral-pdf.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([...AUTH_REGISTRATION_ENTITIES]),
     AdminModule,
+    EmailModule,
   ],
   controllers: [
     PesoDashboardController,
@@ -30,11 +33,13 @@ import { AdminModule } from '../admin/admin.module';
     ApplicationQueryService,
     AttendanceQueryService,
     CompanyResolverService,
+    ReferralPdfService,
   ],
   exports: [
     PesoDashboardService,
     EmployerDashboardService,
     AdminDashboardService,
+    ReferralPdfService,
   ],
 })
 export class DashboardModule {}
