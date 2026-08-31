@@ -643,7 +643,7 @@ export function ReviewApplicantDetailsPage() {
                 disabled={isUpdating}
                 onClick={() => updateStatus('Accepted')}
               >
-                <Check size={17} />{isUpdating ? 'Accepting...' : 'Accept Applicant'}
+                <Check size={17} />{isUpdating ? 'Referring...' : 'Refer Applicant'}
               </button>
               <button
                 className={detailStyles.actionRed}

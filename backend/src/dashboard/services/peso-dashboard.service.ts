@@ -21,6 +21,9 @@ import { AttendanceQueryService } from './shared/attendance-query.service';
 import { AdminUserManagementService } from '../../admin/services/admin-user-management.service';
 import { CreateAdminEmployerDto } from '../../admin/dto/admin-user-management.dto';
 import { withStatusActor } from '../../database/status-actor.transaction';
+import { ReferralPdfService } from '../../storage/referral-pdf.service';
+import { EmailQueueService } from '../../email/email-queue.service';
+import { ReferralEmailPayload } from '../../email/email.interfaces';
 
 @Injectable()
 export class PesoDashboardService {
@@ -29,6 +32,8 @@ export class PesoDashboardService {
     private readonly applicationQuery: ApplicationQueryService,
     private readonly attendanceQuery: AttendanceQueryService,
     private readonly adminUserManagementService: AdminUserManagementService,
+    private readonly referralPdfService: ReferralPdfService,
+    private readonly emailQueueService: EmailQueueService,
   ) {}
 
   async createEmployer(dto: CreateAdminEmployerDto) {
@@ -470,6 +475,25 @@ export class PesoDashboardService {
     };
   }
 
+  private formatYearLevel(val?: string | null): string {
+    if (!val) return 'College';
+    const labels: Record<string, string> = {
+      grade_11: 'Grade 11',
+      grade_12: 'Grade 12',
+      first_year_college: '1st Year College',
+      second_year_college: '2nd Year College',
+      third_year_college: '3rd Year College',
+      fourth_year_college: '4th Year College',
+      fifth_year_college: '5th Year College',
+    };
+    const key = val.toLowerCase().trim();
+    if (labels[key]) return labels[key];
+    return val
+      .split('_')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(' ');
+  }
+
   async updateApplicationStatus(
     userAccountId: number,
     applicationId: number,
@@ -484,6 +508,8 @@ export class PesoDashboardService {
         'Status must be approved_for_referral or rejected_for_referral',
       );
     }
+
+    let pendingEmailPayload: ReferralEmailPayload | null = null;
 
     await withStatusActor(this.dataSource, userAccountId, async (runner) => {
       const pesoRows = await runner.query(
@@ -508,7 +534,15 @@ export class PesoDashboardService {
       }
       const currentApp = appRows[0];
 
-      if (['approved_for_referral', 'rejected_for_referral', 'closed', 'withdrawn', 'expired'].includes(currentApp.application_status)) {
+      if (
+        [
+          'approved_for_referral',
+          'rejected_for_referral',
+          'closed',
+          'withdrawn',
+          'expired',
+        ].includes(currentApp.application_status)
+      ) {
         throw new ConflictException(
           `Application is already in '${currentApp.application_status}' status and cannot be modified.`,
         );
@@ -540,7 +574,87 @@ export class PesoDashboardService {
       );
 
       if (dto.status === ApplicationStatusFilter.APPROVED_FOR_REFERRAL) {
-        const referralFilePath = `/uploads/referrals/ref-${applicationId}.pdf`;
+        const fullRows = await runner.query(
+          `
+            SELECT 
+              a.application_id,
+              a.student_id,
+              a.opportunity_id,
+              s.first_name AS student_first_name,
+              s.middle_name AS student_middle_name,
+              s.last_name AS student_last_name,
+              s.extension_name AS student_extension_name,
+              s.contact_email AS student_contact_email,
+              s.contact_number AS student_contact_number,
+              sai.school_name,
+              sai.year_level,
+              o.title AS opportunity_title,
+              o.minimum_required_hours,
+              ip.required_hours AS student_required_hours,
+              c.company_id,
+              c.company_name,
+              c.contact_email AS company_contact_email,
+              c.contact_person_first_name,
+              c.contact_person_middle_name,
+              c.contact_person_last_name,
+              c.contact_person_extension_name,
+              ua_c.email AS company_account_email
+            FROM public.application a
+            JOIN public.student s ON s.student_id = a.student_id
+            LEFT JOIN public.student_academic_information sai ON sai.student_id = s.student_id
+            LEFT JOIN public.internship_preference ip ON ip.student_id = s.student_id
+            JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
+            JOIN public.company c ON c.company_id = o.company_id
+            LEFT JOIN public.user_account ua_c ON ua_c.user_account_id = c.user_account_id
+            WHERE a.application_id = $1
+          `,
+          [applicationId],
+        );
+
+        const d = fullRows[0] || {};
+        const studentFullName =
+          [
+            d.student_first_name,
+            d.student_middle_name,
+            d.student_last_name,
+            d.student_extension_name,
+          ]
+            .filter(Boolean)
+            .join(' ') || 'Student Applicant';
+
+        const studentLastName = d.student_last_name || 'student';
+        const contactPersonName =
+          [
+            d.contact_person_first_name,
+            d.contact_person_middle_name,
+            d.contact_person_last_name,
+            d.contact_person_extension_name,
+          ]
+            .filter(Boolean)
+            .join(' ') || 'HR Officer';
+
+        const requiredHours = Number(
+          d.student_required_hours || d.minimum_required_hours || 300,
+        );
+
+        const formattedYearLevel = this.formatYearLevel(d.year_level);
+
+        const pdfResult = await this.referralPdfService.generateReferralLetter({
+          studentId: d.student_id || currentApp.student_id,
+          studentLastName,
+          studentFullName,
+          opportunityId: d.opportunity_id || currentApp.opportunity_id,
+          opportunityTitle: d.opportunity_title,
+          requiredHours,
+          schoolName: d.school_name || 'Academic Institution',
+          yearLevel: formattedYearLevel,
+          companyName: d.company_name || 'Partner Company',
+          contactPersonName,
+          contactPersonDesignation: 'HR Officer / Representative',
+        });
+
+        const referralFilePath = pdfResult.relativeFilePath;
+
         await runner.query(
           `
             INSERT INTO public.referral (
@@ -564,8 +678,38 @@ export class PesoDashboardService {
           `,
           [applicationId, pesoPersonnelId, referralFilePath],
         );
+
+        pendingEmailPayload = {
+          companyContactEmail:
+            d.company_contact_email ||
+            d.company_account_email ||
+            'employer@example.com',
+          companyAccountEmail: d.company_account_email,
+          companyName: d.company_name || 'Partner Company',
+          contactPersonName,
+          studentName: studentFullName,
+          studentEmail: d.student_contact_email,
+          studentPhone: d.student_contact_number,
+          schoolName: d.school_name,
+          yearLevel: formattedYearLevel,
+          opportunityTitle: d.opportunity_title || 'Internship Opportunity',
+          opportunityId: d.opportunity_id || currentApp.opportunity_id,
+          studentId: d.student_id || currentApp.student_id,
+          referralPdfPath: pdfResult.absoluteFilePath,
+        };
       }
     });
+
+    if (pendingEmailPayload) {
+      this.emailQueueService
+        .enqueueReferralEmail(pendingEmailPayload)
+        .catch((err) => {
+          console.error(
+            `Failed to enqueue referral email for application ${applicationId}:`,
+            err,
+          );
+        });
+    }
 
     return this.getApplicationDetail(applicationId);
   }
