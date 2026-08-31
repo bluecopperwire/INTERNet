@@ -1,11 +1,13 @@
 import { useQCPesoStore } from '../stores/useQCPesoStore';
 import { qcpesoApiService } from './qcpeso-api.service';
+import { referenceService } from '../../../services/reference.service';
 import {
   adaptMonitoredStudent,
   adaptMonitoredCompany,
   adaptPesoApplication,
   adaptPesoReferral,
   adaptPesoIntern,
+  adaptPesoDtr,
 } from '../adapters/qcpeso.adapters';
 import type {
   QCPesoDashboardSummary,
@@ -96,10 +98,22 @@ export const qcpesoService = {
     return adaptPesoIntern(raw);
   },
 
-  async getAttendanceRecords(): Promise<QCPesoAttendanceRecord[]> {
+  async getAttendanceRecords(params?: any): Promise<QCPesoAttendanceRecord[]> {
     const store = useQCPesoStore.getState();
-    await store.fetchAttendance();
+    await store.fetchAttendance(params);
     return useQCPesoStore.getState().attendanceRecords;
+  },
+
+  async getAssignmentAttendance(assignmentId: string | number): Promise<QCPesoAttendanceRecord[]> {
+    try {
+      const res = await qcpesoApiService.getAttendanceDetail(Number(assignmentId));
+      if (res && Array.isArray(res.dtrEntries)) {
+        return res.dtrEntries.map(adaptPesoDtr);
+      }
+      return [];
+    } catch {
+      return [];
+    }
   },
 
   async getStudentUsers(): Promise<MonitoredStudentUser[]> {
@@ -132,9 +146,59 @@ export const qcpesoService = {
     return adaptMonitoredCompany(raw);
   },
 
-  async createEmployer(_payload: CreateEmployerPayload): Promise<void> {
-    // Bridge to create employer
-    return Promise.resolve();
+  async createEmployer(payload: CreateEmployerPayload): Promise<void> {
+    const industries = await referenceService.getIndustries();
+    const normalize = (v: string) => v.toLowerCase().replace(/\s*\/\s*/g, '/').trim();
+    const match = industries.find(
+      (item) => normalize(item.industryName) === normalize(payload.industry),
+    );
+    if (!match) {
+      throw new Error(`Unknown industry: ${payload.industry}`);
+    }
+
+    const rawWebsite = payload.websiteUrl?.trim() || null;
+    let websiteUrl = rawWebsite;
+    if (websiteUrl && !/^https?:\/\//i.test(websiteUrl)) {
+      websiteUrl = `https://${websiteUrl}`;
+    }
+
+    const apiPayload: Record<string, unknown> = {
+      accountEmail: payload.loginEmail.trim(),
+      initialPassword: payload.password,
+      companyName: payload.companyName.trim(),
+      companyType: payload.companyType.toLowerCase(),
+      industryId: match.industryId,
+      description: payload.description.trim(),
+      websiteUrl,
+      addressLine: payload.addressLine.trim(),
+      addressBarangay: payload.barangay.trim(),
+      addressDistrict: payload.district?.trim() || null,
+      addressCity: payload.city.trim(),
+      contactPersonFirstName: payload.contactFirstName.trim(),
+      contactPersonMiddleName: payload.contactMiddleName?.trim() || null,
+      contactPersonLastName: payload.contactLastName.trim(),
+      contactPersonExtensionName: payload.contactSuffix?.trim() || null,
+      contactEmail: payload.contactEmail.trim(),
+      contactNumber: payload.contactNumber.trim(),
+    };
+
+    if (payload.companySize && payload.companySize.trim() !== '') {
+      const parsedSize = Number(payload.companySize);
+      if (!Number.isNaN(parsedSize) && parsedSize > 0) {
+        apiPayload.companySize = parsedSize;
+      }
+    }
+    if (payload.yearEstablished && payload.yearEstablished.trim() !== '') {
+      const parsedYear = Number(payload.yearEstablished);
+      if (!Number.isNaN(parsedYear) && parsedYear >= 1800) {
+        apiPayload.yearEstablished = parsedYear;
+      }
+    }
+
+    await qcpesoApiService.createEmployer(apiPayload);
+    // Refresh company list cache in store
+    const store = useQCPesoStore.getState();
+    await store.fetchCompanies();
   },
 
   async getRecentStudents(): Promise<StudentApplication[]> {

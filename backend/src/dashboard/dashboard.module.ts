@@ -11,8 +11,13 @@ import { ApplicationQueryService } from './services/shared/application-query.ser
 import { AttendanceQueryService } from './services/shared/attendance-query.service';
 import { CompanyResolverService } from './services/shared/company-resolver.service';
 
+import { AdminModule } from '../admin/admin.module';
+
 @Module({
-  imports: [TypeOrmModule.forFeature([...AUTH_REGISTRATION_ENTITIES])],
+  imports: [
+    TypeOrmModule.forFeature([...AUTH_REGISTRATION_ENTITIES]),
+    AdminModule,
+  ],
   controllers: [
     PesoDashboardController,
     EmployerDashboardController,

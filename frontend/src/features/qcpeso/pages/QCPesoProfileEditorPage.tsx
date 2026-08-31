@@ -5,9 +5,6 @@ import styles from '../../intern-seeker/pages/ProfileEditorPage.module.css'
 import { qcpesoService } from '../services/qcpeso.service'
 import type { QCPesoProfile } from '../types/qcpeso.types'
 
-const buildFullName = (profile: QCPesoProfile) => [profile.firstName, profile.middleName, profile.lastName, profile.suffix].filter(Boolean).join(' ')
-const buildLocation = (profile: QCPesoProfile) => [profile.addressLine, profile.barangay, profile.district && `District ${profile.district}`, profile.city].filter(Boolean).join(', ')
-
 export function QCPesoProfileEditorPage() {
   const navigate = useNavigate()
   const [formData, setFormData] = useState<QCPesoProfile | null>(null)
@@ -30,15 +27,10 @@ export function QCPesoProfileEditorPage() {
     if (!formData) return
     setIsSaving(true)
     try {
-      const updatedProfile = {
-        ...formData,
-        fullName: buildFullName(formData),
-        location: buildLocation(formData),
-        role: formData.position,
-        qcpesoPosition: formData.position,
-      }
-      await qcpesoService.updateProfile(updatedProfile)
+      await qcpesoService.updateProfile(formData)
       navigate('/qcpeso/profile')
+    } catch (err) {
+      console.error('Failed to update QC PESO profile:', err)
     } finally {
       setIsSaving(false)
     }
