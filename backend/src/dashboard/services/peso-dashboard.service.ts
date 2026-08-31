@@ -6,6 +6,7 @@ import {
   PesoEmployerDashboardMetricsDto,
   PesoStudentDashboardMetricsDto,
   QueryApplicationsDto,
+  QueryAttendanceDto,
   QueryCompanyEmployersDto,
   QueryReferralsDto,
   UpdateApplicationStatusDto,
@@ -395,10 +396,10 @@ export class PesoDashboardService {
 
   // D3. GET all DTR entries
   async getAllDtrEntries(
-    dateFilterDto: DateFilterDto,
+    queryDto: QueryAttendanceDto,
     paginationDto: PaginationDto,
   ): Promise<PaginatedResponse<any>> {
-    return this.attendanceQuery.getAllDtrEntries(dateFilterDto, paginationDto);
+    return this.attendanceQuery.getAllDtrEntries(queryDto, paginationDto);
   }
 
   // D4. GET DTR entry per student

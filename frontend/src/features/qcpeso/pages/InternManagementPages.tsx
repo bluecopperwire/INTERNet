@@ -29,30 +29,151 @@ function AttendanceStatusPill({ value }: { value: QCPesoAttendanceRecord['status
 export function QCPesoAttendancePage() {
   const navigate = useNavigate()
   const [records, setRecords] = useState<QCPesoAttendanceRecord[]>([])
+  const [internships, setInternships] = useState<QCPesoInternshipRecord[]>([])
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('All')
   const [date, setDate] = useState(currentLocalDate)
   const [page, setPage] = useState(1)
   const perPage = 7
-  useEffect(() => { qcpesoService.getAttendanceRecords().then(setRecords) }, [])
-  const filtered = useMemo(() => records.filter((record) => (!search || `${record.studentName} ${record.company} ${record.jobTitle}`.toLowerCase().includes(search.toLowerCase())) && (status === 'All' || record.status === status) && record.date === date), [records, search, status, date])
+
+  useEffect(() => {
+    qcpesoService.getInternships().then(setInternships)
+  }, [])
+
+  useEffect(() => {
+    qcpesoService
+      .getAttendanceRecords({
+        date,
+        status: status !== 'All' ? status : undefined,
+        search: search.trim() || undefined,
+        limit: 100,
+      })
+      .then(setRecords)
+  }, [date, status, search])
+
+  const filtered = useMemo(() => {
+    return records.filter((record) => {
+      const matchesSearch = !search || `${record.studentName} ${record.company} ${record.jobTitle}`.toLowerCase().includes(search.toLowerCase())
+      const matchesStatus = status === 'All' || record.status === status
+      const matchesDate = !date || record.date === date
+      return matchesSearch && matchesStatus && matchesDate
+    })
+  }, [records, search, status, date])
+
   const displayed = filtered.slice((page - 1) * perPage, page * perPage)
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
-  const dateRecords = records.filter((record) => record.date === date)
-  const summary = { active: new Set(records.map((record) => record.internshipId)).size, present: dateRecords.filter((record) => record.status === 'Present').length, absent: dateRecords.filter((record) => record.status === 'Absent').length, late: dateRecords.filter((record) => record.status === 'Late').length }
-  return <main className={attendanceStyles.pageContainer}>
-    <QCPesoHero title="Monitor Attendance" subtitle="Monitor daily attendance records of active interns." />
-    <section className={attendanceStyles.mainContent}>
-      <div className={attendanceStyles.summaryGrid}><AttendanceSummaryCard label="Total Active Interns" value={summary.active} /><AttendanceSummaryCard label="Present" value={summary.present} /><AttendanceSummaryCard label="Absent" value={summary.absent} /><AttendanceSummaryCard label="Late" value={summary.late} /></div>
-      <div className={attendanceStyles.toolbar}>
-        <label className={attendanceStyles.searchBox}><Search size={16} /><input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1) }} placeholder="Search student, company, or job title..." /></label>
-        <label className={attendanceStyles.statusFilter}><SlidersHorizontal size={16} /><select value={status} onChange={(event) => { setStatus(event.target.value); setPage(1) }}><option value="All">All Statuses</option><option>Present</option><option>Absent</option><option>Late</option></select></label>
-        <label className={attendanceStyles.dateFilter}><CalendarDays size={16} /><input type="date" value={date} max={currentLocalDate()} onChange={(event) => { setDate(event.target.value); setPage(1) }} aria-label="Filter attendance by date" /></label>
-      </div>
-      <div className={attendanceStyles.tableCard}><div className={attendanceStyles.tableScroller}><table className={attendanceStyles.table}><thead><tr><th>Student Name</th><th>Company</th><th>Job Title</th><th>Date</th><th>Status</th><th>Action</th></tr></thead><tbody>{displayed.map((record) => <tr key={record.id}><td><strong>{record.studentName}</strong></td><td>{record.company}</td><td>{record.jobTitle}</td><td>{record.date}</td><td><AttendanceStatusPill value={record.status} /></td><td><button className={attendanceStyles.actionBtn} onClick={() => navigate(`/qcpeso/manage-interns/attendance/${record.internshipId}`)}><Eye size={14} />View</button></td></tr>)}</tbody></table></div>{displayed.length === 0 && <p className={attendanceStyles.noData}>No attendance records match the selected filters.</p>}</div>
-      <Pager styles={attendanceStyles} page={page} totalPages={totalPages} setPage={setPage} />
-    </section>
-  </main>
+
+  const activeInternsCount = internships.filter((i) => i.status === 'On Going').length || internships.length
+  const dateRecords = records.filter((record) => !date || record.date === date)
+  const presentCount = dateRecords.filter((record) => record.status === 'Present').length
+  const lateCount = dateRecords.filter((record) => record.status === 'Late').length
+  const absentCount = Math.max(0, activeInternsCount - presentCount - lateCount)
+
+  const summary = {
+    active: activeInternsCount,
+    present: presentCount,
+    absent: absentCount,
+    late: lateCount,
+  }
+
+  return (
+    <main className={attendanceStyles.pageContainer}>
+      <QCPesoHero title="Monitor Attendance" subtitle="Monitor daily attendance records of active interns." />
+      <section className={attendanceStyles.mainContent}>
+        <div className={attendanceStyles.summaryGrid}>
+          <AttendanceSummaryCard label="Total Active Interns" value={summary.active} />
+          <AttendanceSummaryCard label="Present" value={summary.present} />
+          <AttendanceSummaryCard label="Absent" value={summary.absent} />
+          <AttendanceSummaryCard label="Late" value={summary.late} />
+        </div>
+        <div className={attendanceStyles.toolbar}>
+          <label className={attendanceStyles.searchBox}>
+            <Search size={16} />
+            <input
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value)
+                setPage(1)
+              }}
+              placeholder="Search student, company, or job title..."
+            />
+          </label>
+          <label className={attendanceStyles.statusFilter}>
+            <SlidersHorizontal size={16} />
+            <select
+              value={status}
+              onChange={(event) => {
+                setStatus(event.target.value)
+                setPage(1)
+              }}
+            >
+              <option value="All">All Statuses</option>
+              <option>Present</option>
+              <option>Absent</option>
+              <option>Late</option>
+            </select>
+          </label>
+          <label className={attendanceStyles.dateFilter}>
+            <CalendarDays size={16} />
+            <input
+              type="date"
+              value={date}
+              max={currentLocalDate()}
+              onChange={(event) => {
+                setDate(event.target.value)
+                setPage(1)
+              }}
+              aria-label="Filter attendance by date"
+            />
+          </label>
+        </div>
+        <div className={attendanceStyles.tableCard}>
+          <div className={attendanceStyles.tableScroller}>
+            <table className={attendanceStyles.table}>
+              <thead>
+                <tr>
+                  <th>Student Name</th>
+                  <th>Company</th>
+                  <th>Job Title</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayed.map((record) => (
+                  <tr key={record.id}>
+                    <td>
+                      <strong>{record.studentName}</strong>
+                    </td>
+                    <td>{record.company}</td>
+                    <td>{record.jobTitle}</td>
+                    <td>{record.date}</td>
+                    <td>
+                      <AttendanceStatusPill value={record.status} />
+                    </td>
+                    <td>
+                      <button
+                        className={attendanceStyles.actionBtn}
+                        onClick={() => navigate(`/qcpeso/manage-interns/attendance/${record.internshipId}`)}
+                      >
+                        <Eye size={14} />
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {displayed.length === 0 && (
+            <p className={attendanceStyles.noData}>No attendance records match the selected filters.</p>
+          )}
+        </div>
+        <Pager styles={attendanceStyles} page={page} totalPages={totalPages} setPage={setPage} />
+      </section>
+    </main>
+  )
 }
 
 export function QCPesoAttendanceDetailsPage() {
@@ -60,10 +181,74 @@ export function QCPesoAttendanceDetailsPage() {
   const navigate = useNavigate()
   const [internship, setInternship] = useState<QCPesoInternshipRecord | null>(null)
   const [records, setRecords] = useState<QCPesoAttendanceRecord[]>([])
-  useEffect(() => { if (id) Promise.all([qcpesoService.getInternship(id), qcpesoService.getAttendanceRecords()]).then(([details, attendance]) => { setInternship(details); setRecords(attendance.filter((record) => record.internshipId === id)) }) }, [id])
+
+  useEffect(() => {
+    if (id) {
+      Promise.all([
+        qcpesoService.getInternship(id),
+        qcpesoService.getAssignmentAttendance(id),
+      ]).then(([details, attendance]) => {
+        setInternship(details)
+        setRecords(attendance)
+      })
+    }
+  }, [id])
+
   if (!internship) return <main className={attendanceDetailStyles.feedback}>Loading internship details...</main>
   const remaining = Math.max(internship.requiredHours - internship.renderedHours, 0)
-  return <main className={attendanceDetailStyles.page}><div className={attendanceDetailStyles.wrap}><button className={attendanceDetailStyles.backButton} onClick={() => navigate('/qcpeso/manage-interns/attendance')}><ArrowLeft size={19} />Back to Monitor Attendance</button><InternSummary styles={attendanceDetailStyles} internship={internship} remaining={remaining} /><section className={attendanceDetailStyles.detailCard}><header className={attendanceDetailStyles.cardHeader}><div><h2>Attendance</h2><p>Daily time records for this internship assignment.</p></div></header><div className={attendanceDetailStyles.tableScroller}><table className={attendanceDetailStyles.attendanceTable}><thead><tr><th>Date</th><th>Time In</th><th>Time In Status</th><th>Time Out</th><th>Rendered Hours</th><th>Rendered Hours Status</th></tr></thead><tbody>{records.map((record) => <tr key={record.id}><td>{record.date}</td><td>{record.timeIn}</td><td><DetailStatusPill value={record.status === 'Present' ? 'On Time' : record.status} /></td><td>{record.timeOut}</td><td>{record.hoursRendered} hrs</td><td><DetailStatusPill value={renderedStatus(record)} /></td></tr>)}</tbody></table></div>{records.length === 0 && <p className={attendanceDetailStyles.noRecords}>No attendance records are available for this intern.</p>}</section></div></main>
+
+  return (
+    <main className={attendanceDetailStyles.page}>
+      <div className={attendanceDetailStyles.wrap}>
+        <button className={attendanceDetailStyles.backButton} onClick={() => navigate('/qcpeso/manage-interns/attendance')}>
+          <ArrowLeft size={19} />
+          Back to Monitor Attendance
+        </button>
+        <InternSummary styles={attendanceDetailStyles} internship={internship} remaining={remaining} />
+        <section className={attendanceDetailStyles.detailCard}>
+          <header className={attendanceDetailStyles.cardHeader}>
+            <div>
+              <h2>Attendance</h2>
+              <p>Daily time records for this internship assignment.</p>
+            </div>
+          </header>
+          <div className={attendanceDetailStyles.tableScroller}>
+            <table className={attendanceDetailStyles.attendanceTable}>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Time In</th>
+                  <th>Time In Status</th>
+                  <th>Time Out</th>
+                  <th>Rendered Hours</th>
+                  <th>Rendered Hours Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {records.map((record) => (
+                  <tr key={record.id}>
+                    <td>{record.date}</td>
+                    <td>{record.timeIn}</td>
+                    <td>
+                      <DetailStatusPill value={record.status === 'Present' ? 'On Time' : record.status} />
+                    </td>
+                    <td>{record.timeOut}</td>
+                    <td>{record.hoursRendered} hrs</td>
+                    <td>
+                      <DetailStatusPill value={renderedStatus(record)} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {records.length === 0 && (
+            <p className={attendanceDetailStyles.noRecords}>No attendance records are available for this intern.</p>
+          )}
+        </section>
+      </div>
+    </main>
+  )
 }
 
 export function QCPesoManageInternshipPage() {

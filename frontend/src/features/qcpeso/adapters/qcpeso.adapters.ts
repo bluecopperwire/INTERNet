@@ -152,23 +152,37 @@ export function adaptPesoIntern(s: PesoInternSummaryDto): QCPesoInternshipRecord
   };
 }
 
-export function adaptPesoDtr(d: PesoDtrEntryDto): QCPesoAttendanceRecord {
+export function adaptPesoDtr(d: PesoDtrEntryDto | any): QCPesoAttendanceRecord {
+  if (!d) return {} as any;
   const statusMap: Record<string, any> = {
     on_time: 'Present',
     late: 'Late',
+    present: 'Present',
+    absent: 'Absent',
   };
 
+  const rawDate = d.date || d.dtrDate || '';
+  let formattedDate = '';
+  if (typeof rawDate === 'string') {
+    formattedDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate;
+  } else if (rawDate instanceof Date) {
+    formattedDate = rawDate.toISOString().split('T')[0];
+  }
+
+  const rawStatus = d.timeInStatus || d.status || 'Present';
+  const status = statusMap[rawStatus.toLowerCase()] || 'Present';
+
   return {
-    id: String(d.attendanceRecordId),
-    internshipId: String(d.internshipAssignmentId),
-    studentName: d.studentFullName,
-    company: d.company,
-    jobTitle: d.role,
-    date: d.dtrDate,
+    id: String(d.attendanceRecordId || d.id || ''),
+    internshipId: String(d.internshipAssignmentId || d.internshipId || ''),
+    studentName: d.studentFullName || d.studentName || 'Student Intern',
+    company: d.company || d.companyName || 'Company',
+    jobTitle: d.role || d.jobTitle || 'Internship Role',
+    date: formattedDate,
     timeIn: d.timeIn ? String(d.timeIn).substring(0, 5) : 'N/A',
     timeOut: d.timeOut ? String(d.timeOut).substring(0, 5) : 'N/A',
-    status: statusMap[d.timeInStatus] || 'Present',
-    hoursRendered: Number(d.totalHours || 0),
+    status,
+    hoursRendered: Number(d.totalHours ?? d.hoursRendered ?? 0),
   };
 }
 

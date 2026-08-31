@@ -67,7 +67,7 @@ export class AttendanceQueryService {
   }
 
   async getAllDtrEntries(
-    dateFilterDto: DateFilterDto,
+    dateFilterDto: DateFilterDto & { date?: string; status?: string; search?: string },
     paginationDto: PaginationDto,
     companyId?: number,
   ): Promise<PaginatedResponse<any>> {
@@ -84,19 +84,45 @@ export class AttendanceQueryService {
       params.push(companyId);
     }
 
-    const boundaries = getDateBoundaries(
-      dateFilterDto.datePreset,
-      dateFilterDto.startDate,
-      dateFilterDto.endDate,
-    );
+    if (dateFilterDto.date) {
+      whereClauses.push(`ar.attendance_date = $${paramIndex++}::date`);
+      params.push(dateFilterDto.date);
+    } else {
+      const boundaries = getDateBoundaries(
+        dateFilterDto.datePreset,
+        dateFilterDto.startDate,
+        dateFilterDto.endDate,
+      );
 
-    if (boundaries) {
-      const startStr = boundaries.start.toISOString().split('T')[0];
-      const endStr = boundaries.end.toISOString().split('T')[0];
-      whereClauses.push(`ar.attendance_date >= $${paramIndex++}`);
-      params.push(startStr);
-      whereClauses.push(`ar.attendance_date <= $${paramIndex++}`);
-      params.push(endStr);
+      if (boundaries) {
+        const startStr = dateFilterDto.startDate || boundaries.start.toISOString().split('T')[0];
+        const endStr = dateFilterDto.endDate || boundaries.end.toISOString().split('T')[0];
+        whereClauses.push(`ar.attendance_date >= $${paramIndex++}::date`);
+        params.push(startStr);
+        whereClauses.push(`ar.attendance_date <= $${paramIndex++}::date`);
+        params.push(endStr);
+      }
+    }
+
+    if (dateFilterDto.status && dateFilterDto.status !== 'All') {
+      const s = dateFilterDto.status.toLowerCase().trim();
+      if (s === 'present' || s === 'on_time') {
+        whereClauses.push(`ar.time_in_status = 'on_time'`);
+      } else if (s === 'late') {
+        whereClauses.push(`ar.time_in_status = 'late'`);
+      } else if (['complete', 'incomplete', 'undertime', 'overtime'].includes(s)) {
+        whereClauses.push(`ar.rendered_hours_status = $${paramIndex++}`);
+        params.push(s);
+      }
+    }
+
+    if (dateFilterDto.search && dateFilterDto.search.trim()) {
+      const term = `%${dateFilterDto.search.trim()}%`;
+      whereClauses.push(
+        `(concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) ILIKE $${paramIndex} OR c.company_name ILIKE $${paramIndex} OR o.title ILIKE $${paramIndex})`,
+      );
+      params.push(term);
+      paramIndex++;
     }
 
     const whereSql =
@@ -122,15 +148,18 @@ export class AttendanceQueryService {
         ar.attendance_record_id AS "attendanceRecordId",
         ar.internship_assignment_id AS "internshipAssignmentId",
         concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS "studentFullName",
+        concat_ws(' ', s.first_name, s.last_name) AS "studentName",
         o.title AS "role",
         o.department AS "department",
         c.company_name AS "company",
-        ar.attendance_date AS "dtrDate",
+        ar.attendance_date::text AS "dtrDate",
+        ar.attendance_date::text AS "date",
         ar.time_in AS "timeIn",
         ar.time_in_status AS "timeInStatus",
         ar.time_out AS "timeOut",
         ar.hours_rendered AS "totalHours",
-        ar.rendered_hours_status AS "status"
+        ar.rendered_hours_status AS "status",
+        ar.photo_file_path AS "photoFilePath"
       FROM public.attendance_record ar
       JOIN public.internship_assignment ia ON ia.internship_assignment_id = ar.internship_assignment_id
       JOIN public.referral r ON r.referral_id = ia.referral_id
@@ -224,7 +253,7 @@ export class AttendanceQueryService {
     const entriesSql = `
       SELECT 
         ar.attendance_record_id AS "attendanceRecordId",
-        ar.attendance_date AS "date",
+        ar.attendance_date::text AS "date",
         ar.time_in AS "timeIn",
         ar.time_out AS "timeOut",
         ar.hours_rendered AS "totalHours",

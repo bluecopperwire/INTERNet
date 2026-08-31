@@ -6,6 +6,7 @@ import {
   adaptPesoApplication,
   adaptPesoReferral,
   adaptPesoIntern,
+  adaptPesoDtr,
 } from '../adapters/qcpeso.adapters';
 import type {
   QCPesoDashboardSummary,
@@ -96,10 +97,22 @@ export const qcpesoService = {
     return adaptPesoIntern(raw);
   },
 
-  async getAttendanceRecords(): Promise<QCPesoAttendanceRecord[]> {
+  async getAttendanceRecords(params?: any): Promise<QCPesoAttendanceRecord[]> {
     const store = useQCPesoStore.getState();
-    await store.fetchAttendance();
+    await store.fetchAttendance(params);
     return useQCPesoStore.getState().attendanceRecords;
+  },
+
+  async getAssignmentAttendance(assignmentId: string | number): Promise<QCPesoAttendanceRecord[]> {
+    try {
+      const res = await qcpesoApiService.getAttendanceDetail(Number(assignmentId));
+      if (res && Array.isArray(res.dtrEntries)) {
+        return res.dtrEntries.map(adaptPesoDtr);
+      }
+      return [];
+    } catch {
+      return [];
+    }
   },
 
   async getStudentUsers(): Promise<MonitoredStudentUser[]> {

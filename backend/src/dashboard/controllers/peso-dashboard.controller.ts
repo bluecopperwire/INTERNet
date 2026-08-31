@@ -16,6 +16,7 @@ import { UserRole } from '../../users/entities/account.entities';
 import { PesoDashboardService } from '../services/peso-dashboard.service';
 import {
   QueryApplicationsDto,
+  QueryAttendanceDto,
   QueryCompanyEmployersDto,
   QueryReferralsDto,
   UpdateApplicationStatusDto,
@@ -79,8 +80,8 @@ export class PesoDashboardController {
 
   // D3. GET all DTR entries
   @Get('attendance')
-  getAllDtrEntries(@Query() dateFilterDto: DateFilterDto) {
-    return this.pesoService.getAllDtrEntries(dateFilterDto, dateFilterDto);
+  getAllDtrEntries(@Query() queryDto: QueryAttendanceDto) {
+    return this.pesoService.getAllDtrEntries(queryDto, queryDto);
   }
 
   // D4. GET DTR entry per student
