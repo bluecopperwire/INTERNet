@@ -73,6 +73,7 @@ export class EmailService {
         path: att.path,
         content: att.content,
         contentType: att.contentType,
+        cid: att.cid,
       })),
     };
 
@@ -214,9 +215,18 @@ Quezon City Government
 </head>
 <body>
   <div class="container">
-    <div class="header">
-      <h1>QUEZON CITY PESO</h1>
-      <p>Work Immersion and Internship Referral Program (WIIRP)</p>
+    <div class="header" style="background: #160e6f; color: #ffffff; padding: 20px 28px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="width: 58px; vertical-align: middle; padding-right: 14px;">
+            <img src="cid:peso_logo" alt="QC PESO Logo" width="52" height="52" style="display: block; border-radius: 50%; background: #ffffff; border: 2px solid rgba(255,255,255,0.85);" />
+          </td>
+          <td style="vertical-align: middle; text-align: left;">
+            <h1 style="margin: 0; font-size: 19px; font-weight: 700; color: #ffffff; letter-spacing: 0.5px; line-height: 1.2;">QUEZON CITY PESO</h1>
+            <p style="margin: 4px 0 0 0; font-size: 12.5px; color: #e2e8f0; opacity: 0.9; line-height: 1.3;">Work Immersion and Internship Referral Program (WIIRP)</p>
+          </td>
+        </tr>
+      </table>
     </div>
     <div class="content">
       <div class="greeting">${contactGreeting}</div>

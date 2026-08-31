@@ -3,6 +3,7 @@ export interface EmailAttachment {
   path?: string;
   content?: Buffer | string;
   contentType?: string;
+  cid?: string;
 }
 
 export interface SendEmailOptions {

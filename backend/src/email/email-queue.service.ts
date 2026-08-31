@@ -1,8 +1,11 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { EmailService } from './email.service';
 import {
+  EmailAttachment,
   EmailJob,
   ReferralEmailPayload,
   SendEmailOptions,
@@ -64,15 +67,29 @@ export class EmailQueueService implements OnModuleInit, OnModuleDestroy {
     const { subject, text, html } =
       this.emailService.buildReferralCoverLetter(payload);
 
-    const attachments = payload.referralPdfPath
-      ? [
-          {
-            filename: payload.referralPdfPath.split(/[/\\]/).pop() || 'Referral_Letter.pdf',
-            path: payload.referralPdfPath,
-            contentType: 'application/pdf',
-          },
-        ]
-      : [];
+    const attachments: EmailAttachment[] = [];
+
+    if (payload.referralPdfPath) {
+      attachments.push({
+        filename:
+          payload.referralPdfPath.split(/[/\\]/).pop() || 'Referral_Letter.pdf',
+        path: payload.referralPdfPath,
+        contentType: 'application/pdf',
+      });
+    }
+
+    const watermarkRelPath = this.configService.get<string>(
+      'email.watermarkPath',
+      'uploads/static/qc_peso_seal.png',
+    );
+    const watermarkAbsPath = resolve(process.cwd(), watermarkRelPath);
+    if (existsSync(watermarkAbsPath)) {
+      attachments.push({
+        filename: 'qc_peso_logo.png',
+        path: watermarkAbsPath,
+        cid: 'peso_logo',
+      });
+    }
 
     return this.enqueue({
       to: payload.companyContactEmail,

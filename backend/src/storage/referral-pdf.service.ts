@@ -118,10 +118,10 @@ export class ReferralPdfService {
           try {
             doc.save();
             doc.opacity(0.12);
-            // Center in lower half of page
-            const sealSize = 190;
+            // Center in lower half of page (20% bigger: 190 * 1.2 = 228)
+            const sealSize = 228;
             const sealX = (doc.page.width - sealSize) / 2;
-            const sealY = 490;
+            const sealY = 470;
             doc.image(watermarkAbsPath, sealX, sealY, {
               width: sealSize,
               height: sealSize,
