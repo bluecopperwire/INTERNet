@@ -64,6 +64,10 @@ export class UpdatePesoProfileDto {
 
   @IsOptional()
   @IsString()
+  employeeId?: string;
+
+  @IsOptional()
+  @IsString()
   position?: string;
 
   @IsOptional()

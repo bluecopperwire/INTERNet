@@ -18,6 +18,8 @@ import { PaginatedResponse } from '../../common/interfaces/paginated-response.in
 import { getDateBoundaries } from '../../common/helpers/date-filter.helper';
 import { ApplicationQueryService } from './shared/application-query.service';
 import { AttendanceQueryService } from './shared/attendance-query.service';
+import { AdminUserManagementService } from '../../admin/services/admin-user-management.service';
+import { CreateAdminEmployerDto } from '../../admin/dto/admin-user-management.dto';
 import { withStatusActor } from '../../database/status-actor.transaction';
 
 @Injectable()
@@ -26,7 +28,12 @@ export class PesoDashboardService {
     private readonly dataSource: DataSource,
     private readonly applicationQuery: ApplicationQueryService,
     private readonly attendanceQuery: AttendanceQueryService,
+    private readonly adminUserManagementService: AdminUserManagementService,
   ) {}
+
+  async createEmployer(dto: CreateAdminEmployerDto) {
+    return this.adminUserManagementService.createEmployer(dto);
+  }
 
   // A1. Student dashboard metrics
   async getStudentDashboardMetrics(): Promise<PesoStudentDashboardMetricsDto> {

@@ -293,28 +293,89 @@ export function adaptPesoDtr(d: PesoDtrEntryDto | any): QCPesoAttendanceRecord {
   };
 }
 
+export function adaptToPesoProfilePayload(
+  profile: Partial<QCPesoProfile>,
+): Record<string, any> {
+  const payload: Record<string, any> = {};
+
+  if (profile.firstName !== undefined) payload.firstName = profile.firstName.trim();
+  if (profile.middleName !== undefined)
+    payload.middleName = profile.middleName?.trim() || undefined;
+  if (profile.lastName !== undefined) payload.lastName = profile.lastName.trim();
+  if (profile.suffix !== undefined)
+    payload.extensionName = profile.suffix?.trim() || undefined;
+  if (profile.sex !== undefined) payload.sex = profile.sex;
+  if (profile.birthdate !== undefined && profile.birthdate)
+    payload.birthDate = profile.birthdate;
+  if (profile.addressLine !== undefined)
+    payload.addressLine = profile.addressLine.trim();
+  if (profile.barangay !== undefined)
+    payload.addressBarangay = profile.barangay.trim();
+  if (profile.district !== undefined)
+    payload.addressDistrict = profile.district.trim();
+  if (profile.city !== undefined) payload.addressCity = profile.city.trim();
+  if (profile.mobileNumber !== undefined)
+    payload.contactNumber = profile.mobileNumber.trim();
+  if (profile.email !== undefined) payload.contactEmail = profile.email.trim();
+  if (profile.employeeIdNumber !== undefined)
+    payload.employeeId = profile.employeeIdNumber.trim();
+  if (profile.position !== undefined) payload.position = profile.position.trim();
+  if (profile.department !== undefined)
+    payload.department = profile.department.trim();
+
+  return payload;
+}
+
 export function adaptPesoProfile(p: any): QCPesoProfile {
+  if (!p) return {} as any;
+
+  let birthdate = '';
+  if (p.birthDate) {
+    if (typeof p.birthDate === 'string') {
+      birthdate = p.birthDate.includes('T') ? p.birthDate.split('T')[0] : p.birthDate;
+    } else if (p.birthDate instanceof Date) {
+      birthdate = p.birthDate.toISOString().split('T')[0];
+    }
+  }
+
+  const fullName =
+    [p.firstName, p.middleName, p.lastName, p.extensionName]
+      .filter(Boolean)
+      .join(' ') || `${p.firstName || ''} ${p.lastName || ''}`.trim() || 'QC PESO Personnel';
+
+  const districtStr = p.addressDistrict
+    ? (String(p.addressDistrict).toLowerCase().startsWith('district')
+        ? p.addressDistrict
+        : `District ${p.addressDistrict}`)
+    : '';
+
+  const location =
+    [p.addressLine, p.addressBarangay, districtStr, p.addressCity]
+      .filter(Boolean)
+      .join(', ') || 'Quezon City';
+
   return {
-    id: String(p.pesoPersonnelId),
-    firstName: p.firstName,
+    id: String(p.pesoPersonnelId || p.userAccountId || ''),
+    firstName: p.firstName || '',
     middleName: p.middleName || '',
-    lastName: p.lastName,
+    lastName: p.lastName || '',
     suffix: p.extensionName || '',
-    birthdate: p.birthDate || '',
-    sex: p.sex === 'female' ? 'Female' : 'Male',
+    birthdate,
+    sex: p.sex && String(p.sex).toLowerCase() === 'female' ? 'Female' : 'Male',
     addressLine: p.addressLine || '',
     barangay: p.addressBarangay || '',
     district: p.addressDistrict || '',
     city: p.addressCity || '',
-    email: p.contactEmail || p.email,
+    email: p.contactEmail || p.email || '',
     mobileNumber: p.contactNumber || '',
     employeeIdNumber: p.employeeId || '',
     position: p.position || 'PESO Officer',
     department: p.department || 'PESO',
-    fullName: `${p.firstName} ${p.lastName}`,
-    role: 'QC PESO Personnel',
-    location: `${p.addressBarangay || ''}, ${p.addressCity || ''}`,
+    fullName,
+    role: p.position || 'QC PESO Personnel',
+    location,
     qcpesoPosition: p.position || 'PESO Officer',
+    avatarUrl: p.photoFilePath || undefined,
   };
 }
 

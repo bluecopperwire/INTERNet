@@ -5,6 +5,7 @@ import {
   Param,
   ParseIntPipe,
   Patch,
+  Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -14,6 +15,7 @@ import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { UserRole } from '../../users/entities/account.entities';
 import { PesoDashboardService } from '../services/peso-dashboard.service';
+import { CreateAdminEmployerDto } from '../../admin/dto/admin-user-management.dto';
 import {
   QueryApplicationsDto,
   QueryAttendanceDto,
@@ -140,5 +142,10 @@ export class PesoDashboardController {
   @Get('employers/:companyId')
   getEmployerDetail(@Param('companyId', ParseIntPipe) companyId: number) {
     return this.pesoService.getEmployerDetail(companyId);
+  }
+
+  @Post('employers')
+  createEmployer(@Body() dto: CreateAdminEmployerDto) {
+    return this.pesoService.createEmployer(dto);
   }
 }

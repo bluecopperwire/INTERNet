@@ -111,14 +111,18 @@ export class CreateAdminEmployerDto {
   @Trim() @IsString() @IsNotEmpty() companyName: string;
   @IsEnum(CompanyType) companyType: CompanyType;
   @Type(() => Number) @IsInt() @Min(1) industryId: number;
-  @Type(() => Number) @IsInt() @Min(1) companySize: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) companySize?: number;
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1800)
   @Max(new Date().getFullYear())
-  yearEstablished: number;
-  @IsOptional() @NullableTrim() @IsUrl({ require_protocol: true }) websiteUrl?:
-    string | null;
+  yearEstablished?: number;
+  @IsOptional()
+  @NullableTrim()
+  @ValidateIf((_, v) => v != null && v !== '')
+  @IsUrl({ require_protocol: false })
+  websiteUrl?: string | null;
   @Trim() @IsString() @IsNotEmpty() description: string;
   @Trim() @IsString() @IsNotEmpty() addressLine: string;
   @Trim() @IsString() @IsNotEmpty() addressBarangay: string;
@@ -145,8 +149,11 @@ export class UpdateAdminEmployerDto {
   @Min(1800)
   @Max(new Date().getFullYear())
   yearEstablished?: number;
-  @IsOptional() @NullableTrim() @IsUrl({ require_protocol: true }) websiteUrl?:
-    string | null;
+  @IsOptional()
+  @NullableTrim()
+  @ValidateIf((_, v) => v != null && v !== '')
+  @IsUrl({ require_protocol: false })
+  websiteUrl?: string | null;
   @IsOptional() @Trim() @IsString() @IsNotEmpty() description?: string;
   @IsOptional() @Trim() @IsString() @IsNotEmpty() addressLine?: string;
   @IsOptional() @Trim() @IsString() @IsNotEmpty() addressBarangay?: string;
