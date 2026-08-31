@@ -301,6 +301,8 @@ export class PesoDashboardService {
         referral_status AS "referralStatus",
         company_response AS "companyResponse",
         company_responded_at AS "companyRespondedAt",
+        student_response AS "studentResponse",
+        student_responded_at AS "studentRespondedAt",
         referral_remark AS "referralRemark",
         peso_personnel_id AS "pesoPersonnelId",
         peso_personnel_full_name AS "pesoPersonnelFullName",
@@ -424,9 +426,13 @@ export class PesoDashboardService {
           s.address_line,
           s.address_barangay,
           s.address_district,
-          s.address_city
+          s.address_city,
+          ip.required_hours AS student_required_hours,
+          ip.available_days AS student_available_days,
+          ip.start_date::text AS student_start_date
         FROM public.vw_application_details ad
         JOIN public.student s ON s.student_id = ad.student_id
+        LEFT JOIN public.internship_preference ip ON ip.student_id = ad.student_id
         WHERE ad.application_id = $1
       `,
       [applicationId],
@@ -478,11 +484,12 @@ export class PesoDashboardService {
         [userAccountId],
       );
       let pesoPersonnelId = pesoRows[0]?.peso_personnel_id || null;
+
       if (!pesoPersonnelId) {
-        const anyPeso = await runner.query(
-          `SELECT peso_personnel_id FROM public.peso_personnel ORDER BY peso_personnel_id ASC LIMIT 1`,
+        const dummyPeso = await runner.query(
+          `SELECT peso_personnel_id FROM public.peso_personnel LIMIT 1`,
         );
-        pesoPersonnelId = anyPeso[0]?.peso_personnel_id || 1;
+        pesoPersonnelId = dummyPeso[0]?.peso_personnel_id || null;
       }
 
       const appRows = await runner.query(
@@ -516,12 +523,13 @@ export class PesoDashboardService {
       await runner.query(
         `
           UPDATE public.application
-          SET application_status = $1,
-              remark = COALESCE($2, remark),
-              updated_at = CURRENT_TIMESTAMP
+          SET 
+            application_status = $1::application_status_enum,
+            remark = COALESCE($2, remark),
+            updated_at = CURRENT_TIMESTAMP
           WHERE application_id = $3
         `,
-        [dto.status, dto.remark ?? null, applicationId],
+        [dto.status, dto.remark || null, applicationId],
       );
 
       if (dto.status === ApplicationStatusFilter.APPROVED_FOR_REFERRAL) {
@@ -529,15 +537,22 @@ export class PesoDashboardService {
         await runner.query(
           `
             INSERT INTO public.referral (
-              application_id,
-              peso_personnel_id,
-              referral_document_file_path,
+              application_id, 
+              peso_personnel_id, 
+              referral_document_file_path, 
               referral_status,
-              company_response
-            ) VALUES ($1, $2, $3, 'sent', 'pending')
-            ON CONFLICT (application_id) DO UPDATE SET
+              company_response,
+              referred_at,
+              updated_at
+            )
+            VALUES ($1, $2, $3, 'sent', 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT (application_id) DO UPDATE
+            SET 
+              peso_personnel_id = EXCLUDED.peso_personnel_id,
+              referral_document_file_path = EXCLUDED.referral_document_file_path,
               referral_status = 'sent',
-              peso_personnel_id = COALESCE(EXCLUDED.peso_personnel_id, public.referral.peso_personnel_id),
+              company_response = 'pending',
+              referred_at = CURRENT_TIMESTAMP,
               updated_at = CURRENT_TIMESTAMP
           `,
           [applicationId, pesoPersonnelId, referralFilePath],
@@ -551,9 +566,18 @@ export class PesoDashboardService {
   async getReferralDetail(referralId: number) {
     const rows = await this.dataSource.query(
       `
-        SELECT *
-        FROM public.vw_referral_details
-        WHERE referral_id = $1
+        SELECT 
+          rd.*,
+          s.address_line,
+          s.address_barangay,
+          s.address_district,
+          s.address_city,
+          s.birth_date,
+          s.sex,
+          s.photo_file_path
+        FROM public.vw_referral_details rd
+        JOIN public.student s ON s.student_id = rd.student_id
+        WHERE rd.referral_id = $1
       `,
       [referralId],
     );

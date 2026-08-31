@@ -27,6 +27,52 @@ export function adaptPesoDashboardMetrics(
   };
 }
 
+export function formatYearLevel(value?: string | null): string {
+  if (!value) return 'N/A';
+  const labels: Record<string, string> = {
+    grade_11: 'Grade 11',
+    grade_12: 'Grade 12',
+    first_year_college: '1st Year',
+    second_year_college: '2nd Year',
+    third_year_college: '3rd Year',
+    fourth_year_college: '4th Year',
+    fifth_year_college: '5th Year',
+    '1st_year': '1st Year',
+    '2nd_year': '2nd Year',
+    '3rd_year': '3rd Year',
+    '4th_year': '4th Year',
+    '5th_year': '5th Year',
+    first_year: '1st Year',
+    second_year: '2nd Year',
+    third_year: '3rd Year',
+    fourth_year: '4th Year',
+    fifth_year: '5th Year',
+  };
+  const key = value.toLowerCase().trim();
+  if (labels[key]) return labels[key];
+
+  return value
+    .split('_')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+}
+
+export function formatScheduleDays(value?: string | null): string {
+  if (!value) return 'Weekdays';
+  const labels: Record<string, string> = {
+    weekdays: 'Weekdays',
+    weekends: 'Weekends',
+    flexible: 'Flexible',
+  };
+  const key = value.toLowerCase().trim();
+  if (labels[key]) return labels[key];
+
+  return value
+    .split('_')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+}
+
 export function adaptPesoApplication(
   d: DashboardApplicationDto | any,
 ): QCPesoReviewApplicant {
@@ -58,22 +104,43 @@ export function adaptPesoApplication(
     .filter(Boolean)
     .join(', ') || 'Quezon City';
 
+  const formatDisplayDate = (val: any) => {
+    if (!val || val === 'N/A') return 'N/A';
+    if (typeof val === 'string') {
+      const dateOnly = val.includes('T') ? val.split('T')[0] : val;
+      const [y, m, day] = dateOnly.split('-').map(Number);
+      if (y && m && day) {
+        const parsed = new Date(y, m - 1, day);
+        return parsed.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      }
+      return val;
+    }
+    if (val instanceof Date && !isNaN(val.getTime())) {
+      return val.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    }
+    return String(val);
+  };
+
+  const rawYear = d.yearLevel || d.year_level;
+  const rawDays = d.student_available_days || d.available_days || d.availableDays || d.work_arrangement || d.workArrangement;
+  const rawStartDate = d.student_start_date || d.start_date || d.startDate;
+
   return {
     id: String(d.applicationId || d.application_id || ''),
     studentName: d.studentFullName || d.student_full_name || 'Applicant',
     company: d.companyName || d.company_name || 'Partner Company',
     jobTitle: d.opportunityTitle || d.opportunity_title || 'Internship Role',
     program: d.strandProgram || d.strand_program || 'N/A',
-    yearLevel: d.yearLevel || d.year_level || 'N/A',
+    yearLevel: formatYearLevel(rawYear),
     dateApplied: formattedDate,
     status: statusMap[rawStatus] || 'Pending',
     email: d.studentContactEmail || d.student_contact_email || 'N/A',
     phone: d.studentContactNumber || d.student_contact_number || 'N/A',
     address,
     school: d.schoolName || d.school_name || 'N/A',
-    requiredHours: Number(d.minimum_required_hours || d.minimumRequiredHours || d.requiredHours || 0),
-    availableDays: d.work_arrangement || d.workArrangement || 'Weekdays',
-    availableStartingDate: 'N/A',
+    requiredHours: Number(d.student_required_hours || d.required_hours || d.requiredHours || d.minimum_required_hours || d.minimumRequiredHours || 0),
+    availableDays: formatScheduleDays(rawDays),
+    availableStartingDate: formatDisplayDate(rawStartDate),
     opportunityId: String(d.opportunityId || d.opportunity_id || ''),
     documents: Array.isArray(d.requirements)
       ? d.requirements.map((r: any) => ({
@@ -87,7 +154,8 @@ export function adaptPesoApplication(
   };
 }
 
-export function adaptPesoReferral(r: PesoReferralDto): QCPesoReferral {
+export function adaptPesoReferral(r: PesoReferralDto | any): QCPesoReferral {
+  if (!r) return {} as any;
   const compMap: Record<string, any> = {
     pending: 'Pending',
     for_interview: 'For Interview',
@@ -98,30 +166,47 @@ export function adaptPesoReferral(r: PesoReferralDto): QCPesoReferral {
     pending: 'Pending',
     accepted: 'Accepted',
     declined: 'Rejected',
+    rejected: 'Rejected',
   };
 
+  const rawDate = r.referredAt || r.referred_at;
+  let formattedDate = 'N/A';
+  if (rawDate) {
+    const parsed = new Date(rawDate);
+    if (!isNaN(parsed.getTime())) {
+      formattedDate = parsed.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    }
+  }
+
+  const rawCompResponse = r.companyResponse || r.company_response || 'pending';
+  const rawStudResponse = r.studentResponse || r.student_response || 'pending';
+
+  const address = [r.address_line, r.address_barangay, r.address_city]
+    .filter(Boolean)
+    .join(', ') || r.address || 'Quezon City';
+
   return {
-    id: String(r.referralId),
-    studentName: r.studentFullName,
-    company: r.companyName,
-    jobTitle: r.opportunityTitle,
-    referralDate: new Date(r.referredAt).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }),
-    companyResponse: compMap[r.companyResponse] || 'Pending',
-    studentResponse: studMap[r.companyResponse] || 'Pending',
-    email: r.studentContactEmail || (r as any).student_contact_email || 'N/A',
-    phone: r.studentContactNumber || (r as any).student_contact_number || 'N/A',
-    address: 'Quezon City',
-    documents: Array.isArray((r as any).requirements)
-      ? (r as any).requirements.map((req: any) => ({
-          id: String(req.student_requirement_submission_id || req.id || ''),
-          name: req.requirement_name || 'Document',
-          typeName: req.requirement_type_name || '',
-          filePath: req.requirement_file_path || '',
-          submittedAt: req.submitted_at || '',
+    id: String(r.referralId || r.referral_id || ''),
+    studentName: r.studentFullName || r.student_full_name || 'Applicant',
+    company: r.companyName || r.company_name || 'Partner Company',
+    jobTitle: r.opportunityTitle || r.opportunity_title || 'Internship Role',
+    referralDate: formattedDate,
+    companyResponse: compMap[String(rawCompResponse).toLowerCase()] || 'Pending',
+    studentResponse: studMap[String(rawStudResponse).toLowerCase()] || 'Pending',
+    email: r.studentContactEmail || r.student_contact_email || 'N/A',
+    phone: r.studentContactNumber || r.student_contact_number || 'N/A',
+    address,
+    documents: Array.isArray(r.requirements)
+      ? r.requirements.map((req: any) => ({
+          id: String(req.student_requirement_submission_id || req.studentRequirementSubmissionId || req.id || ''),
+          name: req.requirement_name || req.requirementName || 'Document',
+          typeName: req.requirement_type_name || req.requirementTypeName || '',
+          filePath: req.requirement_file_path || req.requirementFilePath || '',
+          submittedAt: req.submitted_at || req.submittedAt || '',
         }))
       : undefined,
   };
@@ -247,7 +332,7 @@ export function adaptMonitoredStudent(row: any): MonitoredStudentUser {
     sex: 'N/A',
     school: row.school_name || 'N/A',
     program: row.strand_program || 'N/A',
-    yearLevel: row.year_level || 'N/A',
+    yearLevel: formatYearLevel(row.year_level),
     requiredHours: 'N/A',
     preferredHostOrganizationType: 'N/A',
     internshipDaysAvailability: 'N/A',
