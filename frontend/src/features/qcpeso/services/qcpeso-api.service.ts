@@ -63,11 +63,6 @@ export const qcpesoApiService = {
     return response.data;
   },
 
-  async createEmployer(payload: any): Promise<any> {
-    const response = await api.post("/dashboard/peso/employers", payload);
-    return response.data;
-  },
-
   async getReferrals(
     params?: any,
   ): Promise<PaginatedResponse<PesoReferralDto>> {

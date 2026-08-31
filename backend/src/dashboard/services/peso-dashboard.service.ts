@@ -874,7 +874,7 @@ export class PesoDashboardService {
         SELECT profile.*, 
           s.sex,
           s.birth_date::text AS birth_date,
-          s.created_at
+          s.created_at,
           s.updated_at AS profile_updated_at
         FROM public.vw_student_profile_details profile
         JOIN public.student s ON s.student_id = profile.student_id
