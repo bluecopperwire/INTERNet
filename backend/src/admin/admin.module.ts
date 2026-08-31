@@ -13,5 +13,6 @@ import { AdminUserManagementService } from './services/admin-user-management.ser
     AdminAccountStatusController,
   ],
   providers: [AdminUserManagementService],
+  exports: [AdminUserManagementService],
 })
 export class AdminModule {}

@@ -108,15 +108,18 @@ export const adminService = {
   },
 
   createEmployerRecord: async (record: any): Promise<EmployerRecord> => {
-    const raw = await adminApiService.createCompanyUser({
+    let websiteUrl = record.companyWebsite?.trim() || null;
+    if (websiteUrl && !/^https?:\/\//i.test(websiteUrl)) {
+      websiteUrl = `https://${websiteUrl}`;
+    }
+
+    const payload: Record<string, unknown> = {
       accountEmail: record.email,
       initialPassword: record.temporaryPassword,
       companyName: record.companyName,
       companyType: record.companyType.toLowerCase(),
       industryId: await industryIdFor(record.industry),
-      companySize: Number(record.companySize),
-      yearEstablished: Number(record.yearEstablished),
-      websiteUrl: record.companyWebsite || null,
+      websiteUrl,
       description: record.description,
       addressLine: record.addressLine,
       addressBarangay: record.addressBarangay,
@@ -128,7 +131,23 @@ export const adminService = {
       contactPersonExtensionName: record.contactSuffix || null,
       contactEmail: record.contactEmail,
       contactNumber: record.contactNumber,
-    });
+    };
+
+    if (record.companySize && String(record.companySize).trim() !== '') {
+      const parsedSize = Number(record.companySize);
+      if (!Number.isNaN(parsedSize) && parsedSize > 0) {
+        payload.companySize = parsedSize;
+      }
+    }
+
+    if (record.yearEstablished && String(record.yearEstablished).trim() !== '') {
+      const parsedYear = Number(record.yearEstablished);
+      if (!Number.isNaN(parsedYear) && parsedYear >= 1800) {
+        payload.yearEstablished = parsedYear;
+      }
+    }
+
+    const raw = await adminApiService.createCompanyUser(payload);
     return adaptAdminEmployerItem(raw);
   },
 

@@ -18,6 +18,7 @@ import {
   CreateCompanyAccountDto,
   CreatePesoPersonnelAccountDto,
 } from './dto/account-management.dto';
+import { UpdatePesoProfileDto } from './dto/peso-profile.dto';
 
 @Injectable()
 export class AccountManagementService {
@@ -179,7 +180,7 @@ export class AccountManagementService {
     };
   }
 
-  async updatePesoProfile(userAccountId: number, dto: any) {
+  async updatePesoProfile(userAccountId: number, dto: UpdatePesoProfileDto) {
     const pesoRepo = this.dataSource.getRepository(PesoPersonnel);
     const peso = await pesoRepo.findOne({ where: { userAccountId } });
     if (!peso) {
@@ -189,12 +190,12 @@ export class AccountManagementService {
     const updates: Partial<PesoPersonnel> = {};
     if (dto.firstName !== undefined) updates.firstName = dto.firstName;
     if (dto.middleName !== undefined)
-      updates.middleName = dto.middleName ?? null;
+      updates.middleName = dto.middleName?.trim() || null;
     if (dto.lastName !== undefined) updates.lastName = dto.lastName;
     if (dto.extensionName !== undefined)
-      updates.extensionName = dto.extensionName ?? null;
+      updates.extensionName = dto.extensionName?.trim() || null;
     if (dto.sex !== undefined) updates.sex = dto.sex;
-    if (dto.birthDate !== undefined) updates.birthDate = dto.birthDate;
+    if (dto.birthDate !== undefined) updates.birthDate = dto.birthDate as any;
     if (dto.addressLine !== undefined) updates.addressLine = dto.addressLine;
     if (dto.addressBarangay !== undefined)
       updates.addressBarangay = dto.addressBarangay;
@@ -204,6 +205,7 @@ export class AccountManagementService {
     if (dto.contactNumber !== undefined)
       updates.contactNumber = dto.contactNumber;
     if (dto.contactEmail !== undefined) updates.contactEmail = dto.contactEmail;
+    if (dto.employeeId !== undefined) updates.employeeId = dto.employeeId;
     if (dto.position !== undefined) updates.position = dto.position;
     if (dto.department !== undefined) updates.department = dto.department;
     if (dto.photoFilePath !== undefined)

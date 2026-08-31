@@ -7,6 +7,7 @@ import {
   adaptPesoIntern,
   adaptPesoDtr,
   adaptPesoProfile,
+  adaptToPesoProfilePayload,
   adaptMonitoredStudent,
   adaptMonitoredCompany,
 } from '../adapters/qcpeso.adapters';
@@ -213,7 +214,8 @@ export const useQCPesoStore = create<QCPesoState>((set) => ({
   updateProfile: async (payload: any) => {
     set({ isLoadingProfile: true, error: null });
     try {
-      const raw = await qcpesoApiService.updateOwnProfile(payload);
+      const apiPayload = adaptToPesoProfilePayload(payload);
+      const raw = await qcpesoApiService.updateOwnProfile(apiPayload);
       set({ profile: adaptPesoProfile(raw), isLoadingProfile: false });
     } catch (err: any) {
       const norm = normalizeApiError(err);

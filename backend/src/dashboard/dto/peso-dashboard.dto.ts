@@ -71,6 +71,20 @@ export class QueryCompanyEmployersDto extends PaginationDto {
   accountStatus?: string;
 }
 
+export class QueryAttendanceDto extends DateFilterDto {
+  @IsOptional()
+  @IsString()
+  date?: string;
+
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
+}
+
 export class PesoStudentDashboardMetricsDto {
   totalPendingApplications: number;
   totalVerifiedRequirements: number;

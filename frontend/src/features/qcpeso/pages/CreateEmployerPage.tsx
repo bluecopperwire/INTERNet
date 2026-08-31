@@ -1,26 +1,79 @@
 import { ArrowLeft, Building2, LockKeyhole, UserRound } from 'lucide-react'
-import { useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { qcpesoService } from '../services/qcpeso.service'
+import { referenceService } from '../../../services/reference.service'
+import { useToastStore } from '../../../stores/useToastStore'
 import type { CreateEmployerPayload } from '../types/qcpeso.types'
 import styles from '../../intern-seeker/pages/ProfileEditorPage.module.css'
 
-const INDUSTRIES = ['Office Administration', 'Engineering', 'Information Technology', 'Accounting / Finance', 'Customer Service / Retail', 'Human Resources', 'Hospitality / Tourism', 'Healthcare']
+const DEFAULT_INDUSTRIES = [
+  'Office Administration',
+  'Engineering',
+  'Information Technology',
+  'Accounting / Finance',
+  'Customer Service / Retail',
+  'Human Resources',
+  'Hospitality / Tourism',
+  'Healthcare',
+]
 
 const initialForm: CreateEmployerPayload = {
-  companyName: '', companyType: 'Private', industry: 'Information Technology', companySize: '', yearEstablished: '', websiteUrl: '', description: '', addressLine: '', barangay: '', district: '', city: '', contactFirstName: '', contactMiddleName: '', contactLastName: '', contactSuffix: '', contactEmail: '', contactNumber: '', loginEmail: '', password: '',
+  companyName: '',
+  companyType: 'Private',
+  industry: 'Information Technology',
+  companySize: '',
+  yearEstablished: '',
+  websiteUrl: '',
+  description: '',
+  addressLine: '',
+  barangay: '',
+  district: '',
+  city: '',
+  contactFirstName: '',
+  contactMiddleName: '',
+  contactLastName: '',
+  contactSuffix: '',
+  contactEmail: '',
+  contactNumber: '',
+  loginEmail: '',
+  password: '',
 }
 
 export function CreateEmployerPage() {
   const navigate = useNavigate()
   const [form, setForm] = useState<CreateEmployerPayload>(initialForm)
+  const [industries, setIndustries] = useState<string[]>(DEFAULT_INDUSTRIES)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const toast = useToastStore()
+
+  useEffect(() => {
+    referenceService
+      .getIndustries()
+      .then((items) => {
+        const standard = items.filter((i) => !i.isCustomText).map((i) => i.industryName)
+        if (standard.length > 0) {
+          setIndustries(standard)
+          setForm((prev) => ({
+            ...prev,
+            industry: standard.includes(prev.industry) ? prev.industry : standard[0],
+          }))
+        }
+      })
+      .catch(() => {
+        // Keep DEFAULT_INDUSTRIES on fallback
+      })
+  }, [])
 
   const update = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = event.target
     const numericFields = ['companySize', 'yearEstablished']
     const nameFields = ['contactFirstName', 'contactMiddleName', 'contactLastName', 'contactSuffix']
-    const cleaned = numericFields.includes(name) ? value.replace(/\D/g, '') : nameFields.includes(name) ? value.replace(/[^a-zA-Z\s]/g, '') : value
+    const cleaned = numericFields.includes(name)
+      ? value.replace(/\D/g, '')
+      : nameFields.includes(name)
+        ? value.replace(/[^a-zA-Z\s]/g, '')
+        : value
     setForm((current) => ({ ...current, [name]: cleaned }))
   }
 
@@ -29,7 +82,14 @@ export function CreateEmployerPage() {
     setIsSubmitting(true)
     try {
       await qcpesoService.createEmployer(form)
+      toast.success(`${form.companyName} account has been successfully created.`)
       navigate('/qcpeso/monitor-users/employers')
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to create employer account. Please verify the input.'
+      toast.error(Array.isArray(message) ? message.join(', ') : message)
     } finally {
       setIsSubmitting(false)
     }
@@ -46,7 +106,7 @@ export function CreateEmployerPage() {
             <div className={styles.fieldGrid}>
               <Field label="Company Name" required><input required name="companyName" placeholder="Enter company name" value={form.companyName} onChange={update} /></Field>
               <Field label="Company Type" required><select required name="companyType" value={form.companyType} onChange={update}><option value="Government">Government</option><option value="Private">Private</option></select></Field>
-              <Field label="Industry" required><select required name="industry" value={form.industry} onChange={update}>{INDUSTRIES.map((industry) => <option key={industry}>{industry}</option>)}</select></Field>
+              <Field label="Industry" required><select required name="industry" value={form.industry} onChange={update}>{industries.map((industry) => <option key={industry} value={industry}>{industry}</option>)}</select></Field>
               <Field label="Company Size"><input name="companySize" inputMode="numeric" placeholder="Enter number of employees" value={form.companySize} onChange={update} /></Field>
               <Field label="Company Year Established"><input name="yearEstablished" inputMode="numeric" placeholder="e.g., 2015" value={form.yearEstablished} onChange={update} /></Field>
               <Field label="Website URL"><input name="websiteUrl" type="url" placeholder="https://example.com" value={form.websiteUrl} onChange={update} /></Field>
