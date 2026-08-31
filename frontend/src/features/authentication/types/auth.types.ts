@@ -2,6 +2,7 @@ import type {
   UserRole as BackendRole,
   AccountStatus,
 } from '../../../types/api';
+import type { StudentInquiryMethod, StudentSex } from '../signup-options';
 
 export type LoginTabRole = 'intern-seeker' | 'company' | 'qcpeso' | 'admin';
 
@@ -36,7 +37,7 @@ export interface StudentRegisterRequest {
   middleName?: string;
   lastName: string;
   extensionName?: string;
-  sex: string;
+  sex: StudentSex;
   birthDate: string;
   contactNumber: string;
   contactEmail?: string;
@@ -45,7 +46,7 @@ export interface StudentRegisterRequest {
   addressBarangay: string;
   addressDistrict: string;
   addressCity: string;
-  inquiryMethod: string;
+  inquiryMethod: StudentInquiryMethod;
 }
 
 export interface GoogleStudentCompletionRequest {
@@ -53,14 +54,14 @@ export interface GoogleStudentCompletionRequest {
   middleName?: string;
   lastName: string;
   extensionName?: string;
-  sex: string;
+  sex: StudentSex;
   birthDate: string;
   contactNumber: string;
   addressLine: string;
   addressBarangay: string;
   addressDistrict: string;
   addressCity: string;
-  inquiryMethod: string;
+  inquiryMethod: StudentInquiryMethod;
 }
 
 export interface ChangePasswordRequest {

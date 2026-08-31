@@ -13,7 +13,7 @@ export class StudentProfileDto {
   @IsOptional() @IsString() middleName?: string;
   @IsString() @IsNotEmpty() lastName: string;
   @IsOptional() @IsString() extensionName?: string;
-  @IsString() @IsNotEmpty() sex: string;
+  @IsIn(['male', 'female']) sex: 'male' | 'female';
   @IsDateString() birthDate: string;
   @IsString() @IsNotEmpty() contactNumber: string;
   @IsOptional() @IsString() linkedinUrl?: string;
@@ -21,7 +21,8 @@ export class StudentProfileDto {
   @IsString() @IsNotEmpty() addressBarangay: string;
   @IsString() @IsNotEmpty() addressDistrict: string;
   @IsString() @IsNotEmpty() addressCity: string;
-  @IsIn(['walk_in', 'online', 'phone_call', 'school']) inquiryMethod: string;
+  @IsIn(['walk_in', 'online', 'phone_call', 'school'])
+  inquiryMethod: 'walk_in' | 'online' | 'phone_call' | 'school';
   @IsOptional() @IsString() photoFilePath?: string;
 }
 
