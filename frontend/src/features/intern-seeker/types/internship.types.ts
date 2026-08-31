@@ -2,6 +2,7 @@ export interface InternshipOpportunity {
   id: string
   companyId: string
   companyName: string
+  companyLogoUrl?: string
   position: string
   location: string
   workSetup: 'On-site' | 'Remote' | 'Hybrid'
@@ -29,6 +30,7 @@ export interface PartnerCompany {
   summary: string
   description: string
   tags: string[]
+  logoUrl?: string
 }
 
 export interface InternshipPortalData {
@@ -59,6 +61,7 @@ export interface UserProfile {
   contactNumber: string
   address: { street: string; barangay: string; district: string; city: string }
   inquiryVia: string
+  photoUrl?: string
   academic: { schoolName: string; program: string; yearLevel: string }
   preferences: {
     requiredHours: number | ''

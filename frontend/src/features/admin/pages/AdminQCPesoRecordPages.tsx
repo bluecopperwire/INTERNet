@@ -86,7 +86,7 @@ export function AdminQCPesoDetailsPage() {
           <div className={detailStyles.body}>
             <section className={detailStyles.summary}>
               <span className={detailStyles.avatar}>
-                <UserRound size={30} />
+                {record.profileImageUrl ? <img src={record.profileImageUrl} alt={`${name} profile`} /> : <UserRound size={30} />}
               </span>
               <div className={detailStyles.summaryInfo}>
                 <h2>{name}</h2>

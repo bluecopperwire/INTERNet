@@ -77,6 +77,7 @@ export class AdminUserManagementService {
               s.address_district AS "addressDistrict", s.address_city AS "addressCity",
               s.contact_email AS "contactEmail", s.contact_number AS "contactNumber",
               s.linkedin_url AS "linkedinUrl", s.photo_file_path AS "photoFilePath",
+              s.updated_at AS "profileUpdatedAt",
               sai.school_name AS "schoolName", sai.year_level AS "yearLevel", sai.strand_program AS "strandProgram",
               ip.required_hours AS "requiredHours", ip.available_days AS "availableDays", ip.start_date AS "startDate",
               ip.preferred_company_type AS "preferredCompanyType",
@@ -226,6 +227,7 @@ export class AdminUserManagementService {
               c.industry_id AS "industryId", i.industry_name AS "industryName",
               c.company_size AS "companySize", c.year_established AS "yearEstablished",
               c.website_url AS "websiteUrl", c.description, c.logo_file_path AS "logoFilePath",
+              c.updated_at AS "profileUpdatedAt",
               c.address_line AS "addressLine", c.address_barangay AS "addressBarangay",
               c.address_district AS "addressDistrict", c.address_city AS "addressCity",
               c.contact_person_first_name AS "contactPersonFirstName",
@@ -395,7 +397,7 @@ export class AdminUserManagementService {
               p.address_district AS "addressDistrict", p.address_city AS "addressCity",
               p.contact_email AS "contactEmail", p.contact_number AS "contactNumber",
               p.employee_id AS "employeeId", p.department, p.position,
-              p.photo_file_path AS "photoFilePath"
+              p.photo_file_path AS "photoFilePath", p.updated_at AS "profileUpdatedAt"
        FROM public.peso_personnel p
        JOIN public.user_account ua ON ua.user_account_id = p.user_account_id AND ua.user_role = 'peso_personnel'
        WHERE p.peso_personnel_id = $1`,

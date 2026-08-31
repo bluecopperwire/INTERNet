@@ -187,7 +187,11 @@ describe('profile APIs', () => {
         contentType: 'image/png',
       })
       .expect(200);
-    expect(body.logoFilePath).toMatch(/^\/uploads\/company-logos\//);
+    expect(body.logoFilePath).toMatch(
+      new RegExp(
+        `^/uploads/profile_pictures/${companyA.accountId}-company-a-\\d+-pfp\\.png$`,
+      ),
+    );
     expect(
       existsSync(
         resolve(env.uploadRoot, body.logoFilePath.replace(/^\/uploads\//, '')),

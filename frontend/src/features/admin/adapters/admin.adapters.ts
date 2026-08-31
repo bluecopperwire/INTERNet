@@ -10,6 +10,7 @@ import type {
   QCPesoRecord,
   AdminDashboardSummary,
 } from '../types/admin.types';
+import { publicUploadUrl } from '../../../utils/public-upload-url';
 
 export function adaptAdminDashboardSummary(
   studentMetrics: AdminMetricsDto,
@@ -54,6 +55,10 @@ export function adaptAdminStudentItem(dto: AdminStudentListItemDto): StudentReco
     suspensionDaysRemaining: remainingDays(data.suspendedUntil),
     dateCreated: new Date(dto.createdAt).toLocaleDateString(),
     role: 'Student',
+    profileImageUrl: publicUploadUrl(
+      data.photoFilePath,
+      data.profileUpdatedAt,
+    ),
     firstName: data.firstName,
     middleName: data.middleName || '',
     lastName: data.lastName,
@@ -100,6 +105,10 @@ export function adaptAdminEmployerItem(dto: AdminEmployerListItemDto): EmployerR
     suspensionDaysRemaining: remainingDays(data.suspendedUntil),
     dateCreated: new Date(dto.createdAt).toLocaleDateString(),
     role: 'Employer',
+    profileImageUrl: publicUploadUrl(
+      data.logoFilePath,
+      data.profileUpdatedAt,
+    ),
     industry: data.industryName || 'N/A',
     companyType: data.companyType === 'government' ? 'Government' : 'Private',
     location: [data.addressLine, data.addressBarangay, data.addressDistrict, data.addressCity].filter(Boolean).join(', ') || 'Quezon City',
@@ -140,6 +149,10 @@ export function adaptAdminPesoItem(dto: AdminPesoListItemDto): QCPesoRecord {
     suspensionDaysRemaining: remainingDays(data.suspendedUntil),
     dateCreated: new Date(dto.createdAt).toLocaleDateString(),
     role: 'QC PESO Personnel',
+    profileImageUrl: publicUploadUrl(
+      data.photoFilePath,
+      data.profileUpdatedAt,
+    ),
     firstName: data.firstName || dto.fullName.split(' ')[0] || '',
     middleName: data.middleName || '',
     lastName: data.lastName || dto.fullName.split(' ').slice(1).join(' ') || '',

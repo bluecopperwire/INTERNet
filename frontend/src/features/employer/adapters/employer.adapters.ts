@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../../../services/api';
+import { publicUploadUrl } from '../../../utils/public-upload-url';
 import type {
   EmployerDashboardMetricsDto,
   EmployerOpportunityDto,
@@ -20,8 +20,10 @@ export function adaptEmployerDashboardSummary(
   companyName = 'Partner Company',
 ): EmployerDashboardSummary {
   const total = m.totalApplicants || 0;
-  const acceptedPct = total > 0 ? Math.round((m.acceptedCount / total) * 100) : 0;
-  const rejectedPct = total > 0 ? Math.round((m.rejectedCount / total) * 100) : 0;
+  const acceptedPct =
+    total > 0 ? Math.round((m.acceptedCount / total) * 100) : 0;
+  const rejectedPct =
+    total > 0 ? Math.round((m.rejectedCount / total) * 100) : 0;
 
   return {
     companyName,
@@ -51,7 +53,9 @@ export function adaptEmployerOpportunity(
     slots: dto.offeredSlots,
     duration: dto.minimumRequiredHours,
     allowance: dto.allowance ? String(dto.allowance) : '',
-    applicationDeadline: dto.applicationDeadline ? dto.applicationDeadline.split('T')[0] : '',
+    applicationDeadline: dto.applicationDeadline
+      ? dto.applicationDeadline.split('T')[0]
+      : '',
     jobDescription: dto.description,
     qualifications: dto.qualification || '',
     status: dto.opportunityStatus === 'open' ? 'Open' : 'Closed',
@@ -80,12 +84,14 @@ export function adaptEmployerReferral(
   const oppTitle = opportunity.title || r.opportunityTitle || 'Opportunity';
   const strandProg = student.strandProgram || r.strandProgram || 'N/A';
   const yLevel = student.yearLevel || r.yearLevel || 'N/A';
-  const compResponse = referral.companyResponse || r.companyResponse || 'pending';
+  const compResponse =
+    referral.companyResponse || r.companyResponse || 'pending';
   const subAt = r.application?.submittedAt || r.submittedAt;
 
-  const address = [student.addressLine, student.addressBarangay, student.addressCity]
-    .filter(Boolean)
-    .join(', ') || 'Quezon City';
+  const address =
+    [student.addressLine, student.addressBarangay, student.addressCity]
+      .filter(Boolean)
+      .join(', ') || 'Quezon City';
 
   return {
     id: String(referralId),
@@ -110,6 +116,10 @@ export function adaptEmployerReferral(
     requiredHours: Number(internshipPref.requiredHours || 0),
     availabilityDays: internshipPref.availableDays || 'Weekdays',
     availabilityDate: internshipPref.startDate || 'N/A',
+    profileImageUrl: publicUploadUrl(
+      student.photoFilePath || r.photoFilePath,
+      student.profileUpdatedAt || r.profileUpdatedAt,
+    ),
     documents: Array.isArray(r.documents) ? r.documents : undefined,
   };
 }
@@ -166,10 +176,7 @@ export function adaptEmployerInternship(
 }
 
 export function adaptCompanyProfile(dto: any): CompanyProfile {
-  let logoUrl: string | undefined = undefined;
-  if (dto.logoFilePath) {
-    logoUrl = `${API_BASE_URL}/${dto.logoFilePath.replace(/^\/+/, '')}`;
-  }
+  const logoUrl = publicUploadUrl(dto.logoFilePath, dto.updatedAt);
 
   return {
     company_name: dto.companyName || '',

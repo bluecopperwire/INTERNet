@@ -16,7 +16,7 @@ import {
   StudentRequirementUploadDto,
 } from '../dto/students.dto';
 import { withStatusActor } from '../../database/status-actor.transaction';
-
+import { ProfilePictureStorageService } from '../../storage/profile-picture-storage.service';
 
 @Injectable()
 export class StudentsService {
@@ -25,6 +25,7 @@ export class StudentsService {
     private readonly studentRepo: Repository<Student>,
     @InjectDataSource()
     private readonly dataSource: DataSource,
+    private readonly profilePictures: ProfilePictureStorageService,
   ) {}
 
   async findById(id: number): Promise<Student | null> {
@@ -149,7 +150,7 @@ export class StudentsService {
   async upsertStudentProfile(studentId: number, dto: StudentProfileUpdateDto) {
     await this.dataSource.transaction(async (manager) => {
       const studentExists = await manager.query(
-        `SELECT student_id FROM public.student WHERE student_id = $1`,
+        `SELECT student_id, photo_file_path FROM public.student WHERE student_id = $1`,
         [studentId],
       );
 
@@ -193,7 +194,9 @@ export class StudentsService {
           dto.addressDistrict,
           dto.addressCity,
           dto.inquiryMethod,
-          dto.photoFilePath ?? null,
+          dto.photoFilePath === undefined
+            ? studentExists[0].photo_file_path
+            : dto.photoFilePath,
         ],
       );
 
@@ -317,6 +320,34 @@ export class StudentsService {
     return this.getStudentProfile(studentId);
   }
 
+  async replaceProfilePicture(studentId: number, file: Express.Multer.File) {
+    const student = await this.studentRepo.findOne({ where: { studentId } });
+    if (!student) throw new NotFoundException('Student not found');
+
+    const oldPath = student.photoFilePath;
+    const newPath = await this.profilePictures.storePerson(file, {
+      userAccountId: student.userAccountId,
+      firstName: student.firstName,
+      lastName: student.lastName,
+    });
+
+    try {
+      await this.studentRepo.update({ studentId }, { photoFilePath: newPath });
+    } catch (error) {
+      if (oldPath !== newPath) await this.profilePictures.delete(newPath);
+      throw error;
+    }
+
+    if (oldPath !== newPath) {
+      try {
+        await this.profilePictures.delete(oldPath);
+      } catch {
+        // The new DB reference remains valid if an obsolete file cannot be removed.
+      }
+    }
+    return this.getStudentProfile(studentId);
+  }
+
   async createStudentApplication(
     studentId: number,
     dto: CreateStudentApplicationDto,
@@ -354,7 +385,12 @@ export class StudentsService {
       [studentId],
     );
 
-    if (!academic || !academic.school_name || !academic.year_level || !academic.strand_program) {
+    if (
+      !academic ||
+      !academic.school_name ||
+      !academic.year_level ||
+      !academic.strand_program
+    ) {
       throw new BadRequestException(
         'Incomplete academic information. Please provide your school, year level, and program before applying.',
       );
@@ -795,7 +831,6 @@ export class StudentsService {
     );
   }
 
-
   // Accepts physical multipart file upload, saves under backend/uploads/requirements, and persists metadata in DB.
   async uploadRequirementFile(
     studentId: number,
@@ -951,7 +986,12 @@ export class StudentsService {
     const filePath = String(submission.requirement_file_path ?? '');
     if (filePath.startsWith('/uploads/requirements/')) {
       const filename = filePath.replace('/uploads/requirements/', '');
-      const fullPath = resolve(process.cwd(), 'uploads', 'requirements', filename);
+      const fullPath = resolve(
+        process.cwd(),
+        'uploads',
+        'requirements',
+        filename,
+      );
       if (existsSync(fullPath)) {
         try {
           unlinkSync(fullPath);
@@ -1133,9 +1173,20 @@ export class StudentsService {
       jobTitle: rawAssignment.job_title,
       workingDays: rawAssignment.working_days,
       requiredHours,
-      startDate: rawAssignment.start_date instanceof Date ? rawAssignment.start_date.toISOString().split('T')[0] : String(rawAssignment.start_date),
-      expectedEndDate: rawAssignment.expected_end_date ? (rawAssignment.expected_end_date instanceof Date ? rawAssignment.expected_end_date.toISOString().split('T')[0] : String(rawAssignment.expected_end_date)) : null,
-      endDate: rawAssignment.end_date ? (rawAssignment.end_date instanceof Date ? rawAssignment.end_date.toISOString().split('T')[0] : String(rawAssignment.end_date)) : null,
+      startDate:
+        rawAssignment.start_date instanceof Date
+          ? rawAssignment.start_date.toISOString().split('T')[0]
+          : String(rawAssignment.start_date),
+      expectedEndDate: rawAssignment.expected_end_date
+        ? rawAssignment.expected_end_date instanceof Date
+          ? rawAssignment.expected_end_date.toISOString().split('T')[0]
+          : String(rawAssignment.expected_end_date)
+        : null,
+      endDate: rawAssignment.end_date
+        ? rawAssignment.end_date instanceof Date
+          ? rawAssignment.end_date.toISOString().split('T')[0]
+          : String(rawAssignment.end_date)
+        : null,
       startShift: rawAssignment.start_shift,
       endShift: rawAssignment.end_shift,
       assignmentStatus: rawAssignment.assignment_status,
@@ -1181,7 +1232,10 @@ export class StudentsService {
 
     const records = recordsRows.map((row: any) => ({
       attendanceRecordId: Number(row.attendance_record_id),
-      date: row.attendance_date instanceof Date ? row.attendance_date.toISOString().split('T')[0] : String(row.attendance_date),
+      date:
+        row.attendance_date instanceof Date
+          ? row.attendance_date.toISOString().split('T')[0]
+          : String(row.attendance_date),
       status: row.time_in_status === 'late' ? 'late' : 'present',
       timeIn: row.time_in,
       timeOut: row.time_out,
@@ -1203,7 +1257,10 @@ export class StudentsService {
     const daysPresent = Number(summaryRow.attendance_record_count || 0);
     const lateArrivals = Number(summaryRow.late_count || 0);
     const absences = 0; // Schema does not record absent rows directly
-    const attendanceRate = daysPresent > 0 ? Math.round(((daysPresent - lateArrivals) / daysPresent) * 100) : 100;
+    const attendanceRate =
+      daysPresent > 0
+        ? Math.round(((daysPresent - lateArrivals) / daysPresent) * 100)
+        : 100;
 
     return {
       assignment,
@@ -1214,7 +1271,9 @@ export class StudentsService {
         absences,
         lateArrivals,
         attendanceRate,
-        totalRenderedHours: Number(summaryRow.total_rendered_hours || totalRendered),
+        totalRenderedHours: Number(
+          summaryRow.total_rendered_hours || totalRendered,
+        ),
       },
     };
   }

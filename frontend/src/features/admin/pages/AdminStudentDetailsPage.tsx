@@ -49,7 +49,7 @@ export function AdminStudentDetailsPage() {
           <header className={styles.profileHeader}><h1>Student Profile</h1><p>View and manage the student’s personal, academic, and internship preference details.</p></header>
           <div className={styles.body}>
             <section className={styles.summary}>
-              <span className={styles.avatar}><UserRound size={30} /></span>
+              <span className={styles.avatar}>{student.profileImageUrl ? <img src={student.profileImageUrl} alt={`${student.fullName} profile`} /> : <UserRound size={30} />}</span>
               <div className={styles.summaryInfo}><h2>{student.fullName}</h2><div><span><Mail size={16} />{student.email}</span><span><Phone size={16} />{student.contactNumber}</span></div><span><MapPin size={16} />{student.fullAddress}</span></div>
               <StatusPill status={student.status} />
             </section>

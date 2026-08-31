@@ -19,10 +19,14 @@ import {
   CreatePesoPersonnelAccountDto,
 } from './dto/account-management.dto';
 import { UpdatePesoProfileDto } from './dto/peso-profile.dto';
+import { ProfilePictureStorageService } from '../storage/profile-picture-storage.service';
 
 @Injectable()
 export class AccountManagementService {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly profilePictures: ProfilePictureStorageService,
+  ) {}
 
   async createCompany(
     dto: CreateCompanyAccountDto,
@@ -175,6 +179,7 @@ export class AccountManagementService {
       position: peso.position,
       department: peso.department,
       photoFilePath: peso.photoFilePath,
+      updatedAt: peso.updatedAt,
       email: account?.email,
       accountStatus: account?.accountStatus,
     };
@@ -212,6 +217,39 @@ export class AccountManagementService {
       updates.photoFilePath = dto.photoFilePath;
 
     await pesoRepo.update({ userAccountId }, updates);
+    return this.getPesoProfile(userAccountId);
+  }
+
+  async replacePesoProfilePicture(
+    userAccountId: number,
+    file: Express.Multer.File,
+  ) {
+    const pesoRepo = this.dataSource.getRepository(PesoPersonnel);
+    const peso = await pesoRepo.findOne({ where: { userAccountId } });
+    if (!peso) {
+      throw new NotFoundException('PESO personnel profile not found');
+    }
+
+    const oldPath = peso.photoFilePath;
+    const newPath = await this.profilePictures.storePerson(file, {
+      userAccountId,
+      firstName: peso.firstName,
+      lastName: peso.lastName,
+    });
+    try {
+      await pesoRepo.update({ userAccountId }, { photoFilePath: newPath });
+    } catch (error) {
+      if (oldPath !== newPath) await this.profilePictures.delete(newPath);
+      throw error;
+    }
+
+    if (oldPath !== newPath) {
+      try {
+        await this.profilePictures.delete(oldPath);
+      } catch {
+        // The new DB reference remains valid if an obsolete file cannot be removed.
+      }
+    }
     return this.getPesoProfile(userAccountId);
   }
 }

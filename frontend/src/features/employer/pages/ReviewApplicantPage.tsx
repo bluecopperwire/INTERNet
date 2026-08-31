@@ -93,7 +93,13 @@ export function ReviewApplicantPage() {
         <div className={styles.twoColumnGrid}>
           <aside className={styles.profileCard}>
             <div className={styles.profileAvatarRow}>
-              <div className={styles.avatarPlaceholder}><User size={34} /></div>
+              <div className={styles.avatarPlaceholder}>
+                {applicant.profileImageUrl ? (
+                  <img src={applicant.profileImageUrl} alt={`${applicant.name} profile`} />
+                ) : (
+                  <User size={34} />
+                )}
+              </div>
               <div className={styles.profileInfo}>
                 <h2>{applicant.name}</h2>
                 <div className={styles.contactMeta}>

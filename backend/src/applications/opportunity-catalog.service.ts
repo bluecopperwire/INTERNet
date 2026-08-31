@@ -10,6 +10,7 @@ export interface OpportunityCatalogItem {
   industryId: number;
   industryName: string;
   companyLogoFilePath: string | null;
+  companyProfileUpdatedAt: string;
   companyAddressCity: string;
   title: string;
   department: string;
@@ -113,6 +114,7 @@ export class OpportunityCatalogService {
         o.industry_id,
         o.industry_name,
         o.company_logo_file_path,
+        c.updated_at AS company_profile_updated_at,
         o.company_address_city,
         o.title,
         o.department,
@@ -149,6 +151,9 @@ export class OpportunityCatalogService {
       industryId: Number(row.industry_id),
       industryName: row.industry_name,
       companyLogoFilePath: row.company_logo_file_path,
+      companyProfileUpdatedAt: new Date(
+        row.company_profile_updated_at,
+      ).toISOString(),
       companyAddressCity: row.company_address_city,
       title: row.title,
       department: row.department,
@@ -205,6 +210,7 @@ export class OpportunityCatalogService {
         o.industry_id,
         o.industry_name,
         o.company_logo_file_path,
+        c.updated_at AS company_profile_updated_at,
         o.company_address_city,
         o.title,
         o.department,
@@ -241,6 +247,9 @@ export class OpportunityCatalogService {
       industryId: Number(row.industry_id),
       industryName: row.industry_name,
       companyLogoFilePath: row.company_logo_file_path,
+      companyProfileUpdatedAt: new Date(
+        row.company_profile_updated_at,
+      ).toISOString(),
       companyAddressCity: row.company_address_city,
       title: row.title,
       department: row.department,

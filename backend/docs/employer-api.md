@@ -59,7 +59,7 @@ Query/body: none.
   "contactPersonMiddleName": null,
   "contactPersonLastName": "Santos",
   "contactPersonExtensionName": null,
-  "logoFilePath": "/uploads/company-logos/generated.png"
+  "logoFilePath": "/uploads/profile_pictures/42-example-corporation-pfp.png"
 }
 ```
 
@@ -95,13 +95,13 @@ The response is the same shape as endpoint 1. `companySize` must be positive, th
 
 ### 3. PUT `/employer/profile/image`
 
-Replaces the company logo. Content type is `multipart/form-data`; the field name is `image`. JPEG, PNG, WebP, and GIF are accepted up to 5 MiB. The server generates the filename, stores the new file before changing `company.logo_file_path`, removes the new file if the DB update fails, and only then attempts cleanup of the old managed logo.
+Replaces the company logo. Content type is `multipart/form-data`; the field name is `image`. JPEG, PNG, WebP, and GIF are accepted up to 5 MiB. The server names the file `<user-account-id>-<company-name>-pfp.<extension>`, stores the new file under `uploads/profile_pictures` before changing `company.logo_file_path`, removes the new file if the DB update fails, and only then attempts cleanup of the old managed logo.
 
 ```json
-{ "logoFilePath": "/uploads/company-logos/generated-uuid.png" }
+{ "logoFilePath": "/uploads/profile_pictures/42-example-corporation-pfp.png" }
 ```
 
-Client-supplied paths are never accepted. Storage paths are constrained to the generated company-logo directory.
+Client-supplied paths are never accepted. Storage paths are constrained to the managed profile-picture directory.
 
 ## Opportunities
 

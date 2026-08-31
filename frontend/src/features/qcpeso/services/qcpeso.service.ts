@@ -60,9 +60,7 @@ export const qcpesoService = {
     remark?: string,
   ): Promise<QCPesoReviewApplicant | null> {
     const apiStatus =
-      status === 'Accepted'
-        ? 'approved_for_referral'
-        : 'rejected_for_referral';
+      status === 'Accepted' ? 'approved_for_referral' : 'rejected_for_referral';
     const store = useQCPesoStore.getState();
     const updated = await store.updateApplicationStatus(
       Number(id),
@@ -209,7 +207,12 @@ export const qcpesoService = {
       school: a.school,
       program: a.program,
       date: a.dateApplied,
-      status: a.status === 'Accepted' ? 'Verified' : a.status === 'Rejected' ? 'Rejected' : 'Pending',
+      status:
+        a.status === 'Accepted'
+          ? 'Verified'
+          : a.status === 'Rejected'
+            ? 'Rejected'
+            : 'Pending',
       email: a.email,
       phone: a.phone,
       gwa: 'N/A',
@@ -247,5 +250,9 @@ export const qcpesoService = {
     const store = useQCPesoStore.getState();
     await store.updateProfile(updates);
     return useQCPesoStore.getState().profile!;
+  },
+
+  async uploadProfilePicture(file: File): Promise<QCPesoProfile> {
+    return useQCPesoStore.getState().uploadProfilePicture(file);
   },
 };

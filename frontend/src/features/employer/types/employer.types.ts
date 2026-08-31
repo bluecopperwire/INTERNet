@@ -30,6 +30,7 @@ export interface Applicant {
   requiredHours: number
   availabilityDays: string
   availabilityDate: string
+  profileImageUrl?: string
   rejectionRemark?: string
   documents?: Array<{
     submissionId?: number

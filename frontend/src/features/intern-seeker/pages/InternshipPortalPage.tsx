@@ -196,7 +196,13 @@ function OpportunityCard({ opportunity, onSelect }: { opportunity: InternshipOpp
   return (
     <button className={styles.opportunityCard} type="button" onClick={() => onSelect(opportunity)}>
       <div className={styles.cardCompanyRow}>
-        <span className={styles.companyMark} aria-hidden="true">{companyInitials}</span>
+        <span className={styles.companyMark} aria-hidden="true">
+          {opportunity.companyLogoUrl ? (
+            <img src={opportunity.companyLogoUrl} alt="" />
+          ) : (
+            companyInitials
+          )}
+        </span>
         <span>{opportunity.companyName}</span>
       </div>
       <h3>{opportunity.position}</h3>
@@ -220,7 +226,9 @@ function CompanyCard({ company, onSelect }: { company: PartnerCompany; onSelect:
 
   return (
     <button className={styles.companyCard} type="button" onClick={() => onSelect(company)}>
-      <span className={styles.companyLogoPlaceholder} aria-hidden="true">{companyInitials}</span>
+      <span className={styles.companyLogoPlaceholder} aria-hidden="true">
+        {company.logoUrl ? <img src={company.logoUrl} alt="" /> : companyInitials}
+      </span>
       <h3>{company.name}</h3>
       <p className={styles.companySummary}>{company.summary}</p>
       <p className={styles.companyDescription}>{company.description}</p>

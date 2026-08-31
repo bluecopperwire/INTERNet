@@ -95,7 +95,7 @@ export function AdminEmployerDetailsPage() {
           <div className={detailStyles.body}>
             <section className={detailStyles.summary}>
               <span className={detailStyles.avatar}>
-                <Building2 size={30} />
+                {record.profileImageUrl ? <img src={record.profileImageUrl} alt={`${record.companyName} profile`} /> : <Building2 size={30} />}
               </span>
               <div className={detailStyles.summaryInfo}>
                 <h2>{record.companyName}</h2>

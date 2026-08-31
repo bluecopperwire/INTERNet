@@ -562,7 +562,11 @@ export function ReviewApplicantDetailsPage() {
           <aside className={detailStyles.profileCard}>
             <div className={detailStyles.profileAvatarRow}>
               <div className={detailStyles.avatarPlaceholder}>
-                <User size={34} />
+                {record.profileImageUrl ? (
+                  <img src={record.profileImageUrl} alt={`${record.studentName} profile`} />
+                ) : (
+                  <User size={34} />
+                )}
               </div>
               <div className={detailStyles.profileInfo}>
                 <h2>{record.studentName || 'N/A'}</h2>
@@ -767,7 +771,11 @@ export function ReferralDetailsPage() {
           <aside className={detailStyles.profileCard}>
             <div className={detailStyles.profileAvatarRow}>
               <div className={detailStyles.avatarPlaceholder}>
-                <User size={34} />
+                {record.profileImageUrl ? (
+                  <img src={record.profileImageUrl} alt={`${record.studentName} profile`} />
+                ) : (
+                  <User size={34} />
+                )}
               </div>
               <div className={detailStyles.profileInfo}>
                 <h2>{record.studentName || 'N/A'}</h2>

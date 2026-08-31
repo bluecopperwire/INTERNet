@@ -50,8 +50,10 @@ function OpportunityDetail({ opportunity }: { opportunity: InternshipOpportunity
         <header className={styles.detailHeader}>
           <div className={styles.headerCopy}>
             <div className={styles.companyRow}>
-              <span className={styles.companyImage} aria-label={`${opportunity.companyName} logo placeholder`} title={`${opportunity.companyName} logo placeholder`}>
-                {companyInitials || <Building2 aria-hidden="true" />}
+              <span className={styles.companyImage}>
+                {opportunity.companyLogoUrl ? (
+                  <img src={opportunity.companyLogoUrl} alt={`${opportunity.companyName} logo`} />
+                ) : companyInitials || <Building2 aria-hidden="true" />}
               </span>
               <span>{opportunity.companyName}</span>
             </div>
