@@ -40,6 +40,7 @@ async function main() {
     const requiredMigrations = [
       'InitialSchema1785860400000',
       'ApprovedDatabaseRedesign1787788800000',
+      'AddStudentCustomIndustry1788134400000',
     ];
     const recognizedHistoricalMigrations = new Set([
       'AuthAlignmentV31786125600000',
@@ -71,7 +72,19 @@ async function main() {
       assert.equal(authCount, 1, 'Historical AuthAlignmentV31786125600000 cannot appear more than once.');
       pass('recognized historical migration AuthAlignmentV31786125600000 is present and valid');
     }
-    pass('initial and approved-redesign migrations are recorded');
+    pass('required migrations are recorded');
+
+    const customIndustries = await client.query(`
+      SELECT industry_name
+      FROM public.industry
+      WHERE is_custom_text = true
+    `);
+    assert.deepEqual(
+      customIndustries.rows,
+      [{ industry_name: 'Other' }],
+      'Exactly one designated Other industry is required for custom student preferences.',
+    );
+    pass('custom student preference industry is present');
 
     const canonicalAuthTables = await client.query(`
       SELECT table_name

@@ -134,6 +134,20 @@ const HOST_ORG_MAP_TO_DTO: Record<string, string> = {
   private: 'private',
 };
 
+const SEX_MAP_TO_UI: Record<string, string> = {
+  female: 'Female',
+  male: 'Male',
+  Female: 'Female',
+  Male: 'Male',
+};
+
+const SEX_MAP_TO_DTO: Record<string, string> = {
+  Female: 'female',
+  Male: 'male',
+  female: 'female',
+  male: 'male',
+};
+
 export function adaptStudentProfile(dto: StudentProfileResponse): UserProfile {
   const s = dto.student;
   const ac = dto.academic;
@@ -143,11 +157,15 @@ export function adaptStudentProfile(dto: StudentProfileResponse): UserProfile {
   const rawYear = ac?.year_level || '';
   const uiYear = YEAR_LEVEL_MAP_TO_UI[rawYear] || rawYear;
 
-  const rawSchedule = ip?.available_days || 'weekdays';
-  const uiSchedule = SCHEDULE_MAP_TO_UI[rawSchedule] || rawSchedule;
+  const rawSchedule = ip?.available_days || '';
+  const uiSchedule = rawSchedule
+    ? SCHEDULE_MAP_TO_UI[rawSchedule] || rawSchedule
+    : '';
 
-  const rawHostOrg = ip?.preferred_company_type || 'private';
-  const uiHostOrg = HOST_ORG_MAP_TO_UI[rawHostOrg] || rawHostOrg;
+  const rawHostOrg = ip?.preferred_company_type || '';
+  const uiHostOrg = rawHostOrg
+    ? HOST_ORG_MAP_TO_UI[rawHostOrg] || rawHostOrg
+    : '';
 
   const birthDateStr = s.birth_date ? String(s.birth_date).split('T')[0] : '';
   const startDateStr = ip?.start_date
@@ -169,7 +187,7 @@ export function adaptStudentProfile(dto: StudentProfileResponse): UserProfile {
     email: s.contact_email || '',
     linkedinUrl: s.linkedin_url || '',
     internshipStatus: 'Not Employed',
-    sex: s.sex || 'Male',
+    sex: SEX_MAP_TO_UI[s.sex] || s.sex || '',
     birthdate: birthDateStr,
     contactNumber: s.contact_number || '',
     address: {
@@ -187,18 +205,20 @@ export function adaptStudentProfile(dto: StudentProfileResponse): UserProfile {
     },
     preferences: {
       requiredHours: ip?.required_hours ?? '',
-      willingToAssignOutside: ip
-        ? Boolean(ip.allows_outside_preferred_field)
-        : false,
+      willingToAssignOutside:
+        ip?.allows_outside_preferred_field === true
+          ? true
+          : ip?.allows_outside_preferred_field === false
+            ? false
+            : null,
       preferredIndustries: pi.map(
         (p) =>
-          p.industry_name ||
-          p.custom_industry_name ||
+          (p.custom_industry_name ? 'Other' : p.industry_name) ||
           String(p.industry_id || ''),
       ),
       otherPreferredField:
         pi.find((p) => p.custom_industry_name)?.custom_industry_name || '',
-      schedule: [uiSchedule],
+      schedule: uiSchedule ? [uiSchedule] : [],
       startDate: startDateStr,
       hostOrgType: uiHostOrg,
     },
@@ -214,12 +234,11 @@ export function adaptStudentProfileToUpdateDto(
   }> = [],
 ) {
   const normYear =
-    YEAR_LEVEL_MAP_TO_DTO[profile.academic?.yearLevel || ''] ||
-    'third_year_college';
+    YEAR_LEVEL_MAP_TO_DTO[profile.academic?.yearLevel || ''] || '';
   const normSchedule =
-    SCHEDULE_MAP_TO_DTO[profile.preferences?.schedule?.[0] || ''] || 'weekdays';
+    SCHEDULE_MAP_TO_DTO[profile.preferences?.schedule?.[0] || ''] || '';
   const normOrgType =
-    HOST_ORG_MAP_TO_DTO[profile.preferences?.hostOrgType || ''] || 'private';
+    HOST_ORG_MAP_TO_DTO[profile.preferences?.hostOrgType || ''] || '';
 
   const birthDateValue =
     profile.birthdate && profile.birthdate.trim()
@@ -229,7 +248,7 @@ export function adaptStudentProfileToUpdateDto(
   const startDateValue =
     profile.preferences?.startDate && profile.preferences.startDate.trim()
       ? profile.preferences.startDate.split('T')[0]
-      : new Date().toISOString().split('T')[0];
+      : '';
 
   const preferredIndustriesDto: Array<{
     industryId: number;
@@ -248,11 +267,6 @@ export function adaptStudentProfileToUpdateDto(
           industryId: customInd.industryId,
           customIndustryName: customName || undefined,
         });
-      } else if (referenceIndustries.length > 0) {
-        preferredIndustriesDto.push({
-          industryId: referenceIndustries[0].industryId,
-          customIndustryName: customName || undefined,
-        });
       }
       return;
     }
@@ -267,12 +281,6 @@ export function adaptStudentProfileToUpdateDto(
     }
   });
 
-  if (preferredIndustriesDto.length === 0 && referenceIndustries.length > 0) {
-    preferredIndustriesDto.push({
-      industryId: referenceIndustries[0].industryId,
-    });
-  }
-
   const allowedInquiries = ['walk_in', 'online', 'phone_call', 'school'];
   const inquiryMethod =
     profile.inquiryVia && allowedInquiries.includes(profile.inquiryVia)
@@ -284,7 +292,7 @@ export function adaptStudentProfileToUpdateDto(
     middleName: profile.middleName || undefined,
     lastName: profile.lastName || '',
     extensionName: profile.extensionName || undefined,
-    sex: profile.sex || 'Male',
+    sex: SEX_MAP_TO_DTO[profile.sex || ''] || profile.sex || '',
     birthDate: birthDateValue,
     contactNumber: profile.contactNumber || '',
     contactEmail: profile.email || '',
@@ -300,13 +308,12 @@ export function adaptStudentProfileToUpdateDto(
       yearLevel: normYear,
     },
     internshipPreference: {
-      requiredHours: Number(profile.preferences?.requiredHours) || 300,
+      requiredHours: Number(profile.preferences?.requiredHours),
       availableDays: normSchedule,
       preferredCompanyType: normOrgType,
       startDate: startDateValue,
-      allowsOutsidePreferredField: Boolean(
-        profile.preferences?.willingToAssignOutside,
-      ),
+      allowsOutsidePreferredField:
+        profile.preferences?.willingToAssignOutside ?? null,
     },
     preferredIndustries: preferredIndustriesDto,
   };

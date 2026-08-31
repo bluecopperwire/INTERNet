@@ -5,7 +5,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { existsSync, unlinkSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Student } from '../entities/student.entity';
@@ -156,6 +156,24 @@ export class StudentsService {
 
       if (!studentExists.length) {
         throw new NotFoundException('Student not found');
+      }
+
+      const isSavingInternshipPreferences =
+        dto.internshipPreference !== undefined ||
+        dto.preferredIndustries !== undefined;
+      if (
+        isSavingInternshipPreferences &&
+        (!dto.internshipPreference || !dto.preferredIndustries)
+      ) {
+        throw new BadRequestException(
+          'Internship preferences and at least one preferred field are required together.',
+        );
+      }
+      if (dto.preferredIndustries) {
+        await this.validatePreferredIndustries(
+          manager,
+          dto.preferredIndustries,
+        );
       }
 
       await manager.query(
@@ -318,6 +336,58 @@ export class StudentsService {
     });
 
     return this.getStudentProfile(studentId);
+  }
+
+  private async validatePreferredIndustries(
+    manager: EntityManager,
+    preferredIndustries: Array<{
+      industryId: number;
+      customIndustryName?: string;
+    }>,
+  ): Promise<void> {
+    const industryIds = preferredIndustries.map((item) => item.industryId);
+    if (new Set(industryIds).size !== industryIds.length) {
+      throw new BadRequestException('Preferred industry IDs must be unique.');
+    }
+
+    const industries: Array<{
+      industry_id: number;
+      is_custom_text: boolean;
+    }> = await manager.query(
+      `
+        SELECT industry_id, is_custom_text
+        FROM public.industry
+        WHERE industry_id = ANY($1::int[])
+      `,
+      [industryIds],
+    );
+    if (industries.length !== industryIds.length) {
+      throw new BadRequestException('A preferred industry does not exist.');
+    }
+
+    const customByIndustryId = new Map(
+      industries.map((industry) => [
+        Number(industry.industry_id),
+        industry.is_custom_text,
+      ]),
+    );
+    for (const preferredIndustry of preferredIndustries) {
+      const isCustom = customByIndustryId.get(preferredIndustry.industryId);
+      const customName = preferredIndustry.customIndustryName?.trim();
+      if (isCustom && !customName) {
+        throw new BadRequestException(
+          'customIndustryName is required for the custom industry.',
+        );
+      }
+      if (!isCustom && preferredIndustry.customIndustryName !== undefined) {
+        throw new BadRequestException(
+          'customIndustryName is allowed only for the custom industry.',
+        );
+      }
+      if (isCustom) {
+        preferredIndustry.customIndustryName = customName;
+      }
+    }
   }
 
   async replaceProfilePicture(studentId: number, file: Express.Multer.File) {

@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { adminService } from '../services/admin.service'
 import type { StudentRecord } from '../types/admin.types'
 import styles from './AdminStudentDetailsPage.module.css'
+import { formatPreferredIndustries } from '../../../utils/preferred-industry-display'
 
 export function AdminStudentDetailsPage() {
   const { id } = useParams<{ id: string }>()
@@ -75,7 +76,7 @@ export function AdminStudentDetailsPage() {
               <Row label="Preferred Host Organization Type" value={student.hostOrgType} />
               <Row label="Internship Days Availability" value={student.scheduleAvailability.join(', ')} />
               <Row label="Internship Start Date Availability" value={student.startDate} />
-              <Row label="Preferred Field of Internship" value={student.preferredIndustries.join(', ')} />
+              <Row label="Preferred Field of Internship" value={formatPreferredIndustries(student.preferredIndustries, student.otherPreferredField)} />
               <Row label="Willing to Be Assigned Outside Preferred Field" value={student.flexibleAssignment ? 'Yes' : 'No'} />
             </InfoCard>
           </div>

@@ -514,7 +514,7 @@ export function adaptMonitoredStudent(row: any): MonitoredStudentUser {
           .map((ind: any) =>
             typeof ind === "string"
               ? ind
-              : ind.industry_name || ind.custom_industry_name || "",
+              : ind.custom_industry_name || ind.industry_name || "",
           )
           .filter(Boolean)
           .join(", ")

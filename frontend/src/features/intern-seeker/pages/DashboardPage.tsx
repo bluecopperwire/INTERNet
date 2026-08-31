@@ -12,6 +12,7 @@ import headerImage from '../../../assets/requirements-header-image.png'
 import { useInternshipPortal } from '../hooks/useInternshipPortal'
 import styles from './DashboardPage.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
+import { formatPreferredIndustries } from '../../../utils/preferred-industry-display'
 
 const displayValue = (value: string | number | null | undefined) =>
   value || 'Not provided'
@@ -189,7 +190,10 @@ export const DashboardPage: React.FC = () => {
             ],
             [
               'Preferred Field of Internship',
-              profile.preferences.preferredIndustries.join(', '),
+              formatPreferredIndustries(
+                profile.preferences.preferredIndustries,
+                profile.preferences.otherPreferredField,
+              ),
             ],
             [
               'Willing to Be Assigned Outside Preferred Field',

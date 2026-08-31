@@ -1,6 +1,7 @@
 import React from 'react'
 import styles from './ProfileDetailsModal.module.css'
 import type { UserProfile } from '../types/internship.types'
+import { formatPreferredIndustries } from '../../../utils/preferred-industry-display'
 
 interface ProfileDetailsModalProps {
   isOpen: boolean
@@ -89,7 +90,7 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({ isOpen
               </div>
               <div className={styles.field}>
                 <label>Preferred Industries</label>
-                <span>{profile.preferences.preferredIndustries?.length > 0 ? profile.preferences.preferredIndustries.join(', ') : 'N/A'}</span>
+                <span>{profile.preferences.preferredIndustries?.length > 0 ? formatPreferredIndustries(profile.preferences.preferredIndustries, profile.preferences.otherPreferredField) : 'N/A'}</span>
               </div>
               <div className={styles.field}>
                 <label>Schedule Availability</label>

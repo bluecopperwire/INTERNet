@@ -64,6 +64,11 @@ export const ProfileEditorPage: React.FC = () => {
         preferences: {
           ...(previous.preferences as UserProfile['preferences']),
           [field]: nextValues,
+          ...(field === 'preferredIndustries' &&
+          value === 'Other' &&
+          currentValues.includes(value)
+            ? { otherPreferredField: '' }
+            : {}),
         },
       }
     })
@@ -193,7 +198,7 @@ export const ProfileEditorPage: React.FC = () => {
                 <Field label="Internship Required Hours" required><input required min="1" type="number" name="preferences.requiredHours" placeholder="Enter required hours" value={formData.preferences?.requiredHours ?? ''} onChange={handleChange} /></Field>
                 <Field label="Preferred Host Organization Type" required>
                   <select required name="preferences.hostOrgType" value={formData.preferences?.hostOrgType ?? ''} onChange={handleChange}>
-                    <option value="">Select organization type</option><option value="Government">Government</option><option value="Private">Private</option>
+                    <option value="">Select Organization Type</option><option value="Government">Government</option><option value="Private">Private</option>
                   </select>
                 </Field>
               </div>
@@ -202,7 +207,7 @@ export const ProfileEditorPage: React.FC = () => {
                 <fieldset className={styles.choiceField}>
                   <legend>Internship Days Availability <span>*</span></legend>
                   <div className={styles.radioGroup}>
-                    {SCHEDULES.map(item => <label key={item}><input type="radio" name="internshipSchedule" checked={formData.preferences?.schedule?.[0] === item} onChange={() => selectSchedule(item)} />{item}</label>)}
+                    {SCHEDULES.map(item => <label key={item}><input required type="radio" name="internshipSchedule" checked={formData.preferences?.schedule?.[0] === item} onChange={() => selectSchedule(item)} />{item}</label>)}
                   </div>
                 </fieldset>
                 <Field label="Internship Start Date Availability" required><input required type="date" name="preferences.startDate" value={formData.preferences?.startDate ?? ''} onChange={handleChange} /></Field>
@@ -217,7 +222,7 @@ export const ProfileEditorPage: React.FC = () => {
                       <input type="checkbox" checked={formData.preferences?.preferredIndustries?.includes('Other') ?? false} onChange={() => togglePreference('preferredIndustries', 'Other')} />
                       Other
                     </label>
-                    <input type="text" aria-label="Other preferred internship field" disabled={!(formData.preferences?.preferredIndustries?.includes('Other') ?? false)} name="preferences.otherPreferredField" placeholder="Please specify" value={formData.preferences?.otherPreferredField ?? ''} onChange={handleChange} />
+                    <input type="text" aria-label="Other preferred internship field" required={formData.preferences?.preferredIndustries?.includes('Other') ?? false} disabled={!(formData.preferences?.preferredIndustries?.includes('Other') ?? false)} name="preferences.otherPreferredField" placeholder="Please specify" value={formData.preferences?.otherPreferredField ?? ''} onChange={handleChange} />
                   </div>
                 </div>
               </fieldset>
