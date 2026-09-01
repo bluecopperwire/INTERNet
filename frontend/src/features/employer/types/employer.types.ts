@@ -1,3 +1,6 @@
+import type { ApplicationStatus, CompanyResponse, ReferralStatus, StudentResponse } from '../../../types/api'
+import type { WorkflowDisplayStatus } from '../../workflow/status-mappings'
+
 export interface Opportunity {
   id: string
   title: string
@@ -21,7 +24,12 @@ export interface Applicant {
   course: string
   yearLevel: string
   dateApplied: string
-  status: 'Pending' | 'For Interview' | 'For Review' | 'Under Review' | 'Shortlisted' | 'Accepted' | 'Rejected'
+  status: WorkflowDisplayStatus
+  applicationStatus?: ApplicationStatus
+  referralStatus?: ReferralStatus
+  companyResponse?: CompanyResponse
+  studentResponse?: StudentResponse
+  canHide: boolean
   email: string
   phone: string
   location: string
@@ -121,7 +129,7 @@ export interface InternshipAssignment {
   company: string
   jobTitle: string
   acceptanceDate: string
-  studentResponse: 'Pending Response' | 'Accepted' | 'Declined' | 'Unknown'
+  studentResponse: 'Pending' | 'Accepted' | 'Rejected' | 'Unknown'
   workingDays: string
   requiredHours: number
   startDate: string

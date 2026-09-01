@@ -30,6 +30,7 @@ export const attendanceService = {
     const details = useStudentTrackingStore.getState().internshipDetails;
     if (!details) {
       return {
+        assignmentId: 0,
         companyName: 'Not Assigned',
         jobTitle: 'Intern',
         workingDays: 'weekdays',

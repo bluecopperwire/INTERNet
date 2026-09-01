@@ -12,6 +12,7 @@ import {
   Phone,
   Search,
   SlidersHorizontal,
+  Trash2,
   User,
   X,
 } from 'lucide-react'
@@ -26,6 +27,7 @@ import tableStyles from '../../employer/pages/ApplicantsPage.module.css'
 import detailStyles from '../../employer/pages/ReviewApplicantPage.module.css'
 import { API_BASE_URL } from '../../../services/api'
 import { getApplicantReviewDetail, openApplicantForReview } from '../services/qcpeso-review-flow'
+import { ConfirmDeleteModal } from '../../../components/feedback/ConfirmDeleteModal'
 
 const APPLICANT_REQUIREMENTS = [
   { key: 'proof_of_residency', label: 'Proof of Residency' },
@@ -98,15 +100,15 @@ async function handleDownloadFile(filePath: string, fileName: string) {
 
 function statusClass(status: string) {
   if (status === 'Accepted') return tableStyles.accepted
-  if (status === 'Rejected') return tableStyles.rejected
-  if (status === 'For Review' || status === 'For Interview') return tableStyles.underReview
+  if (['Rejected', 'Withdrawn', 'Expired', 'Offer Declined'].includes(status)) return tableStyles.rejected
+  if (['For Review', 'Under Review', 'Interview Scheduled', 'Offer Received', 'Endorsed'].includes(status)) return tableStyles.underReview
   return ''
 }
 
 function detailStatusClass(status: string) {
   if (status === 'Accepted') return detailStyles.accepted
-  if (status === 'Rejected') return detailStyles.rejected
-  if (status === 'For Review' || status === 'For Interview') return detailStyles.underReview
+  if (['Rejected', 'Withdrawn', 'Expired', 'Offer Declined'].includes(status)) return detailStyles.rejected
+  if (['For Review', 'Under Review', 'Interview Scheduled', 'Offer Received', 'Endorsed'].includes(status)) return detailStyles.underReview
   return ''
 }
 
@@ -143,6 +145,8 @@ export function ReviewApplicantsPage() {
   const [records, setRecords] = useState<QCPesoReviewApplicant[]>([])
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('All')
+  const [deleteTarget, setDeleteTarget] = useState<QCPesoReviewApplicant | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     qcpesoService.getReviewApplicants().then(setRecords)
@@ -166,6 +170,21 @@ export function ReviewApplicantsPage() {
     })
   }
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    setIsDeleting(true)
+    try {
+      await qcpesoService.deleteApplication(deleteTarget.id)
+      setRecords((current) => current.filter((record) => record.id !== deleteTarget.id))
+      setDeleteTarget(null)
+      toast.success('Application deleted.')
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to delete application.'))
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   return (
     <main className={tableStyles.pageContainer}>
       <QCPesoHero
@@ -186,9 +205,17 @@ export function ReviewApplicantsPage() {
             <SlidersHorizontal size={18} />
             <select value={status} onChange={(event) => setStatus(event.target.value)}>
               <option value="All">All Statuses</option>
-              <option>Pending</option>
+              <option>For Review</option>
+              <option>Under Review</option>
+              <option>Endorsed</option>
+              <option>Interview Scheduled</option>
+              <option>Offer Received</option>
               <option>Accepted</option>
+              <option>Offer Declined</option>
               <option>Rejected</option>
+              <option>Withdrawn</option>
+              <option>Expired</option>
+              <option>Closed</option>
             </select>
           </label>
         </div>
@@ -220,10 +247,10 @@ export function ReviewApplicantsPage() {
                       <span className={`${tableStyles.statusPill} ${statusClass(record.status)}`}>{record.status}</span>
                     </td>
                     <td>
-                      <button className={tableStyles.reviewBtn} onClick={() => void handleOpenApplicant(record)}>
-                        <Eye size={16} />
-                        Review
-                      </button>
+                      <div className={tableStyles.actionButtons}>
+                        <button className={tableStyles.reviewBtn} onClick={() => void handleOpenApplicant(record)}><Eye size={16} />{record.applicationStatus === 'submitted' ? 'Review' : 'View'}</button>
+                        {record.canHide && <button className={tableStyles.deleteBtn} onClick={() => setDeleteTarget(record)}><Trash2 size={16} />Delete</button>}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -240,6 +267,7 @@ export function ReviewApplicantsPage() {
         </div>
         <Pagination itemName="Students" />
       </section>
+      {deleteTarget && <ConfirmDeleteModal subject={`${deleteTarget.studentName}'s application`} isDeleting={isDeleting} onClose={() => setDeleteTarget(null)} onConfirm={() => void handleDelete()} />}
     </main>
   )
 }
@@ -249,6 +277,9 @@ export function TrackReferralsPage() {
   const [records, setRecords] = useState<QCPesoReferral[]>([])
   const [search, setSearch] = useState('')
   const [response, setResponse] = useState('All')
+  const [deleteTarget, setDeleteTarget] = useState<QCPesoReferral | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const toast = useToastStore()
 
   useEffect(() => {
     qcpesoService.getReferrals().then(setRecords)
@@ -259,10 +290,25 @@ export function TrackReferralsPage() {
       records.filter(
         (record) =>
           (record.studentName + record.company + record.jobTitle).toLowerCase().includes(search.toLowerCase()) &&
-          (response === 'All' || record.companyResponse === response),
+          (response === 'All' || record.workflowStatus === response),
       ),
     [records, search, response],
   )
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    setIsDeleting(true)
+    try {
+      await qcpesoService.deleteReferral(deleteTarget.id)
+      setRecords((current) => current.filter((record) => record.id !== deleteTarget.id))
+      setDeleteTarget(null)
+      toast.success('Referral deleted.')
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to delete referral.'))
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   return (
     <main className={tableStyles.pageContainer}>
@@ -280,11 +326,17 @@ export function TrackReferralsPage() {
           <label className={tableStyles.statusFilter}>
             <SlidersHorizontal size={18} />
             <select value={response} onChange={(event) => setResponse(event.target.value)}>
-              <option value="All">All Responses</option>
+              <option value="All">All Statuses</option>
               <option>Pending</option>
-              <option>For Interview</option>
+              <option>Under Review</option>
+              <option>Interview Scheduled</option>
+              <option>Offer Received</option>
               <option>Accepted</option>
+              <option>Offer Declined</option>
               <option>Rejected</option>
+              <option>Withdrawn</option>
+              <option>Expired</option>
+              <option>Closed</option>
             </select>
           </label>
         </div>
@@ -299,6 +351,7 @@ export function TrackReferralsPage() {
                   <th>Referral Date</th>
                   <th>Company Response</th>
                   <th>Student Response</th>
+                  <th>Status</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -319,20 +372,18 @@ export function TrackReferralsPage() {
                         {record.studentResponse}
                       </span>
                     </td>
+                    <td><span className={`${tableStyles.statusPill} ${statusClass(record.workflowStatus)}`}>{record.workflowStatus}</span></td>
                     <td>
-                      <button
-                        className={tableStyles.reviewBtn}
-                        onClick={() => navigate(`/qcpeso/manage-applicants/referrals/${record.id}`)}
-                      >
-                        <Eye size={16} />
-                        Review
-                      </button>
+                      <div className={tableStyles.actionButtons}>
+                        <button className={tableStyles.reviewBtn} onClick={() => navigate(`/qcpeso/manage-applicants/referrals/${record.id}`)}><Eye size={16} />View</button>
+                        {record.canHide && <button className={tableStyles.deleteBtn} onClick={() => setDeleteTarget(record)}><Trash2 size={16} />Delete</button>}
+                      </div>
                     </td>
                   </tr>
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={7} style={{ textAlign: 'center', padding: 24 }}>
+                    <td colSpan={8} style={{ textAlign: 'center', padding: 24 }}>
                       No referrals found.
                     </td>
                   </tr>
@@ -343,6 +394,7 @@ export function TrackReferralsPage() {
         </div>
         <Pagination itemName="Students" />
       </section>
+      {deleteTarget && <ConfirmDeleteModal subject={`${deleteTarget.studentName}'s referral`} isDeleting={isDeleting} onClose={() => setDeleteTarget(null)} onConfirm={() => void handleDelete()} />}
     </main>
   )
 }
@@ -423,6 +475,7 @@ export function ReviewApplicantDetailsPage() {
   const [loadedApplicationId, setLoadedApplicationId] = useState<string | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
   const [showRejectModal, setShowRejectModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const toast = useToastStore()
 
   useEffect(() => {
@@ -513,6 +566,20 @@ export function ReviewApplicantDetailsPage() {
 
   const handleRejectConfirm = async (remark: string) => {
     await updateStatus('Rejected', remark)
+  }
+
+  const handleDeleteApplication = async () => {
+    if (isUpdating) return
+    setIsUpdating(true)
+    try {
+      await qcpesoService.deleteApplication(record.id)
+      toast.success('Application deleted.')
+      navigate('/qcpeso/manage-applicants/review')
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to delete application.'))
+    } finally {
+      setIsUpdating(false)
+    }
   }
 
   return (
@@ -634,6 +701,7 @@ export function ReviewApplicantDetailsPage() {
               </button>
             </>
           )}
+          {record.canHide && <button className={detailStyles.actionRed} disabled={isUpdating} onClick={() => setShowDeleteModal(true)}><Trash2 size={17} />Delete</button>}
         </footer>
       </section>
 
@@ -645,6 +713,7 @@ export function ReviewApplicantDetailsPage() {
           onConfirm={handleRejectConfirm}
         />
       )}
+      {showDeleteModal && <ConfirmDeleteModal subject={`${record.studentName}'s application`} isDeleting={isUpdating} onClose={() => setShowDeleteModal(false)} onConfirm={() => void handleDeleteApplication()} />}
     </main>
   )
 }
@@ -655,6 +724,9 @@ export function ReferralDetailsPage() {
   const [record, setRecord] = useState<QCPesoReferral | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const toast = useToastStore()
 
   useEffect(() => {
     if (id) {
@@ -712,6 +784,19 @@ export function ReferralDetailsPage() {
         </div>
       </main>
     )
+  }
+
+  const handleDeleteReferral = async () => {
+    setIsDeleting(true)
+    try {
+      await qcpesoService.deleteReferral(record.id)
+      toast.success('Referral deleted.')
+      navigate('/qcpeso/manage-applicants/referrals')
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to delete referral.'))
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   return (
@@ -787,7 +872,9 @@ export function ReferralDetailsPage() {
             />
           </div>
         </div>
+        {record.canHide && <footer className={detailStyles.actionBar}><button className={detailStyles.actionRed} disabled={isDeleting} onClick={() => setShowDeleteModal(true)}><Trash2 size={17} />Delete</button></footer>}
       </section>
+      {showDeleteModal && <ConfirmDeleteModal subject={`${record.studentName}'s referral`} isDeleting={isDeleting} onClose={() => setShowDeleteModal(false)} onConfirm={() => void handleDeleteReferral()} />}
     </main>
   )
 }

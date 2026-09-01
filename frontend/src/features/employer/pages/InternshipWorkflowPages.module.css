@@ -341,6 +341,12 @@
   background: #160e6f;
 }
 
+.assignmentRowActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
 .assignmentEmpty {
   margin: 0;
   padding: 40px;

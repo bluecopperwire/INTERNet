@@ -42,6 +42,7 @@ async function main() {
       'ApprovedDatabaseRedesign1787788800000',
       'AddStudentCustomIndustry1788134400000',
       'ApplicationWorkflowAlignment1788220800000',
+      'ApplicationInitialStatusHistory1788307200000',
     ];
     const recognizedHistoricalMigrations = new Set([
       'AuthAlignmentV31786125600000',
@@ -293,6 +294,28 @@ async function main() {
       'application/referral workflow triggers must remain enabled',
     );
     pass('application and referral workflow triggers remain enabled');
+
+    const initialApplicationHistory = await client.query(`
+      SELECT
+        (SELECT is_nullable FROM information_schema.columns
+         WHERE table_schema = 'public'
+           AND table_name = 'application_status_history'
+           AND column_name = 'previous_application_status') AS previous_status_nullable,
+        to_regprocedure('public.fn_record_application_initial_status_history()') IS NOT NULL AS history_function,
+        EXISTS (
+          SELECT 1 FROM pg_trigger
+          WHERE tgrelid = 'public.application'::regclass
+            AND tgname = 'trg_application_initial_status_history'
+            AND NOT tgisinternal
+            AND tgenabled <> 'D'
+        ) AS history_trigger
+    `);
+    assert.deepEqual(initialApplicationHistory.rows[0], {
+      previous_status_nullable: 'YES',
+      history_function: true,
+      history_trigger: true,
+    });
+    pass('new applications record their initial submitted status history');
 
     const alignedFunctions = await client.query(`
       SELECT p.proname, pg_get_functiondef(p.oid) AS definition

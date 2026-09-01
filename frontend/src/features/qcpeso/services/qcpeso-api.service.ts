@@ -53,6 +53,10 @@ export const qcpesoApiService = {
     return response.data;
   },
 
+  async hideApplication(applicationId: number): Promise<void> {
+    await api.delete(`/dashboard/peso/applications/${applicationId}`);
+  },
+
   async getEmployers(params?: any): Promise<PaginatedResponse<any>> {
     const response = await api.get<PaginatedResponse<any>>(
       "/dashboard/peso/employers",
@@ -84,6 +88,10 @@ export const qcpesoApiService = {
   async getReferralDetail(referralId: number): Promise<any> {
     const response = await api.get(`/dashboard/peso/referrals/${referralId}`);
     return response.data;
+  },
+
+  async hideReferral(referralId: number): Promise<void> {
+    await api.delete(`/dashboard/peso/referrals/${referralId}`);
   },
 
   async getInterns(

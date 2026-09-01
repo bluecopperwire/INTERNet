@@ -57,6 +57,20 @@ export class EmployerInternshipService {
         JOIN public.student s ON s.student_id = a.student_id
         WHERE o.company_id = $1
           AND r.company_response = 'accepted'
+          AND (
+            (r.referral_status = 'under_review'
+              AND a.application_status = 'approved_for_referral'
+              AND a.student_response = 'pending')
+            OR
+            (r.referral_status = 'closed'
+              AND a.application_status = 'closed'
+              AND a.student_response IN ('accepted', 'declined'))
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM public.referral_visibility rv
+            WHERE rv.referral_id = r.referral_id
+              AND rv.employer_hidden_at IS NOT NULL
+          )
           AND NOT EXISTS (
             SELECT 1 FROM public.internship_assignment deleted_assignment
             WHERE deleted_assignment.referral_id = r.referral_id
@@ -83,6 +97,20 @@ export class EmployerInternshipService {
         LEFT JOIN public.internship_assignment ia ON ia.referral_id = r.referral_id
         WHERE o.company_id = $1
           AND r.company_response = 'accepted'
+          AND (
+            (r.referral_status = 'under_review'
+              AND a.application_status = 'approved_for_referral'
+              AND a.student_response = 'pending')
+            OR
+            (r.referral_status = 'closed'
+              AND a.application_status = 'closed'
+              AND a.student_response IN ('accepted', 'declined'))
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM public.referral_visibility rv
+            WHERE rv.referral_id = r.referral_id
+              AND rv.employer_hidden_at IS NOT NULL
+          )
           AND NOT EXISTS (
             SELECT 1 FROM public.internship_assignment deleted_assignment
             WHERE deleted_assignment.referral_id = r.referral_id

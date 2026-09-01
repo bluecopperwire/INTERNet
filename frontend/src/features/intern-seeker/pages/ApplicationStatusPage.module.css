@@ -85,21 +85,51 @@
 }
 
 .applicationItem {
-  display: grid;
+  display: flex;
   width: 100%;
-  grid-template-columns: 66px minmax(0, 1fr) auto 26px;
   align-items: center;
-  gap: 12px;
-  padding: 14px;
+  gap: 6px;
+  padding: 6px;
   border: 1px solid #e1e4ec;
   border-radius: 10px;
   color: #21167b;
   background: #ffffff;
   font-family: inherit;
-  text-align: left;
-  cursor: pointer;
   transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease, background 160ms ease;
 }
+
+.applicationSelectButton {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  grid-template-columns: 66px minmax(0, 1fr) auto 26px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.listDeleteButton {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  padding: 0;
+  place-items: center;
+  border: 1px solid #e25555;
+  border-radius: 7px;
+  color: #c93636;
+  background: #fff;
+  cursor: pointer;
+}
+
+.listDeleteButton:hover { color: #fff; background: #e25555; }
+.listDeleteButton svg { width: 17px; height: 17px; }
 
 .applicationItem:hover {
   border-color: #c8ceed;

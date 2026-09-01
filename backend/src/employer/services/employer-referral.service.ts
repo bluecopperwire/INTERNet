@@ -445,8 +445,8 @@ export class EmployerReferralService {
     const offset = (query.page - 1) * query.limit;
     const rows: ReferralRow[] = await this.dataSource.query(
       `
-        SELECT r.referral_id, r.company_response, r.referred_at,
-               a.application_id, a.submitted_at,
+        SELECT r.referral_id, r.referral_status, r.company_response, r.referred_at,
+               a.application_id, a.application_status, a.student_response, a.submitted_at,
                s.student_id,
                concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS student_full_name,
                sai.strand_program, sai.year_level,
@@ -481,7 +481,10 @@ export class EmployerReferralService {
         strandProgram: row.strand_program,
         yearLevel: row.year_level,
         submittedAt: row.submitted_at,
+        referralStatus: row.referral_status,
+        applicationStatus: row.application_status,
         companyResponse: row.company_response,
+        studentResponse: row.student_response,
       })),
       query.page,
       query.limit,
@@ -549,6 +552,7 @@ export class EmployerReferralService {
       },
       application: {
         applicationId: asNumber(row.application_id),
+        applicationStatus: row.application_status,
         submittedAt: row.submitted_at,
         studentResponse: row.student_response,
       },

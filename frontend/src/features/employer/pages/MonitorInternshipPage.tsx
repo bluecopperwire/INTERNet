@@ -1,10 +1,13 @@
-import { ChevronLeft, ChevronRight, Eye, Search, SlidersHorizontal } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Eye, Search, SlidersHorizontal, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { EmployerHero } from '../components/EmployerHero'
 import { employerService } from '../services/employer.service'
 import type { EmployerInternshipDetails } from '../types/employer.types'
 import styles from './MonitorInternshipPage.module.css'
+import { ConfirmDeleteModal } from '../../../components/feedback/ConfirmDeleteModal'
+import { useToastStore } from '../../../stores/useToastStore'
+import { getErrorMessage } from '../../../utils/error-message'
 
 export function MonitorInternshipPage() {
   const navigate = useNavigate()
@@ -13,6 +16,9 @@ export function MonitorInternshipPage() {
   const [status, setStatus] = useState('All')
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(7)
+  const [deleteTarget, setDeleteTarget] = useState<EmployerInternshipDetails | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const toast = useToastStore()
 
   useEffect(() => { employerService.getAllInternshipDetails().then(setInternships) }, [])
 
@@ -26,6 +32,20 @@ export function MonitorInternshipPage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
   const displayed = filtered.slice((page - 1) * perPage, page * perPage)
   const resetPage = () => setPage(1)
+  const deleteInternship = async () => {
+    if (!deleteTarget) return
+    setIsDeleting(true)
+    try {
+      await employerService.deleteInternshipDetails(deleteTarget.applicantId)
+      setInternships((current) => current.filter((item) => item.applicantId !== deleteTarget.applicantId))
+      setDeleteTarget(null)
+      toast.success('Internship record deleted.')
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to delete internship record.'))
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   return <main className={styles.page}>
     <EmployerHero title="Manage Internship" subtitle="Manage and monitor your active interns" comfortableSpacing />
@@ -44,7 +64,7 @@ export function MonitorInternshipPage() {
 
       <div className={styles.tableCard}>
         <div className={styles.tableScroller}>
-          <table className={styles.table}><thead><tr><th>Student Name</th><th>Job Title</th><th>Remaining Hours</th><th>Status</th><th>Action</th></tr></thead><tbody>{displayed.map((internship) => <tr key={internship.applicantId}><td><strong>{internship.studentName}</strong></td><td>{internship.jobTitle}</td><td>{Math.max(internship.requiredHours - internship.renderedHours, 0)} hrs</td><td><span className={`${styles.statusPill} ${styles[internship.status.replaceAll(' ', '').toLowerCase()]}`}>{internship.status}</span></td><td><button type="button" className={styles.viewButton} onClick={() => navigate(`/employer/manage-internship/${internship.applicantId}`)}><Eye size={16} />View</button></td></tr>)}</tbody></table>
+          <table className={styles.table}><thead><tr><th>Student Name</th><th>Job Title</th><th>Remaining Hours</th><th>Status</th><th>Action</th></tr></thead><tbody>{displayed.map((internship) => <tr key={internship.applicantId}><td><strong>{internship.studentName}</strong></td><td>{internship.jobTitle}</td><td>{Math.max(internship.requiredHours - internship.renderedHours, 0)} hrs</td><td><span className={`${styles.statusPill} ${styles[internship.status.replaceAll(' ', '').toLowerCase()]}`}>{internship.status}</span></td><td><div className={styles.rowActions}><button type="button" className={styles.viewButton} onClick={() => navigate(`/employer/manage-internship/${internship.applicantId}`)}><Eye size={16} />View</button>{['Completed', 'Cancelled', 'Withdrawn by Student'].includes(internship.status) && <button type="button" className={styles.viewButton} onClick={() => setDeleteTarget(internship)}><Trash2 size={16} />Delete</button>}</div></td></tr>)}</tbody></table>
         </div>
         {displayed.length === 0 && <p className={styles.emptyState}>No interns match the selected filters.</p>}
       </div>
@@ -54,6 +74,7 @@ export function MonitorInternshipPage() {
         <div className={styles.pagination}><button type="button" disabled={page === 1} onClick={() => setPage((current) => current - 1)}><ChevronLeft size={18} /></button><button type="button" className={styles.currentPage}>{page}</button><button type="button" disabled={page === totalPages} onClick={() => setPage((current) => current + 1)}><ChevronRight size={18} /></button></div>
       </div>
     </section>
+    {deleteTarget && <ConfirmDeleteModal subject={`${deleteTarget.studentName}'s internship record`} isDeleting={isDeleting} onClose={() => setDeleteTarget(null)} onConfirm={() => void deleteInternship()} />}
   </main>
 }
 

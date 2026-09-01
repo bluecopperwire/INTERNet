@@ -683,6 +683,7 @@ export function adaptAttendance(res: StudentAttendanceResponse): {
     };
 
     internshipDetails = {
+      assignmentId: a.internshipAssignmentId,
       companyName: a.companyName,
       jobTitle: a.jobTitle,
       workingDays: a.workingDays,

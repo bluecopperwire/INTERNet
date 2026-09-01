@@ -74,6 +74,7 @@ describe('Database migration paths and behavioral validation', () => {
       'ApprovedDatabaseRedesign1787788800000',
       'AddStudentCustomIndustry1788134400000',
       'ApplicationWorkflowAlignment1788220800000',
+      'ApplicationInitialStatusHistory1788307200000',
     ]);
 
     // Validate redesigned columns
@@ -125,6 +126,23 @@ describe('Database migration paths and behavioral validation', () => {
       `SELECT industry_name FROM public.industry WHERE is_custom_text = true`,
     );
     expect(customIndustries).toEqual([{ industry_name: 'Other' }]);
+
+    await dataSource.undoLastMigration();
+    const revertedInitialHistory = await dataSource.query(`
+      SELECT
+        (SELECT is_nullable FROM information_schema.columns
+         WHERE table_schema = 'public'
+           AND table_name = 'application_status_history'
+           AND column_name = 'previous_application_status') AS previous_status_nullable,
+        to_regprocedure('public.fn_record_application_initial_status_history()') AS initial_history_function,
+        (SELECT count(*)::int FROM public.migrations
+         WHERE name = 'ApplicationInitialStatusHistory1788307200000') AS migration_rows
+    `);
+    expect(revertedInitialHistory[0]).toEqual({
+      previous_status_nullable: 'NO',
+      initial_history_function: null,
+      migration_rows: 0,
+    });
 
     await dataSource.undoLastMigration();
     const revertedWorkflow = await dataSource.query(`
@@ -346,6 +364,36 @@ describe('Database migration paths and behavioral validation', () => {
       'ApprovedDatabaseRedesign1787788800000',
       'AddStudentCustomIndustry1788134400000',
       'ApplicationWorkflowAlignment1788220800000',
+      'ApplicationInitialStatusHistory1788307200000',
+    ]);
+
+    await dataSource.query(`
+      UPDATE public.opportunity
+      SET application_deadline = CURRENT_TIMESTAMP + INTERVAL '30 days'
+      WHERE title = 'Unpaid Role';
+    `);
+    const [newAttempt] = await dataSource.query(`
+      INSERT INTO public.application (student_id, opportunity_id)
+      VALUES (
+        (SELECT student_id FROM public.student
+         WHERE contact_email = 'legacy-active@example.test'),
+        (SELECT opportunity_id FROM public.opportunity
+         WHERE title = 'Unpaid Role')
+      )
+      RETURNING application_id;
+    `);
+    const creationHistory = await dataSource.query(
+      `SELECT previous_application_status, new_application_status
+       FROM public.application_status_history
+       WHERE application_id = $1
+       ORDER BY application_status_history_id`,
+      [newAttempt.application_id],
+    );
+    expect(creationHistory).toEqual([
+      {
+        previous_application_status: null,
+        new_application_status: 'submitted',
+      },
     ]);
 
     const backfilledRejections = await dataSource.query(`

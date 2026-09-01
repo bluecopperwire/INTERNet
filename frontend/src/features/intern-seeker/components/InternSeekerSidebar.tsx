@@ -23,7 +23,7 @@ const NAVIGATION = [
   { label: 'Internship Portal', path: '/intern-seeker', icon: Grid2X2, end: true },
   { label: 'User Profile', path: '/intern-seeker/profile', icon: UserRound },
   { label: 'DigiCV', path: '/intern-seeker/digicv', icon: ShieldCheck },
-  { label: 'Requirements', path: '/intern-seeker/requirements', icon: BriefcaseBusiness },
+  { label: 'My Tracking', path: '/intern-seeker/requirements', icon: BriefcaseBusiness },
 ]
 
 function InternSeekerSidebar({ isOpen, onClose }: InternSeekerSidebarProps) {

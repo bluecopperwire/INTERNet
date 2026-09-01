@@ -2307,4 +2307,57 @@ describe('student application workflow integration', () => {
       .set(auth(companyA.token))
       .expect(200);
   });
+
+  test('student assignment hide is terminal-only, student-scoped, and preserves the assignment', async () => {
+    const terminalReferral = await fixtures.referral(companyA.companyId, {
+      response: 'accepted',
+      studentResponse: 'accepted',
+      studentLabel: 'StudentAssignmentHide',
+    });
+    const terminalAssignmentId = await fixtures.assignment(
+      terminalReferral.referralId,
+      { status: 'completed' },
+    );
+    const activeReferral = await fixtures.referral(companyA.companyId, {
+      response: 'accepted',
+      studentResponse: 'accepted',
+      studentLabel: 'StudentAssignmentActive',
+    });
+    const activeAssignmentId = await fixtures.assignment(activeReferral.referralId);
+
+    await request(env.app.getHttpServer())
+      .delete(
+        `/students/${activeReferral.student.studentId}/assignments/${activeAssignmentId}`,
+      )
+      .set(auth(activeReferral.student.token))
+      .expect(409);
+
+    await request(env.app.getHttpServer())
+      .delete(
+        `/students/${terminalReferral.student.studentId}/assignments/${terminalAssignmentId}`,
+      )
+      .set(auth(terminalReferral.student.token))
+      .expect(200);
+
+    const [persisted] = await db.query(
+      `SELECT ia.internship_assignment_id, ia.deleted_at,
+              iav.student_hidden_at, iav.employer_hidden_at
+       FROM public.internship_assignment ia
+       JOIN public.internship_assignment_visibility iav
+         ON iav.internship_assignment_id = ia.internship_assignment_id
+       WHERE ia.internship_assignment_id = $1`,
+      [terminalAssignmentId],
+    );
+    expect(persisted).toMatchObject({
+      internship_assignment_id: terminalAssignmentId,
+      deleted_at: null,
+      employer_hidden_at: null,
+    });
+    expect(persisted.student_hidden_at).not.toBeNull();
+
+    await request(env.app.getHttpServer())
+      .get(`/employer/internships/${terminalAssignmentId}`)
+      .set(auth(companyA.token))
+      .expect(200);
+  });
 });

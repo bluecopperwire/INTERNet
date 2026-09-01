@@ -38,6 +38,27 @@ const resolver = {
 } as unknown as EmployerCompanyResolver;
 
 describe('EmployerInternshipService', () => {
+  it('limits Create Assignment candidates to the accepted-offer workflow', async () => {
+    const query = jest
+      .fn()
+      .mockResolvedValueOnce([{ total: '0' }])
+      .mockResolvedValueOnce([]);
+    const service = new EmployerInternshipService(
+      { query } as unknown as DataSource,
+      resolver,
+    );
+
+    await service.listCandidates(50, { page: 1, limit: 10 });
+
+    const sql = query.mock.calls.map(([statement]) => String(statement)).join('\n');
+    expect(sql).toContain("r.company_response = 'accepted'");
+    expect(sql).toContain("a.student_response = 'pending'");
+    expect(sql).toContain("a.student_response IN ('accepted', 'declined')");
+    expect(sql).toContain("r.referral_status = 'under_review'");
+    expect(sql).toContain("r.referral_status = 'closed'");
+    expect(sql).toContain('rv.employer_hidden_at IS NOT NULL');
+  });
+
   it.each([
     ['pending', 'accepted'],
     ['accepted', 'pending'],

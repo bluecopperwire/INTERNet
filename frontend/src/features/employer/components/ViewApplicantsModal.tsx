@@ -1,9 +1,13 @@
 import { useState, useEffect, useMemo } from 'react'
-import { X, Search, SlidersHorizontal, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
+import { X, Search, SlidersHorizontal, ChevronLeft, ChevronRight, Eye, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { employerService } from '../services/employer.service'
 import type { Opportunity, Applicant } from '../types/employer.types'
 import styles from './ViewApplicantsModal.module.css'
+import { openReferralForReview } from '../services/employer-review-flow'
+import { useToastStore } from '../../../stores/useToastStore'
+import { getErrorMessage } from '../../../utils/error-message'
+import { ConfirmDeleteModal } from '../../../components/feedback/ConfirmDeleteModal'
 
 interface ViewApplicantsModalProps {
   opportunity: Opportunity
@@ -14,6 +18,9 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
   const [applicants, setApplicants] = useState<Applicant[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const navigate = useNavigate()
+  const toast = useToastStore()
+  const [deleteTarget, setDeleteTarget] = useState<Applicant | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Pagination & Filtering state
   const [currentPage, setCurrentPage] = useState(1)
@@ -64,11 +71,34 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
     if (currentPage < totalPages) setCurrentPage(currentPage + 1)
   }
 
+  const openReferral = async (app: Applicant) => {
+    await openReferralForReview(app, {
+      markUnderReview: employerService.markApplicantUnderReview,
+      navigate: (path) => navigate(`${path}?from=opportunity&opportunityId=${opportunity.id}`),
+      onMutationError: (error) => toast.error(getErrorMessage(error, 'Failed to start referral review.')),
+    })
+  }
+
+  const deleteReferral = async () => {
+    if (!deleteTarget) return
+    setIsDeleting(true)
+    try {
+      await employerService.deleteReferral(deleteTarget.id)
+      setApplicants((current) => current.filter((app) => app.id !== deleteTarget.id))
+      setDeleteTarget(null)
+      toast.success('Referral deleted.')
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to delete referral.'))
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <h2 className={styles.modalTitle}>Applicants</h2>
+          <h2 className={styles.modalTitle}>Referrals</h2>
           <button className={styles.closeBtn} onClick={onClose}>
             <X size={24} color="#160e6f" />
           </button>
@@ -90,7 +120,7 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
           <div className={styles.statusFilter}>
             <SlidersHorizontal size={16} aria-hidden="true" />
             <select
-              aria-label="Filter applicants by status"
+              aria-label="Filter referrals by status"
               value={statusFilter}
               onChange={(event) => {
                 setStatusFilter(event.target.value)
@@ -98,10 +128,7 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
               }}
             >
               <option value="All">All Statuses</option>
-              <option value="Pending">Pending</option>
-              <option value="Accepted">Accepted</option>
-              <option value="For Interview">For Interview</option>
-              <option value="Rejected">Rejected</option>
+              {[...new Set(applicants.map((app) => app.status))].map((status) => <option key={status} value={status}>{status}</option>)}
             </select>
           </div>
         </div>
@@ -121,11 +148,11 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '24px' }}>Loading applicants...</td>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '24px' }}>Loading referrals...</td>
                 </tr>
               ) : currentItems.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '24px' }}>No applicants found.</td>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '24px' }}>No referrals found.</td>
                 </tr>
               ) : (
                 currentItems.map((app) => (
@@ -137,21 +164,16 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
                     <td>
                       <span className={`${styles.statusPill} ${
                         app.status === 'Accepted' ? styles.accepted :
-                        app.status === 'Rejected' ? styles.rejected :
-                        app.status === 'For Interview' ? styles.underReview :
+                        ['Rejected', 'Withdrawn', 'Expired', 'Offer Declined'].includes(app.status) ? styles.rejected :
+                        ['For Review', 'Under Review', 'Interview Scheduled', 'Offer Received'].includes(app.status) ? styles.underReview :
                         ''
                       }`}>
                         {app.status}
                       </span>
                     </td>
                     <td>
-                      <button 
-                        className={styles.reviewBtn}
-                        onClick={() => navigate(`/employer/applicants/${app.id}?from=opportunity&opportunityId=${opportunity.id}`)}
-                      >
-                        <Eye size={16} />
-                        <span>Review</span>
-                      </button>
+                      <button className={styles.reviewBtn} onClick={() => void openReferral(app)}><Eye size={16} /><span>{app.referralStatus === 'sent' ? 'Review' : 'View'}</span></button>
+                      {app.canHide && <button className={styles.reviewBtn} onClick={() => setDeleteTarget(app)}><Trash2 size={16} /><span>Delete</span></button>}
                     </td>
                   </tr>
                 ))
@@ -181,6 +203,7 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
             </button>
           </div>
         </div>
+        {deleteTarget && <ConfirmDeleteModal subject={`${deleteTarget.name}'s referral`} isDeleting={isDeleting} onClose={() => setDeleteTarget(null)} onConfirm={() => void deleteReferral()} />}
       </div>
       
     </div>

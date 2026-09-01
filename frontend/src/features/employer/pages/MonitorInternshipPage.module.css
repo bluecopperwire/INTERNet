@@ -207,6 +207,8 @@
   transition: background-color 150ms ease, color 150ms ease;
 }
 
+.rowActions { display: flex; flex-wrap: wrap; gap: 7px; }
+
 .viewButton:hover {
   color: #ffffff;
   background: #160e6f;

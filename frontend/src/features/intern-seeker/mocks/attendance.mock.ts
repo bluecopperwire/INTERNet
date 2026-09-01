@@ -22,6 +22,7 @@ export const MOCK_TODAY_ATTENDANCE: TodayAttendance = {
 }
 
 export const MOCK_INTERNSHIP_DETAILS: InternshipDetails = {
+  assignmentId: 1,
   companyName: 'ABC Company',
   jobTitle: 'IT Intern',
   workingDays: 'Weekdays',

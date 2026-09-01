@@ -15,6 +15,7 @@ import type {
   EmployerInternshipDetails,
   InternshipAssignment,
 } from '../types/employer.types';
+import { assignmentCandidateResponse } from '../../workflow/status-mappings';
 import type {
   CreateOpportunityRequest,
   UpdateOpportunityRequest,
@@ -82,20 +83,17 @@ export function formatOpportunityDeadline(applicationDeadline: string): string {
 
 export function mapStudentResponse(
   response: unknown,
-): 'Pending Response' | 'Accepted' | 'Declined' | 'Unknown' {
-  if (response === 'pending') return 'Pending Response';
-  if (response === 'accepted') return 'Accepted';
-  if (response === 'declined') return 'Declined';
-  return 'Unknown';
+): 'Pending' | 'Accepted' | 'Rejected' | 'Unknown' {
+  return assignmentCandidateResponse(response as any);
 }
 
 export function canWithdrawCandidate(candidate: {
-  studentResponse?: 'Pending Response' | 'Accepted' | 'Declined' | 'Unknown';
+  studentResponse?: 'Pending' | 'Accepted' | 'Rejected' | 'Unknown';
   internshipAssignmentId?: number | null;
   isWithdrawing?: boolean;
 }): boolean {
   return (
-    candidate.studentResponse === 'Pending Response' &&
+    candidate.studentResponse === 'Pending' &&
     candidate.internshipAssignmentId === null &&
     !candidate.isWithdrawing
   );
@@ -278,6 +276,10 @@ export const employerService = {
     await store.withdrawAcceptance(Number(referralId), remark);
   },
 
+  async deleteReferral(referralId: string): Promise<void> {
+    await employerApiService.hideReferral(Number(referralId));
+  },
+
   async getApplicantsForOpportunity(
     opportunityId: string,
   ): Promise<Applicant[]> {
@@ -341,6 +343,17 @@ export const employerService = {
   async getInternshipAssignments(): Promise<InternshipAssignment[]> {
     const res = await employerApiService.getAssignmentCandidates();
     return res.data.map(mapAssignmentCandidate);
+  },
+
+  async createInternshipAssignment(referralId: number, payload: {
+    workingDays: string
+    requiredHours: number
+    startDate: string
+    expectedEndDate?: string | null
+    startShift: string
+    endShift: string
+  }): Promise<unknown> {
+    return employerApiService.createInternshipAssignment(referralId, payload)
   },
 
   async getInternshipAssignmentById(

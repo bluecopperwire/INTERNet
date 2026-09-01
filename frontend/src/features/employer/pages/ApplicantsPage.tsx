@@ -1,15 +1,22 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Search, SlidersHorizontal, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
+import { Search, SlidersHorizontal, ChevronLeft, ChevronRight, Eye, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { EmployerHero } from '../components/EmployerHero'
 import { employerService } from '../services/employer.service'
 import type { Applicant } from '../types/employer.types'
 import styles from './ApplicantsPage.module.css'
+import { ConfirmDeleteModal } from '../../../components/feedback/ConfirmDeleteModal'
+import { useToastStore } from '../../../stores/useToastStore'
+import { getErrorMessage } from '../../../utils/error-message'
+import { openReferralForReview } from '../services/employer-review-flow'
 
 export function ApplicantsPage() {
   const navigate = useNavigate()
   const [applicants, setApplicants] = useState<Applicant[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [deleteTarget, setDeleteTarget] = useState<Applicant | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const toast = useToastStore()
 
   // Pagination & Filtering state
   const [currentPage, setCurrentPage] = useState(1)
@@ -63,10 +70,33 @@ export function ApplicantsPage() {
     if (currentPage < totalPages) setCurrentPage(currentPage + 1)
   }
 
+  const handleOpenReferral = async (referral: Applicant) => {
+    await openReferralForReview(referral, {
+      markUnderReview: employerService.markApplicantUnderReview,
+      navigate,
+      onMutationError: (error) => toast.error(getErrorMessage(error, 'Failed to start referral review.')),
+    })
+  }
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    setIsDeleting(true)
+    try {
+      await employerService.deleteReferral(deleteTarget.id)
+      setApplicants((current) => current.filter((item) => item.id !== deleteTarget.id))
+      setDeleteTarget(null)
+      toast.success('Referral deleted.')
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to delete referral.'))
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <main className={styles.pageContainer}>
-        <div style={{ padding: '2rem', textAlign: 'center' }}>Loading Applicants...</div>
+        <div style={{ padding: '2rem', textAlign: 'center' }}>Loading Referrals...</div>
       </main>
     )
   }
@@ -74,8 +104,8 @@ export function ApplicantsPage() {
   return (
     <main className={styles.pageContainer}>
       <EmployerHero
-        title="Applicants"
-        subtitle="Company applicant list monitoring"
+        title="Review Referrals"
+        subtitle="Review student referrals endorsed to your company."
         comfortableSpacing
       />
 
@@ -85,14 +115,14 @@ export function ApplicantsPage() {
             <Search size={18} color="#160e6f" />
             <input 
               type="text" 
-              placeholder="Search applicants..."
+              placeholder="Search referrals..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <div className={styles.statusFilter}>
             <SlidersHorizontal size={18} aria-hidden="true" />
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Filter applicants by status">
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Filter referrals by status">
               {uniqueStatuses.map((status) => <option key={status} value={status}>{status === 'All' ? 'All Statuses' : status}</option>)}
             </select>
           </div>
@@ -115,7 +145,7 @@ export function ApplicantsPage() {
               <tbody>
                 {currentItems.length === 0 ? (
                   <tr>
-                    <td colSpan={7} style={{ textAlign: 'center', padding: '24px' }}>No applicants found.</td>
+                    <td colSpan={7} style={{ textAlign: 'center', padding: '24px' }}>No referrals found.</td>
                   </tr>
                 ) : (
                   currentItems.map((app) => (
@@ -127,22 +157,22 @@ export function ApplicantsPage() {
                       <td>{app.dateApplied}</td>
                       <td>
                         <span className={`${styles.statusPill} ${
-                          app.status === 'Accepted' || app.status === 'Shortlisted' ? styles.accepted :
-                          app.status === 'Rejected' ? styles.rejected :
-                          app.status === 'Under Review' || app.status === 'For Review' || app.status === 'For Interview' ? styles.underReview :
+                          app.status === 'Accepted' ? styles.accepted :
+                          ['Rejected', 'Withdrawn', 'Expired', 'Offer Declined'].includes(app.status) ? styles.rejected :
+                          ['Under Review', 'For Review', 'Interview Scheduled', 'Offer Received'].includes(app.status) ? styles.underReview :
                           ''
                         }`}>
                           {app.status}
                         </span>
                       </td>
                       <td>
-                        <button 
-                          className={styles.reviewBtn}
-                          onClick={() => navigate(`/employer/applicants/${app.id}`)}
-                        >
-                          <Eye size={16} />
-                          <span>Review</span>
-                        </button>
+                        <div className={styles.actionButtons}>
+                          <button className={styles.reviewBtn} onClick={() => void handleOpenReferral(app)}>
+                            <Eye size={16} />
+                            <span>{app.referralStatus === 'sent' ? 'Review' : 'View'}</span>
+                          </button>
+                          {app.canHide && <button className={styles.deleteBtn} onClick={() => setDeleteTarget(app)}><Trash2 size={16} />Delete</button>}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -193,7 +223,7 @@ export function ApplicantsPage() {
           </div>
         </div>
       </section>
-
+      {deleteTarget && <ConfirmDeleteModal subject={`${deleteTarget.name}'s referral`} isDeleting={isDeleting} onClose={() => setDeleteTarget(null)} onConfirm={() => void handleDelete()} />}
     </main>
   )
 }

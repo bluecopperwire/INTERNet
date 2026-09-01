@@ -15,6 +15,7 @@ import type {
   EmployerAttendanceRecord,
   EmployerInternshipDetails,
 } from '../types/employer.types';
+import { isTerminalReferral, referralDisplayStatus } from '../../workflow/status-mappings';
 
 type EmployerInternshipDetailDto = {
   intern: {
@@ -88,14 +89,8 @@ export function adaptEmployerOpportunity(
 export function adaptEmployerReferral(
   r: EmployerReferralListItemDto | any,
 ): Applicant {
-  const statusMap: Record<string, any> = {
-    pending: 'Pending',
-    for_interview: 'For Interview',
-    accepted: 'Accepted',
-    rejected: 'Rejected',
-  };
-
   const referral = r.referral || r;
+  const application = r.application || r;
   const student = r.student || {};
   const opportunity = r.opportunity || {};
   const internshipPref = r.internshipPreference || {};
@@ -108,6 +103,9 @@ export function adaptEmployerReferral(
   const yLevel = student.yearLevel || r.yearLevel || 'N/A';
   const compResponse =
     referral.companyResponse || r.companyResponse || 'pending';
+  const referralStatus = referral.referralStatus || r.referralStatus;
+  const applicationStatus = application.applicationStatus || r.applicationStatus;
+  const studentResponse = application.studentResponse || r.studentResponse || 'pending';
   const subAt = r.application?.submittedAt || r.submittedAt;
 
   const address =
@@ -129,7 +127,17 @@ export function adaptEmployerReferral(
           year: 'numeric',
         })
       : 'N/A',
-    status: statusMap[compResponse] || 'Pending',
+    status: referralDisplayStatus({
+      applicationStatus,
+      referralStatus,
+      companyResponse: compResponse,
+      studentResponse,
+    }, 'For Review'),
+    applicationStatus,
+    referralStatus,
+    companyResponse: compResponse,
+    studentResponse,
+    canHide: isTerminalReferral(referralStatus),
     email: student.contactEmail || 'N/A',
     phone: student.contactNumber || 'N/A',
     location: address,

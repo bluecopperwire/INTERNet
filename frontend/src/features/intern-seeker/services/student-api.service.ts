@@ -172,6 +172,10 @@ export const studentApiService = {
     await api.delete(`/students/${studentId}/applications/${applicationId}`);
   },
 
+  async hideAssignment(studentId: number, assignmentId: number): Promise<void> {
+    await api.delete(`/students/${studentId}/assignments/${assignmentId}`);
+  },
+
   async getAttendance(
     studentId: number,
     params?: { startDate?: string; endDate?: string },

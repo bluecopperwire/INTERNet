@@ -66,6 +66,10 @@ export const qcpesoService = {
     return updated;
   },
 
+  async deleteApplication(id: string): Promise<void> {
+    await qcpesoApiService.hideApplication(Number(id));
+  },
+
   async getReferrals(): Promise<QCPesoReferral[]> {
     const store = useQCPesoStore.getState();
     await store.fetchReferrals();
@@ -75,6 +79,10 @@ export const qcpesoService = {
   async getReferral(id: string): Promise<QCPesoReferral | null> {
     const raw = await qcpesoApiService.getReferralDetail(Number(id));
     return adaptPesoReferral(raw);
+  },
+
+  async deleteReferral(id: string): Promise<void> {
+    await qcpesoApiService.hideReferral(Number(id));
   },
 
   async getInternships(): Promise<QCPesoInternshipRecord[]> {

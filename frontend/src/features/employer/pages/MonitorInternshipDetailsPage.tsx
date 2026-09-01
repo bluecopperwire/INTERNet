@@ -7,6 +7,7 @@ import styles from './MonitorInternshipDetailsPage.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
 import { isValidDateOnly, todayDateOnly } from '../../../utils/date-only'
+import { ConfirmDeleteModal } from '../../../components/feedback/ConfirmDeleteModal'
 
 type InternshipForm = Pick<EmployerInternshipDetails, 'company' | 'jobTitle' | 'workingDays' | 'requiredHours' | 'startDate' | 'expectedEndDate' | 'shiftStartTime' | 'shiftEndTime'>
 
@@ -23,6 +24,7 @@ export function MonitorInternshipDetailsPage() {
   const [saving, setSaving] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [dateError, setDateError] = useState('')
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const toast = useToastStore()
 
   useEffect(() => {
@@ -83,9 +85,6 @@ export function MonitorInternshipDetailsPage() {
 
   const deleteRecord = async () => {
     if (!applicantId) return
-    if (!window.confirm('Are you sure you want to delete this internship record?')) {
-      return
-    }
     setSaving(true)
     try {
       await employerService.deleteInternshipDetails(applicantId)
@@ -140,10 +139,11 @@ export function MonitorInternshipDetailsPage() {
         <footer className={styles.statusActions}>
           <button type="button" className={styles.completeButton} disabled={saving || !canMarkCompleted} onClick={() => updateInternshipStatus('Completed')}>Mark Internship as Completed</button>
           {canDeleteRecord
-            ? <button type="button" className={styles.deleteRecordButton} disabled={saving} onClick={deleteRecord}>Delete Record</button>
+            ? <button type="button" className={styles.deleteRecordButton} disabled={saving} onClick={() => setShowDeleteModal(true)}>Delete</button>
             : <button type="button" className={styles.cancelInternshipButton} disabled={saving} onClick={() => updateInternshipStatus('Cancelled')}>Cancel Internship</button>}
         </footer>
       </section>
+      {showDeleteModal && <ConfirmDeleteModal subject={`${details.studentName}'s internship record`} isDeleting={saving} onClose={() => setShowDeleteModal(false)} onConfirm={() => void deleteRecord()} />}
     </div>
   </main>
 }

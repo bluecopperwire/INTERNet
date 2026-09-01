@@ -1,4 +1,4 @@
-import { ArrowLeft, ChevronLeft, ChevronRight, Eye, Search, SlidersHorizontal } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight, Eye, Search, SlidersHorizontal, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { EmployerHero } from '../components/EmployerHero'
@@ -9,6 +9,8 @@ import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
 import { todayDateOnly } from '../../../utils/date-only'
 import { RejectApplicantModal } from '../components/RejectApplicantModal'
+import { ConfirmDeleteModal } from '../../../components/feedback/ConfirmDeleteModal'
+import { isValidDateOnly } from '../../../utils/date-only'
 
 export function CreateInternshipAssignmentPage() {
   const navigate = useNavigate()
@@ -17,6 +19,9 @@ export function CreateInternshipAssignmentPage() {
   const [response, setResponse] = useState('All')
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(7)
+  const [deleteTarget, setDeleteTarget] = useState<InternshipAssignment | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const toast = useToastStore()
 
   useEffect(() => {
     employerService.getInternshipAssignments().then(setAssignments)
@@ -32,6 +37,21 @@ export function CreateInternshipAssignmentPage() {
   const totalPages = Math.max(1, Math.ceil(filteredAssignments.length / perPage))
   const visibleAssignments = filteredAssignments.slice((page - 1) * perPage, page * perPage)
   const resetPage = () => setPage(1)
+
+  const deleteCandidate = async () => {
+    if (!deleteTarget) return
+    setIsDeleting(true)
+    try {
+      await employerService.deleteReferral(String(deleteTarget.referralId))
+      setAssignments((current) => current.filter((item) => item.id !== deleteTarget.id))
+      setDeleteTarget(null)
+      toast.success('Assignment workflow record deleted.')
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to delete assignment workflow record.'))
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   return (
     <main className={styles.heroOnlyPage}>
@@ -52,7 +72,7 @@ export function CreateInternshipAssignmentPage() {
             <span className={styles.srOnly}>Filter by student response</span>
             <select value={response} onChange={(event) => { setResponse(event.target.value); resetPage() }}>
               <option value="All">All Responses</option>
-              <option value="Pending Response">Pending Response</option>
+              <option value="Pending">Pending</option>
               <option value="Accepted">Accepted</option>
               <option value="Rejected">Rejected</option>
             </select>
@@ -68,7 +88,10 @@ export function CreateInternshipAssignmentPage() {
                 <td>{assignment.jobTitle}</td>
                 <td>{assignment.acceptanceDate}</td>
                 <td><span className={`${styles.responsePill} ${styles[assignment.studentResponse.replaceAll(' ', '').toLowerCase()]}`}>{assignment.studentResponse}</span></td>
-                <td><button type="button" className={styles.reviewButton} onClick={() => navigate(`/employer/internship-assignments/${assignment.id}`)}><Eye size={16} />Review</button></td>
+                <td><div className={styles.assignmentRowActions}>
+                  <button type="button" className={styles.reviewButton} onClick={() => navigate(assignment.internshipAssignmentId ? `/employer/manage-internship/${assignment.internshipAssignmentId}` : `/employer/internship-assignments/${assignment.id}`)}><Eye size={16} />{assignment.internshipAssignmentId ? 'View Assignment' : assignment.studentResponse === 'Accepted' ? 'Create Assignment' : 'Review'}</button>
+                  {(assignment.studentResponse === 'Rejected' || (assignment.studentResponse === 'Accepted' && assignment.internshipAssignmentId !== null)) && <button type="button" className={styles.reviewButton} onClick={() => setDeleteTarget(assignment)}><Trash2 size={16} />Delete</button>}
+                </div></td>
               </tr>)}</tbody>
             </table>
           </div>
@@ -88,6 +111,7 @@ export function CreateInternshipAssignmentPage() {
           </div>
         </div>
       </section>
+      {deleteTarget && <ConfirmDeleteModal subject={`${deleteTarget.studentName}'s assignment workflow record`} isDeleting={isDeleting} onClose={() => setDeleteTarget(null)} onConfirm={() => void deleteCandidate()} />}
     </main>
   )
 }
@@ -98,7 +122,9 @@ export function ReviewInternshipAssignmentPage() {
   const [assignment, setAssignment] = useState<InternshipAssignment | null>(null)
   const [loading, setLoading] = useState(true)
   const [isWithdrawing, setIsWithdrawing] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
   const [showWithdrawModal, setShowWithdrawModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [formData, setFormData] = useState(createEmptyAssignmentForm)
   const toast = useToastStore()
 
@@ -108,13 +134,24 @@ export function ReviewInternshipAssignmentPage() {
       return
     }
 
-    employerService.getInternshipAssignmentById(id).then((data) => setAssignment(data ?? null)).finally(() => setLoading(false))
+    employerService.getInternshipAssignmentById(id).then((data) => {
+      setAssignment(data ?? null)
+      if (data) {
+        setFormData((current) => ({
+          ...current,
+          company: data.company,
+          jobTitle: data.jobTitle,
+          requiredHours: String(data.requiredHours || ''),
+          workingDays: data.workingDays.toLowerCase() === 'weekends' ? 'weekends' : 'weekdays',
+        }))
+      }
+    }).finally(() => setLoading(false))
   }, [id])
 
   if (loading) return <main className={styles.assignmentFeedback}>Loading internship assignment...</main>
   if (!assignment) return <main className={styles.assignmentFeedback}>Internship assignment not found.</main>
 
-  const isAssignmentLocked = assignment.studentResponse !== 'Accepted'
+  const isAssignmentLocked = assignment.studentResponse !== 'Accepted' || assignment.internshipAssignmentId !== null
   const canWithdraw = canWithdrawCandidate({
     studentResponse: assignment.studentResponse,
     internshipAssignmentId: assignment.internshipAssignmentId,
@@ -138,6 +175,47 @@ export function ReviewInternshipAssignmentPage() {
     }
   }
 
+  const handleCreateAssignment = async () => {
+    if (isAssignmentLocked || isCreating) return
+    if (!formData.workingDays || !formData.requiredHours || !isValidDateOnly(formData.startDate) || (formData.expectedEndDate && !isValidDateOnly(formData.expectedEndDate)) || !formData.shiftStartTime || !formData.shiftEndTime) {
+      toast.error('Complete all required assignment fields with valid dates and times.')
+      return
+    }
+    setIsCreating(true)
+    try {
+      await employerService.createInternshipAssignment(assignment.referralId, {
+        workingDays: formData.workingDays,
+        requiredHours: Number(formData.requiredHours),
+        startDate: formData.startDate,
+        expectedEndDate: formData.expectedEndDate || null,
+        startShift: formData.shiftStartTime,
+        endShift: formData.shiftEndTime,
+      })
+      const refreshed = await employerService.getInternshipAssignmentById(assignment.id)
+      setAssignment(refreshed ?? null)
+      toast.success('Internship assignment created.')
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to create internship assignment.'))
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
+  const handleDeleteCandidate = async () => {
+    setIsWithdrawing(true)
+    try {
+      await employerService.deleteReferral(String(assignment.referralId))
+      toast.success('Assignment workflow record deleted.')
+      navigate('/employer/internship-assignments')
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to delete assignment workflow record.'))
+    } finally {
+      setIsWithdrawing(false)
+    }
+  }
+
+  const canDeleteCandidate = assignment.studentResponse === 'Rejected' || (assignment.studentResponse === 'Accepted' && assignment.internshipAssignmentId !== null)
+
   return (
     <main className={styles.assignmentDetailPage}>
       <div className={styles.assignmentDetailWrap}>
@@ -145,14 +223,14 @@ export function ReviewInternshipAssignmentPage() {
 
         <section className={`${styles.assignmentDetailCard} ${isAssignmentLocked ? styles.assignmentRejected : ''}`}>
           <header className={styles.assignmentDetailHeader}>
-            <h1>Create Internship Assignment</h1>
-            <p>Enter the internship placement and schedule details for {assignment.studentName}.</p>
+            <h1>{assignment.internshipAssignmentId ? 'Internship Assignment Created' : 'Create Internship Assignment'}</h1>
+            <p>{assignment.internshipAssignmentId ? `The official assignment for ${assignment.studentName} is ready to view.` : `Enter the internship placement and schedule details for ${assignment.studentName}.`}</p>
           </header>
 
-          <form onSubmit={(event) => event.preventDefault()} aria-disabled={isAssignmentLocked}>
+          <form onSubmit={(event) => { event.preventDefault(); void handleCreateAssignment() }} aria-disabled={isAssignmentLocked}>
             <div className={styles.assignmentDetailGrid}>
-              <AssignmentField label="Company" name="company" value={formData.company} placeholder="Enter company name" disabled={isAssignmentLocked} onChange={setFormData} />
-              <AssignmentField label="Job Title" name="jobTitle" value={formData.jobTitle} placeholder="Enter job title" disabled={isAssignmentLocked} onChange={setFormData} />
+              <AssignmentField label="Company" name="company" value={formData.company} placeholder="Company" disabled onChange={setFormData} />
+              <AssignmentField label="Job Title" name="jobTitle" value={formData.jobTitle} placeholder="Job title" disabled onChange={setFormData} />
               <AssignmentField label="Working Days" name="workingDays" value={formData.workingDays} disabled={isAssignmentLocked} onChange={setFormData} />
               <AssignmentField label="Required Hours" name="requiredHours" value={formData.requiredHours} placeholder="Enter required hours" inputMode="numeric" disabled={isAssignmentLocked} onChange={setFormData} />
               <AssignmentField label="Start Date" name="startDate" value={formData.startDate} type="date" min={todayDateOnly()} disabled={isAssignmentLocked} onChange={setFormData} />
@@ -162,7 +240,8 @@ export function ReviewInternshipAssignmentPage() {
             </div>
 
             <footer className={styles.assignmentDetailFooter}>
-              <button type="submit" className={styles.createAssignmentButton} disabled={isAssignmentLocked}>Create Internship Assignment</button>
+              {assignment.studentResponse === 'Accepted' && assignment.internshipAssignmentId === null && <button type="submit" className={styles.createAssignmentButton} disabled={isAssignmentLocked || isCreating}>{isCreating ? 'Creating...' : 'Create Internship Assignment'}</button>}
+              {assignment.internshipAssignmentId !== null && <button type="button" className={styles.createAssignmentButton} onClick={() => navigate(`/employer/manage-internship/${assignment.internshipAssignmentId}`)}>View Assignment</button>}
               {canWithdraw && (
                 <button
                   type="button"
@@ -173,11 +252,13 @@ export function ReviewInternshipAssignmentPage() {
                   {isWithdrawing ? 'Withdrawing...' : 'Withdraw Acceptance'}
                 </button>
               )}
+              {canDeleteCandidate && <button type="button" className={styles.withdrawInternshipButton} disabled={isWithdrawing} onClick={() => setShowDeleteModal(true)}><Trash2 size={17} />Delete</button>}
             </footer>
           </form>
         </section>
       </div>
       {showWithdrawModal && <RejectApplicantModal applicantName={assignment.studentName} title="Withdraw Acceptance" description="Explain why the accepted offer is being reversed. This closes the application as rejected." confirmLabel="Withdraw Acceptance" isSaving={isWithdrawing} onClose={() => setShowWithdrawModal(false)} onConfirm={(remark) => void handleWithdrawAcceptance(remark)} />}
+      {showDeleteModal && <ConfirmDeleteModal subject={`${assignment.studentName}'s assignment workflow record`} isDeleting={isWithdrawing} onClose={() => setShowDeleteModal(false)} onConfirm={() => void handleDeleteCandidate()} />}
     </main>
   )
 }

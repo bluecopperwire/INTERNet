@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, ChevronRight, MapPin, X } from 'lucide-react'
+import { Check, ChevronRight, MapPin, Trash2, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useApplications } from '../hooks/useApplications'
 import type { ApplicationDisplayStatus, ApplicationProgress, InterviewDetails, UserApplication } from '../types/application.types'
@@ -7,6 +7,7 @@ import styles from './ApplicationStatusPage.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
 import { applicationsService } from '../services/applications.service'
 import { getErrorMessage } from '../../../utils/error-message'
+import { ConfirmDeleteModal } from '../../../components/feedback/ConfirmDeleteModal'
 
 type DialogState =
   | { type: 'remark'; title: string; remark: string }
@@ -20,6 +21,7 @@ function ApplicationStatusPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [dialog, setDialog] = useState<DialogState>(null)
   const [isUpdating, setIsUpdating] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<UserApplication | null>(null)
   const [detailResult, setDetailResult] = useState<{
     id: string
     application: UserApplication | null
@@ -66,6 +68,22 @@ function ApplicationStatusPage() {
     }
   }
 
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    setIsUpdating(true)
+    try {
+      await deleteApplication(deleteTarget.id)
+      setDeleteTarget(null)
+      setSelectedId(null)
+      setDetailResult(null)
+      toast.success('Application deleted.')
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'The application could not be deleted. Please try again.'))
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
   return (
     <>
       {error && <p className={styles.feedback} role="alert">{error}</p>}
@@ -80,29 +98,33 @@ function ApplicationStatusPage() {
               <Link to="/intern-seeker/search">Apply to Company <span>+</span></Link>
             </header>
             <div className={styles.applicationList}>
-              {applications.map((application) => <ApplicationListItem key={application.id} application={application} isSelected={application.id === selectedSummary?.id} onSelect={() => setSelectedId(application.id)} />)}
+              {applications.map((application) => <ApplicationListItem key={application.id} application={application} isSelected={application.id === selectedSummary?.id} onSelect={() => setSelectedId(application.id)} onDelete={() => setDeleteTarget(application)} />)}
             </div>
           </section>
 
           {isLoadingDetail && <section className={styles.progressPanel}><p className={styles.feedback}>Loading application status...</p></section>}
-          {!isLoadingDetail && selectedApplication && <ApplicationProgress application={selectedApplication} isUpdating={isUpdating} onWithdraw={() => setDialog({ type: 'withdraw', application: selectedApplication })} onDelete={() => void performUpdate(() => deleteApplication(selectedApplication.id), 'Application deleted.')} onOpenDialog={setDialog} />}
+          {!isLoadingDetail && selectedApplication && <ApplicationProgress application={selectedApplication} isUpdating={isUpdating} onWithdraw={() => setDialog({ type: 'withdraw', application: selectedApplication })} onDelete={() => setDeleteTarget(selectedApplication)} onOpenDialog={setDialog} />}
           {!isLoadingDetail && detailResult?.id === selectedSummary?.id && detailResult.error && <section className={styles.progressPanel}><p className={styles.feedback} role="alert">{detailResult.error}</p></section>}
         </div>
       )}
 
       {dialog && <ApplicationDialog dialog={dialog} isUpdating={isUpdating} onClose={() => setDialog(null)} onDecision={(decision) => void performUpdate(() => respondToOffer(dialog.type === 'student-decision' ? dialog.application.id : '', decision), decision === 'accept' ? 'Internship offer accepted.' : 'Internship offer declined.')} onWithdraw={() => void performUpdate(() => withdrawApplication(dialog.type === 'withdraw' ? dialog.application.id : ''), 'Application withdrawn.')} />}
+      {deleteTarget && <ConfirmDeleteModal subject={`your ${deleteTarget.position} application`} isDeleting={isUpdating} onClose={() => setDeleteTarget(null)} onConfirm={() => void confirmDelete()} />}
     </>
   )
 }
 
-function ApplicationListItem({ application, isSelected, onSelect }: { application: UserApplication; isSelected: boolean; onSelect: () => void }) {
+function ApplicationListItem({ application, isSelected, onSelect, onDelete }: { application: UserApplication; isSelected: boolean; onSelect: () => void; onDelete: () => void }) {
   return (
-    <button className={`${styles.applicationItem} ${isSelected ? styles.selectedItem : ''}`} type="button" onClick={onSelect}>
-      <span className={styles.applicationIcon} aria-hidden="true" />
-      <span className={styles.applicationInfo}><strong>{application.position}</strong><span>{application.companyName}</span></span>
-      <span className={styles.applicationMeta}><StatusBadge status={application.status} /><small>Applied: {application.appliedDate}</small></span>
-      <ChevronRight className={styles.chevron} />
-    </button>
+    <div className={`${styles.applicationItem} ${isSelected ? styles.selectedItem : ''}`}>
+      <button className={styles.applicationSelectButton} type="button" onClick={onSelect}>
+        <span className={styles.applicationIcon} aria-hidden="true" />
+        <span className={styles.applicationInfo}><strong>{application.position}</strong><span>{application.companyName}</span></span>
+        <span className={styles.applicationMeta}><StatusBadge status={application.status} /><small>Applied: {application.appliedDate}</small></span>
+        <ChevronRight className={styles.chevron} />
+      </button>
+      {application.canHide && <button className={styles.listDeleteButton} type="button" aria-label={`Delete ${application.position} application`} onClick={onDelete}><Trash2 /></button>}
+    </div>
   )
 }
 

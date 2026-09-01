@@ -115,7 +115,7 @@ export function OpportunitiesPage() {
                       Status: <span className={`${styles.statusValue} ${styles[opp.status.toLowerCase()]}`}>{opp.status}</span>
                     </p>
                     <p className={styles.applicantsText}>
-                      Applicants: {opp.applicants}
+                      Referrals: {opp.applicants}
                     </p>
                   </div>
                 </div>
@@ -124,7 +124,7 @@ export function OpportunitiesPage() {
                     className={styles.actionBtn}
                     onClick={() => setOpportunityForApplicants(opp)}
                   >
-                    View Applicants
+                    View Referrals
                   </button>
                   <button 
                     className={styles.actionBtn}

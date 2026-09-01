@@ -43,7 +43,7 @@ export const EmployerDashboardPage: React.FC = () => {
             </div>
 
             <div className={styles.blueStatCard}>
-              <h3 className={styles.statLabel}>Total Applicants</h3>
+              <h3 className={styles.statLabel}>Total Referrals</h3>
               <span className={styles.statNumber}>{formatNumber(summary.totalApplicants)}</span>
             </div>
 
@@ -59,7 +59,7 @@ export const EmployerDashboardPage: React.FC = () => {
           </div>
 
           <div className={styles.statusChartCard}>
-            <h3 className={styles.statusCardTitle}>Applications Status</h3>
+              <h3 className={styles.statusCardTitle}>Referral Status</h3>
             
             <div className={styles.chartArea}>
               <div className={styles.donutWrapper}>
@@ -100,7 +100,7 @@ export const EmployerDashboardPage: React.FC = () => {
               className={styles.viewAllAppsBtn}
               onClick={() => navigate('/employer/applicants')}
             >
-              <span>View All Applications</span>
+              <span>View All Referrals</span>
               <ArrowRight size={18} />
             </button>
           </div>
@@ -110,8 +110,8 @@ export const EmployerDashboardPage: React.FC = () => {
           <div className={styles.recentAppsContainer}>
             <div className={styles.sectionHeader}>
               <div className={styles.sectionTitle}>
-                <h2 className={styles.sectionHeading}>Recent Applications</h2>
-                <p>Latest applications submitted to your opportunities</p>
+                <h2 className={styles.sectionHeading}>Recent Referrals</h2>
+                <p>Latest student referrals endorsed to your opportunities</p>
               </div>
               <button 
                 type="button" 
@@ -181,7 +181,7 @@ export const EmployerDashboardPage: React.FC = () => {
                 onClick={() => navigate('/employer/applicants')}
               >
                 <FileText size={20} />
-                <span>Review Applicants</span>
+                <span>Review Referrals</span>
               </button>
 
               <button
@@ -201,8 +201,7 @@ export const EmployerDashboardPage: React.FC = () => {
 }
 
 function formatRecentApplicationStatus(status: string) {
-  if (status === 'Accepted' || status === 'Rejected' || status === 'Pending') return status
-  return 'For Interview'
+  return status
 }
 
 export default EmployerDashboardPage

@@ -224,7 +224,7 @@ export interface StudentApplicationStatusDto extends StudentApplicationDto {
 
 export interface StatusHistoryDto {
   statusHistoryId: number;
-  previousStatus: string;
+  previousStatus: string | null;
   newStatus: string;
   changedAt: string;
   changedByRole?: UserRole | null;
@@ -405,13 +405,17 @@ export interface UpdateOpportunityRequest {
 
 export interface EmployerReferralListItemDto {
   referralId: number;
+  applicationId: number;
   opportunityId: number;
   opportunityTitle: string;
   studentFullName: string;
   strandProgram?: string | null;
   yearLevel?: string | null;
   submittedAt: string;
+  applicationStatus: ApplicationStatus;
+  referralStatus: ReferralStatus;
   companyResponse: CompanyResponse;
+  studentResponse: StudentResponse;
 }
 
 export interface EmployerAttendanceItemDto {

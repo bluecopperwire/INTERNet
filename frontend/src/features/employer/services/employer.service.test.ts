@@ -8,9 +8,9 @@ import {
 
 describe('assignment candidate mapping', () => {
   it.each([
-    ['pending', 'Pending Response'],
+    ['pending', 'Pending'],
     ['accepted', 'Accepted'],
-    ['declined', 'Declined'],
+    ['declined', 'Rejected'],
     [null, 'Unknown'],
     ['unexpected', 'Unknown'],
   ] as const)('maps %s safely', (value, expected) => {
@@ -39,16 +39,16 @@ describe('assignment candidate mapping', () => {
       internshipAssignmentId: null,
       company: 'INTERNet Labs',
       jobTitle: 'Backend Intern',
-      studentResponse: 'Pending Response',
+      studentResponse: 'Pending',
     });
   });
 
   it('allows withdrawal only for a pending, unassigned candidate', () => {
-    expect(canWithdrawCandidate({ studentResponse: 'Pending Response', internshipAssignmentId: null })).toBe(true);
+    expect(canWithdrawCandidate({ studentResponse: 'Pending', internshipAssignmentId: null })).toBe(true);
     expect(canWithdrawCandidate({ studentResponse: 'Accepted', internshipAssignmentId: null })).toBe(false);
-    expect(canWithdrawCandidate({ studentResponse: 'Declined', internshipAssignmentId: null })).toBe(false);
+    expect(canWithdrawCandidate({ studentResponse: 'Rejected', internshipAssignmentId: null })).toBe(false);
     expect(canWithdrawCandidate({ studentResponse: 'Unknown', internshipAssignmentId: null })).toBe(false);
-    expect(canWithdrawCandidate({ studentResponse: 'Pending Response', internshipAssignmentId: 99 })).toBe(false);
+    expect(canWithdrawCandidate({ studentResponse: 'Pending', internshipAssignmentId: 99 })).toBe(false);
   });
 });
 

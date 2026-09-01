@@ -181,6 +181,31 @@
   color: #fff;
 }
 
+.actionButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.deleteBtn {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid #d92d20;
+  border-radius: 6px;
+  color: #b42318;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.deleteBtn:hover { color: #fff; background: #d92d20; }
+.deleteBtn svg { width: 16px; height: 16px; }
+
 .paginationRow {
   display: flex;
   align-items: center;

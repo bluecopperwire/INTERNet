@@ -98,8 +98,25 @@ export class OpportunityCatalogService {
     const queryParams = [...params];
     if (studentId) {
       appliedSelect = `EXISTS (
-        SELECT 1 FROM public.application app 
-        WHERE app.opportunity_id = o.opportunity_id AND app.student_id = $${paramIndex}
+        SELECT 1
+        FROM public.application app
+        LEFT JOIN public.referral referral
+          ON referral.application_id = app.application_id
+        WHERE app.opportunity_id = o.opportunity_id
+          AND app.student_id = $${paramIndex}
+          AND NOT (
+            app.application_status = 'withdrawn'
+            OR app.application_status = 'rejected_for_referral'
+            OR (
+              app.application_status = 'closed'
+              AND referral.company_response = 'rejected'
+            )
+            OR (
+              app.application_status = 'closed'
+              AND referral.company_response = 'accepted'
+              AND app.student_response = 'declined'
+            )
+          )
       ) AS has_applied`;
       queryParams.push(studentId);
       paramIndex++;
@@ -193,8 +210,25 @@ export class OpportunityCatalogService {
     const params: any[] = [opportunityId];
     if (studentId) {
       appliedSelect = `EXISTS (
-        SELECT 1 FROM public.application app 
-        WHERE app.opportunity_id = o.opportunity_id AND app.student_id = $2
+        SELECT 1
+        FROM public.application app
+        LEFT JOIN public.referral referral
+          ON referral.application_id = app.application_id
+        WHERE app.opportunity_id = o.opportunity_id
+          AND app.student_id = $2
+          AND NOT (
+            app.application_status = 'withdrawn'
+            OR app.application_status = 'rejected_for_referral'
+            OR (
+              app.application_status = 'closed'
+              AND referral.company_response = 'rejected'
+            )
+            OR (
+              app.application_status = 'closed'
+              AND referral.company_response = 'accepted'
+              AND app.student_response = 'declined'
+            )
+          )
       ) AS has_applied`;
       params.push(studentId);
     }

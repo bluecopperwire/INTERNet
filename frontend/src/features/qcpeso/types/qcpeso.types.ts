@@ -1,4 +1,10 @@
-import type { ApplicationStatus as ApiApplicationStatus } from "../../../types/api";
+import type {
+  ApplicationStatus as ApiApplicationStatus,
+  CompanyResponse as ApiCompanyResponse,
+  ReferralStatus as ApiReferralStatus,
+  StudentResponse as ApiStudentResponse,
+} from "../../../types/api";
+import type { WorkflowDisplayStatus } from "../../workflow/status-mappings";
 
 export type ApplicationStatus = "Pending" | "Verified" | "Rejected" | "Flagged";
 
@@ -123,7 +129,7 @@ export interface CreateEmployerPayload {
   password: string;
 }
 
-export type QCPesoApplicationStatus = "Pending" | "Accepted" | "Rejected";
+export type QCPesoApplicationStatus = WorkflowDisplayStatus;
 
 export interface QCPesoDocument {
   id: string;
@@ -143,6 +149,7 @@ export interface QCPesoReviewApplicant {
   dateApplied: string;
   status: QCPesoApplicationStatus;
   applicationStatus?: ApiApplicationStatus;
+  canHide: boolean;
   email: string;
   phone: string;
   address: string;
@@ -163,6 +170,11 @@ export interface QCPesoReferral {
   referralDate: string;
   companyResponse: "Pending" | "For Interview" | "Accepted" | "Rejected";
   studentResponse: "Pending" | "Accepted" | "Rejected";
+  workflowStatus: WorkflowDisplayStatus;
+  referralStatus?: ApiReferralStatus;
+  companyResponseValue?: ApiCompanyResponse;
+  studentResponseValue?: ApiStudentResponse;
+  canHide: boolean;
   email: string;
   phone: string;
   address: string;

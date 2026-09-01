@@ -16,6 +16,12 @@ import type {
   MonitoredStudentUser,
   MonitoredCompanyUser,
 } from "../types/qcpeso.types";
+import {
+  applicationDisplayStatus,
+  isTerminalApplication,
+  isTerminalReferral,
+  referralDisplayStatus,
+} from "../../workflow/status-mappings";
 import { formatDateOnly, toDateOnly } from "../../../utils/date-only";
 
 function formatCalendarDate(value: unknown): string {
@@ -84,17 +90,10 @@ export function adaptPesoApplication(
   d: DashboardApplicationDto | any,
 ): QCPesoReviewApplicant {
   if (!d) return {} as any;
-  const statusMap: Record<string, any> = {
-    submitted: "Pending",
-    under_review: "Pending",
-    approved_for_referral: "Accepted",
-    rejected_for_referral: "Rejected",
-    withdrawn: "Rejected",
-    closed: "Rejected",
-    expired: "Rejected",
-  };
-
   const rawStatus = d.applicationStatus || d.application_status;
+  const referralStatus = d.referralStatus || d.referral_status;
+  const companyResponse = d.companyResponse || d.company_response;
+  const studentResponse = d.studentResponse || d.student_response;
   const rawDate = d.submittedAt || d.submitted_at;
   let formattedDate = "N/A";
   if (rawDate) {
@@ -130,8 +129,14 @@ export function adaptPesoApplication(
     program: d.strandProgram || d.strand_program || "N/A",
     yearLevel: formatYearLevel(rawYear),
     dateApplied: formattedDate,
-    status: statusMap[rawStatus] || "Pending",
+    status: applicationDisplayStatus({
+      applicationStatus: rawStatus,
+      referralStatus,
+      companyResponse,
+      studentResponse,
+    }),
     applicationStatus: rawStatus,
+    canHide: isTerminalApplication(rawStatus),
     email: d.studentContactEmail || d.student_contact_email || "N/A",
     phone: d.studentContactNumber || d.student_contact_number || "N/A",
     address,
@@ -198,6 +203,7 @@ export function adaptPesoReferral(r: PesoReferralDto | any): QCPesoReferral {
 
   const rawCompResponse = r.companyResponse || r.company_response || "pending";
   const rawStudResponse = r.studentResponse || r.student_response || "pending";
+  const rawReferralStatus = r.referralStatus || r.referral_status;
 
   const address =
     [r.address_line, r.address_barangay, r.address_city]
@@ -216,6 +222,15 @@ export function adaptPesoReferral(r: PesoReferralDto | any): QCPesoReferral {
       compMap[String(rawCompResponse).toLowerCase()] || "Pending",
     studentResponse:
       studMap[String(rawStudResponse).toLowerCase()] || "Pending",
+    workflowStatus: referralDisplayStatus({
+      referralStatus: rawReferralStatus,
+      companyResponse: rawCompResponse,
+      studentResponse: rawStudResponse,
+    }),
+    referralStatus: rawReferralStatus,
+    companyResponseValue: rawCompResponse,
+    studentResponseValue: rawStudResponse,
+    canHide: isTerminalReferral(rawReferralStatus),
     email: r.studentContactEmail || r.student_contact_email || "N/A",
     phone: r.studentContactNumber || r.student_contact_number || "N/A",
     address,

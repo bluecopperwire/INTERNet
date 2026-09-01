@@ -578,74 +578,140 @@ export class StudentsService {
       );
     }
 
-    // Check opportunity status and deadline
-    const [opportunity] = await this.dataSource.query(
-      `
-        SELECT opportunity_id, title, opportunity_status, application_deadline
-        FROM public.opportunity
-        WHERE opportunity_id = $1
-      `,
-      [dto.opportunityId],
-    );
+    try {
+      return await withStatusActor(
+        this.dataSource,
+        currentUser?.userAccountId ?? null,
+        async (runner) => {
+          // Serialize application submissions for this student/opportunity pair.
+          // The active-only unique index remains the final concurrency guard.
+          await runner.query('SELECT pg_advisory_xact_lock($1, $2)', [
+            studentId,
+            dto.opportunityId,
+          ]);
 
-    if (!opportunity) {
-      throw new NotFoundException('Opportunity not found');
-    }
+          const [opportunity] = await runner.query(
+            `
+              SELECT opportunity_id, title, opportunity_status, application_deadline
+              FROM public.opportunity
+              WHERE opportunity_id = $1
+              FOR SHARE
+            `,
+            [dto.opportunityId],
+          );
 
-    if (opportunity.opportunity_status !== 'open') {
-      throw new BadRequestException(
-        `Cannot apply to an opportunity that is ${opportunity.opportunity_status}`,
+          if (!opportunity) {
+            throw new NotFoundException('Opportunity not found');
+          }
+
+          if (opportunity.opportunity_status !== 'open') {
+            throw new BadRequestException(
+              `Cannot apply to an opportunity that is ${opportunity.opportunity_status}`,
+            );
+          }
+
+          if (new Date(opportunity.application_deadline) <= new Date()) {
+            throw new BadRequestException(
+              'The application deadline for this opportunity has already passed',
+            );
+          }
+
+          const attempts = (await runner.query(
+            `
+              SELECT a.application_id, a.application_status,
+                     a.student_response, r.company_response
+              FROM public.application a
+              LEFT JOIN public.referral r ON r.application_id = a.application_id
+              WHERE a.student_id = $1 AND a.opportunity_id = $2
+              ORDER BY a.application_id
+              FOR UPDATE OF a
+            `,
+            [studentId, dto.opportunityId],
+          )) as unknown as Array<{
+            application_id: number;
+            application_status: string;
+            student_response: string;
+            company_response: string | null;
+          }>;
+
+          const activeAttempt = attempts.find((attempt) =>
+            ['submitted', 'under_review', 'approved_for_referral'].includes(
+              attempt.application_status,
+            ),
+          );
+          if (activeAttempt) {
+            throw new ConflictException(
+              `You already have an active application (ID: ${activeAttempt.application_id}, Status: ${activeAttempt.application_status}) for this opportunity`,
+            );
+          }
+
+          const blockedAttempt = attempts.find((attempt) => {
+            if (attempt.application_status === 'withdrawn') return false;
+            if (attempt.application_status === 'rejected_for_referral') {
+              return false;
+            }
+            if (
+              attempt.application_status === 'closed' &&
+              attempt.company_response === 'rejected'
+            ) {
+              return false;
+            }
+            if (
+              attempt.application_status === 'closed' &&
+              attempt.company_response === 'accepted' &&
+              attempt.student_response === 'declined'
+            ) {
+              return false;
+            }
+            return true;
+          });
+          if (blockedAttempt) {
+            const reason =
+              blockedAttempt.application_status === 'expired'
+                ? 'An expired application cannot be reapplied.'
+                : 'You cannot reapply after accepting this internship offer.';
+            throw new ConflictException(reason);
+          }
+
+          const [created] = await runner.query(
+            `
+              INSERT INTO public.application (
+                student_id,
+                opportunity_id,
+                application_status,
+                student_response,
+                remark
+              ) VALUES ($1, $2, 'submitted', 'pending', $3)
+              RETURNING *
+            `,
+            [studentId, dto.opportunityId, dto.remark ?? null],
+          );
+
+          return {
+            applicationId: created.application_id,
+            studentId: created.student_id,
+            opportunityId: created.opportunity_id,
+            applicationStatus: created.application_status,
+            studentResponse: created.student_response,
+            submittedAt: created.submitted_at,
+            updatedAt: created.updated_at,
+            remark: created.remark,
+          };
+        },
       );
+    } catch (error: unknown) {
+      const databaseError = error as { code?: string; constraint?: string };
+      if (
+        databaseError.code === '23505' &&
+        databaseError.constraint ===
+          'uq_application_active_student_opportunity'
+      ) {
+        throw new ConflictException(
+          'You already have an active application for this opportunity.',
+        );
+      }
+      throw error;
     }
-
-    if (new Date(opportunity.application_deadline) <= new Date()) {
-      throw new BadRequestException(
-        'The application deadline for this opportunity has already passed',
-      );
-    }
-
-    // Check for existing active application
-    const [existingActive] = await this.dataSource.query(
-      `
-        SELECT application_id, application_status
-        FROM public.application
-        WHERE student_id = $1
-          AND opportunity_id = $2
-          AND application_status IN ('submitted', 'under_review', 'approved_for_referral')
-      `,
-      [studentId, dto.opportunityId],
-    );
-
-    if (existingActive) {
-      throw new BadRequestException(
-        `You already have an active application (ID: ${existingActive.application_id}, Status: ${existingActive.application_status}) for this opportunity`,
-      );
-    }
-
-    const [created] = await this.dataSource.query(
-      `
-        INSERT INTO public.application (
-          student_id,
-          opportunity_id,
-          application_status,
-          student_response,
-          remark
-        ) VALUES ($1, $2, 'submitted', 'pending', $3)
-        RETURNING *
-      `,
-      [studentId, dto.opportunityId, dto.remark ?? null],
-    );
-
-    return {
-      applicationId: created.application_id,
-      studentId: created.student_id,
-      opportunityId: created.opportunity_id,
-      applicationStatus: created.application_status,
-      studentResponse: created.student_response,
-      submittedAt: created.submitted_at,
-      updatedAt: created.updated_at,
-      remark: created.remark,
-    };
   }
 
   async getStudentApplications(studentId: number) {
@@ -1092,6 +1158,53 @@ export class StudentsService {
     );
   }
 
+  async hideAssignment(
+    studentId: number,
+    assignmentId: number,
+    currentUser: StatusActor,
+  ) {
+    return withStatusActor(
+      this.dataSource,
+      currentUser?.userAccountId ?? null,
+      async (runner) => {
+        const rows = (await runner.query(
+          `SELECT ia.assignment_status
+           FROM public.internship_assignment ia
+           JOIN public.referral r ON r.referral_id = ia.referral_id
+           JOIN public.application a ON a.application_id = r.application_id
+           WHERE ia.internship_assignment_id = $1 AND a.student_id = $2
+           FOR UPDATE OF ia`,
+          [assignmentId, studentId],
+        )) as unknown as Array<{ assignment_status: string }>;
+        if (!rows[0]) {
+          throw new NotFoundException(
+            'Internship assignment not found for this student',
+          );
+        }
+        if (
+          !['completed', 'withdrawn', 'cancelled'].includes(
+            rows[0].assignment_status,
+          )
+        ) {
+          throw new ConflictException(
+            'Only completed, withdrawn, or cancelled assignments can be hidden.',
+          );
+        }
+        await runner.query(
+          `INSERT INTO public.internship_assignment_visibility (
+             internship_assignment_id, student_hidden_at,
+             student_hidden_by_user_account_id
+           ) VALUES ($1, CURRENT_TIMESTAMP, $2)
+           ON CONFLICT (internship_assignment_id) DO UPDATE SET
+             student_hidden_at = COALESCE(public.internship_assignment_visibility.student_hidden_at, EXCLUDED.student_hidden_at),
+             student_hidden_by_user_account_id = COALESCE(public.internship_assignment_visibility.student_hidden_by_user_account_id, EXCLUDED.student_hidden_by_user_account_id)`,
+          [assignmentId, currentUser?.userAccountId],
+        );
+        return { assignmentId, hidden: true };
+      },
+    );
+  }
+
   // Accepts physical multipart file upload, saves under backend/uploads/requirements, and persists metadata in DB.
   async uploadRequirementFile(
     studentId: number,
@@ -1396,6 +1509,11 @@ export class StudentsService {
         LEFT JOIN public.vw_attendance_summary ats ON ats.internship_assignment_id = ia.internship_assignment_id
         WHERE a.student_id = $1
           AND ia.deleted_at IS NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM public.internship_assignment_visibility iav
+            WHERE iav.internship_assignment_id = ia.internship_assignment_id
+              AND iav.student_hidden_at IS NOT NULL
+          )
         ORDER BY 
           CASE WHEN ia.assignment_status = 'ongoing' THEN 1 
                WHEN ia.assignment_status = 'pending' THEN 2 
@@ -1559,6 +1677,11 @@ export class StudentsService {
         JOIN public.application a ON a.application_id = r.application_id
         WHERE ia.internship_assignment_id = $1 AND a.student_id = $2
           AND ia.deleted_at IS NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM public.internship_assignment_visibility iav
+            WHERE iav.internship_assignment_id = ia.internship_assignment_id
+              AND iav.student_hidden_at IS NOT NULL
+          )
       `,
       [assignmentId, studentId],
     );
