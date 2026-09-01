@@ -62,6 +62,7 @@ function applicationService(options: {
         title: 'Test Internship',
         opportunity_status: options.opportunityStatus ?? 'open',
         application_deadline: options.deadline ?? '2099-12-31T23:59:59.000Z',
+        deadline_passed: options.deadline?.startsWith('2000') ?? false,
       }];
     }
     if (sql.includes('FROM public.application a')) return attempts;

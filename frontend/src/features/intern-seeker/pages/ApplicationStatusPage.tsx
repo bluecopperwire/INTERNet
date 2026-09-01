@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, ChevronRight, MapPin, X } from 'lucide-react'
+import { Building2, Check, ChevronRight, MapPin, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useApplications } from '../hooks/useApplications'
 import type { ApplicationDisplayStatus, ApplicationProgress, InterviewDetails, UserApplication } from '../types/application.types'
@@ -124,7 +124,10 @@ function ApplicationListItem({ application, isSelected, onSelect }: { applicatio
   return (
     <div className={`${styles.applicationItem} ${isSelected ? styles.selectedItem : ''}`}>
       <button className={styles.applicationSelectButton} type="button" onClick={onSelect}>
-        <span className={styles.applicationIcon} aria-hidden="true" />
+        <span className={styles.applicationIcon} aria-hidden="true">
+          <Building2 />
+          {application.companyLogoUrl && <img src={application.companyLogoUrl} alt="" onError={(event) => { event.currentTarget.style.display = 'none' }} />}
+        </span>
         <span className={styles.applicationInfo}><strong>{application.position}</strong><span>{application.companyName}</span></span>
         <span className={styles.applicationMeta}><StatusBadge status={application.status} /><small>Applied: {application.appliedDate}</small></span>
         <ChevronRight className={styles.chevron} />

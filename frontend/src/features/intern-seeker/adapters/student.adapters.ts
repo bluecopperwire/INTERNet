@@ -586,6 +586,10 @@ export function adaptApplication(
   return {
     id: String(dto.applicationId),
     companyName: dto.company.companyName,
+    companyLogoUrl: publicUploadUrl(
+      dto.company.logoFilePath,
+      dto.company.profileUpdatedAt || undefined,
+    ),
     position: dto.opportunity.title,
     industry: dto.company.industryName || 'Technology',
     location: 'Quezon City',

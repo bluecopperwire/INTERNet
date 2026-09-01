@@ -48,6 +48,7 @@ export interface ApplicationProgress {
 export interface UserApplication {
   id: string
   companyName: string
+  companyLogoUrl?: string
   position: string
   industry: string
   location: string

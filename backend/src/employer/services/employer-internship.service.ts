@@ -79,6 +79,7 @@ export class EmployerInternshipService {
                a.application_id, a.student_response, a.student_responded_at,
                s.student_id,
                concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS student_full_name,
+               sai.strand_program,
                o.opportunity_id, o.title AS job_title,
                c.company_name
         FROM public.referral r
@@ -86,6 +87,7 @@ export class EmployerInternshipService {
         JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
         JOIN public.company c ON c.company_id = o.company_id
         JOIN public.student s ON s.student_id = a.student_id
+        LEFT JOIN public.student_academic_information sai ON sai.student_id = s.student_id
         WHERE o.company_id = $1
           AND r.company_response = 'accepted'
           AND a.student_response = 'accepted'
@@ -112,6 +114,7 @@ export class EmployerInternshipService {
         applicationId: asNumber(row.application_id),
         studentId: asNumber(row.student_id),
         studentFullName: row.student_full_name,
+        strandProgram: row.strand_program,
         opportunityId: asNumber(row.opportunity_id),
         jobTitle: row.job_title,
         companyName: row.company_name,

@@ -127,10 +127,29 @@
 }
 
 .applicationIcon {
+  display: grid;
+  position: relative;
   width: 58px;
   height: 58px;
+  flex: none;
+  place-items: center;
+  overflow: hidden;
   border-radius: 10px;
   background: #e8ebf3;
+  color: #777fa0;
+}
+
+.applicationIcon img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.applicationIcon svg {
+  width: 26px;
+  height: 26px;
 }
 
 .selectedItem .applicationIcon {

@@ -209,7 +209,11 @@
 
 .manageButton {
   display: inline-flex;
+  box-sizing: border-box;
+  width: 120px;
+  min-width: 120px;
   min-height: 36px;
+  flex: none;
   align-items: center;
   justify-content: center;
   gap: 8px;
@@ -221,6 +225,7 @@
   font: inherit;
   font-size: 13px;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition: background 150ms ease, color 150ms ease, transform 160ms ease;
 }

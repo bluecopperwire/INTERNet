@@ -592,7 +592,9 @@ export class StudentsService {
 
           const [opportunity] = await runner.query(
             `
-              SELECT opportunity_id, title, opportunity_status, application_deadline
+              SELECT opportunity_id, title, opportunity_status, application_deadline,
+                     (application_deadline AT TIME ZONE 'Asia/Manila')::date
+                       < (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date AS deadline_passed
               FROM public.opportunity
               WHERE opportunity_id = $1
               FOR SHARE
@@ -610,7 +612,7 @@ export class StudentsService {
             );
           }
 
-          if (new Date(opportunity.application_deadline) <= new Date()) {
+          if (opportunity.deadline_passed) {
             throw new BadRequestException(
               'The application deadline for this opportunity has already passed',
             );
@@ -733,12 +735,15 @@ export class StudentsService {
           ad.company_id AS "companyId",
           ad.company_name AS "companyName",
           ad.industry_name AS "industryName",
+          c.logo_file_path AS "companyLogoFilePath",
+          c.updated_at AS "companyProfileUpdatedAt",
           ad.referral_id AS "referralId",
           ad.referral_status AS "referralStatus",
           ad.company_response AS "companyResponse",
           ad.internship_assignment_id AS "internshipAssignmentId",
           ad.assignment_status AS "assignmentStatus"
         FROM public.vw_application_details ad
+        JOIN public.company c ON c.company_id = ad.company_id
         WHERE ad.student_id = $1
           AND NOT EXISTS (
             SELECT 1 FROM public.application_visibility av
@@ -769,6 +774,8 @@ export class StudentsService {
         companyId: r.companyId,
         companyName: r.companyName,
         industryName: r.industryName,
+        logoFilePath: r.companyLogoFilePath,
+        profileUpdatedAt: r.companyProfileUpdatedAt,
       },
       referral: r.referralId
         ? {
@@ -805,6 +812,8 @@ export class StudentsService {
           ad.company_id,
           ad.company_name,
           ad.industry_name,
+          c.logo_file_path AS company_logo_file_path,
+          c.updated_at AS company_profile_updated_at,
           ad.referral_id,
           ad.referral_status,
           ad.company_response,
@@ -814,6 +823,7 @@ export class StudentsService {
           ad.internship_assignment_id,
           ad.assignment_status
         FROM public.vw_application_details ad
+        JOIN public.company c ON c.company_id = ad.company_id
         LEFT JOIN public.referral r ON r.referral_id = ad.referral_id
         WHERE ad.application_id = $1 AND ad.student_id = $2
           AND NOT EXISTS (
@@ -909,6 +919,8 @@ export class StudentsService {
         companyId: detail.company_id,
         companyName: detail.company_name,
         industryName: detail.industry_name,
+        logoFilePath: detail.company_logo_file_path,
+        profileUpdatedAt: detail.company_profile_updated_at,
       },
       referral: detail.referral_id
         ? {

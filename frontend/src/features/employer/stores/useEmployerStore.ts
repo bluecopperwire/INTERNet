@@ -48,6 +48,7 @@ interface EmployerState {
   createOpportunity: (payload: any) => Promise<Opportunity>;
   updateOpportunity: (id: number, payload: any) => Promise<Opportunity>;
   closeOpportunity: (id: number) => Promise<void>;
+  reopenOpportunity: (id: number) => Promise<void>;
   archiveOpportunity: (id: number) => Promise<void>;
   fetchReferrals: (params?: any) => Promise<void>;
   acceptReferral: (id: number, remark?: string) => Promise<void>;
@@ -174,6 +175,16 @@ export const useEmployerStore = create<EmployerState>((set, get) => ({
   closeOpportunity: async (id: number) => {
     try {
       await employerApiService.closeOpportunity(id);
+      await get().fetchOpportunities();
+    } catch (err: any) {
+      const norm = normalizeApiError(err);
+      throw norm;
+    }
+  },
+
+  reopenOpportunity: async (id: number) => {
+    try {
+      await employerApiService.reopenOpportunity(id);
       await get().fetchOpportunities();
     } catch (err: any) {
       const norm = normalizeApiError(err);

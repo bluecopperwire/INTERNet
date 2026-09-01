@@ -134,6 +134,7 @@ export interface InternshipAssignment {
   referralId: number
   internshipAssignmentId: number | null
   studentName: string
+  strandProgram: string
   company: string
   jobTitle: string
   acceptanceDate: string

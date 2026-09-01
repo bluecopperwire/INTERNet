@@ -50,13 +50,14 @@ export function CreateInternshipAssignmentPage() {
         <div className={styles.assignmentTableCard}>
           <div className={styles.assignmentTableScroller}>
             <table className={styles.assignmentTable}>
-              <thead><tr><th>Student Name</th><th>Job Title</th><th>Acceptance Date</th><th>Action</th></tr></thead>
+              <thead><tr><th>Student Name</th><th>Job Title</th><th>Program / Strand</th><th>Acceptance Date</th><th>Action</th></tr></thead>
               <tbody>{visibleAssignments.map((assignment) => <tr key={assignment.id}>
                 <td>{assignment.studentName}</td>
                 <td>{assignment.jobTitle}</td>
+                <td>{assignment.strandProgram}</td>
                 <td>{assignment.acceptanceDate}</td>
                 <td><div className={styles.assignmentRowActions}>
-                  <button type="button" className={styles.reviewButton} onClick={() => navigate(`/employer/internship-assignments/${assignment.id}`)}><Eye size={16} />Create Internship Assignment</button>
+                  <button type="button" className={styles.reviewButton} onClick={() => navigate(`/employer/internship-assignments/${assignment.id}`)}><Eye size={16} />Create</button>
                 </div></td>
               </tr>)}</tbody>
             </table>

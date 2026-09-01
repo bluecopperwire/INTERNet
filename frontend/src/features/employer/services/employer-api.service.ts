@@ -95,6 +95,25 @@ export const employerApiService = {
     return response.data;
   },
 
+  async getOpportunityReferrals(
+    opportunityId: number,
+    params?: any,
+  ): Promise<PaginatedResponse<EmployerReferralListItemDto>> {
+    const response = await api.get<PaginatedResponse<EmployerReferralListItemDto>>(
+      `/employer/opportunities/${opportunityId}/referrals`,
+      { params },
+    );
+    return response.data;
+  },
+
+  async reopenOpportunity(id: number): Promise<EmployerOpportunityDto> {
+    const response = await api.patch<EmployerOpportunityDto>(
+      `/employer/opportunities/${id}/reopen`,
+      {},
+    );
+    return response.data;
+  },
+
   async markReferralUnderReview(referralId: number): Promise<any> {
     const response = await api.patch(`/employer/referrals/${referralId}/review`, {});
     return response.data;

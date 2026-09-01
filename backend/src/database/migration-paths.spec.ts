@@ -76,6 +76,7 @@ describe('Database migration paths and behavioral validation', () => {
       'ApplicationWorkflowAlignment1788220800000',
       'ApplicationInitialStatusHistory1788307200000',
       'RemoveAcceptedReferralReversal1788393600000',
+      'OpportunityLifecycleRules1788480000000',
     ]);
 
     // Validate redesigned columns
@@ -127,6 +128,18 @@ describe('Database migration paths and behavioral validation', () => {
       `SELECT industry_name FROM public.industry WHERE is_custom_text = true`,
     );
     expect(customIndustries).toEqual([{ industry_name: 'Other' }]);
+
+    await dataSource.undoLastMigration();
+    const revertedOpportunityLifecycle = await dataSource.query(`
+      SELECT
+        pg_get_functiondef('public.fn_validate_opportunity_transition()'::regprocedure) AS definition,
+        (SELECT count(*)::int FROM public.migrations
+         WHERE name = 'OpportunityLifecycleRules1788480000000') AS migration_rows
+    `);
+    expect(revertedOpportunityLifecycle[0].definition).toContain(
+      "OLD.opportunity_status = 'open' AND NEW.opportunity_status IN ('closed', 'archived')",
+    );
+    expect(revertedOpportunityLifecycle[0].migration_rows).toBe(0);
 
     await dataSource.undoLastMigration();
     const revertedReversalRemoval = await dataSource.query(`
@@ -379,6 +392,7 @@ describe('Database migration paths and behavioral validation', () => {
       'ApplicationWorkflowAlignment1788220800000',
       'ApplicationInitialStatusHistory1788307200000',
       'RemoveAcceptedReferralReversal1788393600000',
+      'OpportunityLifecycleRules1788480000000',
     ]);
 
     await dataSource.query(`

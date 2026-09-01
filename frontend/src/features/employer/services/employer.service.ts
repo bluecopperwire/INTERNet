@@ -22,7 +22,7 @@ import type {
   WorkArrangement,
   EmployerAssignmentCandidateDto,
 } from '../../../types/api';
-import { formatTableDate } from '../../../utils/date-only';
+import { formatTableDate, todayDateOnly } from '../../../utils/date-only';
 
 function mapWorkArrangement(arrangement?: string): WorkArrangement {
   if (arrangement === 'Remote' || arrangement === 'remote') return 'remote';
@@ -65,11 +65,7 @@ export function isOpportunityDeadlineExpired(
   applicationDeadline: string,
 ): boolean {
   if (!applicationDeadline) return false;
-  const deadline = new Date(`${applicationDeadline}T00:00:00`);
-  if (Number.isNaN(deadline.getTime())) return false;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return today >= deadline;
+  return applicationDeadline < todayDateOnly();
 }
 
 export function formatOpportunityDeadline(applicationDeadline: string): string {
@@ -102,6 +98,7 @@ export function mapAssignmentCandidate(
     referralId: c.referralId,
     internshipAssignmentId: c.internshipAssignmentId,
     studentName: c.studentFullName,
+    strandProgram: c.strandProgram || 'N/A',
     company: c.companyName,
     jobTitle: c.jobTitle,
     acceptanceDate: formatAcceptanceDate(c.studentRespondedAt),
@@ -231,6 +228,14 @@ export const employerService = {
     return records;
   },
 
+  async closeOpportunity(id: string): Promise<void> {
+    await useEmployerStore.getState().closeOpportunity(Number(id));
+  },
+
+  async reopenOpportunity(id: string): Promise<void> {
+    await useEmployerStore.getState().reopenOpportunity(Number(id));
+  },
+
   async getReferralHistory(): Promise<Applicant[]> {
     const records: Applicant[] = [];
     let page = 1;
@@ -282,10 +287,20 @@ export const employerService = {
   async getApplicantsForOpportunity(
     opportunityId: string,
   ): Promise<Applicant[]> {
-    const res = await employerApiService.getReferrals({
-      opportunityId: Number(opportunityId),
-    });
-    return res.data.map(adaptEmployerReferral);
+    const records: Applicant[] = [];
+    let page = 1;
+    let totalPages = 1;
+    while (page <= totalPages) {
+      const result = await employerApiService.getOpportunityReferrals(Number(opportunityId), {
+        view: 'history',
+        page,
+        limit: 100,
+      });
+      records.push(...result.data.map(adaptEmployerReferral));
+      totalPages = result.meta.totalPages;
+      page++;
+    }
+    return records;
   },
 
   async getAttendanceRecords(): Promise<EmployerAttendanceRecord[]> {

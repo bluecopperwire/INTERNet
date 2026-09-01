@@ -316,7 +316,7 @@ export function ApplicationsHistoryPage() {
         </div>
         <div className={tableStyles.tableCard}>
           <div className={tableStyles.tableWrapper}>
-            <table className={tableStyles.table}>
+            <table className={`${tableStyles.table} ${tableStyles.applicationsHistoryTable}`}>
               <thead>
                 <tr>
                   <th>Student Name</th>

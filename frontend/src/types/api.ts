@@ -43,6 +43,7 @@ export interface EmployerAssignmentCandidateDto {
   applicationId: number;
   studentId: number;
   studentFullName: string;
+  strandProgram: string;
   opportunityId: number;
   jobTitle: string;
   companyName: string;
@@ -187,6 +188,8 @@ export interface StudentApplicationDto {
     companyName: string;
     companyType: CompanyType;
     industryName?: string | null;
+    logoFilePath?: string | null;
+    profileUpdatedAt?: string | null;
   };
   referral?: {
     referralId: number;

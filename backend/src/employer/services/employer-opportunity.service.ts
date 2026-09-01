@@ -32,6 +32,7 @@ export class EmployerOpportunityService {
         SELECT count(*)::text AS total
         FROM public.opportunity o
         WHERE o.company_id = $1
+          AND o.opportunity_status IN ('open', 'closed')
           AND ($2::text IS NULL OR o.opportunity_status::text = $2)
       `,
       [company.companyId, query.status ?? null],
@@ -45,6 +46,7 @@ export class EmployerOpportunityService {
         LEFT JOIN public.application a ON a.opportunity_id = o.opportunity_id
         LEFT JOIN public.referral r ON r.application_id = a.application_id
         WHERE o.company_id = $1
+          AND o.opportunity_status IN ('open', 'closed')
           AND ($2::text IS NULL OR o.opportunity_status::text = $2)
         GROUP BY o.opportunity_id
         ORDER BY o.created_at DESC, o.opportunity_id DESC
@@ -134,9 +136,9 @@ export class EmployerOpportunityService {
     }
     if (dto.applicationDeadline) {
       assertValidDate(dto.applicationDeadline, 'applicationDeadline');
-      if (dto.applicationDeadline <= currentManilaDate()) {
+      if (dto.applicationDeadline < currentManilaDate()) {
         throw new ConflictException(
-          'applicationDeadline must be in the future.',
+          'applicationDeadline must be today or later in Asia/Manila.',
         );
       }
     }
@@ -214,16 +216,43 @@ export class EmployerOpportunityService {
         company.companyId,
         opportunityId,
         true,
+        true,
       );
-      if (row.opportunity_status === 'archived') {
-        throw new ConflictException('Archived opportunities cannot be closed.');
+      if (row.opportunity_status !== 'open') {
+        throw new ConflictException('Only open opportunities can be closed.');
       }
-      if (row.opportunity_status === 'open') {
-        await runner.query(
-          `UPDATE public.opportunity SET opportunity_status = 'closed' WHERE opportunity_id = $1`,
-          [opportunityId],
+      await runner.query(
+        `UPDATE public.opportunity SET opportunity_status = 'closed', updated_at = CURRENT_TIMESTAMP WHERE opportunity_id = $1`,
+        [opportunityId],
+      );
+    });
+    return this.getById(userAccountId, opportunityId);
+  }
+
+  async reopen(userAccountId: number, opportunityId: number) {
+    const company = await this.companyResolver.resolve(userAccountId);
+    await withStatusActor(this.dataSource, userAccountId, async (runner) => {
+      const row = await this.findScoped(
+        runner,
+        company.companyId,
+        opportunityId,
+        true,
+        true,
+      );
+      if (row.opportunity_status !== 'closed') {
+        throw new ConflictException(
+          'Only closed opportunities can be reopened.',
         );
       }
+      if (String(row.deadline_date) < currentManilaDate()) {
+        throw new ConflictException(
+          'The application deadline has passed. Update it before reopening this opportunity.',
+        );
+      }
+      await runner.query(
+        `UPDATE public.opportunity SET opportunity_status = 'open', updated_at = CURRENT_TIMESTAMP WHERE opportunity_id = $1`,
+        [opportunityId],
+      );
     });
     return this.getById(userAccountId, opportunityId);
   }
@@ -236,8 +265,13 @@ export class EmployerOpportunityService {
         company.companyId,
         opportunityId,
         true,
+        true,
       );
-      if (row.opportunity_status === 'archived') return;
+      if (row.opportunity_status !== 'closed') {
+        throw new ConflictException(
+          'Only closed opportunities can be deleted.',
+        );
+      }
       await runner.query(
         `UPDATE public.opportunity SET opportunity_status = 'archived' WHERE opportunity_id = $1`,
         [opportunityId],
@@ -306,7 +340,7 @@ export class EmployerOpportunityService {
         }
       }
     });
-    return this.getById(userAccountId, opportunityId);
+    return { opportunityId, archived: true };
   }
 
   private async findScoped(
@@ -314,6 +348,7 @@ export class EmployerOpportunityService {
     companyId: number,
     opportunityId: number,
     forUpdate = false,
+    includeArchived = false,
   ): Promise<OpportunityRow> {
     const rows: OpportunityRow[] = await executor.query(
       `
@@ -325,6 +360,7 @@ export class EmployerOpportunityService {
             WHERE a.opportunity_id = o.opportunity_id) AS total_applicant_count
         FROM public.opportunity o
         WHERE o.opportunity_id = $1 AND o.company_id = $2
+          ${includeArchived ? '' : "AND o.opportunity_status <> 'archived'"}
         ${forUpdate ? 'FOR UPDATE' : ''}
       `,
       [opportunityId, companyId],

@@ -3,7 +3,9 @@ import {
   mapInterviewSchedulePayload,
   mapAssignmentCandidate,
   mapStudentResponse,
+  isOpportunityDeadlineExpired,
 } from './employer.service';
+import { todayDateOnly } from '../../../utils/date-only';
 
 describe('assignment candidate mapping', () => {
   it.each([
@@ -22,6 +24,7 @@ describe('assignment candidate mapping', () => {
       applicationId: 12,
       studentId: 13,
       studentFullName: 'Student Example',
+      strandProgram: 'BS Information Technology',
       opportunityId: 14,
       jobTitle: 'Backend Intern',
       companyName: 'INTERNet Labs',
@@ -37,10 +40,22 @@ describe('assignment candidate mapping', () => {
       referralId: 11,
       internshipAssignmentId: null,
       company: 'INTERNet Labs',
+      strandProgram: 'BS Information Technology',
       jobTitle: 'Backend Intern',
       studentResponse: 'Accepted',
       acceptanceDate: 'Aug 28, 2026',
     });
+  });
+});
+
+describe('opportunity reopen deadline validation', () => {
+  it('allows a deadline on the current Asia/Manila date', () => {
+    expect(isOpportunityDeadlineExpired(todayDateOnly())).toBe(false);
+  });
+
+  it('rejects a past date and permits a future date', () => {
+    expect(isOpportunityDeadlineExpired('2000-01-01')).toBe(true);
+    expect(isOpportunityDeadlineExpired('2099-01-01')).toBe(false);
   });
 });
 

@@ -12,6 +12,11 @@ function headings(source: string): string[] {
   return [...source.matchAll(/<th>([^<]+)<\/th>/g)].map((match) => match[1])
 }
 
+function cssRule(source: string, selector: string): string {
+  const start = source.indexOf(selector)
+  return source.slice(start, source.indexOf('}', start) + 1)
+}
+
 describe('workflow page responsibility boundaries', () => {
   it('keeps QC PESO Review Applicants as the exact active decision queue', () => {
     const source = readSource('../qcpeso/pages/ApplicantManagementPages.tsx')
@@ -75,11 +80,34 @@ describe('workflow page responsibility boundaries', () => {
     const source = readSource('../employer/pages/InternshipWorkflowPages.tsx')
     const queue = section(source, 'export function CreateInternshipAssignmentPage', 'export function ReviewInternshipAssignmentPage')
     expect(headings(queue)).toEqual([
-      'Student Name', 'Job Title', 'Acceptance Date', 'Action',
+      'Student Name', 'Job Title', 'Program / Strand', 'Acceptance Date', 'Action',
     ])
-    expect(queue).toContain('Create Internship Assignment</button>')
+    expect(queue).toContain('>Create</button>')
     expect(queue).not.toContain('Student Response')
     expect(queue).not.toContain('Delete</button>')
+  })
+
+  it('keeps labeled table actions at one uniform width', () => {
+    const rules: Array<[string, string[]]> = [
+      ['../employer/pages/ApplicantsPage.module.css', ['.reviewBtn {', '.deleteBtn {']],
+      ['../employer/pages/InternshipWorkflowPages.module.css', ['.reviewButton {']],
+      ['../employer/pages/MonitorInternshipPage.module.css', ['.viewButton {']],
+      ['../employer/pages/AttendanceMonitoringPage.module.css', ['.actionBtn {']],
+      ['../employer/components/ViewApplicantsModal.module.css', ['.reviewBtn {']],
+      ['../qcpeso/pages/MonitorUsersPage.module.css', ['.viewButton {']],
+      ['../qcpeso/pages/ReportsDocumentsPage.module.css', ['.actionBtn {']],
+      ['../qcpeso/pages/QCPesoDashboardPage.module.css', ['.actionBtn {']],
+      ['../admin/pages/ManageStudentsPage.module.css', ['.manageButton {']],
+    ]
+
+    for (const [path, selectors] of rules) {
+      const source = readSource(path)
+      for (const selector of selectors) {
+        const rule = cssRule(source, selector)
+        expect(rule).toContain('box-sizing: border-box')
+        expect(rule).toContain('width: 120px')
+      }
+    }
   })
 
   it('removes every frontend acceptance-reversal call and control', () => {

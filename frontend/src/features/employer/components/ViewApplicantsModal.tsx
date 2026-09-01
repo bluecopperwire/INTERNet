@@ -1,13 +1,10 @@
 import { useState, useEffect, useMemo } from 'react'
-import { X, Search, SlidersHorizontal, ChevronLeft, ChevronRight, Eye, Trash2 } from 'lucide-react'
+import { X, Search, SlidersHorizontal, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { employerService } from '../services/employer.service'
 import type { Opportunity, Applicant } from '../types/employer.types'
 import styles from './ViewApplicantsModal.module.css'
-import { openReferralForReview } from '../services/employer-review-flow'
-import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
-import { ConfirmDeleteModal } from '../../../components/feedback/ConfirmDeleteModal'
 
 interface ViewApplicantsModalProps {
   opportunity: Opportunity
@@ -17,10 +14,8 @@ interface ViewApplicantsModalProps {
 export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModalProps) {
   const [applicants, setApplicants] = useState<Applicant[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const navigate = useNavigate()
-  const toast = useToastStore()
-  const [deleteTarget, setDeleteTarget] = useState<Applicant | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
 
   // Pagination & Filtering state
   const [currentPage, setCurrentPage] = useState(1)
@@ -30,10 +25,12 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
   const [statusFilter, setStatusFilter] = useState('All')
 
   useEffect(() => {
-    employerService.getApplicantsForOpportunity(opportunity.id).then((data) => {
-      setApplicants(data)
-      setIsLoading(false)
-    })
+    let active = true
+    employerService.getApplicantsForOpportunity(opportunity.id)
+      .then((data) => { if (active) setApplicants(data) })
+      .catch((error: unknown) => { if (active) setLoadError(getErrorMessage(error, 'Failed to load referrals.')) })
+      .finally(() => { if (active) setIsLoading(false) })
+    return () => { active = false }
   }, [opportunity.id])
 
   const filteredApplicants = useMemo(() => {
@@ -44,7 +41,7 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
         matches = matches && app.name.toLowerCase().includes(searchQuery.toLowerCase())
       }
       if (statusFilter !== 'All') {
-        matches = matches && app.status === statusFilter
+        matches = matches && (app.historyStatus ?? app.status) === statusFilter
       }
       return matches
     })
@@ -69,29 +66,6 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
 
   const handleNextPage = () => {
     if (currentPage < totalPages) setCurrentPage(currentPage + 1)
-  }
-
-  const openReferral = async (app: Applicant) => {
-    await openReferralForReview(app, {
-      markUnderReview: employerService.markApplicantUnderReview,
-      navigate: (path) => navigate(`${path}?from=opportunity&opportunityId=${opportunity.id}`),
-      onMutationError: (error) => toast.error(getErrorMessage(error, 'Failed to start referral review.')),
-    })
-  }
-
-  const deleteReferral = async () => {
-    if (!deleteTarget) return
-    setIsDeleting(true)
-    try {
-      await employerService.deleteReferral(deleteTarget.id)
-      setApplicants((current) => current.filter((app) => app.id !== deleteTarget.id))
-      setDeleteTarget(null)
-      toast.success('Referral deleted.')
-    } catch (error: unknown) {
-      toast.error(getErrorMessage(error, 'Failed to delete referral.'))
-    } finally {
-      setIsDeleting(false)
-    }
   }
 
   return (
@@ -128,7 +102,7 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
               }}
             >
               <option value="All">All Statuses</option>
-              {[...new Set(applicants.map((app) => app.status))].map((status) => <option key={status} value={status}>{status}</option>)}
+              {[...new Set(applicants.map((app) => app.historyStatus ?? app.status))].map((status) => <option key={status} value={status}>{status}</option>)}
             </select>
           </div>
         </div>
@@ -139,8 +113,9 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
               <tr>
                 <th>Student Name</th>
                 <th>Job Title</th>
-                <th>Program/Strand</th>
-                <th>Date Applied</th>
+                <th>Program / Strand</th>
+                <th>Application Date</th>
+                <th>Referral Date</th>
                 <th>Status</th>
                 <th>Action</th>
               </tr>
@@ -148,11 +123,13 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '24px' }}>Loading referrals...</td>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: '24px' }}>Loading referrals...</td>
                 </tr>
+              ) : loadError ? (
+                <tr><td colSpan={7} style={{ textAlign: 'center', padding: '24px' }} role="alert">{loadError}</td></tr>
               ) : currentItems.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '24px' }}>No referrals found.</td>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: '24px' }}>No referrals found.</td>
                 </tr>
               ) : (
                 currentItems.map((app) => (
@@ -160,20 +137,19 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
                     <td>{app.name}</td>
                     <td>{app.opportunityTitle}</td>
                     <td>{app.course}</td>
-                    <td>{app.dateApplied}</td>
+                    <td>{app.applicationDate}</td>
+                    <td>{app.referralDate}</td>
                     <td>
                       <span className={`${styles.statusPill} ${
-                        app.status === 'Accepted' ? styles.accepted :
-                        ['Rejected', 'Withdrawn', 'Expired', 'Offer Declined'].includes(app.status) ? styles.rejected :
-                        ['For Review', 'Under Review', 'Interview Scheduled', 'Offer Received'].includes(app.status) ? styles.underReview :
-                        ''
+                        (app.historyStatus ?? app.status).includes('Accepted') ? styles.accepted :
+                        ['Rejected', 'Withdrawn', 'Expired', 'Declined'].some((value) => (app.historyStatus ?? app.status).includes(value)) ? styles.rejected :
+                        styles.underReview
                       }`}>
-                        {app.status}
+                        {app.historyStatus ?? app.status}
                       </span>
                     </td>
                     <td>
-                      <button className={styles.reviewBtn} onClick={() => void openReferral(app)}><Eye size={16} /><span>{app.referralStatus === 'sent' ? 'Review' : 'View'}</span></button>
-                      {app.canHide && <button className={styles.reviewBtn} onClick={() => setDeleteTarget(app)}><Trash2 size={16} /><span>Delete</span></button>}
+                      <button className={styles.reviewBtn} onClick={() => navigate(`/employer/referrals-history/${app.id}?from=opportunity&opportunityId=${opportunity.id}`)}><Eye size={16} /><span>View</span></button>
                     </td>
                   </tr>
                 ))
@@ -203,7 +179,6 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
             </button>
           </div>
         </div>
-        {deleteTarget && <ConfirmDeleteModal subject={`${deleteTarget.name}'s referral`} isDeleting={isDeleting} onClose={() => setDeleteTarget(null)} onConfirm={() => void deleteReferral()} />}
       </div>
       
     </div>

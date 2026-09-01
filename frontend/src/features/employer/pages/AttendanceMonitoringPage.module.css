@@ -191,8 +191,13 @@
 
 .actionBtn {
   display: inline-flex;
+  box-sizing: border-box;
+  width: 120px;
+  min-width: 120px;
   min-height: 36px;
+  flex: none;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   padding: 0 14px;
   border: 1px solid #160e6f;
@@ -201,6 +206,7 @@
   color: #160e6f;
   font-size: 13px;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
 }
 
