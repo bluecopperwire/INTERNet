@@ -5,6 +5,7 @@ import type { Transporter } from 'nodemailer';
 import {
   SendEmailOptions,
   ReferralEmailPayload,
+  EmployerCredentialsEmailPayload,
 } from './email.interfaces';
 
 @Injectable()
@@ -65,6 +66,7 @@ export class EmailService {
     const mailOptions: nodemailer.SendMailOptions = {
       from: `"${fromName}" <${fromEmail}>`,
       to: options.to,
+      cc: options.cc,
       subject: options.subject,
       text: options.text,
       html: options.html,
@@ -79,7 +81,7 @@ export class EmailService {
 
     if (!this.isConfigured || !this.transporter) {
       this.logger.log(
-        `[MOCK EMAIL SENT] To: ${options.to} | Subject: "${options.subject}" | Attachments: ${
+        `[MOCK EMAIL SENT] To: ${options.to}${options.cc ? ` | CC: ${options.cc}` : ''} | Subject: "${options.subject}" | Attachments: ${
           options.attachments?.length || 0
         }`,
       );
@@ -289,4 +291,160 @@ Quezon City Government
 
     return { subject, text, html };
   }
+
+  buildEmployerCredentialsEmail(payload: EmployerCredentialsEmailPayload): {
+    subject: string;
+    text: string;
+    html: string;
+  } {
+    const contactGreeting = payload.contactPersonName
+      ? `Dear ${payload.contactPersonName},`
+      : `Dear ${payload.companyName} Team,`;
+
+    const baseUrl = this.configService.get<string>(
+      'email.appBaseUrl',
+      'http://localhost:5173',
+    );
+    const portalUrl = payload.loginUrl || baseUrl;
+
+    const pesoManagerName = this.configService.get<string>(
+      'email.pesoManagerName',
+      'ROGELIO L. REYES, MCD',
+    );
+    const pesoManagerTitle = this.configService.get<string>(
+      'email.pesoManagerTitle',
+      'City Government Department Head III',
+    );
+    const pesoManagerOffice = this.configService.get<string>(
+      'email.pesoManagerOffice',
+      'PESO Manager',
+    );
+
+    const subject = `[QC PESO] Employer Account Credentials - ${payload.companyName}`;
+
+    const text = `
+Quezon City Public Employment Service Office (QC PESO)
+Work Immersion and Internship Referral Program (WIIRP)
+
+${contactGreeting}
+
+Greetings from the Quezon City Public Employment Service Office!
+
+We are pleased to inform you that your employer partner account for "${payload.companyName}" has been successfully created on the QC PESO Internship Portal.
+
+Below are your account login credentials:
+- Portal URL: ${portalUrl}
+- Account Email: ${payload.accountEmail}
+- Temporary Password: ${payload.temporaryPassword}
+
+Important Security Notice:
+For your account security, please log in using the temporary password above and update your password immediately upon initial access.
+
+Thank you very much for your continuous partnership with the Quezon City Government.
+
+Very truly yours,
+
+${pesoManagerName}
+${pesoManagerTitle}
+${pesoManagerOffice}
+Quezon City Government
+    `.trim();
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1e293b; margin: 0; padding: 0; background-color: #f8fafc; }
+    .container { max-width: 600px; margin: 24px auto; background: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .header { background: #160e6f; color: #ffffff; padding: 20px 28px; }
+    .content { padding: 32px; }
+    .greeting { font-size: 16px; font-weight: 600; color: #0f172a; margin-bottom: 16px; }
+    .highlight-card { background: #f0f4ff; border-left: 4px solid #160e6f; padding: 18px 20px; border-radius: 4px; margin: 20px 0; }
+    .highlight-card h3 { margin: 0 0 12px 0; font-size: 15px; color: #160e6f; }
+    .details-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    .details-table td { padding: 6px 0; font-size: 14px; }
+    .details-table td.label { width: 38%; font-weight: 600; color: #475569; }
+    .details-table td.val { width: 62%; color: #0f172a; }
+    .code-badge { background: #e2e8f0; color: #0f172a; padding: 3px 8px; border-radius: 4px; font-family: monospace; font-size: 14px; font-weight: 600; }
+    .btn-container { text-align: center; margin: 24px 0 16px 0; }
+    .btn-login { display: inline-block; background-color: #160e6f; color: #ffffff !important; text-decoration: none; padding: 12px 28px; border-radius: 6px; font-weight: 600; font-size: 14px; letter-spacing: 0.3px; }
+    .instructions { background: #fffbeb; border: 1px solid #fef3c7; padding: 14px 18px; border-radius: 6px; font-size: 13px; color: #92400e; margin: 20px 0; }
+    .footer { border-top: 1px solid #e2e8f0; padding: 24px 32px; font-size: 13px; color: #64748b; background: #fafafa; }
+    .signatory { margin-top: 20px; font-size: 14px; font-weight: 600; color: #0f172a; }
+    .signatory-title { font-size: 12px; color: #64748b; font-weight: normal; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="width: 58px; vertical-align: middle; padding-right: 14px;">
+            <img src="cid:peso_logo" alt="QC PESO Logo" width="52" height="52" style="display: block; border-radius: 50%; background: #ffffff; border: 2px solid rgba(255,255,255,0.85);" />
+          </td>
+          <td style="vertical-align: middle; text-align: left;">
+            <h1 style="margin: 0; font-size: 19px; font-weight: 700; color: #ffffff; letter-spacing: 0.5px; line-height: 1.2;">QUEZON CITY PESO</h1>
+            <p style="margin: 4px 0 0 0; font-size: 12.5px; color: #e2e8f0; opacity: 0.9; line-height: 1.3;">Work Immersion and Internship Referral Program (WIIRP)</p>
+          </td>
+        </tr>
+      </table>
+    </div>
+    <div class="content">
+      <div class="greeting">${contactGreeting}</div>
+      <p>Greetings from the <strong>Quezon City Public Employment Service Office</strong>!</p>
+      <p>
+        We are pleased to inform you that your employer partner account for <strong>${payload.companyName}</strong> has been officially created on the <strong>QC PESO Internship Portal</strong>.
+      </p>
+      
+      <div class="highlight-card">
+        <h3>Employer Account Credentials</h3>
+        <table class="details-table">
+          <tr>
+            <td class="label">Company Name:</td>
+            <td class="val"><strong>${payload.companyName}</strong></td>
+          </tr>
+          <tr>
+            <td class="label">Account Email:</td>
+            <td class="val"><a href="mailto:${payload.accountEmail}">${payload.accountEmail}</a></td>
+          </tr>
+          <tr>
+            <td class="label">Temporary Password:</td>
+            <td class="val"><span class="code-badge">${payload.temporaryPassword}</span></td>
+          </tr>
+          <tr>
+            <td class="label">Portal Link:</td>
+            <td class="val"><a href="${portalUrl}" target="_blank" rel="noopener noreferrer">${portalUrl}</a></td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="btn-container">
+        <a href="${portalUrl}" class="btn-login" target="_blank" rel="noopener noreferrer">Log In to QC PESO Portal</a>
+      </div>
+
+      <div class="instructions">
+        <strong>Important Security Notice:</strong><br>
+        For your account security, please sign in using your temporary password and change it immediately under your profile settings upon your first login.
+      </div>
+
+      <p>Thank you very much for your continuous partnership and commitment to supporting Quezon City students and interns.</p>
+
+      <div class="signatory">
+        ${pesoManagerName}<br>
+        <span class="signatory-title">${pesoManagerTitle}<br>${pesoManagerOffice}, Quezon City</span>
+      </div>
+    </div>
+    <div class="footer">
+      This is an automated notification sent via the Quezon City PESO Internship Portal. Please do not reply directly to this automated email address.
+    </div>
+  </div>
+</body>
+</html>
+    `.trim();
+
+    return { subject, text, html };
+  }
 }
+

@@ -24,4 +24,8 @@ export default registerAs('email', () => ({
   pesoManagerTitle:
     process.env.PESO_MANAGER_TITLE || 'City Government Department Head III',
   pesoManagerOffice: process.env.PESO_MANAGER_OFFICE || 'PESO Manager',
+  appBaseUrl:
+    process.env.APP_BASE_URL ||
+    process.env.FRONTEND_URL ||
+    'http://localhost:5173',
 }));

@@ -8,6 +8,7 @@ export interface EmailAttachment {
 
 export interface SendEmailOptions {
   to: string;
+  cc?: string | string[];
   fallbackTo?: string;
   subject: string;
   text?: string;
@@ -43,3 +44,13 @@ export interface ReferralEmailPayload {
   studentId: number;
   referralPdfPath: string;
 }
+
+export interface EmployerCredentialsEmailPayload {
+  companyName: string;
+  contactPersonName?: string;
+  contactEmail: string;
+  accountEmail: string;
+  temporaryPassword: string;
+  loginUrl?: string;
+}
+
