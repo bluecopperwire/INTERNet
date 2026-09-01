@@ -68,9 +68,35 @@ describe('EmailModule Services', () => {
       expect(result.html).toContain('maria.santos@qcu.edu.ph');
     });
 
+    it('should correctly format employer credentials email HTML and text', () => {
+      const payload = {
+        companyName: 'Acme Corporation',
+        contactPersonName: 'Jane Smith',
+        contactEmail: 'jane.smith@acme.com',
+        accountEmail: 'admin@acme.com',
+        temporaryPassword: 'TempPassword123!',
+        loginUrl: 'http://localhost:5173',
+      };
+
+      const result = emailService.buildEmployerCredentialsEmail(payload);
+
+      expect(result.subject).toBe('[QC PESO] Employer Account Credentials - Acme Corporation');
+      expect(result.text).toContain('Jane Smith');
+      expect(result.text).toContain('Acme Corporation');
+      expect(result.text).toContain('admin@acme.com');
+      expect(result.text).toContain('TempPassword123!');
+      expect(result.text).toContain('http://localhost:5173');
+      expect(result.html).toContain('Acme Corporation');
+      expect(result.html).toContain('admin@acme.com');
+      expect(result.html).toContain('TempPassword123!');
+      expect(result.html).toContain('http://localhost:5173');
+      expect(result.html).toContain('ROGELIO L. REYES, MCD');
+    });
+
     it('should send email in mock simulation mode when unconfigured', async () => {
       const result = await emailService.sendDirect({
         to: 'company@example.com',
+        cc: 'account@example.com',
         fallbackTo: 'backup@example.com',
         subject: 'Test Subject',
         text: 'Test content',
@@ -108,6 +134,56 @@ describe('EmailModule Services', () => {
       expect(updatedJob).toBeDefined();
       expect(updatedJob?.status).toBe('sent');
       expect(updatedJob?.sentTo).toBe('recruitment@partner.com');
+    });
+
+    it('should enqueue employer credentials email with CC when emails differ', async () => {
+      const payload = {
+        companyName: 'Tech Innovators Inc.',
+        contactPersonName: 'Alice Johnson',
+        contactEmail: 'alice@techinnovators.com',
+        accountEmail: 'login@techinnovators.com',
+        temporaryPassword: 'SecureTempPass999!',
+        loginUrl: 'http://localhost:5173',
+      };
+
+      const job = await queueService.enqueueEmployerCredentialsEmail(payload);
+
+      expect(job).toBeDefined();
+      expect(job.id).toBeDefined();
+      expect(job.options.to).toBe('alice@techinnovators.com');
+      expect(job.options.cc).toBe('login@techinnovators.com');
+      expect(job.options.subject).toBe('[QC PESO] Employer Account Credentials - Tech Innovators Inc.');
+
+      // Wait for queue processing loop
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      const updatedJob = queueService.getJob(job.id);
+      expect(updatedJob).toBeDefined();
+      expect(updatedJob?.status).toBe('sent');
+    });
+
+    it('should enqueue employer credentials email without CC when emails are identical', async () => {
+      const payload = {
+        companyName: 'Solo Firm Inc.',
+        contactPersonName: 'Bob Lee',
+        contactEmail: 'contact@solofirm.com',
+        accountEmail: 'contact@solofirm.com',
+        temporaryPassword: 'AnotherPassword888!',
+        loginUrl: 'http://localhost:5173',
+      };
+
+      const job = await queueService.enqueueEmployerCredentialsEmail(payload);
+
+      expect(job).toBeDefined();
+      expect(job.options.to).toBe('contact@solofirm.com');
+      expect(job.options.cc).toBeUndefined();
+
+      // Wait for queue processing loop
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      const updatedJob = queueService.getJob(job.id);
+      expect(updatedJob).toBeDefined();
+      expect(updatedJob?.status).toBe('sent');
     });
   });
 });

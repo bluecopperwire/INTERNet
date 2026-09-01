@@ -2,10 +2,13 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { DataSource, QueryRunner } from 'typeorm';
+import { EmailQueueService } from '../../email/email-queue.service';
 import { withStatusActor } from '../../database/status-actor.transaction';
 import { AccountStatus, UserRole } from '../../users/entities/account.entities';
 import {
@@ -32,7 +35,13 @@ type SummaryRow = {
 
 @Injectable()
 export class AdminUserManagementService {
-  constructor(private readonly dataSource: DataSource) {}
+  private readonly logger = new Logger(AdminUserManagementService.name);
+
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly emailQueueService: EmailQueueService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async listStudents(query: AdminListQueryDto) {
     const filter = this.listFilter(query, [
@@ -314,6 +323,38 @@ export class AdminUserManagementService {
       );
       return Number(companies[0].company_id);
     });
+
+    const contactPersonName = [
+      dto.contactPersonFirstName,
+      dto.contactPersonMiddleName,
+      dto.contactPersonLastName,
+      dto.contactPersonExtensionName,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+
+    const baseUrl = this.configService.get<string>(
+      'email.appBaseUrl',
+      'http://localhost:5173',
+    );
+
+    this.emailQueueService
+      .enqueueEmployerCredentialsEmail({
+        companyName: dto.companyName,
+        contactPersonName: contactPersonName || undefined,
+        contactEmail: dto.contactEmail,
+        accountEmail: dto.accountEmail,
+        temporaryPassword: dto.initialPassword,
+        loginUrl: baseUrl,
+      })
+      .catch((err) => {
+        this.logger.error(
+          `Failed to enqueue credentials email for company ${companyId} (${dto.companyName}):`,
+          err,
+        );
+      });
+
     return this.getEmployer(companyId);
   }
 

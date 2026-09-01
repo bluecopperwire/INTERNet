@@ -8,6 +8,7 @@ import {
   EmailAttachment,
   EmailJob,
   ReferralEmailPayload,
+  EmployerCredentialsEmailPayload,
   SendEmailOptions,
 } from './email.interfaces';
 
@@ -103,6 +104,48 @@ export class EmailQueueService implements OnModuleInit, OnModuleDestroy {
         opportunityId: payload.opportunityId,
         studentId: payload.studentId,
         companyName: payload.companyName,
+      },
+    });
+  }
+
+  async enqueueEmployerCredentialsEmail(
+    payload: EmployerCredentialsEmailPayload,
+  ): Promise<EmailJob> {
+    const { subject, text, html } =
+      this.emailService.buildEmployerCredentialsEmail(payload);
+
+    const attachments: EmailAttachment[] = [];
+    const watermarkRelPath = this.configService.get<string>(
+      'email.watermarkPath',
+      'uploads/static/qc_peso_seal.png',
+    );
+    const watermarkAbsPath = resolve(process.cwd(), watermarkRelPath);
+    if (existsSync(watermarkAbsPath)) {
+      attachments.push({
+        filename: 'qc_peso_logo.png',
+        path: watermarkAbsPath,
+        cid: 'peso_logo',
+      });
+    }
+
+    const contactEmail = payload.contactEmail.trim();
+    const accountEmail = payload.accountEmail.trim();
+    const isDistinct =
+      contactEmail.toLowerCase() !== accountEmail.toLowerCase();
+
+    return this.enqueue({
+      to: contactEmail,
+      cc: isDistinct ? accountEmail : undefined,
+      fallbackTo: accountEmail,
+      subject,
+      text,
+      html,
+      attachments,
+      metadata: {
+        type: 'employer_credentials',
+        companyName: payload.companyName,
+        accountEmail: payload.accountEmail,
+        contactEmail: payload.contactEmail,
       },
     });
   }
