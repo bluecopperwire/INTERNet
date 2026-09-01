@@ -4,7 +4,10 @@ import type {
   ReferralStatus as ApiReferralStatus,
   StudentResponse as ApiStudentResponse,
 } from "../../../types/api";
-import type { WorkflowDisplayStatus } from "../../workflow/status-mappings";
+import type {
+  ApplicationHistoryStatus,
+  WorkflowDisplayStatus,
+} from "../../workflow/status-mappings";
 
 export type ApplicationStatus = "Pending" | "Verified" | "Rejected" | "Flagged";
 
@@ -147,7 +150,9 @@ export interface QCPesoReviewApplicant {
   program: string;
   yearLevel: string;
   dateApplied: string;
+  referralDate?: string;
   status: QCPesoApplicationStatus;
+  historyStatus?: ApplicationHistoryStatus;
   applicationStatus?: ApiApplicationStatus;
   canHide: boolean;
   email: string;
@@ -167,6 +172,8 @@ export interface QCPesoReferral {
   studentName: string;
   company: string;
   jobTitle: string;
+  program?: string;
+  applicationDate?: string;
   referralDate: string;
   companyResponse: "Pending" | "For Interview" | "Accepted" | "Rejected";
   studentResponse: "Pending" | "Accepted" | "Rejected";

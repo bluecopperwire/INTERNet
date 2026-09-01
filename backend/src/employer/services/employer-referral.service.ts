@@ -14,7 +14,7 @@ import type {
   RejectReferralDto,
   ScheduleInterviewDto,
 } from '../dto';
-import { InterviewMode } from '../dto';
+import { InterviewMode, ReferralListView } from '../dto';
 import { EmployerCompanyResolver } from './company-resolver.service';
 import { asNumber, paginate } from '../utils/response.utils';
 import { manilaDateTimeToIso } from '../utils/time.utils';
@@ -232,15 +232,6 @@ export class EmployerReferralService {
     referralId: number,
     dto: RejectReferralDto,
   ) {
-    return this.rejectWithPolicy(userAccountId, referralId, dto, false);
-  }
-
-  private async rejectWithPolicy(
-    userAccountId: number,
-    referralId: number,
-    dto: RejectReferralDto,
-    acceptedOnly: boolean,
-  ) {
     const remark = dto.remark?.trim();
     if (!remark) {
       throw new BadRequestException('A rejection remark is required.');
@@ -253,26 +244,13 @@ export class EmployerReferralService {
         referralId,
         true,
       );
-      if (acceptedOnly && row.company_response !== 'accepted') {
-        throw new ConflictException(
-          'Only an accepted referral can be withdrawn.',
-        );
-      }
       if (
-        !['pending', 'for_interview', 'accepted'].includes(
+        !['pending', 'for_interview'].includes(
           String(row.company_response),
         )
       ) {
         throw new ConflictException(
           'Only pending or for_interview referrals can be rejected.',
-        );
-      }
-      if (
-        row.company_response === 'accepted' &&
-        row.student_response !== 'pending'
-      ) {
-        throw new ConflictException(
-          'An accepted offer cannot be reversed after the student responds.',
         );
       }
       if (row.referral_status === 'sent') {
@@ -302,14 +280,6 @@ export class EmployerReferralService {
       );
     });
     return this.getById(userAccountId, referralId);
-  }
-
-  async withdrawAcceptance(
-    userAccountId: number,
-    referralId: number,
-    dto: RejectReferralDto,
-  ) {
-    return this.rejectWithPolicy(userAccountId, referralId, dto, true);
   }
 
   async hide(userAccountId: number, referralId: number) {
@@ -423,6 +393,14 @@ export class EmployerReferralService {
       search,
       opportunityId ?? null,
     ];
+    const reviewQueueSql =
+      query.view === ReferralListView.REVIEW
+        ? `AND (
+            (r.referral_status = 'sent' AND r.company_response = 'pending')
+            OR (r.referral_status = 'under_review'
+                AND r.company_response IN ('pending', 'for_interview'))
+          )`
+        : '';
     const countRows: Array<{ total: string }> = await this.dataSource.query(
       `
         SELECT count(*)::text AS total
@@ -439,6 +417,7 @@ export class EmployerReferralService {
           AND ($2::text IS NULL OR r.company_response::text = $2)
           AND ($3::text IS NULL OR concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) ILIKE '%' || $3 || '%' OR o.title ILIKE '%' || $3 || '%')
           AND ($4::integer IS NULL OR o.opportunity_id = $4)
+          ${reviewQueueSql}
       `,
       params,
     );
@@ -465,6 +444,7 @@ export class EmployerReferralService {
           AND ($2::text IS NULL OR r.company_response::text = $2)
           AND ($3::text IS NULL OR concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) ILIKE '%' || $3 || '%' OR o.title ILIKE '%' || $3 || '%')
           AND ($4::integer IS NULL OR o.opportunity_id = $4)
+          ${reviewQueueSql}
         ORDER BY r.referred_at DESC, r.referral_id DESC
         LIMIT $5 OFFSET $6
       `,
@@ -481,6 +461,7 @@ export class EmployerReferralService {
         strandProgram: row.strand_program,
         yearLevel: row.year_level,
         submittedAt: row.submitted_at,
+        referredAt: row.referred_at,
         referralStatus: row.referral_status,
         applicationStatus: row.application_status,
         companyResponse: row.company_response,

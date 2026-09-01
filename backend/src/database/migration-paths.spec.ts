@@ -75,6 +75,7 @@ describe('Database migration paths and behavioral validation', () => {
       'AddStudentCustomIndustry1788134400000',
       'ApplicationWorkflowAlignment1788220800000',
       'ApplicationInitialStatusHistory1788307200000',
+      'RemoveAcceptedReferralReversal1788393600000',
     ]);
 
     // Validate redesigned columns
@@ -126,6 +127,18 @@ describe('Database migration paths and behavioral validation', () => {
       `SELECT industry_name FROM public.industry WHERE is_custom_text = true`,
     );
     expect(customIndustries).toEqual([{ industry_name: 'Other' }]);
+
+    await dataSource.undoLastMigration();
+    const revertedReversalRemoval = await dataSource.query(`
+      SELECT
+        pg_get_functiondef('public.fn_validate_referral()'::regprocedure) AS definition,
+        (SELECT count(*)::int FROM public.migrations
+         WHERE name = 'RemoveAcceptedReferralReversal1788393600000') AS migration_rows
+    `);
+    expect(revertedReversalRemoval[0].definition).toContain(
+      "OLD.company_response = 'accepted' AND NEW.company_response = 'rejected'",
+    );
+    expect(revertedReversalRemoval[0].migration_rows).toBe(0);
 
     await dataSource.undoLastMigration();
     const revertedInitialHistory = await dataSource.query(`
@@ -365,6 +378,7 @@ describe('Database migration paths and behavioral validation', () => {
       'AddStudentCustomIndustry1788134400000',
       'ApplicationWorkflowAlignment1788220800000',
       'ApplicationInitialStatusHistory1788307200000',
+      'RemoveAcceptedReferralReversal1788393600000',
     ]);
 
     await dataSource.query(`

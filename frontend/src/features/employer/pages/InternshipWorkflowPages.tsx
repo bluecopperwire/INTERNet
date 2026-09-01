@@ -1,27 +1,21 @@
-import { ArrowLeft, ChevronLeft, ChevronRight, Eye, Search, SlidersHorizontal, Trash2 } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight, Eye, Search } from 'lucide-react'
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { EmployerHero } from '../components/EmployerHero'
-import { employerService, canWithdrawCandidate } from '../services/employer.service'
+import { employerService } from '../services/employer.service'
 import type { InternshipAssignment } from '../types/employer.types'
 import styles from './InternshipWorkflowPages.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
 import { todayDateOnly } from '../../../utils/date-only'
-import { RejectApplicantModal } from '../components/RejectApplicantModal'
-import { ConfirmDeleteModal } from '../../../components/feedback/ConfirmDeleteModal'
 import { isValidDateOnly } from '../../../utils/date-only'
 
 export function CreateInternshipAssignmentPage() {
   const navigate = useNavigate()
   const [assignments, setAssignments] = useState<InternshipAssignment[]>([])
   const [search, setSearch] = useState('')
-  const [response, setResponse] = useState('All')
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(7)
-  const [deleteTarget, setDeleteTarget] = useState<InternshipAssignment | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const toast = useToastStore()
 
   useEffect(() => {
     employerService.getInternshipAssignments().then(setAssignments)
@@ -30,34 +24,18 @@ export function CreateInternshipAssignmentPage() {
   const filteredAssignments = useMemo(() => {
     const query = search.trim().toLowerCase()
     return assignments.filter((assignment) => (
-      (!query || `${assignment.studentName} ${assignment.jobTitle}`.toLowerCase().includes(query))
-      && (response === 'All' || assignment.studentResponse === response)
+      !query || `${assignment.studentName} ${assignment.jobTitle}`.toLowerCase().includes(query)
     ))
-  }, [assignments, response, search])
+  }, [assignments, search])
   const totalPages = Math.max(1, Math.ceil(filteredAssignments.length / perPage))
   const visibleAssignments = filteredAssignments.slice((page - 1) * perPage, page * perPage)
   const resetPage = () => setPage(1)
-
-  const deleteCandidate = async () => {
-    if (!deleteTarget) return
-    setIsDeleting(true)
-    try {
-      await employerService.deleteReferral(String(deleteTarget.referralId))
-      setAssignments((current) => current.filter((item) => item.id !== deleteTarget.id))
-      setDeleteTarget(null)
-      toast.success('Assignment workflow record deleted.')
-    } catch (error: unknown) {
-      toast.error(getErrorMessage(error, 'Failed to delete assignment workflow record.'))
-    } finally {
-      setIsDeleting(false)
-    }
-  }
 
   return (
     <main className={styles.heroOnlyPage}>
       <EmployerHero
         title="Create Internship Assignment"
-        subtitle="Review accepted offers and track each student's response before assigning their internship."
+        subtitle="Create assignments for students who accepted their internship offers."
         comfortableSpacing
       />
       <section className={styles.assignmentContent}>
@@ -67,30 +45,18 @@ export function CreateInternshipAssignmentPage() {
             <span className={styles.srOnly}>Search accepted offers</span>
             <input value={search} onChange={(event) => { setSearch(event.target.value); resetPage() }} placeholder="Search student or job title..." />
           </label>
-          <label className={styles.assignmentFilter}>
-            <SlidersHorizontal size={16} aria-hidden="true" />
-            <span className={styles.srOnly}>Filter by student response</span>
-            <select value={response} onChange={(event) => { setResponse(event.target.value); resetPage() }}>
-              <option value="All">All Responses</option>
-              <option value="Pending">Pending</option>
-              <option value="Accepted">Accepted</option>
-              <option value="Rejected">Rejected</option>
-            </select>
-          </label>
         </div>
 
         <div className={styles.assignmentTableCard}>
           <div className={styles.assignmentTableScroller}>
             <table className={styles.assignmentTable}>
-              <thead><tr><th>Student Name</th><th>Job Title</th><th>Acceptance Date</th><th>Student Response</th><th>Action</th></tr></thead>
+              <thead><tr><th>Student Name</th><th>Job Title</th><th>Acceptance Date</th><th>Action</th></tr></thead>
               <tbody>{visibleAssignments.map((assignment) => <tr key={assignment.id}>
                 <td><strong>{assignment.studentName}</strong></td>
                 <td>{assignment.jobTitle}</td>
                 <td>{assignment.acceptanceDate}</td>
-                <td><span className={`${styles.responsePill} ${styles[assignment.studentResponse.replaceAll(' ', '').toLowerCase()]}`}>{assignment.studentResponse}</span></td>
                 <td><div className={styles.assignmentRowActions}>
-                  <button type="button" className={styles.reviewButton} onClick={() => navigate(assignment.internshipAssignmentId ? `/employer/manage-internship/${assignment.internshipAssignmentId}` : `/employer/internship-assignments/${assignment.id}`)}><Eye size={16} />{assignment.internshipAssignmentId ? 'View Assignment' : assignment.studentResponse === 'Accepted' ? 'Create Assignment' : 'Review'}</button>
-                  {(assignment.studentResponse === 'Rejected' || (assignment.studentResponse === 'Accepted' && assignment.internshipAssignmentId !== null)) && <button type="button" className={styles.reviewButton} onClick={() => setDeleteTarget(assignment)}><Trash2 size={16} />Delete</button>}
+                  <button type="button" className={styles.reviewButton} onClick={() => navigate(`/employer/internship-assignments/${assignment.id}`)}><Eye size={16} />Create Internship Assignment</button>
                 </div></td>
               </tr>)}</tbody>
             </table>
@@ -111,7 +77,6 @@ export function CreateInternshipAssignmentPage() {
           </div>
         </div>
       </section>
-      {deleteTarget && <ConfirmDeleteModal subject={`${deleteTarget.studentName}'s assignment workflow record`} isDeleting={isDeleting} onClose={() => setDeleteTarget(null)} onConfirm={() => void deleteCandidate()} />}
     </main>
   )
 }
@@ -121,10 +86,7 @@ export function ReviewInternshipAssignmentPage() {
   const navigate = useNavigate()
   const [assignment, setAssignment] = useState<InternshipAssignment | null>(null)
   const [loading, setLoading] = useState(true)
-  const [isWithdrawing, setIsWithdrawing] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
-  const [showWithdrawModal, setShowWithdrawModal] = useState(false)
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [formData, setFormData] = useState(createEmptyAssignmentForm)
   const toast = useToastStore()
 
@@ -152,29 +114,6 @@ export function ReviewInternshipAssignmentPage() {
   if (!assignment) return <main className={styles.assignmentFeedback}>Internship assignment not found.</main>
 
   const isAssignmentLocked = assignment.studentResponse !== 'Accepted' || assignment.internshipAssignmentId !== null
-  const canWithdraw = canWithdrawCandidate({
-    studentResponse: assignment.studentResponse,
-    internshipAssignmentId: assignment.internshipAssignmentId,
-    isWithdrawing,
-  })
-
-  const handleWithdrawAcceptance = async (remark: string) => {
-    if (!assignment.id) return
-    setIsWithdrawing(true)
-    try {
-      await employerService.withdrawAcceptance(assignment.id, remark)
-      toast.success('Candidate acceptance withdrawn.')
-      setShowWithdrawModal(false)
-      navigate('/employer/internship-assignments')
-    } catch (error: unknown) {
-      toast.error(getErrorMessage(error, 'Failed to withdraw acceptance. The student may have already responded.'))
-      const refreshed = await employerService.getInternshipAssignmentById(assignment.id)
-      setAssignment(refreshed ?? null)
-    } finally {
-      setIsWithdrawing(false)
-    }
-  }
-
   const handleCreateAssignment = async () => {
     if (isAssignmentLocked || isCreating) return
     if (!formData.workingDays || !formData.requiredHours || !isValidDateOnly(formData.startDate) || (formData.expectedEndDate && !isValidDateOnly(formData.expectedEndDate)) || !formData.shiftStartTime || !formData.shiftEndTime) {
@@ -191,9 +130,8 @@ export function ReviewInternshipAssignmentPage() {
         startShift: formData.shiftStartTime,
         endShift: formData.shiftEndTime,
       })
-      const refreshed = await employerService.getInternshipAssignmentById(assignment.id)
-      setAssignment(refreshed ?? null)
       toast.success('Internship assignment created.')
+      navigate('/employer/internship-assignments')
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, 'Failed to create internship assignment.'))
     } finally {
@@ -201,20 +139,6 @@ export function ReviewInternshipAssignmentPage() {
     }
   }
 
-  const handleDeleteCandidate = async () => {
-    setIsWithdrawing(true)
-    try {
-      await employerService.deleteReferral(String(assignment.referralId))
-      toast.success('Assignment workflow record deleted.')
-      navigate('/employer/internship-assignments')
-    } catch (error: unknown) {
-      toast.error(getErrorMessage(error, 'Failed to delete assignment workflow record.'))
-    } finally {
-      setIsWithdrawing(false)
-    }
-  }
-
-  const canDeleteCandidate = assignment.studentResponse === 'Rejected' || (assignment.studentResponse === 'Accepted' && assignment.internshipAssignmentId !== null)
 
   return (
     <main className={styles.assignmentDetailPage}>
@@ -241,24 +165,10 @@ export function ReviewInternshipAssignmentPage() {
 
             <footer className={styles.assignmentDetailFooter}>
               {assignment.studentResponse === 'Accepted' && assignment.internshipAssignmentId === null && <button type="submit" className={styles.createAssignmentButton} disabled={isAssignmentLocked || isCreating}>{isCreating ? 'Creating...' : 'Create Internship Assignment'}</button>}
-              {assignment.internshipAssignmentId !== null && <button type="button" className={styles.createAssignmentButton} onClick={() => navigate(`/employer/manage-internship/${assignment.internshipAssignmentId}`)}>View Assignment</button>}
-              {canWithdraw && (
-                <button
-                  type="button"
-                  className={styles.withdrawInternshipButton}
-                  disabled={isWithdrawing}
-                  onClick={() => setShowWithdrawModal(true)}
-                >
-                  {isWithdrawing ? 'Withdrawing...' : 'Withdraw Acceptance'}
-                </button>
-              )}
-              {canDeleteCandidate && <button type="button" className={styles.withdrawInternshipButton} disabled={isWithdrawing} onClick={() => setShowDeleteModal(true)}><Trash2 size={17} />Delete</button>}
             </footer>
           </form>
         </section>
       </div>
-      {showWithdrawModal && <RejectApplicantModal applicantName={assignment.studentName} title="Withdraw Acceptance" description="Explain why the accepted offer is being reversed. This closes the application as rejected." confirmLabel="Withdraw Acceptance" isSaving={isWithdrawing} onClose={() => setShowWithdrawModal(false)} onConfirm={(remark) => void handleWithdrawAcceptance(remark)} />}
-      {showDeleteModal && <ConfirmDeleteModal subject={`${assignment.studentName}'s assignment workflow record`} isDeleting={isWithdrawing} onClose={() => setShowDeleteModal(false)} onConfirm={() => void handleDeleteCandidate()} />}
     </main>
   )
 }

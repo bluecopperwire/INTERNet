@@ -11,7 +11,7 @@ import { getErrorMessage } from '../../../utils/error-message'
 import { ConfirmDeleteModal } from '../../../components/feedback/ConfirmDeleteModal'
 import { getEmployerReferralDetail } from '../services/employer-review-flow'
 
-export function ReviewApplicantPage() {
+export function ReviewApplicantPage({ readOnly = false }: { readOnly?: boolean }) {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -20,7 +20,6 @@ export function ReviewApplicantPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [showScheduleInterview, setShowScheduleInterview] = useState(false)
   const [showRejectModal, setShowRejectModal] = useState(false)
-  const [showWithdrawAcceptanceModal, setShowWithdrawAcceptanceModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const showSuccessToast = useToastStore((state) => state.success)
   const showErrorToast = useToastStore((state) => state.error)
@@ -80,29 +79,13 @@ export function ReviewApplicantPage() {
     await updateStatus('Rejected', remark)
   }
 
-  const handleWithdrawAcceptance = async (remark: string) => {
-    if (!applicant || isSaving) return
-    setIsSaving(true)
-    try {
-      await employerService.withdrawAcceptance(applicant.id, remark)
-      const refreshed = await employerService.getApplicantById(applicant.id)
-      setApplicant(refreshed ?? null)
-      setShowWithdrawAcceptanceModal(false)
-      showSuccessToast('Accepted offer changed to rejected.')
-    } catch (error: unknown) {
-      showErrorToast(getErrorMessage(error, 'Failed to change the accepted offer.'))
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
   const handleDelete = async () => {
     if (!applicant || isSaving) return
     setIsSaving(true)
     try {
       await employerService.deleteReferral(applicant.id)
       showSuccessToast('Referral deleted.')
-      navigate('/employer/applicants')
+      navigate('/employer/referrals-history')
     } catch (error: unknown) {
       showErrorToast(getErrorMessage(error, 'Failed to delete referral.'))
     } finally {
@@ -111,6 +94,10 @@ export function ReviewApplicantPage() {
   }
 
   const handleBack = () => {
+    if (readOnly) {
+      navigate('/employer/referrals-history')
+      return
+    }
     const opportunityId = searchParams.get('opportunityId')
     if (searchParams.get('from') === 'opportunity' && opportunityId) {
       navigate(`/employer/opportunities?viewApplicants=${opportunityId}`)
@@ -134,8 +121,7 @@ export function ReviewApplicantPage() {
 
   const canMakeInitialDecision = applicant.referralStatus === 'under_review' && applicant.companyResponse === 'pending'
   const canUpdateInterviewDecision = applicant.referralStatus === 'under_review' && applicant.companyResponse === 'for_interview'
-  const canWithdrawAcceptedOffer = applicant.referralStatus === 'under_review' && applicant.companyResponse === 'accepted' && applicant.studentResponse === 'pending'
-  const hasWorkflowActions = canMakeInitialDecision || canUpdateInterviewDecision || canWithdrawAcceptedOffer || applicant.canHide
+  const hasWorkflowActions = (!readOnly && (canMakeInitialDecision || canUpdateInterviewDecision)) || (readOnly && applicant.canHide)
 
   return (
     <main className={styles.pageContainer}>
@@ -279,8 +265,7 @@ export function ReviewApplicantPage() {
             {(canMakeInitialDecision || canUpdateInterviewDecision) && <button className={styles.actionGreen} disabled={isSaving} onClick={() => updateStatus('Accepted')}><Check size={17} />Accept Referral</button>}
             {(canMakeInitialDecision || canUpdateInterviewDecision) && <button className={styles.actionBlue} disabled={isSaving} onClick={() => setShowScheduleInterview(true)}><Calendar size={17} />{canUpdateInterviewDecision ? 'Reschedule Interview' : 'Schedule Interview'}</button>}
             {(canMakeInitialDecision || canUpdateInterviewDecision) && <button className={styles.actionRed} disabled={isSaving} onClick={() => setShowRejectModal(true)}><X size={17} />Reject Referral</button>}
-            {canWithdrawAcceptedOffer && <button className={styles.actionRed} disabled={isSaving} onClick={() => setShowWithdrawAcceptanceModal(true)}><X size={17} />Change to Rejected</button>}
-            {applicant.canHide && <button className={styles.actionRed} disabled={isSaving} onClick={() => setShowDeleteModal(true)}><Trash2 size={17} />Delete</button>}
+            {readOnly && applicant.canHide && <button className={styles.actionRed} disabled={isSaving} onClick={() => setShowDeleteModal(true)}><Trash2 size={17} />Delete</button>}
           </footer>
         )}
       </section>
@@ -302,20 +287,13 @@ export function ReviewApplicantPage() {
           onConfirm={handleReject}
         />
       )}
-      {showWithdrawAcceptanceModal && (
-        <RejectApplicantModal
-          applicantName={applicant.name}
-          title="Change Accepted Offer to Rejected"
-          description="Provide the required reason for reversing this offer before the student responds."
-          confirmLabel="Change to Rejected"
-          isSaving={isSaving}
-          onClose={() => setShowWithdrawAcceptanceModal(false)}
-          onConfirm={handleWithdrawAcceptance}
-        />
-      )}
       {showDeleteModal && <ConfirmDeleteModal subject={`${applicant.name}'s referral`} isDeleting={isSaving} onClose={() => setShowDeleteModal(false)} onConfirm={() => void handleDelete()} />}
     </main>
   )
+}
+
+export function ReferralHistoryDetailsPage() {
+  return <ReviewApplicantPage readOnly />
 }
 
 export default ReviewApplicantPage

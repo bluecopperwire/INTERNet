@@ -40,14 +40,32 @@ export const qcpesoService = {
 
   async getRecentApplications(): Promise<QCPesoReviewApplicant[]> {
     const store = useQCPesoStore.getState();
-    await store.fetchApplications({ page: 1, limit: 5 });
+    await store.fetchApplications({ view: 'review', page: 1, limit: 5 });
     return useQCPesoStore.getState().applications;
   },
 
   async getReviewApplicants(): Promise<QCPesoReviewApplicant[]> {
-    const store = useQCPesoStore.getState();
-    await store.fetchApplications();
-    return useQCPesoStore.getState().applications;
+    const records: QCPesoReviewApplicant[] = [];
+    let page = 1;
+    do {
+      const result = await qcpesoApiService.getApplications({ view: 'review', page, limit: 100 });
+      records.push(...result.data.map(adaptPesoApplication));
+      if (page >= result.meta.totalPages) break;
+      page++;
+    } while (true);
+    return records;
+  },
+
+  async getApplicationHistory(): Promise<QCPesoReviewApplicant[]> {
+    const records: QCPesoReviewApplicant[] = [];
+    let page = 1;
+    do {
+      const result = await qcpesoApiService.getApplications({ view: 'history', page, limit: 100 });
+      records.push(...result.data.map(adaptPesoApplication));
+      if (page >= result.meta.totalPages) break;
+      page++;
+    } while (true);
+    return records;
   },
 
   async getReviewApplicant(id: string): Promise<QCPesoReviewApplicant | null> {

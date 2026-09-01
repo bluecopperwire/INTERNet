@@ -3,7 +3,10 @@ import { DataSource } from 'typeorm';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
 import { PaginatedResponse } from '../../../common/interfaces/paginated-response.interface';
 import { getDateBoundaries } from '../../../common/helpers/date-filter.helper';
-import { QueryApplicationsDto } from '../../dto/peso-dashboard.dto';
+import {
+  ApplicationListView,
+  QueryApplicationsDto,
+} from '../../dto/peso-dashboard.dto';
 
 @Injectable()
 export class ApplicationQueryService {
@@ -34,6 +37,24 @@ export class ApplicationQueryService {
     if (queryDto.status) {
       whereClauses.push(`ad.application_status = $${paramIndex++}`);
       params.push(queryDto.status);
+    }
+
+    if (queryDto.view === ApplicationListView.REVIEW) {
+      whereClauses.push(
+        `ad.application_status IN ('submitted', 'under_review')`,
+      );
+    }
+
+    const search = queryDto.search?.trim();
+    if (search) {
+      whereClauses.push(`(
+        ad.student_full_name ILIKE $${paramIndex}
+        OR ad.company_name ILIKE $${paramIndex}
+        OR ad.opportunity_title ILIKE $${paramIndex}
+        OR COALESCE(ad.strand_program, '') ILIKE $${paramIndex}
+      )`);
+      params.push(`%${search}%`);
+      paramIndex++;
     }
 
     const boundaries = getDateBoundaries(
@@ -85,6 +106,8 @@ export class ApplicationQueryService {
         student_response AS "studentResponse",
         student_responded_at AS "studentRespondedAt",
         referral_id AS "referralId",
+        (SELECT r.referred_at FROM public.referral r
+         WHERE r.application_id = ad.application_id) AS "referredAt",
         referral_status AS "referralStatus",
         company_response AS "companyResponse",
         internship_assignment_id AS "internshipAssignmentId",

@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
+  APPLICATION_CLOSED_STATUSES,
+  APPLICATION_ONGOING_STATUSES,
   applicationDisplayStatus,
+  applicationHistoryStatus,
   assignmentCandidateResponse,
   isTerminalApplication,
   isTerminalReferral,
   referralDisplayStatus,
+  referralHistoryStatus,
 } from './status-mappings'
 
 describe('contextual workflow status mappings', () => {
@@ -52,5 +56,50 @@ describe('contextual workflow status mappings', () => {
     expect(['submitted', 'under_review', 'approved_for_referral'].some(isTerminalApplication)).toBe(false)
     expect(['closed', 'withdrawn', 'expired'].every(isTerminalReferral)).toBe(true)
     expect(['sent', 'under_review'].some(isTerminalReferral)).toBe(false)
+  })
+})
+
+describe('workflow history status mappings', () => {
+  it.each([
+    [{ applicationStatus: 'submitted' }, 'For Review (QC PESO)'],
+    [{ applicationStatus: 'under_review' }, 'Under Review (QC PESO)'],
+    [{ applicationStatus: 'rejected_for_referral' }, 'Rejected (QC PESO)'],
+    [{ applicationStatus: 'approved_for_referral', referralStatus: 'sent', companyResponse: 'pending', studentResponse: 'pending' }, 'For Review (Employer)'],
+    [{ applicationStatus: 'approved_for_referral', referralStatus: 'under_review', companyResponse: 'pending', studentResponse: 'pending' }, 'Under Review (Employer)'],
+    [{ applicationStatus: 'approved_for_referral', referralStatus: 'under_review', companyResponse: 'for_interview', studentResponse: 'pending' }, 'For Interview (Employer)'],
+    [{ applicationStatus: 'closed', referralStatus: 'closed', companyResponse: 'rejected' }, 'Rejected (Employer)'],
+    [{ applicationStatus: 'approved_for_referral', referralStatus: 'under_review', companyResponse: 'accepted', studentResponse: 'pending' }, 'Offer Received (Student)'],
+    [{ applicationStatus: 'closed', referralStatus: 'closed', companyResponse: 'accepted', studentResponse: 'declined' }, 'Offer Declined (Student)'],
+    [{ applicationStatus: 'closed', referralStatus: 'closed', companyResponse: 'accepted', studentResponse: 'accepted' }, 'Offer Accepted (Student)'],
+    [{ applicationStatus: 'withdrawn', referralStatus: 'withdrawn', companyResponse: 'for_interview' }, 'Withdrawn (Student)'],
+    [{ applicationStatus: 'expired', referralStatus: 'expired', companyResponse: 'accepted', studentResponse: 'pending' }, 'Expired (Employer)'],
+  ] as const)('maps application history %# to %s', (input, expected) => {
+    expect(applicationHistoryStatus(input)).toBe(expected)
+  })
+
+  it('gives terminal application/referral lifecycle states precedence over retained responses', () => {
+    expect(referralHistoryStatus({
+      applicationStatus: 'withdrawn',
+      referralStatus: 'withdrawn',
+      companyResponse: 'accepted',
+      studentResponse: 'pending',
+    })).toBe('Withdrawn (Student)')
+    expect(referralHistoryStatus({
+      applicationStatus: 'expired',
+      referralStatus: 'expired',
+      companyResponse: 'for_interview',
+      studentResponse: 'pending',
+    })).toBe('Expired (Employer)')
+  })
+
+  it('defines business-level ongoing and closed groups exactly', () => {
+    expect(APPLICATION_ONGOING_STATUSES).toEqual([
+      'For Review (QC PESO)', 'Under Review (QC PESO)', 'For Review (Employer)',
+      'Under Review (Employer)', 'For Interview (Employer)', 'Offer Received (Student)',
+    ])
+    expect(APPLICATION_CLOSED_STATUSES).toEqual([
+      'Rejected (QC PESO)', 'Rejected (Employer)', 'Offer Declined (Student)',
+      'Offer Accepted (Student)', 'Withdrawn (Student)', 'Expired (Employer)',
+    ])
   })
 })

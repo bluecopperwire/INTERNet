@@ -87,18 +87,6 @@ export function mapStudentResponse(
   return assignmentCandidateResponse(response as any);
 }
 
-export function canWithdrawCandidate(candidate: {
-  studentResponse?: 'Pending' | 'Accepted' | 'Rejected' | 'Unknown';
-  internshipAssignmentId?: number | null;
-  isWithdrawing?: boolean;
-}): boolean {
-  return (
-    candidate.studentResponse === 'Pending' &&
-    candidate.internshipAssignmentId === null &&
-    !candidate.isWithdrawing
-  );
-}
-
 function formatAcceptanceDate(value: string | null): string {
   if (!value) return 'Not recorded';
   const date = new Date(value);
@@ -118,7 +106,7 @@ export function mapAssignmentCandidate(
     studentName: c.studentFullName,
     company: c.companyName,
     jobTitle: c.jobTitle,
-    acceptanceDate: formatAcceptanceDate(c.acceptanceDate),
+    acceptanceDate: formatAcceptanceDate(c.studentRespondedAt),
     studentResponse: mapStudentResponse(c.studentResponse),
     workingDays: 'Weekdays',
     requiredHours: 200,
@@ -148,7 +136,7 @@ export const employerService = {
 
   async getRecentApplicants(limit = 4): Promise<Applicant[]> {
     const store = useEmployerStore.getState();
-    await store.fetchReferrals({ page: 1, limit });
+    await store.fetchReferrals({ view: 'review', page: 1, limit });
     return useEmployerStore.getState().referrals;
   },
 
@@ -234,9 +222,27 @@ export const employerService = {
   },
 
   async getAllApplicants(): Promise<Applicant[]> {
-    const store = useEmployerStore.getState();
-    await store.fetchReferrals();
-    return useEmployerStore.getState().referrals;
+    const records: Applicant[] = [];
+    let page = 1;
+    do {
+      const result = await employerApiService.getReferrals({ view: 'review', page, limit: 100 });
+      records.push(...result.data.map(adaptEmployerReferral));
+      if (page >= result.meta.totalPages) break;
+      page++;
+    } while (true);
+    return records;
+  },
+
+  async getReferralHistory(): Promise<Applicant[]> {
+    const records: Applicant[] = [];
+    let page = 1;
+    do {
+      const result = await employerApiService.getReferrals({ view: 'history', page, limit: 100 });
+      records.push(...result.data.map(adaptEmployerReferral));
+      if (page >= result.meta.totalPages) break;
+      page++;
+    } while (true);
+    return records;
   },
 
   async getApplicantById(id: string): Promise<Applicant | undefined> {
@@ -269,11 +275,6 @@ export const employerService = {
     } else if (status === 'Rejected') {
       await store.rejectReferral(Number(id), rejectionRemark);
     }
-  },
-
-  async withdrawAcceptance(referralId: string, remark: string): Promise<void> {
-    const store = useEmployerStore.getState();
-    await store.withdrawAcceptance(Number(referralId), remark);
   },
 
   async deleteReferral(referralId: string): Promise<void> {

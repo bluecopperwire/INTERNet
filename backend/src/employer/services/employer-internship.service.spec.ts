@@ -52,10 +52,10 @@ describe('EmployerInternshipService', () => {
 
     const sql = query.mock.calls.map(([statement]) => String(statement)).join('\n');
     expect(sql).toContain("r.company_response = 'accepted'");
-    expect(sql).toContain("a.student_response = 'pending'");
-    expect(sql).toContain("a.student_response IN ('accepted', 'declined')");
-    expect(sql).toContain("r.referral_status = 'under_review'");
+    expect(sql).toContain("a.student_response = 'accepted'");
+    expect(sql).toContain("a.application_status = 'closed'");
     expect(sql).toContain("r.referral_status = 'closed'");
+    expect(sql).toContain('existing_assignment.referral_id = r.referral_id');
     expect(sql).toContain('rv.employer_hidden_at IS NOT NULL');
   });
 
@@ -68,6 +68,8 @@ describe('EmployerInternshipService', () => {
     async (companyResponse, studentResponse) => {
       const { dataSource } = makeTransactionDataSource({
         referral_id: 2,
+        referral_status: 'closed',
+        application_status: 'closed',
         company_response: companyResponse,
         student_response: studentResponse,
       });
@@ -124,8 +126,8 @@ describe('EmployerInternshipService', () => {
     const { dataSource, query } = makeTransactionDataSource({
       internship_assignment_id: 8,
       assignment_status: 'pending',
-      start_date: new Date('2026-08-31T16:00:00.000Z'),
-      expected_end_date: new Date('2026-09-29T16:00:00.000Z'),
+      start_date: new Date('2099-08-31T16:00:00.000Z'),
+      expected_end_date: new Date('2099-09-29T16:00:00.000Z'),
       end_date: null,
       start_shift: '08:00:00',
       end_shift: '17:00:00',
@@ -144,7 +146,7 @@ describe('EmployerInternshipService', () => {
 
     expect(query).toHaveBeenCalledWith(
       expect.stringContaining('UPDATE public.internship_assignment'),
-      [8, 'weekdays', 450, '2026-09-01', '2026-09-30', '08:00', '17:00'],
+      [8, 'weekdays', 450, '2099-09-01', '2099-09-30', '08:00', '17:00'],
     );
   });
 

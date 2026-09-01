@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  canWithdrawCandidate,
   mapInterviewSchedulePayload,
   mapAssignmentCandidate,
   mapStudentResponse,
@@ -27,8 +26,8 @@ describe('assignment candidate mapping', () => {
       jobTitle: 'Backend Intern',
       companyName: 'INTERNet Labs',
       acceptanceDate: '2026-08-27T00:00:00.000Z',
-      studentResponse: 'pending',
-      studentRespondedAt: null,
+      studentResponse: 'accepted',
+      studentRespondedAt: '2026-08-28T00:00:00.000Z',
       internshipAssignmentId: null,
     });
 
@@ -39,16 +38,9 @@ describe('assignment candidate mapping', () => {
       internshipAssignmentId: null,
       company: 'INTERNet Labs',
       jobTitle: 'Backend Intern',
-      studentResponse: 'Pending',
+      studentResponse: 'Accepted',
+      acceptanceDate: new Date('2026-08-28T00:00:00.000Z').toLocaleDateString(),
     });
-  });
-
-  it('allows withdrawal only for a pending, unassigned candidate', () => {
-    expect(canWithdrawCandidate({ studentResponse: 'Pending', internshipAssignmentId: null })).toBe(true);
-    expect(canWithdrawCandidate({ studentResponse: 'Accepted', internshipAssignmentId: null })).toBe(false);
-    expect(canWithdrawCandidate({ studentResponse: 'Rejected', internshipAssignmentId: null })).toBe(false);
-    expect(canWithdrawCandidate({ studentResponse: 'Unknown', internshipAssignmentId: null })).toBe(false);
-    expect(canWithdrawCandidate({ studentResponse: 'Pending', internshipAssignmentId: 99 })).toBe(false);
   });
 });
 

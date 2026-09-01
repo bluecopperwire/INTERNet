@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/require-await, @typescript-eslint/unbound-method */
 import { ConflictException } from '@nestjs/common';
 import type { DataSource, QueryRunner } from 'typeorm';
-import { InterviewMode } from '../dto';
+import { InterviewMode, ReferralListView } from '../dto';
 import { EmployerReferralService } from './employer-referral.service';
 import type { EmployerCompanyResolver } from './company-resolver.service';
 
@@ -96,6 +96,26 @@ describe('EmployerReferralService workflows', () => {
       ).toBe(true);
     },
   );
+
+  it('enforces the employer review queue in both count and data queries', async () => {
+    const query = jest.fn().mockResolvedValueOnce([{ total: '0' }]).mockResolvedValueOnce([]);
+    const service = new EmployerReferralService(
+      { query } as unknown as DataSource,
+      resolver,
+    );
+
+    await service.list(70, {
+      page: 1,
+      limit: 10,
+      view: ReferralListView.REVIEW,
+    });
+
+    for (const [sql] of query.mock.calls) {
+      expect(String(sql)).toContain("r.referral_status = 'sent'");
+      expect(String(sql)).toContain("r.referral_status = 'under_review'");
+      expect(String(sql)).toContain("r.company_response IN ('pending', 'for_interview')");
+    }
+  });
 
   it('schedules as under_review + for_interview and upserts one interview', async () => {
     const { dataSource, query } = transactionMocks({

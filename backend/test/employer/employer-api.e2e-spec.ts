@@ -119,7 +119,6 @@ describe('shared HTTP authentication and authorization for all 29 routes', () =>
     ['get', '/employer/referrals/1/documents/1/download'],
     ['get', '/employer/internship-assignment-candidates'],
     ['post', '/employer/referrals/1/internship-assignment'],
-    ['patch', '/employer/referrals/1/withdraw-acceptance'],
     ['get', '/employer/attendance/summary'],
     ['get', '/employer/attendance'],
     ['get', '/employer/internships/1/attendance'],
@@ -1127,42 +1126,12 @@ describe('assignment workflow APIs', () => {
       .expect(404);
   });
 
-  test('E2E-ASG-019..022 withdraw acceptance transitions to rejected only for accepted own referrals', async () => {
-    const accepted = await fixtures.referral(companyA.companyId, {
-      response: 'accepted',
-    });
-    const withdrawn = await request(env.app.getHttpServer())
+  test('E2E-ASG-019 obsolete acceptance-withdrawal endpoint is removed', async () => {
+    const accepted = await fixtures.referral(companyA.companyId, { response: 'accepted' });
+    await request(env.app.getHttpServer())
       .patch(`/employer/referrals/${accepted.referralId}/withdraw-acceptance`)
       .set(auth(companyA.token))
-      .send({ remark: 'Company withdrew offer' })
-      .expect(200);
-    expect(withdrawn.body).toMatchObject({
-      referral: {
-        referralId: accepted.referralId,
-        companyResponse: 'rejected',
-      },
-    });
-    expect(
-      (
-        await db.query(
-          'SELECT company_response FROM public.referral WHERE referral_id=$1',
-          [accepted.referralId],
-        )
-      )[0].company_response,
-    ).toBe('rejected');
-    const pending = await fixtures.referral(companyA.companyId);
-    await request(env.app.getHttpServer())
-      .patch(`/employer/referrals/${pending.referralId}/withdraw-acceptance`)
-      .set(auth(companyA.token))
-      .send({ remark: 'Not accepted' })
-      .expect(409);
-    const foreign = await fixtures.referral(companyB.companyId, {
-      response: 'accepted',
-    });
-    await request(env.app.getHttpServer())
-      .patch(`/employer/referrals/${foreign.referralId}/withdraw-acceptance`)
-      .set(auth(companyA.token))
-      .send({ remark: 'Ownership check' })
+      .send({ remark: 'No longer supported' })
       .expect(404);
   });
 });

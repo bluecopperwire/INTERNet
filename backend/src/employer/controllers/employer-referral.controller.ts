@@ -102,19 +102,6 @@ export class EmployerReferralController {
     });
   }
 
-  @Patch(':referralId/withdraw-acceptance')
-  withdrawAcceptance(
-    @CurrentUser() user: EmployerCurrentUser,
-    @Param('referralId', ParseIntPipe) referralId: number,
-    @Body() dto: RejectReferralDto,
-  ) {
-    return this.referralService.withdrawAcceptance(
-      user.userAccountId,
-      referralId,
-      dto,
-    );
-  }
-
   @Delete(':referralId')
   hide(
     @CurrentUser() user: EmployerCurrentUser,

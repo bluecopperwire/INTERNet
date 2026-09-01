@@ -43,6 +43,7 @@ async function main() {
       'AddStudentCustomIndustry1788134400000',
       'ApplicationWorkflowAlignment1788220800000',
       'ApplicationInitialStatusHistory1788307200000',
+      'RemoveAcceptedReferralReversal1788393600000',
     ];
     const recognizedHistoricalMigrations = new Set([
       'AuthAlignmentV31786125600000',
@@ -217,8 +218,12 @@ async function main() {
     assert.ok(definitions.has('fn_derive_attendance'), 'missing fn_derive_attendance function');
     assert.match(definitions.get('fn_derive_attendance'), /interval '1 hour'/, 'fn_derive_attendance missing 1 hour deduction');
     assert.ok(definitions.has('fn_validate_referral'), 'missing fn_validate_referral function');
-    assert.match(definitions.get('fn_validate_referral'), /accepted.*rejected/s, 'fn_validate_referral missing accepted -> rejected transition');
-    pass('attendance deduction and accepted-to-rejected referral transition are installed');
+    assert.doesNotMatch(
+      definitions.get('fn_validate_referral'),
+      /OLD\.company_response\s*=\s*'accepted'[\s\S]*NEW\.company_response\s*=\s*'rejected'/,
+      'fn_validate_referral still allows accepted -> rejected',
+    );
+    pass('attendance deduction is installed and accepted-to-rejected referral reversal is blocked');
 
     const suspensionConstraint = await client.query(`
       SELECT conname, pg_get_constraintdef(oid) AS def

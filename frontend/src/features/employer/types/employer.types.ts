@@ -1,5 +1,9 @@
 import type { ApplicationStatus, CompanyResponse, ReferralStatus, StudentResponse } from '../../../types/api'
-import type { WorkflowDisplayStatus } from '../../workflow/status-mappings'
+import type {
+  EmployerReviewStatus,
+  ReferralHistoryStatus,
+  WorkflowDisplayStatus,
+} from '../../workflow/status-mappings'
 
 export interface Opportunity {
   id: string
@@ -24,7 +28,11 @@ export interface Applicant {
   course: string
   yearLevel: string
   dateApplied: string
+  applicationDate?: string
+  referralDate?: string
   status: WorkflowDisplayStatus
+  reviewStatus?: EmployerReviewStatus
+  historyStatus?: ReferralHistoryStatus
   applicationStatus?: ApplicationStatus
   referralStatus?: ReferralStatus
   companyResponse?: CompanyResponse

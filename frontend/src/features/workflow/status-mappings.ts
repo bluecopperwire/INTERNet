@@ -19,11 +19,144 @@ export type WorkflowDisplayStatus =
   | 'Expired'
   | 'Closed'
 
+export type ApplicationHistoryStatus =
+  | 'For Review (QC PESO)'
+  | 'Under Review (QC PESO)'
+  | 'Rejected (QC PESO)'
+  | 'For Review (Employer)'
+  | 'Under Review (Employer)'
+  | 'For Interview (Employer)'
+  | 'Rejected (Employer)'
+  | 'Offer Received (Student)'
+  | 'Offer Declined (Student)'
+  | 'Offer Accepted (Student)'
+  | 'Withdrawn (Student)'
+  | 'Expired (Employer)'
+
+export type ReferralHistoryStatus = Exclude<
+  ApplicationHistoryStatus,
+  | 'For Review (QC PESO)'
+  | 'Under Review (QC PESO)'
+  | 'Rejected (QC PESO)'
+>
+
+export type EmployerReviewStatus =
+  | 'For Review'
+  | 'Under Review'
+  | 'For Interview'
+
+export const APPLICATION_HISTORY_STATUSES: ApplicationHistoryStatus[] = [
+  'For Review (QC PESO)',
+  'Under Review (QC PESO)',
+  'Rejected (QC PESO)',
+  'For Review (Employer)',
+  'Under Review (Employer)',
+  'For Interview (Employer)',
+  'Rejected (Employer)',
+  'Offer Received (Student)',
+  'Offer Declined (Student)',
+  'Offer Accepted (Student)',
+  'Withdrawn (Student)',
+  'Expired (Employer)',
+]
+
+export const REFERRAL_HISTORY_STATUSES: ReferralHistoryStatus[] = [
+  'For Review (Employer)',
+  'Under Review (Employer)',
+  'For Interview (Employer)',
+  'Rejected (Employer)',
+  'Offer Received (Student)',
+  'Offer Declined (Student)',
+  'Offer Accepted (Student)',
+  'Withdrawn (Student)',
+  'Expired (Employer)',
+]
+
+export const APPLICATION_ONGOING_STATUSES: ApplicationHistoryStatus[] = [
+  'For Review (QC PESO)',
+  'Under Review (QC PESO)',
+  'For Review (Employer)',
+  'Under Review (Employer)',
+  'For Interview (Employer)',
+  'Offer Received (Student)',
+]
+
+export const APPLICATION_CLOSED_STATUSES: ApplicationHistoryStatus[] = [
+  'Rejected (QC PESO)',
+  'Rejected (Employer)',
+  'Offer Declined (Student)',
+  'Offer Accepted (Student)',
+  'Withdrawn (Student)',
+  'Expired (Employer)',
+]
+
+export const REFERRAL_ONGOING_STATUSES: ReferralHistoryStatus[] = [
+  'For Review (Employer)',
+  'Under Review (Employer)',
+  'For Interview (Employer)',
+  'Offer Received (Student)',
+]
+
+export const REFERRAL_CLOSED_STATUSES: ReferralHistoryStatus[] = [
+  'Rejected (Employer)',
+  'Offer Declined (Student)',
+  'Offer Accepted (Student)',
+  'Withdrawn (Student)',
+  'Expired (Employer)',
+]
+
 export interface WorkflowStatusInput {
   applicationStatus?: ApplicationStatus | null
   referralStatus?: ReferralStatus | null
   companyResponse?: CompanyResponse | null
   studentResponse?: StudentResponse | null
+}
+
+export function applicationHistoryStatus(
+  input: WorkflowStatusInput,
+): ApplicationHistoryStatus {
+  if (input.applicationStatus === 'withdrawn') return 'Withdrawn (Student)'
+  if (input.applicationStatus === 'expired') return 'Expired (Employer)'
+  if (input.applicationStatus === 'submitted') return 'For Review (QC PESO)'
+  if (input.applicationStatus === 'under_review') return 'Under Review (QC PESO)'
+  if (input.applicationStatus === 'rejected_for_referral') return 'Rejected (QC PESO)'
+  if (input.companyResponse === 'rejected') return 'Rejected (Employer)'
+  if (input.companyResponse === 'accepted') {
+    if (input.studentResponse === 'accepted') return 'Offer Accepted (Student)'
+    if (input.studentResponse === 'declined') return 'Offer Declined (Student)'
+    return 'Offer Received (Student)'
+  }
+  if (input.companyResponse === 'for_interview') return 'For Interview (Employer)'
+  if (input.referralStatus === 'under_review') return 'Under Review (Employer)'
+  return 'For Review (Employer)'
+}
+
+export function referralHistoryStatus(
+  input: WorkflowStatusInput,
+): ReferralHistoryStatus {
+  if (input.applicationStatus === 'withdrawn' || input.referralStatus === 'withdrawn') {
+    return 'Withdrawn (Student)'
+  }
+  if (input.applicationStatus === 'expired' || input.referralStatus === 'expired') {
+    return 'Expired (Employer)'
+  }
+  if (input.companyResponse === 'rejected') return 'Rejected (Employer)'
+  if (input.companyResponse === 'accepted') {
+    if (input.studentResponse === 'accepted') return 'Offer Accepted (Student)'
+    if (input.studentResponse === 'declined') return 'Offer Declined (Student)'
+    return 'Offer Received (Student)'
+  }
+  if (input.companyResponse === 'for_interview') return 'For Interview (Employer)'
+  if (input.referralStatus === 'under_review') return 'Under Review (Employer)'
+  return 'For Review (Employer)'
+}
+
+export function employerReviewStatus(
+  input: WorkflowStatusInput,
+): EmployerReviewStatus {
+  if (input.companyResponse === 'for_interview') return 'For Interview'
+  if (input.referralStatus === 'under_review') return 'Under Review'
+  return 'For Review'
 }
 
 export function applicationDisplayStatus(input: WorkflowStatusInput): WorkflowDisplayStatus {

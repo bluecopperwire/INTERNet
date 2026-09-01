@@ -114,14 +114,6 @@ export const employerApiService = {
     return response.data;
   },
 
-  async withdrawAcceptance(referralId: number, remark: string): Promise<any> {
-    const response = await api.patch(
-      `/employer/referrals/${referralId}/withdraw-acceptance`,
-      { remark },
-    );
-    return response.data;
-  },
-
   async scheduleInterview(referralId: number, payload: any): Promise<any> {
     const response = await api.put(
       `/employer/referrals/${referralId}/interview`,
@@ -134,7 +126,7 @@ export const employerApiService = {
     await api.delete(`/employer/referrals/${referralId}`);
   },
 
-  async getAssignmentCandidates(params?: { page?: number; limit?: number; search?: string; studentResponse?: 'pending' | 'accepted' | 'declined' }): Promise<PaginatedResponse<EmployerAssignmentCandidateDto>> {
+  async getAssignmentCandidates(params?: { page?: number; limit?: number; search?: string }): Promise<PaginatedResponse<EmployerAssignmentCandidateDto>> {
     const response = await api.get<PaginatedResponse<EmployerAssignmentCandidateDto>>(
       '/employer/internship-assignment-candidates',
       { params },

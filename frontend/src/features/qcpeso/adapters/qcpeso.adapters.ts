@@ -18,6 +18,7 @@ import type {
 } from "../types/qcpeso.types";
 import {
   applicationDisplayStatus,
+  applicationHistoryStatus,
   isTerminalApplication,
   isTerminalReferral,
   referralDisplayStatus,
@@ -129,7 +130,16 @@ export function adaptPesoApplication(
     program: d.strandProgram || d.strand_program || "N/A",
     yearLevel: formatYearLevel(rawYear),
     dateApplied: formattedDate,
+    referralDate: d.referredAt || d.referred_at
+      ? formatCalendarDate(d.referredAt || d.referred_at)
+      : "—",
     status: applicationDisplayStatus({
+      applicationStatus: rawStatus,
+      referralStatus,
+      companyResponse,
+      studentResponse,
+    }),
+    historyStatus: applicationHistoryStatus({
       applicationStatus: rawStatus,
       referralStatus,
       companyResponse,
@@ -217,6 +227,8 @@ export function adaptPesoReferral(r: PesoReferralDto | any): QCPesoReferral {
     studentName: r.studentFullName || r.student_full_name || "Applicant",
     company: r.companyName || r.company_name || "Partner Company",
     jobTitle: r.opportunityTitle || r.opportunity_title || "Internship Role",
+    program: r.strandProgram || r.strand_program || "N/A",
+    applicationDate: formatCalendarDate(r.submittedAt || r.submitted_at),
     referralDate: formattedDate,
     companyResponse:
       compMap[String(rawCompResponse).toLowerCase()] || "Pending",

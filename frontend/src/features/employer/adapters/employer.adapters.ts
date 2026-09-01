@@ -15,7 +15,12 @@ import type {
   EmployerAttendanceRecord,
   EmployerInternshipDetails,
 } from '../types/employer.types';
-import { isTerminalReferral, referralDisplayStatus } from '../../workflow/status-mappings';
+import {
+  employerReviewStatus,
+  isTerminalReferral,
+  referralDisplayStatus,
+  referralHistoryStatus,
+} from '../../workflow/status-mappings';
 
 type EmployerInternshipDetailDto = {
   intern: {
@@ -107,6 +112,13 @@ export function adaptEmployerReferral(
   const applicationStatus = application.applicationStatus || r.applicationStatus;
   const studentResponse = application.studentResponse || r.studentResponse || 'pending';
   const subAt = r.application?.submittedAt || r.submittedAt;
+  const referredAt = referral.referredAt || r.referredAt;
+  const workflowInput = {
+    applicationStatus,
+    referralStatus,
+    companyResponse: compResponse,
+    studentResponse,
+  };
 
   const address =
     [student.addressLine, student.addressBarangay, student.addressCity]
@@ -127,12 +139,19 @@ export function adaptEmployerReferral(
           year: 'numeric',
         })
       : 'N/A',
-    status: referralDisplayStatus({
-      applicationStatus,
-      referralStatus,
-      companyResponse: compResponse,
-      studentResponse,
-    }, 'For Review'),
+    applicationDate: subAt
+      ? new Date(subAt).toLocaleDateString('en-US', {
+          month: 'short', day: 'numeric', year: 'numeric',
+        })
+      : 'N/A',
+    referralDate: referredAt
+      ? new Date(referredAt).toLocaleDateString('en-US', {
+          month: 'short', day: 'numeric', year: 'numeric',
+        })
+      : 'N/A',
+    status: referralDisplayStatus(workflowInput, 'For Review'),
+    reviewStatus: employerReviewStatus(workflowInput),
+    historyStatus: referralHistoryStatus(workflowInput),
     applicationStatus,
     referralStatus,
     companyResponse: compResponse,

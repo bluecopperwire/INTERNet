@@ -308,6 +308,11 @@ export interface DashboardApplicationDto {
   yearLevel?: string | null;
   submittedAt: string;
   applicationStatus: ApplicationStatus;
+  referralId?: number | null;
+  referredAt?: string | null;
+  referralStatus?: ReferralStatus | null;
+  companyResponse?: CompanyResponse | null;
+  studentResponse?: StudentResponse | null;
 }
 
 export interface PesoReferralDto {
@@ -412,6 +417,7 @@ export interface EmployerReferralListItemDto {
   strandProgram?: string | null;
   yearLevel?: string | null;
   submittedAt: string;
+  referredAt: string;
   applicationStatus: ApplicationStatus;
   referralStatus: ReferralStatus;
   companyResponse: CompanyResponse;
