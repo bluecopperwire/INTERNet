@@ -114,23 +114,6 @@
   cursor: pointer;
 }
 
-.listDeleteButton {
-  display: grid;
-  width: 38px;
-  height: 38px;
-  flex: none;
-  padding: 0;
-  place-items: center;
-  border: 1px solid #e25555;
-  border-radius: 7px;
-  color: #c93636;
-  background: #fff;
-  cursor: pointer;
-}
-
-.listDeleteButton:hover { color: #fff; background: #e25555; }
-.listDeleteButton svg { width: 17px; height: 17px; }
-
 .applicationItem:hover {
   border-color: #c8ceed;
   background: #fbfcff;
@@ -216,6 +199,9 @@
 
 .rejected {
   color: #ff5a57;
+}
+
+.statusBadge.rejected {
   background: #fff0ef;
 }
 
@@ -317,7 +303,12 @@
 .expired .indicator {
   border-color: #e35c64;
   color: #e35c64;
-  background: #fff5f5;
+  background: #ffffff;
+}
+
+.withdrawn,
+.expired {
+  color: #e35c64;
 }
 
 .rejected .timelineLine,
@@ -408,6 +399,28 @@
   border-radius: 12px;
   box-shadow: 0 6px 18px rgba(16, 13, 51, 0.05);
   text-align: center;
+}
+
+.emptyState,
+.emptyProgress {
+  display: grid;
+  min-height: 220px;
+  place-content: center;
+  padding: 32px;
+  color: #5d6881;
+  text-align: center;
+}
+
+.emptyState h3,
+.emptyProgress h2 {
+  margin: 0 0 7px;
+  color: #21167b;
+}
+
+.emptyState p,
+.emptyProgress p {
+  margin: 0;
+  font-size: 13px;
 }
 
 @media (max-width: 1050px) {

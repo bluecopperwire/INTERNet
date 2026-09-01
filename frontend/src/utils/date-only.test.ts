@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   birthdateMaximum,
   formatDateOnly,
+  formatTableDate,
   isValidDateOnly,
   opportunityDeadlineMinimum,
   shiftDateOnly,
@@ -38,5 +39,10 @@ describe('date-only utilities', () => {
     expect(isValidDateOnly('2023-02-29')).toBe(false)
     expect(shiftDateOnly('2024-02-29', 1)).toBe('2024-03-01')
     expect(formatDateOnly('2004-05-16T16:00:00.000Z')).toBe('May 17, 2004')
+  })
+
+  it('formats table dates with compact month names', () => {
+    expect(formatTableDate('2026-09-02')).toBe('Sep 2, 2026')
+    expect(formatTableDate('2026-08-31')).toBe('Aug 31, 2026')
   })
 })

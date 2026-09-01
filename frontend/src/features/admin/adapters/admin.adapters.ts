@@ -54,7 +54,7 @@ export function adaptAdminStudentItem(dto: AdminStudentListItemDto): StudentReco
     email: dto.accountEmail,
     status: statusMap[dto.accountStatus] || 'Active',
     suspensionDaysRemaining: remainingDays(data.suspendedUntil),
-    dateCreated: new Date(dto.createdAt).toLocaleDateString(),
+    dateCreated: formatTableDate(dto.createdAt),
     role: 'Student',
     profileImageUrl: publicUploadUrl(
       data.photoFilePath,
@@ -104,7 +104,7 @@ export function adaptAdminEmployerItem(dto: AdminEmployerListItemDto): EmployerR
     email: dto.accountEmail,
     status: statusMap[dto.accountStatus] || 'Active',
     suspensionDaysRemaining: remainingDays(data.suspendedUntil),
-    dateCreated: new Date(dto.createdAt).toLocaleDateString(),
+    dateCreated: formatTableDate(dto.createdAt),
     role: 'Employer',
     profileImageUrl: publicUploadUrl(
       data.logoFilePath,
@@ -148,7 +148,7 @@ export function adaptAdminPesoItem(dto: AdminPesoListItemDto): QCPesoRecord {
     employeeId: dto.employeeId,
     status: statusMap[dto.accountStatus] || 'Active',
     suspensionDaysRemaining: remainingDays(data.suspendedUntil),
-    dateCreated: new Date(dto.createdAt).toLocaleDateString(),
+    dateCreated: formatTableDate(dto.createdAt),
     role: 'QC PESO Personnel',
     profileImageUrl: publicUploadUrl(
       data.photoFilePath,
@@ -196,3 +196,4 @@ function scheduleToUi(value?: string): string {
   };
   return value ? labels[value] || value : 'Weekdays';
 }
+import { formatTableDate } from '../../../utils/date-only'

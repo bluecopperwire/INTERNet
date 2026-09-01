@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, ChevronRight, MapPin, Trash2, X } from 'lucide-react'
+import { Check, ChevronRight, MapPin, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useApplications } from '../hooks/useApplications'
 import type { ApplicationDisplayStatus, ApplicationProgress, InterviewDetails, UserApplication } from '../types/application.types'
@@ -27,11 +27,16 @@ function ApplicationStatusPage() {
     application: UserApplication | null
     error: string | null
   } | null>(null)
-  const toast = useToastStore()
-  const selectedSummary = applications.find((application) => application.id === selectedId) ?? applications[0]
+  const showSuccessToast = useToastStore((state) => state.success)
+  const showErrorToast = useToastStore((state) => state.error)
+  const validSelectedId = selectedId && applications.some((application) => application.id === selectedId)
+    ? selectedId
+    : applications[0]?.id ?? null
+  const selectedSummary = applications.find((application) => application.id === validSelectedId)
   const selectedApplicationId = selectedSummary?.id
-  const selectedApplication = detailResult?.id === selectedSummary?.id ? detailResult.application : null
-  const isLoadingDetail = Boolean(selectedSummary) && detailResult?.id !== selectedSummary?.id
+  const selectedApplication = detailResult && detailResult.id === selectedApplicationId ? detailResult.application : null
+  const detailError = detailResult && detailResult.id === selectedApplicationId ? detailResult.error : null
+  const isLoadingDetail = Boolean(selectedSummary) && detailResult?.id !== selectedApplicationId
 
   useEffect(() => {
     const applicationId = selectedApplicationId
@@ -45,11 +50,11 @@ function ApplicationStatusPage() {
         if (active) {
           const message = getErrorMessage(error, 'Unable to load application status.')
           setDetailResult({ id: applicationId, application: null, error: message })
-          toast.error(message)
+          showErrorToast(message)
         }
       })
     return () => { active = false }
-  }, [selectedApplicationId, toast])
+  }, [selectedApplicationId, showErrorToast])
 
   const performUpdate = async (action: () => Promise<unknown>, successMessage: string) => {
     setIsUpdating(true)
@@ -60,9 +65,9 @@ function ApplicationStatusPage() {
         setDetailResult({ id: application.id, application, error: null })
       }
       setDialog(null)
-      toast.success(successMessage)
+      showSuccessToast(successMessage)
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error, 'The application could not be updated. Please try again.'))
+      showErrorToast(getErrorMessage(error, 'The application could not be updated. Please try again.'))
     } finally {
       setIsUpdating(false)
     }
@@ -73,12 +78,13 @@ function ApplicationStatusPage() {
     setIsUpdating(true)
     try {
       await deleteApplication(deleteTarget.id)
+      const nextSelection = applications.find((application) => application.id !== deleteTarget.id)?.id ?? null
       setDeleteTarget(null)
-      setSelectedId(null)
+      setSelectedId(nextSelection)
       setDetailResult(null)
-      toast.success('Application deleted.')
+      showSuccessToast('Application deleted.')
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error, 'The application could not be deleted. Please try again.'))
+      showErrorToast(getErrorMessage(error, 'The application could not be deleted. Please try again.'))
     } finally {
       setIsUpdating(false)
     }
@@ -88,9 +94,7 @@ function ApplicationStatusPage() {
     <>
       {error && <p className={styles.feedback} role="alert">{error}</p>}
       {isLoading && <p className={styles.feedback}>Loading applications...</p>}
-      {!isLoading && applications.length === 0 && <p className={styles.feedback}>You have not submitted any applications yet.</p>}
-
-      {!isLoading && applications.length > 0 && (
+      {!isLoading && (
         <div className={styles.applicationLayout}>
           <section className={styles.applicationListPanel} aria-labelledby="applications-heading">
             <header className={styles.listHeader}>
@@ -98,13 +102,15 @@ function ApplicationStatusPage() {
               <Link to="/intern-seeker/search">Apply to Company <span>+</span></Link>
             </header>
             <div className={styles.applicationList}>
-              {applications.map((application) => <ApplicationListItem key={application.id} application={application} isSelected={application.id === selectedSummary?.id} onSelect={() => setSelectedId(application.id)} onDelete={() => setDeleteTarget(application)} />)}
+              {applications.map((application) => <ApplicationListItem key={application.id} application={application} isSelected={application.id === selectedSummary?.id} onSelect={() => setSelectedId(application.id)} />)}
+              {applications.length === 0 && <div className={styles.emptyState}><h3>No applications yet</h3><p>There are currently no applications to track.</p></div>}
             </div>
           </section>
 
+          {!selectedSummary && <section className={`${styles.progressPanel} ${styles.emptyProgress}`}><h2>Application Progress</h2><p>Select an application after you apply to view its progress.</p></section>}
           {isLoadingDetail && <section className={styles.progressPanel}><p className={styles.feedback}>Loading application status...</p></section>}
           {!isLoadingDetail && selectedApplication && <ApplicationProgress application={selectedApplication} isUpdating={isUpdating} onWithdraw={() => setDialog({ type: 'withdraw', application: selectedApplication })} onDelete={() => setDeleteTarget(selectedApplication)} onOpenDialog={setDialog} />}
-          {!isLoadingDetail && detailResult?.id === selectedSummary?.id && detailResult.error && <section className={styles.progressPanel}><p className={styles.feedback} role="alert">{detailResult.error}</p></section>}
+          {!isLoadingDetail && detailError && <section className={styles.progressPanel}><p className={styles.feedback} role="alert">{detailError}</p></section>}
         </div>
       )}
 
@@ -114,7 +120,7 @@ function ApplicationStatusPage() {
   )
 }
 
-function ApplicationListItem({ application, isSelected, onSelect, onDelete }: { application: UserApplication; isSelected: boolean; onSelect: () => void; onDelete: () => void }) {
+function ApplicationListItem({ application, isSelected, onSelect }: { application: UserApplication; isSelected: boolean; onSelect: () => void }) {
   return (
     <div className={`${styles.applicationItem} ${isSelected ? styles.selectedItem : ''}`}>
       <button className={styles.applicationSelectButton} type="button" onClick={onSelect}>
@@ -123,7 +129,6 @@ function ApplicationListItem({ application, isSelected, onSelect, onDelete }: { 
         <span className={styles.applicationMeta}><StatusBadge status={application.status} /><small>Applied: {application.appliedDate}</small></span>
         <ChevronRight className={styles.chevron} />
       </button>
-      {application.canHide && <button className={styles.listDeleteButton} type="button" aria-label={`Delete ${application.position} application`} onClick={onDelete}><Trash2 /></button>}
     </div>
   )
 }
@@ -154,7 +159,7 @@ function ProgressStep({ step, isLast, application, onOpenDialog }: { step: Appli
   const dialog = step.interview
     ? { type: 'interview' as const, companyName: application.companyName, interview: step.interview }
     : step.remark
-      ? { type: 'remark' as const, title: `${step.stage} Remark`, remark: step.remark }
+      ? { type: 'remark' as const, title: 'Application Rejection Remark', remark: step.remark }
       : step.stage === 'Student Decision' && step.state === 'current' && application.canRespondToOffer
         ? { type: 'student-decision' as const, application }
         : null

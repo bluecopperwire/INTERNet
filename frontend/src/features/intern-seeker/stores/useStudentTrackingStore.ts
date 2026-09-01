@@ -62,7 +62,14 @@ export const useStudentTrackingStore = create<StudentTrackingState>((set, get) =
     try {
       const dtos = await studentApiService.getApplications(studentId);
       const adapted = dtos.map((d) => adaptApplication(d));
-      set({ applications: adapted, isLoading: false });
+      set((state) => ({
+        applications: adapted,
+        selectedApplication:
+          state.selectedApplication && adapted.some((application) => application.id === state.selectedApplication?.id)
+            ? state.selectedApplication
+            : null,
+        isLoading: false,
+      }));
     } catch (err: any) {
       const norm = normalizeApiError(err);
       set({ error: norm.message, isLoading: false });
@@ -75,29 +82,15 @@ export const useStudentTrackingStore = create<StudentTrackingState>((set, get) =
 
     try {
       const statusDto = await studentApiService.getApplicationStatus(studentId, applicationId);
-      const listApp = get().applications.find((a) => a.id === String(applicationId));
-      if (!listApp) return null;
-
-      const adapted = adaptApplication(
-        {
-          applicationId: statusDto.applicationId,
-          submittedAt: statusDto.submittedAt,
-          applicationStatus: statusDto.applicationStatus,
-          applicationRemark: statusDto.remark,
-          studentResponse: statusDto.studentResponse,
-          studentRespondedAt: statusDto.studentRespondedAt,
-          opportunity: statusDto.opportunity,
-          company: statusDto.company,
-          referral: statusDto.referral,
-          assignment: statusDto.assignment,
-        },
-        statusDto,
-      );
+      // The detail response is self-contained. Depending on a previously hydrated
+      // list entry made direct route loads and stale selections order-sensitive.
+      const adapted = adaptApplication(statusDto, statusDto);
 
       set({ selectedApplication: adapted });
       return adapted;
-    } catch {
-      return null;
+    } catch (err: unknown) {
+      set({ selectedApplication: null });
+      throw normalizeApiError(err);
     }
   },
 

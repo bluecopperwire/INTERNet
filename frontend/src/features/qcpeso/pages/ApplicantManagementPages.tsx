@@ -32,6 +32,7 @@ import {
   APPLICATION_CLOSED_STATUSES,
   APPLICATION_HISTORY_STATUSES,
   APPLICATION_ONGOING_STATUSES,
+  isTerminalApplication,
 } from '../../workflow/status-mappings'
 
 const APPLICANT_REQUIREMENTS = [
@@ -664,13 +665,13 @@ export function ReviewApplicantDetailsPage({ readOnly = false }: { readOnly?: bo
                 <Check size={17} />
                 {isUpdating ? 'Referring...' : 'Refer Applicant'}
               </button>
-              <button className={detailStyles.actionRed} disabled={isUpdating} onClick={() => setShowRejectModal(true)}>
+              <button className={`${detailStyles.actionRed} ${detailStyles.workflowAction}`} disabled={isUpdating} onClick={() => setShowRejectModal(true)}>
                 <X size={17} />
                 Reject Applicant
               </button>
             </>
           )}
-          {readOnly && record.canHide && <button className={detailStyles.actionRed} disabled={isUpdating} onClick={() => setShowDeleteModal(true)}><Trash2 size={17} />Delete</button>}
+          {readOnly && isTerminalApplication(record.applicationStatus) && <button className={detailStyles.actionRed} disabled={isUpdating} onClick={() => setShowDeleteModal(true)}><Trash2 size={17} />Delete</button>}
         </footer>
       </section>
 

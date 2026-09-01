@@ -243,7 +243,7 @@
   width: 100%;
   min-width: 900px;
   border-collapse: collapse;
-  text-align: left;
+  table-layout: auto;
 }
 
 .tableWrap th {
@@ -252,7 +252,8 @@
   background: #f8fafc;
   font-size: 14px;
   font-weight: 700;
-  white-space: nowrap;
+  text-align: center;
+  white-space: normal;
 }
 
 .tableWrap td {
@@ -261,6 +262,8 @@
   color: #26324a;
   font-size: 14px;
   vertical-align: middle;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .tableWrap tbody tr:last-child td {
@@ -272,9 +275,11 @@
   font-weight: 600;
 }
 
-.tableWrap th:last-child,
-.tableWrap td:last-child {
-  text-align: right;
+.tableWrap th:first-child,
+.tableWrap td:first-child,
+.tableWrap th:nth-child(2),
+.tableWrap td:nth-child(2) {
+  min-width: 210px;
 }
 
 .statusBadge {

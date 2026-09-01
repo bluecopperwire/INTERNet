@@ -52,7 +52,7 @@ export function CreateInternshipAssignmentPage() {
             <table className={styles.assignmentTable}>
               <thead><tr><th>Student Name</th><th>Job Title</th><th>Acceptance Date</th><th>Action</th></tr></thead>
               <tbody>{visibleAssignments.map((assignment) => <tr key={assignment.id}>
-                <td><strong>{assignment.studentName}</strong></td>
+                <td>{assignment.studentName}</td>
                 <td>{assignment.jobTitle}</td>
                 <td>{assignment.acceptanceDate}</td>
                 <td><div className={styles.assignmentRowActions}>

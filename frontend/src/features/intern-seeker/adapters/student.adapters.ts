@@ -27,7 +27,7 @@ import type {
   AttendanceRecord,
   AttendanceSummary,
 } from '../types/attendance.types';
-import { todayDateOnly, toDateOnly } from '../../../utils/date-only';
+import { formatTableDate, todayDateOnly, toDateOnly } from '../../../utils/date-only';
 
 export function adaptOpportunity(
   dto: OpportunitySummaryDto,
@@ -590,11 +590,7 @@ export function adaptApplication(
     industry: dto.company.industryName || 'Technology',
     location: 'Quezon City',
     status: displayStatus,
-    appliedDate: new Date(dto.submittedAt).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }),
+    appliedDate: formatTableDate(dto.submittedAt),
     progress,
     canWithdraw,
     canRespondToOffer,

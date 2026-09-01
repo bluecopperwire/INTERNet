@@ -39,7 +39,7 @@ describe('assignment candidate mapping', () => {
       company: 'INTERNet Labs',
       jobTitle: 'Backend Intern',
       studentResponse: 'Accepted',
-      acceptanceDate: new Date('2026-08-28T00:00:00.000Z').toLocaleDateString(),
+      acceptanceDate: 'Aug 28, 2026',
     });
   });
 });

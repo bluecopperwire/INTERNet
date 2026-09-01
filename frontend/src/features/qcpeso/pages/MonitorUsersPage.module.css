@@ -107,7 +107,7 @@
   width: 100%;
   min-width: 920px;
   border-collapse: collapse;
-  text-align: left;
+  table-layout: auto;
 }
 
 .table th {
@@ -116,6 +116,8 @@
   background: #f8fafc;
   font-size: 14px;
   font-weight: 600;
+  text-align: center;
+  white-space: normal;
 }
 
 .table td {
@@ -123,6 +125,9 @@
   border-bottom: 1px solid #e2e8f0;
   color: #1e293b;
   font-size: 14px;
+  text-align: center;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
 }
 
 .table tr:last-child td {

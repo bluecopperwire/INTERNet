@@ -22,6 +22,7 @@ import type {
   WorkArrangement,
   EmployerAssignmentCandidateDto,
 } from '../../../types/api';
+import { formatTableDate } from '../../../utils/date-only';
 
 function mapWorkArrangement(arrangement?: string): WorkArrangement {
   if (arrangement === 'Remote' || arrangement === 'remote') return 'remote';
@@ -89,10 +90,7 @@ export function mapStudentResponse(
 
 function formatAcceptanceDate(value: string | null): string {
   if (!value) return 'Not recorded';
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? 'Invalid date'
-    : date.toLocaleDateString();
+  return formatTableDate(value) || 'Invalid date';
 }
 
 export function mapAssignmentCandidate(

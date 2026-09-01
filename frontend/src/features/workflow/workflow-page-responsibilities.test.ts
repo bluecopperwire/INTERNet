@@ -68,7 +68,7 @@ describe('workflow page responsibility boundaries', () => {
     expect(history).toContain('REFERRAL_CLOSED_STATUSES.includes')
     expect(history).toContain('referral.canHide &&')
     expect(details).toContain('return <ReviewApplicantPage readOnly />')
-    expect(details).toContain('readOnly && applicant.canHide')
+    expect(details).toContain('readOnly && isTerminalReferral(applicant.referralStatus)')
   })
 
   it('keeps Create Internship Assignment to the exact actionable columns', () => {
