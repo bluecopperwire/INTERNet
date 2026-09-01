@@ -16,6 +16,7 @@ import {
   X,
 } from 'lucide-react'
 import { qcpesoService } from '../services/qcpeso.service'
+import { qcpesoApiService } from '../services/qcpeso-api.service'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
 import type { QCPesoReferral, QCPesoReviewApplicant } from '../types/qcpeso.types'
@@ -24,6 +25,7 @@ import { RejectApplicantModal } from '../../employer/components/RejectApplicantM
 import tableStyles from '../../employer/pages/ApplicantsPage.module.css'
 import detailStyles from '../../employer/pages/ReviewApplicantPage.module.css'
 import { API_BASE_URL } from '../../../services/api'
+import { getApplicantReviewDetail, openApplicantForReview } from '../services/qcpeso-review-flow'
 
 const APPLICANT_REQUIREMENTS = [
   { key: 'proof_of_residency', label: 'Proof of Residency' },
@@ -36,10 +38,7 @@ function normalizeKey(str: string) {
   return str.toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
-function matchDocRequirement(
-  d: { typeName?: string; name?: string },
-  reqKey: string,
-) {
+function matchDocRequirement(d: { typeName?: string; name?: string }, reqKey: string) {
   const normType = normalizeKey(d.typeName || '')
   const normReq = normalizeKey(reqKey)
   if (normType && normType === normReq) return true
@@ -60,10 +59,7 @@ function matchDocRequirement(
   }
   if (normReq === 'letterofintent') {
     return (
-      normType.includes('intent') ||
-      normType.includes('loi') ||
-      normName.includes('intent') ||
-      normName.includes('loi')
+      normType.includes('intent') || normType.includes('loi') || normName.includes('intent') || normName.includes('loi')
     )
   }
   if (normReq === 'latestcredentials') {
@@ -129,9 +125,13 @@ function Pagination({ itemName }: { itemName: string }) {
         <span className={tableStyles.perPageLabel}>{itemName} per page</span>
       </div>
       <div className={tableStyles.pagination}>
-        <button className={tableStyles.pageBtn} disabled>‹</button>
+        <button className={tableStyles.pageBtn} disabled>
+          ‹
+        </button>
         <button className={`${tableStyles.pageBtn} ${tableStyles.active}`}>1</button>
-        <button className={tableStyles.pageBtn} disabled>›</button>
+        <button className={tableStyles.pageBtn} disabled>
+          ›
+        </button>
       </div>
     </div>
   )
@@ -139,6 +139,7 @@ function Pagination({ itemName }: { itemName: string }) {
 
 export function ReviewApplicantsPage() {
   const navigate = useNavigate()
+  const toast = useToastStore()
   const [records, setRecords] = useState<QCPesoReviewApplicant[]>([])
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('All')
@@ -151,13 +152,19 @@ export function ReviewApplicantsPage() {
     () =>
       records.filter(
         (record) =>
-          (record.studentName + record.company + record.jobTitle)
-            .toLowerCase()
-            .includes(search.toLowerCase()) &&
+          (record.studentName + record.company + record.jobTitle).toLowerCase().includes(search.toLowerCase()) &&
           (status === 'All' || record.status === status),
       ),
     [records, search, status],
   )
+
+  const handleOpenApplicant = async (record: QCPesoReviewApplicant) => {
+    await openApplicantForReview(record, {
+      markUnderReview: qcpesoApiService.markApplicationUnderReview,
+      navigate,
+      onMutationError: (error) => toast.error(getErrorMessage(error, 'Failed to start applicant review.')),
+    })
+  }
 
   return (
     <main className={tableStyles.pageContainer}>
@@ -177,10 +184,7 @@ export function ReviewApplicantsPage() {
           </label>
           <label className={tableStyles.statusFilter}>
             <SlidersHorizontal size={18} />
-            <select
-              value={status}
-              onChange={(event) => setStatus(event.target.value)}
-            >
+            <select value={status} onChange={(event) => setStatus(event.target.value)}>
               <option value="All">All Statuses</option>
               <option>Pending</option>
               <option>Accepted</option>
@@ -213,22 +217,12 @@ export function ReviewApplicantsPage() {
                     <td>{record.yearLevel}</td>
                     <td>{record.dateApplied}</td>
                     <td>
-                      <span
-                        className={`${tableStyles.statusPill} ${statusClass(
-                          record.status,
-                        )}`}
-                      >
-                        {record.status}
-                      </span>
+                      <span className={`${tableStyles.statusPill} ${statusClass(record.status)}`}>{record.status}</span>
                     </td>
                     <td>
-                      <button
-                        className={tableStyles.reviewBtn}
-                        onClick={() =>
-                          navigate(`/qcpeso/manage-applicants/review/${record.id}`)
-                        }
-                      >
-                        <Eye size={16} />Review
+                      <button className={tableStyles.reviewBtn} onClick={() => void handleOpenApplicant(record)}>
+                        <Eye size={16} />
+                        Review
                       </button>
                     </td>
                   </tr>
@@ -264,9 +258,7 @@ export function TrackReferralsPage() {
     () =>
       records.filter(
         (record) =>
-          (record.studentName + record.company + record.jobTitle)
-            .toLowerCase()
-            .includes(search.toLowerCase()) &&
+          (record.studentName + record.company + record.jobTitle).toLowerCase().includes(search.toLowerCase()) &&
           (response === 'All' || record.companyResponse === response),
       ),
     [records, search, response],
@@ -274,10 +266,7 @@ export function TrackReferralsPage() {
 
   return (
     <main className={tableStyles.pageContainer}>
-      <QCPesoHero
-        title="Track Referrals"
-        subtitle="Track referrals sent to companies and their latest responses."
-      />
+      <QCPesoHero title="Track Referrals" subtitle="Track referrals sent to companies and their latest responses." />
       <section className={tableStyles.mainContent}>
         <div className={tableStyles.toolbar}>
           <label className={tableStyles.searchBox}>
@@ -290,10 +279,7 @@ export function TrackReferralsPage() {
           </label>
           <label className={tableStyles.statusFilter}>
             <SlidersHorizontal size={18} />
-            <select
-              value={response}
-              onChange={(event) => setResponse(event.target.value)}
-            >
+            <select value={response} onChange={(event) => setResponse(event.target.value)}>
               <option value="All">All Responses</option>
               <option>Pending</option>
               <option>For Interview</option>
@@ -324,33 +310,22 @@ export function TrackReferralsPage() {
                     <td>{record.jobTitle}</td>
                     <td>{record.referralDate}</td>
                     <td>
-                      <span
-                        className={`${tableStyles.statusPill} ${statusClass(
-                          record.companyResponse,
-                        )}`}
-                      >
+                      <span className={`${tableStyles.statusPill} ${statusClass(record.companyResponse)}`}>
                         {record.companyResponse}
                       </span>
                     </td>
                     <td>
-                      <span
-                        className={`${tableStyles.statusPill} ${statusClass(
-                          record.studentResponse,
-                        )}`}
-                      >
+                      <span className={`${tableStyles.statusPill} ${statusClass(record.studentResponse)}`}>
                         {record.studentResponse}
                       </span>
                     </td>
                     <td>
                       <button
                         className={tableStyles.reviewBtn}
-                        onClick={() =>
-                          navigate(
-                            `/qcpeso/manage-applicants/referrals/${record.id}`,
-                          )
-                        }
+                        onClick={() => navigate(`/qcpeso/manage-applicants/referrals/${record.id}`)}
                       >
-                        <Eye size={16} />Review
+                        <Eye size={16} />
+                        Review
                       </button>
                     </td>
                   </tr>
@@ -378,12 +353,20 @@ function DocumentList({
 }: {
   studentName?: string
   title?: string
-  documents?: Array<{ id: string; name: string; typeName?: string; filePath: string }>
+  documents?: Array<{
+    id: string
+    name: string
+    typeName?: string
+    filePath: string
+  }>
 }) {
   return (
     <section className={detailStyles.infoCard}>
       <h2 className={detailStyles.sectionTitle}>
-        <span><FileText size={18} /></span>{title}
+        <span>
+          <FileText size={18} />
+        </span>
+        {title}
       </h2>
       <div className={detailStyles.docsList}>
         {APPLICANT_REQUIREMENTS.map(({ key, label }) => {
@@ -394,7 +377,9 @@ function DocumentList({
 
           return (
             <div className={detailStyles.docItem} key={key}>
-              <span className={detailStyles.docIcon}><FileText size={17} /></span>
+              <span className={detailStyles.docIcon}>
+                <FileText size={17} />
+              </span>
               <div>
                 <strong>{label}</strong>
                 <p style={{ color: hasFile ? undefined : '#94a3b8' }}>{displayFilename}</p>
@@ -406,7 +391,8 @@ function DocumentList({
                 onClick={() => handleDownloadFile(filePath, match?.name || `${label}.pdf`)}
                 style={!hasFile ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
               >
-                <Download size={15} />{hasFile ? 'Download' : 'Unavailable'}
+                <Download size={15} />
+                {hasFile ? 'Download' : 'Unavailable'}
               </button>
             </div>
           )
@@ -434,32 +420,43 @@ export function ReviewApplicantDetailsPage() {
   const navigate = useNavigate()
   const [record, setRecord] = useState<QCPesoReviewApplicant | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [loadedApplicationId, setLoadedApplicationId] = useState<string | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
   const [showRejectModal, setShowRejectModal] = useState(false)
   const toast = useToastStore()
 
   useEffect(() => {
-    if (id) {
-      setIsLoading(true)
-      setError(null)
-      qcpesoService
-        .getReviewApplicant(id)
-        .then((res) => {
-          if (!res) {
-            setError('Applicant details not found.')
-          } else {
-            setRecord(res)
-          }
-        })
-        .catch((err) => {
-          setError(err?.message || 'Failed to load applicant details.')
-        })
-        .finally(() => {
-          setIsLoading(false)
-        })
+    if (!id) return
+
+    let active = true
+    getApplicantReviewDetail(id, {
+      getDetail: qcpesoService.getReviewApplicant,
+    })
+      .then((res) => {
+        if (!active) return
+        if (!res) {
+          setRecord(null)
+          setError('Applicant details not found.')
+        } else {
+          setRecord(res)
+          setError(null)
+        }
+      })
+      .catch((err) => {
+        if (active) {
+          setRecord(null)
+          setError(getErrorMessage(err, 'Failed to load applicant details.'))
+        }
+      })
+      .finally(() => {
+        if (active) setLoadedApplicationId(id)
+      })
+    return () => {
+      active = false
     }
   }, [id])
+
+  const isLoading = Boolean(id) && loadedApplicationId !== id
 
   if (isLoading) {
     return (
@@ -473,11 +470,9 @@ export function ReviewApplicantDetailsPage() {
     return (
       <main className={detailStyles.pageContainer}>
         <header className={detailStyles.pageHeader}>
-          <button
-            className={detailStyles.backBtn}
-            onClick={() => navigate('/qcpeso/manage-applicants/review')}
-          >
-            <ArrowLeft size={18} />Back to Review Applicants
+          <button className={detailStyles.backBtn} onClick={() => navigate('/qcpeso/manage-applicants/review')}>
+            <ArrowLeft size={18} />
+            Back to Review Applicants
           </button>
         </header>
         <div
@@ -489,16 +484,9 @@ export function ReviewApplicantDetailsPage() {
             margin: '20px 0',
           }}
         >
-          <h2 style={{ color: '#160e6f', marginBottom: '8px' }}>
-            Unable to load applicant
-          </h2>
-          <p style={{ color: '#64748b', marginBottom: '20px' }}>
-            {error || 'Applicant record not found.'}
-          </p>
-          <button
-            className={detailStyles.backBtn}
-            onClick={() => navigate('/qcpeso/manage-applicants/review')}
-          >
+          <h2 style={{ color: '#160e6f', marginBottom: '8px' }}>Unable to load applicant</h2>
+          <p style={{ color: '#64748b', marginBottom: '20px' }}>{error || 'Applicant record not found.'}</p>
+          <button className={detailStyles.backBtn} onClick={() => navigate('/qcpeso/manage-applicants/review')}>
             Return to Applicants List
           </button>
         </div>
@@ -506,19 +494,11 @@ export function ReviewApplicantDetailsPage() {
     )
   }
 
-  const updateStatus = async (
-    status: QCPesoReviewApplicant['status'],
-    remark?: string,
-  ) => {
-    if (record.status === 'Accepted' || record.status === 'Rejected' || isUpdating)
-      return
+  const updateStatus = async (status: QCPesoReviewApplicant['status'], remark?: string) => {
+    if (!['submitted', 'under_review'].includes(record.applicationStatus || '') || isUpdating) return
     setIsUpdating(true)
     try {
-      const updated = await qcpesoService.updateReviewApplicantStatus(
-        record.id,
-        status,
-        remark,
-      )
+      const updated = await qcpesoService.updateReviewApplicantStatus(record.id, status, remark)
       if (updated) {
         setRecord(updated)
       }
@@ -538,29 +518,18 @@ export function ReviewApplicantDetailsPage() {
   return (
     <main className={detailStyles.pageContainer}>
       <header className={detailStyles.pageHeader}>
-        <button
-          className={detailStyles.backBtn}
-          onClick={() => navigate('/qcpeso/manage-applicants/review')}
-        >
-          <ArrowLeft size={18} />Back to Review Applicants
+        <button className={detailStyles.backBtn} onClick={() => navigate('/qcpeso/manage-applicants/review')}>
+          <ArrowLeft size={18} />
+          Back to Review Applicants
         </button>
       </header>
       <section className={detailStyles.reviewCard}>
         <div className={detailStyles.cardHeading}>
           <div>
             <h1>Review Applicant</h1>
-            <p>
-              Review the applicant’s information and documents before making a
-              decision.
-            </p>
+            <p>Review the applicant’s information and documents before making a decision.</p>
           </div>
-          <span
-            className={`${detailStyles.statusPill} ${detailStatusClass(
-              record.status,
-            )}`}
-          >
-            {record.status}
-          </span>
+          <span className={`${detailStyles.statusPill} ${detailStatusClass(record.status)}`}>{record.status}</span>
         </div>
         <div className={detailStyles.twoColumnGrid}>
           <aside className={detailStyles.profileCard}>
@@ -576,13 +545,17 @@ export function ReviewApplicantDetailsPage() {
                 <h2>{record.studentName || 'N/A'}</h2>
                 <div className={detailStyles.contactMeta}>
                   <a href={`mailto:${record.email}`}>
-                    <Mail size={15} />{record.email || 'N/A'}
+                    <Mail size={15} />
+                    {record.email || 'N/A'}
                   </a>
                   <p>
-                    <Phone size={15} />{record.phone || 'N/A'}</p>
+                    <Phone size={15} />
+                    {record.phone || 'N/A'}
+                  </p>
                 </div>
                 <p>
-                  <MapPin size={15} />{record.address || 'N/A'}
+                  <MapPin size={15} />
+                  {record.address || 'N/A'}
                 </p>
               </div>
             </div>
@@ -597,7 +570,10 @@ export function ReviewApplicantDetailsPage() {
           <div className={detailStyles.rightColumn}>
             <section className={detailStyles.infoCard}>
               <h2 className={detailStyles.sectionTitle}>
-                <span><User size={18} /></span>Application Information
+                <span>
+                  <User size={18} />
+                </span>
+                Application Information
               </h2>
               <InfoRows
                 values={[
@@ -612,23 +588,20 @@ export function ReviewApplicantDetailsPage() {
             </section>
             <section className={detailStyles.infoCard}>
               <h2 className={detailStyles.sectionTitle}>
-                <span><Calendar size={18} /></span>Internship Information
+                <span>
+                  <Calendar size={18} />
+                </span>
+                Internship Information
               </h2>
               <InfoRows
                 values={[
                   ['Required Hours', `${record.requiredHours || 0} hours`],
                   ['Available Days', record.availableDays || 'N/A'],
-                  [
-                    'Available Starting Date',
-                    record.availableStartingDate || 'N/A',
-                  ],
+                  ['Available Starting Date', record.availableStartingDate || 'N/A'],
                 ]}
               />
             </section>
-            <DocumentList
-              studentName={record.studentName}
-              documents={record.documents}
-            />
+            <DocumentList studentName={record.studentName} documents={record.documents} />
           </div>
         </div>
         <footer className={detailStyles.actionBar}>
@@ -642,23 +615,22 @@ export function ReviewApplicantDetailsPage() {
               )
             }
           >
-            <Eye size={17} />View Opportunity
+            <Eye size={17} />
+            View Opportunity
           </button>
-          {record.status !== 'Accepted' && record.status !== 'Rejected' && (
+          {['submitted', 'under_review'].includes(record.applicationStatus || '') && (
             <>
               <button
                 className={detailStyles.actionGreen}
                 disabled={isUpdating}
                 onClick={() => updateStatus('Accepted')}
               >
-                <Check size={17} />{isUpdating ? 'Referring...' : 'Refer Applicant'}
+                <Check size={17} />
+                {isUpdating ? 'Referring...' : 'Refer Applicant'}
               </button>
-              <button
-                className={detailStyles.actionRed}
-                disabled={isUpdating}
-                onClick={() => setShowRejectModal(true)}
-              >
-                <X size={17} />Reject Applicant
+              <button className={detailStyles.actionRed} disabled={isUpdating} onClick={() => setShowRejectModal(true)}>
+                <X size={17} />
+                Reject Applicant
               </button>
             </>
           )}
@@ -718,11 +690,9 @@ export function ReferralDetailsPage() {
     return (
       <main className={detailStyles.pageContainer}>
         <header className={detailStyles.pageHeader}>
-          <button
-            className={detailStyles.backBtn}
-            onClick={() => navigate('/qcpeso/manage-applicants/referrals')}
-          >
-            <ArrowLeft size={18} />Back to Track Referrals
+          <button className={detailStyles.backBtn} onClick={() => navigate('/qcpeso/manage-applicants/referrals')}>
+            <ArrowLeft size={18} />
+            Back to Track Referrals
           </button>
         </header>
         <div
@@ -734,16 +704,9 @@ export function ReferralDetailsPage() {
             margin: '20px 0',
           }}
         >
-          <h2 style={{ color: '#160e6f', marginBottom: '8px' }}>
-            Unable to load referral
-          </h2>
-          <p style={{ color: '#64748b', marginBottom: '20px' }}>
-            {error || 'Referral record not found.'}
-          </p>
-          <button
-            className={detailStyles.backBtn}
-            onClick={() => navigate('/qcpeso/manage-applicants/referrals')}
-          >
+          <h2 style={{ color: '#160e6f', marginBottom: '8px' }}>Unable to load referral</h2>
+          <p style={{ color: '#64748b', marginBottom: '20px' }}>{error || 'Referral record not found.'}</p>
+          <button className={detailStyles.backBtn} onClick={() => navigate('/qcpeso/manage-applicants/referrals')}>
             Return to Referrals List
           </button>
         </div>
@@ -754,21 +717,16 @@ export function ReferralDetailsPage() {
   return (
     <main className={detailStyles.pageContainer}>
       <header className={detailStyles.pageHeader}>
-        <button
-          className={detailStyles.backBtn}
-          onClick={() => navigate('/qcpeso/manage-applicants/referrals')}
-        >
-          <ArrowLeft size={18} />Back to Track Referrals
+        <button className={detailStyles.backBtn} onClick={() => navigate('/qcpeso/manage-applicants/referrals')}>
+          <ArrowLeft size={18} />
+          Back to Track Referrals
         </button>
       </header>
       <section className={detailStyles.reviewCard}>
         <div className={detailStyles.cardHeading}>
           <div>
             <h1>Referral Details</h1>
-            <p>
-              Review the documents sent to the company and the current referral
-              responses.
-            </p>
+            <p>Review the documents sent to the company and the current referral responses.</p>
           </div>
         </div>
         <div className={detailStyles.twoColumnGrid}>
@@ -785,14 +743,17 @@ export function ReferralDetailsPage() {
                 <h2>{record.studentName || 'N/A'}</h2>
                 <div className={detailStyles.contactMeta}>
                   <a href={`mailto:${record.email}`}>
-                    <Mail size={15} />{record.email || 'N/A'}
+                    <Mail size={15} />
+                    {record.email || 'N/A'}
                   </a>
                   <p>
-                    <Phone size={15} />{record.phone || 'N/A'}
+                    <Phone size={15} />
+                    {record.phone || 'N/A'}
                   </p>
                 </div>
                 <p>
-                  <MapPin size={15} />{record.address || 'N/A'}
+                  <MapPin size={15} />
+                  {record.address || 'N/A'}
                 </p>
               </div>
             </div>
@@ -807,7 +768,10 @@ export function ReferralDetailsPage() {
           <div className={detailStyles.rightColumn}>
             <section className={detailStyles.infoCard}>
               <h2 className={detailStyles.sectionTitle}>
-                <span><User size={18} /></span>Referral Responses
+                <span>
+                  <User size={18} />
+                </span>
+                Referral Responses
               </h2>
               <InfoRows
                 values={[

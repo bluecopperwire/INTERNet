@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -116,9 +117,36 @@ export class PesoDashboardController {
     );
   }
 
+  @Patch('applications/:applicationId/review')
+  markApplicationUnderReview(
+    @CurrentUser('userAccountId') userAccountId: number,
+    @Param('applicationId', ParseIntPipe) applicationId: number,
+  ) {
+    return this.pesoService.markApplicationUnderReview(
+      userAccountId,
+      applicationId,
+    );
+  }
+
+  @Delete('applications/:applicationId')
+  hideApplication(
+    @CurrentUser('userAccountId') userAccountId: number,
+    @Param('applicationId', ParseIntPipe) applicationId: number,
+  ) {
+    return this.pesoService.hideApplication(userAccountId, applicationId);
+  }
+
   @Get('referrals/:referralId')
   getReferralDetail(@Param('referralId', ParseIntPipe) referralId: number) {
     return this.pesoService.getReferralDetail(referralId);
+  }
+
+  @Delete('referrals/:referralId')
+  hideReferral(
+    @CurrentUser('userAccountId') userAccountId: number,
+    @Param('referralId', ParseIntPipe) referralId: number,
+  ) {
+    return this.pesoService.hideReferral(userAccountId, referralId);
   }
 
   @Get('interns/:internshipAssignmentId')

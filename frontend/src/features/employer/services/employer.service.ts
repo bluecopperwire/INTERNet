@@ -41,6 +41,24 @@ function mapAllowance(allowance?: string | number | null): string | null {
   return trimmed;
 }
 
+export function mapInterviewSchedulePayload(details: {
+  date: string;
+  time: string;
+  mode: 'online' | 'in-person';
+  meetingUrl?: string;
+  location?: string;
+  remarks: string;
+}) {
+  return {
+    interviewDate: details.date,
+    interviewTime: details.time,
+    interviewMode: details.mode === 'online' ? 'online' : 'physical',
+    onlineMeetingUrl: details.mode === 'online' ? details.meetingUrl : null,
+    physicalLocation: details.mode === 'in-person' ? details.location : null,
+    remark: details.remarks.trim() || null,
+  } as const;
+}
+
 export function isOpportunityDeadlineExpired(
   applicationDeadline: string,
 ): boolean {
@@ -228,6 +246,20 @@ export const employerService = {
     return adaptEmployerReferral(raw);
   },
 
+  async markApplicantUnderReview(id: string): Promise<void> {
+    await employerApiService.markReferralUnderReview(Number(id));
+  },
+
+  async scheduleInterview(
+    id: string,
+    details: { date: string; time: string; mode: 'online' | 'in-person'; meetingUrl?: string; location?: string; remarks: string },
+  ): Promise<void> {
+    await useEmployerStore.getState().scheduleInterview(
+      Number(id),
+      mapInterviewSchedulePayload(details),
+    );
+  },
+
   async updateApplicantStatus(
     id: string,
     status: Applicant['status'],
@@ -241,9 +273,9 @@ export const employerService = {
     }
   },
 
-  async withdrawAcceptance(referralId: string): Promise<void> {
+  async withdrawAcceptance(referralId: string, remark: string): Promise<void> {
     const store = useEmployerStore.getState();
-    await store.withdrawAcceptance(Number(referralId));
+    await store.withdrawAcceptance(Number(referralId), remark);
   },
 
   async getApplicantsForOpportunity(

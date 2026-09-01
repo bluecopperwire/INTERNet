@@ -652,6 +652,19 @@ async function ensureApplication(
   )) as Array<{ application_id: number }>;
   if (exact.length) return exact[0].application_id;
 
+  if (desired === 'approved_for_referral') {
+    const completed = (await runner.query(
+      `SELECT a.application_id
+       FROM public.application a
+       JOIN public.referral r ON r.application_id = a.application_id
+       WHERE a.student_id = $1 AND a.opportunity_id = $2
+         AND a.application_status = 'closed'
+       ORDER BY a.application_id LIMIT 1`,
+      [studentId, opportunityId],
+    )) as Array<{ application_id: number }>;
+    if (completed.length) return completed[0].application_id;
+  }
+
   const active = (await runner.query(
     `SELECT application_id, application_status FROM public.application
       WHERE student_id = $1 AND opportunity_id = $2
@@ -698,6 +711,11 @@ async function ensureReferral(
   applicationId: number,
   personnelId: number,
 ): Promise<number> {
+  const existing = await manager.query<Array<{ referral_id: number }>>(
+    `SELECT referral_id FROM public.referral WHERE application_id = $1`,
+    [applicationId],
+  );
+  if (existing.length) return existing[0].referral_id;
   return oneId(
     manager,
     `INSERT INTO public.referral
@@ -716,6 +734,7 @@ async function setReferralResponse(
   referralId: number,
   response: 'pending' | 'for_interview' | 'accepted' | 'rejected',
   adminAccountId: number,
+  studentAccepts = false,
 ): Promise<void> {
   const rows = (await runner.query(
     `SELECT referral_status, company_response FROM public.referral
@@ -744,24 +763,44 @@ async function setReferralResponse(
         WHERE referral_id = $1`,
       [referralId, response],
     );
-    await runner.query(
-      `UPDATE public.application a
-          SET student_response = 'accepted', student_responded_at = CURRENT_TIMESTAMP
-         FROM public.referral r
-        WHERE r.referral_id = $1 AND a.application_id = r.application_id`,
-      [referralId],
-    );
+    if (studentAccepts) {
+      await runner.query(
+        `UPDATE public.application a
+            SET student_response = 'accepted', student_responded_at = CURRENT_TIMESTAMP
+           FROM public.referral r
+          WHERE r.referral_id = $1 AND a.application_id = r.application_id`,
+        [referralId],
+      );
+      await runner.query(
+        `UPDATE public.referral SET referral_status = 'closed'
+          WHERE referral_id = $1`,
+        [referralId],
+      );
+      await runner.query(
+        `UPDATE public.application a SET application_status = 'closed'
+          FROM public.referral r
+         WHERE r.referral_id = $1 AND a.application_id = r.application_id`,
+        [referralId],
+      );
+    }
   } else if (response === 'rejected') {
     await runner.query(
       `UPDATE public.referral
           SET referral_status = 'under_review', company_response = $2,
-              company_responded_at = CURRENT_TIMESTAMP
+              company_responded_at = CURRENT_TIMESTAMP,
+              remark = 'The company selected another candidate.'
         WHERE referral_id = $1`,
       [referralId, response],
     );
     await runner.query(
       `UPDATE public.referral SET referral_status = 'closed'
         WHERE referral_id = $1`,
+      [referralId],
+    );
+    await runner.query(
+      `UPDATE public.application a SET application_status = 'closed'
+        FROM public.referral r
+       WHERE r.referral_id = $1 AND a.application_id = r.application_id`,
       [referralId],
     );
   }
@@ -1063,6 +1102,7 @@ async function seedDomain(dataSource: DataSource, ids: SeedIds): Promise<void> {
         referralId,
         'accepted',
         ids.adminAccountId,
+        true,
       );
     }
     await ensureInterview(runner.manager, physicalReferral, 'physical');

@@ -41,6 +41,7 @@ async function main() {
       'InitialSchema1785860400000',
       'ApprovedDatabaseRedesign1787788800000',
       'AddStudentCustomIndustry1788134400000',
+      'ApplicationWorkflowAlignment1788220800000',
     ];
     const recognizedHistoricalMigrations = new Set([
       'AuthAlignmentV31786125600000',
@@ -234,6 +235,81 @@ async function main() {
     `);
     assert.ok(softDeleteIndex.rowCount > 0, 'internship_assignment soft-delete index is required');
     pass('internship-assignment soft-delete index is present');
+
+    const workflowRemarkGaps = await client.query(`
+      SELECT
+        (SELECT count(*)::integer FROM public.application
+         WHERE application_status = 'rejected_for_referral'
+           AND (remark IS NULL OR btrim(remark) = '')) AS applications,
+        (SELECT count(*)::integer FROM public.referral
+         WHERE company_response = 'rejected'
+           AND (remark IS NULL OR btrim(remark) = '')) AS referrals
+    `);
+    assert.deepEqual(workflowRemarkGaps.rows[0], { applications: 0, referrals: 0 });
+    pass('legacy workflow rejection remarks are backfilled');
+
+    const workflowConstraints = await client.query(`
+      SELECT conname FROM pg_constraint
+      WHERE convalidated AND conname IN (
+        'ck_application_rejection_remark_required',
+        'ck_referral_rejection_remark_required'
+      )
+      ORDER BY conname
+    `);
+    assert.deepEqual(workflowConstraints.rows.map((row) => row.conname), [
+      'ck_application_rejection_remark_required',
+      'ck_referral_rejection_remark_required',
+    ]);
+    pass('conditional workflow rejection-remark constraints are validated');
+
+    const visibilityObjects = await client.query(`
+      SELECT
+        (SELECT count(*)::integer FROM information_schema.tables
+         WHERE table_schema = 'public' AND table_name IN (
+           'application_visibility', 'referral_visibility',
+           'internship_assignment_visibility'
+         )) AS tables,
+        (SELECT count(*)::integer FROM pg_indexes
+         WHERE schemaname = 'public' AND indexname IN (
+           'ix_application_visibility_student_hidden',
+           'ix_application_visibility_qc_hidden',
+           'ix_referral_visibility_qc_hidden',
+           'ix_referral_visibility_employer_hidden',
+           'ix_assignment_visibility_student_hidden',
+           'ix_assignment_visibility_employer_hidden'
+         )) AS indexes
+    `);
+    assert.deepEqual(visibilityObjects.rows[0], { tables: 3, indexes: 6 });
+    pass('role-scoped visibility tables and indexes are present');
+
+    const workflowTriggers = await client.query(`
+      SELECT tgname, tgenabled FROM pg_trigger
+      WHERE tgrelid IN ('public.application'::regclass, 'public.referral'::regclass)
+        AND NOT tgisinternal
+    `);
+    assert.ok(workflowTriggers.rowCount > 0, 'application/referral workflow triggers are required');
+    assert.ok(
+      workflowTriggers.rows.every((row) => row.tgenabled !== 'D'),
+      'application/referral workflow triggers must remain enabled',
+    );
+    pass('application and referral workflow triggers remain enabled');
+
+    const alignedFunctions = await client.query(`
+      SELECT p.proname, pg_get_functiondef(p.oid) AS definition
+      FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+      WHERE n.nspname = 'public' AND p.proname IN (
+        'fn_validate_opportunity_transition',
+        'fn_validate_application',
+        'fn_check_referral_consistency'
+      )
+    `);
+    const alignedDefinitions = new Map(
+      alignedFunctions.rows.map((row) => [row.proname, row.definition.toLowerCase()]),
+    );
+    assert.match(alignedDefinitions.get('fn_validate_opportunity_transition'), /open.*closed.*archived/s);
+    assert.match(alignedDefinitions.get('fn_validate_application'), /approved_for_referral.*closed.*withdrawn.*expired/s);
+    assert.match(alignedDefinitions.get('fn_check_referral_consistency'), /accepted.*under_review.*closed.*withdrawn.*expired/s);
+    pass('aligned opportunity, application, and referral functions are installed');
 
     console.log(`\n${passed.length} final-schema validation checks passed.`);
   } finally {

@@ -91,6 +91,7 @@ export function adaptPesoApplication(
     rejected_for_referral: "Rejected",
     withdrawn: "Rejected",
     closed: "Rejected",
+    expired: "Rejected",
   };
 
   const rawStatus = d.applicationStatus || d.application_status;
@@ -130,6 +131,7 @@ export function adaptPesoApplication(
     yearLevel: formatYearLevel(rawYear),
     dateApplied: formattedDate,
     status: statusMap[rawStatus] || "Pending",
+    applicationStatus: rawStatus,
     email: d.studentContactEmail || d.student_contact_email || "N/A",
     phone: d.studentContactNumber || d.student_contact_number || "N/A",
     address,

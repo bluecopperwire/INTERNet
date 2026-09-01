@@ -52,7 +52,7 @@ interface EmployerState {
   fetchReferrals: (params?: any) => Promise<void>;
   acceptReferral: (id: number, remark?: string) => Promise<void>;
   rejectReferral: (id: number, remark?: string) => Promise<void>;
-  withdrawAcceptance: (id: number) => Promise<void>;
+  withdrawAcceptance: (id: number, remark: string) => Promise<void>;
   scheduleInterview: (id: number, payload: any) => Promise<void>;
   fetchInternships: (params?: any) => Promise<void>;
   deleteInternship: (id: number) => Promise<void>;
@@ -227,9 +227,9 @@ export const useEmployerStore = create<EmployerState>((set, get) => ({
     }
   },
 
-  withdrawAcceptance: async (id: number) => {
+  withdrawAcceptance: async (id: number, remark: string) => {
     try {
-      await employerApiService.withdrawAcceptance(id);
+      await employerApiService.withdrawAcceptance(id, remark);
       await get().fetchReferrals();
     } catch (err: any) {
       const norm = normalizeApiError(err);

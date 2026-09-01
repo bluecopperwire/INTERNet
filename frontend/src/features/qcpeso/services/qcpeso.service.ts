@@ -60,14 +60,9 @@ export const qcpesoService = {
     status: QCPesoReviewApplicant['status'],
     remark?: string,
   ): Promise<QCPesoReviewApplicant | null> {
-    const apiStatus =
-      status === 'Accepted' ? 'approved_for_referral' : 'rejected_for_referral';
+    const apiStatus = status === 'Accepted' ? 'approved_for_referral' : 'rejected_for_referral';
     const store = useQCPesoStore.getState();
-    const updated = await store.updateApplicationStatus(
-      Number(id),
-      apiStatus,
-      remark,
-    );
+    const updated = await store.updateApplicationStatus(Number(id), apiStatus, remark);
     return updated;
   },
 
@@ -147,10 +142,12 @@ export const qcpesoService = {
 
   async createEmployer(payload: CreateEmployerPayload): Promise<void> {
     const industries = await referenceService.getIndustries();
-    const normalize = (v: string) => v.toLowerCase().replace(/\s*\/\s*/g, '/').trim();
-    const match = industries.find(
-      (item) => normalize(item.industryName) === normalize(payload.industry),
-    );
+    const normalize = (v: string) =>
+      v
+        .toLowerCase()
+        .replace(/\s*\/\s*/g, '/')
+        .trim();
+    const match = industries.find((item) => normalize(item.industryName) === normalize(payload.industry));
     if (!match) {
       throw new Error(`Unknown industry: ${payload.industry}`);
     }
@@ -208,17 +205,13 @@ export const qcpesoService = {
       school: a.school,
       program: a.program,
       date: a.dateApplied,
-      status:
-        a.status === 'Accepted'
-          ? 'Verified'
-          : a.status === 'Rejected'
-            ? 'Rejected'
-            : 'Pending',
+      status: a.status === 'Accepted' ? 'Verified' : a.status === 'Rejected' ? 'Rejected' : 'Pending',
       email: a.email,
       phone: a.phone,
       gwa: 'N/A',
       submittedDocuments: [],
       appliedFor: a.jobTitle,
+      applicationStatus: a.applicationStatus,
     }));
   },
 

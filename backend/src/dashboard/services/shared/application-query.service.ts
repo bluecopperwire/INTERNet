@@ -13,9 +13,13 @@ export class ApplicationQueryService {
     queryDto: QueryApplicationsDto,
     paginationDto: PaginationDto,
     companyId?: number,
+    excludeQcPesoHidden = false,
   ): Promise<PaginatedResponse<any>> {
     const page = Math.max(1, Number(paginationDto?.page) || 1);
-    const limit = Math.max(1, Math.min(100, Number(paginationDto?.limit) || 20));
+    const limit = Math.max(
+      1,
+      Math.min(100, Number(paginationDto?.limit) || 20),
+    );
     const offset = (page - 1) * limit;
 
     const whereClauses: string[] = [];
@@ -23,12 +27,12 @@ export class ApplicationQueryService {
     let paramIndex = 1;
 
     if (companyId) {
-      whereClauses.push(`company_id = $${paramIndex++}`);
+      whereClauses.push(`ad.company_id = $${paramIndex++}`);
       params.push(companyId);
     }
 
     if (queryDto.status) {
-      whereClauses.push(`application_status = $${paramIndex++}`);
+      whereClauses.push(`ad.application_status = $${paramIndex++}`);
       params.push(queryDto.status);
     }
 
@@ -39,16 +43,24 @@ export class ApplicationQueryService {
     );
 
     if (boundaries) {
-      whereClauses.push(`submitted_at >= $${paramIndex++}`);
+      whereClauses.push(`ad.submitted_at >= $${paramIndex++}`);
       params.push(boundaries.start.toISOString());
-      whereClauses.push(`submitted_at <= $${paramIndex++}`);
+      whereClauses.push(`ad.submitted_at <= $${paramIndex++}`);
       params.push(boundaries.end.toISOString());
+    }
+
+    if (excludeQcPesoHidden) {
+      whereClauses.push(`NOT EXISTS (
+        SELECT 1 FROM public.application_visibility av
+        WHERE av.application_id = ad.application_id
+          AND av.qc_peso_hidden_at IS NOT NULL
+      )`);
     }
 
     const whereSql =
       whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
-    const countSql = `SELECT COUNT(*) AS count FROM public.vw_application_details ${whereSql}`;
+    const countSql = `SELECT COUNT(*) AS count FROM public.vw_application_details ad ${whereSql}`;
     const countResult = await this.dataSource.query(countSql, params);
     const total = Number(countResult[0]?.count || 0);
 
@@ -77,7 +89,7 @@ export class ApplicationQueryService {
         company_response AS "companyResponse",
         internship_assignment_id AS "internshipAssignmentId",
         assignment_status AS "assignmentStatus"
-      FROM public.vw_application_details
+      FROM public.vw_application_details ad
       ${whereSql}
       ORDER BY submitted_at DESC
       LIMIT $${paramIndex++} OFFSET $${paramIndex++}

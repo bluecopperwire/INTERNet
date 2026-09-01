@@ -22,11 +22,12 @@ export function ReviewApplicantPage() {
 
   useEffect(() => {
     if (!id) return
-    employerService.getApplicantById(id).then((data) => {
-      setApplicant(data ?? null)
-      setIsLoading(false)
-    })
-  }, [id])
+    employerService.markApplicantUnderReview(id)
+      .then(() => employerService.getApplicantById(id))
+      .then((data) => setApplicant(data ?? null))
+      .catch((error: unknown) => toast.error(getErrorMessage(error, 'Failed to load applicant details.')))
+      .finally(() => setIsLoading(false))
+  }, [id, toast])
 
   const statusClass = (status: Applicant['status']) => {
     if (status === 'Accepted' || status === 'Shortlisted') return styles.accepted
@@ -51,8 +52,19 @@ export function ReviewApplicantPage() {
     }
   }
 
-  const handleScheduleInterview = async () => {
-    await updateStatus('For Interview')
+  const handleScheduleInterview = async (details: { date: string; time: string; mode: 'online' | 'in-person'; meetingUrl?: string; location?: string; remarks: string }) => {
+    if (!applicant || isSaving) return
+    setIsSaving(true)
+    try {
+      await employerService.scheduleInterview(applicant.id, details)
+      setApplicant((current) => current ? { ...current, status: 'For Interview' } : current)
+      setShowScheduleInterview(false)
+      toast.success('Interview scheduled.')
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to schedule interview.'))
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleReject = async (remark: string) => {

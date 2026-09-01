@@ -30,8 +30,7 @@ export const applicationsService = {
     return useStudentTrackingStore.getState().selectedApplication!;
   },
 
-  async deleteApplication(_applicationId: string): Promise<void> {
-    // Delete is not supported in backend; rejected/withdrawn apps remain as audit records
-    return Promise.resolve();
+  async deleteApplication(applicationId: string): Promise<void> {
+    await useStudentTrackingStore.getState().hideApplication(Number(applicationId));
   },
 };

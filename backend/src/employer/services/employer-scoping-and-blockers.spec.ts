@@ -194,7 +194,9 @@ describe('employer scoping and DB migration blockers', () => {
 
     const service = new EmployerReferralService(dataSource, resolver());
     jest.spyOn(service, 'getById').mockResolvedValue({ referralId: 2 } as any);
-    const result = await service.withdrawAcceptance(310, 2);
+    const result = await service.withdrawAcceptance(310, 2, {
+      remark: 'The internship slot was withdrawn.',
+    });
     expect(result).toBeDefined();
   });
 
@@ -231,4 +233,3 @@ describe('employer scoping and DB migration blockers', () => {
     expect(result).toEqual({ deleted: true, internshipAssignmentId: 3 });
   });
 });
-

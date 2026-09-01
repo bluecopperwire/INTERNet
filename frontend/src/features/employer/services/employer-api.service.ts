@@ -95,6 +95,11 @@ export const employerApiService = {
     return response.data;
   },
 
+  async markReferralUnderReview(referralId: number): Promise<any> {
+    const response = await api.patch(`/employer/referrals/${referralId}/review`, {});
+    return response.data;
+  },
+
   async acceptReferral(referralId: number, remark?: string): Promise<any> {
     const response = await api.patch(`/employer/referrals/${referralId}/accept`, {
       remark,
@@ -109,10 +114,10 @@ export const employerApiService = {
     return response.data;
   },
 
-  async withdrawAcceptance(referralId: number): Promise<any> {
+  async withdrawAcceptance(referralId: number, remark: string): Promise<any> {
     const response = await api.patch(
       `/employer/referrals/${referralId}/withdraw-acceptance`,
-      {},
+      { remark },
     );
     return response.data;
   },
@@ -123,6 +128,10 @@ export const employerApiService = {
       payload,
     );
     return response.data;
+  },
+
+  async hideReferral(referralId: number): Promise<void> {
+    await api.delete(`/employer/referrals/${referralId}`);
   },
 
   async getAssignmentCandidates(params?: { page?: number; limit?: number; search?: string; studentResponse?: 'pending' | 'accepted' | 'declined' }): Promise<PaginatedResponse<EmployerAssignmentCandidateDto>> {

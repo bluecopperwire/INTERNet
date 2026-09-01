@@ -8,6 +8,7 @@ import styles from './InternshipWorkflowPages.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
 import { todayDateOnly } from '../../../utils/date-only'
+import { RejectApplicantModal } from '../components/RejectApplicantModal'
 
 export function CreateInternshipAssignmentPage() {
   const navigate = useNavigate()
@@ -97,6 +98,7 @@ export function ReviewInternshipAssignmentPage() {
   const [assignment, setAssignment] = useState<InternshipAssignment | null>(null)
   const [loading, setLoading] = useState(true)
   const [isWithdrawing, setIsWithdrawing] = useState(false)
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false)
   const [formData, setFormData] = useState(createEmptyAssignmentForm)
   const toast = useToastStore()
 
@@ -119,19 +121,13 @@ export function ReviewInternshipAssignmentPage() {
     isWithdrawing,
   })
 
-  const handleWithdrawAcceptance = async () => {
+  const handleWithdrawAcceptance = async (remark: string) => {
     if (!assignment.id) return
-    if (
-      !window.confirm(
-        'Are you sure you want to withdraw acceptance for this candidate? This will transition the referral to rejected status.',
-      )
-    ) {
-      return
-    }
     setIsWithdrawing(true)
     try {
-      await employerService.withdrawAcceptance(assignment.id)
+      await employerService.withdrawAcceptance(assignment.id, remark)
       toast.success('Candidate acceptance withdrawn.')
+      setShowWithdrawModal(false)
       navigate('/employer/internship-assignments')
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, 'Failed to withdraw acceptance. The student may have already responded.'))
@@ -172,7 +168,7 @@ export function ReviewInternshipAssignmentPage() {
                   type="button"
                   className={styles.withdrawInternshipButton}
                   disabled={isWithdrawing}
-                  onClick={handleWithdrawAcceptance}
+                  onClick={() => setShowWithdrawModal(true)}
                 >
                   {isWithdrawing ? 'Withdrawing...' : 'Withdraw Acceptance'}
                 </button>
@@ -181,6 +177,7 @@ export function ReviewInternshipAssignmentPage() {
           </form>
         </section>
       </div>
+      {showWithdrawModal && <RejectApplicantModal applicantName={assignment.studentName} title="Withdraw Acceptance" description="Explain why the accepted offer is being reversed. This closes the application as rejected." confirmLabel="Withdraw Acceptance" isSaving={isWithdrawing} onClose={() => setShowWithdrawModal(false)} onConfirm={(remark) => void handleWithdrawAcceptance(remark)} />}
     </main>
   )
 }

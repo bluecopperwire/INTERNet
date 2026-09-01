@@ -412,16 +412,14 @@ export class EmployerInternshipService {
     return this.getById(userAccountId, internshipAssignmentId);
   }
 
-  async softDelete(
-    userAccountId: number,
-    internshipAssignmentId: number,
-  ) {
+  async softDelete(userAccountId: number, internshipAssignmentId: number) {
     const company = await this.companyResolver.resolve(userAccountId);
     await withStatusActor(this.dataSource, userAccountId, async (runner) => {
       const row = await this.findAssignmentScoped(
         runner,
         company.companyId,
         internshipAssignmentId,
+        true,
         true,
       );
       if (
@@ -434,10 +432,14 @@ export class EmployerInternshipService {
         );
       }
       await runner.query(
-        `UPDATE public.internship_assignment
-         SET deleted_at = CURRENT_TIMESTAMP
-         WHERE internship_assignment_id = $1`,
-        [internshipAssignmentId],
+        `INSERT INTO public.internship_assignment_visibility (
+           internship_assignment_id, employer_hidden_at,
+           employer_hidden_by_user_account_id
+         ) VALUES ($1, CURRENT_TIMESTAMP, $2)
+         ON CONFLICT (internship_assignment_id) DO UPDATE SET
+           employer_hidden_at = COALESCE(public.internship_assignment_visibility.employer_hidden_at, EXCLUDED.employer_hidden_at),
+           employer_hidden_by_user_account_id = COALESCE(public.internship_assignment_visibility.employer_hidden_by_user_account_id, EXCLUDED.employer_hidden_by_user_account_id)`,
+        [internshipAssignmentId, userAccountId],
       );
     });
     return { internshipAssignmentId, deleted: true };
@@ -475,6 +477,11 @@ export class EmployerInternshipService {
         JOIN public.student s ON s.student_id = a.student_id
         WHERE c.company_id = $1
           AND ia.deleted_at IS NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM public.internship_assignment_visibility iav
+            WHERE iav.internship_assignment_id = ia.internship_assignment_id
+              AND iav.employer_hidden_at IS NOT NULL
+          )
           AND ($2::text IS NULL OR concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) ILIKE '%' || $2 || '%' OR o.title ILIKE '%' || $2 || '%')
         ORDER BY ia.created_at DESC, ia.internship_assignment_id DESC
       `,
@@ -487,6 +494,7 @@ export class EmployerInternshipService {
     companyId: number,
     internshipAssignmentId: number,
     forUpdate = false,
+    includeHidden = false,
   ): Promise<AssignmentRow> {
     const rows: AssignmentRow[] = await executor.query(
       `
@@ -506,6 +514,15 @@ export class EmployerInternshipService {
         JOIN public.student s ON s.student_id = a.student_id
         WHERE ia.internship_assignment_id = $1 AND c.company_id = $2
           AND ia.deleted_at IS NULL
+          ${
+            includeHidden
+              ? ''
+              : `AND NOT EXISTS (
+            SELECT 1 FROM public.internship_assignment_visibility iav
+            WHERE iav.internship_assignment_id = ia.internship_assignment_id
+              AND iav.employer_hidden_at IS NOT NULL
+          )`
+          }
         ${forUpdate ? 'FOR UPDATE OF ia' : ''}
       `,
       [internshipAssignmentId, companyId],

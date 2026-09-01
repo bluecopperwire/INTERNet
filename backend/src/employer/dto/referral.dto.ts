@@ -72,11 +72,10 @@ export class ScheduleInterviewDto {
 }
 
 export class RejectReferralDto {
-  @IsOptional()
   @NullableTrim()
   @IsString()
   @IsNotEmpty()
-  remark?: string | null;
+  remark!: string;
 }
 
 export class AssignmentCandidateQueryDto extends EmployerPaginationDto {

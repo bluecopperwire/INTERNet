@@ -165,6 +165,13 @@ export const studentApiService = {
     return response.data;
   },
 
+  async hideApplication(
+    studentId: number,
+    applicationId: number,
+  ): Promise<void> {
+    await api.delete(`/students/${studentId}/applications/${applicationId}`);
+  },
+
   async getAttendance(
     studentId: number,
     params?: { startDate?: string; endDate?: string },

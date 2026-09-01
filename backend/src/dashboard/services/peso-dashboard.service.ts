@@ -98,7 +98,12 @@ export class PesoDashboardService {
     queryDto: QueryApplicationsDto,
     paginationDto: PaginationDto,
   ): Promise<PaginatedResponse<any>> {
-    return this.applicationQuery.getApplications(queryDto, paginationDto);
+    return this.applicationQuery.getApplications(
+      queryDto,
+      paginationDto,
+      undefined,
+      true,
+    );
   }
 
   // A3. Application management dashboard metrics
@@ -111,7 +116,13 @@ export class PesoDashboardService {
       dateFilterDto.endDate,
     );
 
-    const whereClauses: string[] = [];
+    const whereClauses: string[] = [
+      `NOT EXISTS (
+        SELECT 1 FROM public.referral_visibility rv
+        WHERE rv.referral_id = rd.referral_id
+          AND rv.qc_peso_hidden_at IS NOT NULL
+      )`,
+    ];
     const params: any[] = [];
     let paramIndex = 1;
 
@@ -281,7 +292,7 @@ export class PesoDashboardService {
     let paramIndex = 1;
 
     if (queryDto.companyResponse) {
-      whereClauses.push(`company_response = $${paramIndex++}`);
+      whereClauses.push(`rd.company_response = $${paramIndex++}`);
       params.push(queryDto.companyResponse);
     }
 
@@ -292,16 +303,16 @@ export class PesoDashboardService {
     );
 
     if (boundaries) {
-      whereClauses.push(`referred_at >= $${paramIndex++}`);
+      whereClauses.push(`rd.referred_at >= $${paramIndex++}`);
       params.push(boundaries.start.toISOString());
-      whereClauses.push(`referred_at <= $${paramIndex++}`);
+      whereClauses.push(`rd.referred_at <= $${paramIndex++}`);
       params.push(boundaries.end.toISOString());
     }
 
     const whereSql =
       whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
-    const countSql = `SELECT COUNT(*) AS count FROM public.vw_referral_details ${whereSql}`;
+    const countSql = `SELECT COUNT(*) AS count FROM public.vw_referral_details rd ${whereSql}`;
     const countRes = await this.dataSource.query(countSql, params);
     const total = Number(countRes[0]?.count || 0);
 
@@ -331,7 +342,7 @@ export class PesoDashboardService {
         interview_mode AS "interviewMode",
         internship_assignment_id AS "internshipAssignmentId",
         assignment_status AS "assignmentStatus"
-      FROM public.vw_referral_details
+      FROM public.vw_referral_details rd
       ${whereSql}
       ORDER BY referred_at DESC
       LIMIT $${paramIndex++} OFFSET $${paramIndex++}
@@ -456,6 +467,11 @@ export class PesoDashboardService {
         JOIN public.student s ON s.student_id = ad.student_id
         LEFT JOIN public.internship_preference ip ON ip.student_id = ad.student_id
         WHERE ad.application_id = $1
+          AND NOT EXISTS (
+            SELECT 1 FROM public.application_visibility av
+            WHERE av.application_id = ad.application_id
+              AND av.qc_peso_hidden_at IS NOT NULL
+          )
       `,
       [applicationId],
     );
@@ -504,6 +520,91 @@ export class PesoDashboardService {
       .join(' ');
   }
 
+  async markApplicationUnderReview(
+    userAccountId: number,
+    applicationId: number,
+  ) {
+    await withStatusActor(this.dataSource, userAccountId, async (runner) => {
+      const rows = await runner.query(
+        `SELECT application_status
+         FROM public.application
+         WHERE application_id = $1
+         FOR UPDATE`,
+        [applicationId],
+      );
+      if (!rows[0]) throw new NotFoundException('Application not found');
+      if (rows[0].application_status === 'submitted') {
+        await runner.query(
+          `UPDATE public.application
+           SET application_status = 'under_review', updated_at = CURRENT_TIMESTAMP
+           WHERE application_id = $1`,
+          [applicationId],
+        );
+      } else if (rows[0].application_status !== 'under_review') {
+        throw new ConflictException(
+          `Application is already in '${rows[0].application_status}' status.`,
+        );
+      }
+    });
+    return this.getApplicationDetail(applicationId);
+  }
+
+  async hideApplication(userAccountId: number, applicationId: number) {
+    await withStatusActor(this.dataSource, userAccountId, async (runner) => {
+      const rows = await runner.query(
+        `SELECT application_status FROM public.application
+         WHERE application_id = $1 FOR UPDATE`,
+        [applicationId],
+      );
+      if (!rows[0]) throw new NotFoundException('Application not found');
+      if (
+        !['rejected_for_referral', 'closed', 'withdrawn', 'expired'].includes(
+          rows[0].application_status,
+        )
+      ) {
+        throw new ConflictException(
+          'Only terminal applications can be hidden.',
+        );
+      }
+      await runner.query(
+        `INSERT INTO public.application_visibility (
+           application_id, qc_peso_hidden_at, qc_peso_hidden_by_user_account_id
+         ) VALUES ($1, CURRENT_TIMESTAMP, $2)
+         ON CONFLICT (application_id) DO UPDATE SET
+           qc_peso_hidden_at = COALESCE(public.application_visibility.qc_peso_hidden_at, EXCLUDED.qc_peso_hidden_at),
+           qc_peso_hidden_by_user_account_id = COALESCE(public.application_visibility.qc_peso_hidden_by_user_account_id, EXCLUDED.qc_peso_hidden_by_user_account_id)`,
+        [applicationId, userAccountId],
+      );
+    });
+    return { applicationId, hidden: true };
+  }
+
+  async hideReferral(userAccountId: number, referralId: number) {
+    await withStatusActor(this.dataSource, userAccountId, async (runner) => {
+      const rows = await runner.query(
+        `SELECT referral_status FROM public.referral
+         WHERE referral_id = $1 FOR UPDATE`,
+        [referralId],
+      );
+      if (!rows[0]) throw new NotFoundException('Referral not found');
+      if (
+        !['closed', 'withdrawn', 'expired'].includes(rows[0].referral_status)
+      ) {
+        throw new ConflictException('Only terminal referrals can be hidden.');
+      }
+      await runner.query(
+        `INSERT INTO public.referral_visibility (
+           referral_id, qc_peso_hidden_at, qc_peso_hidden_by_user_account_id
+         ) VALUES ($1, CURRENT_TIMESTAMP, $2)
+         ON CONFLICT (referral_id) DO UPDATE SET
+           qc_peso_hidden_at = COALESCE(public.referral_visibility.qc_peso_hidden_at, EXCLUDED.qc_peso_hidden_at),
+           qc_peso_hidden_by_user_account_id = COALESCE(public.referral_visibility.qc_peso_hidden_by_user_account_id, EXCLUDED.qc_peso_hidden_by_user_account_id)`,
+        [referralId, userAccountId],
+      );
+    });
+    return { referralId, hidden: true };
+  }
+
   async updateApplicationStatus(
     userAccountId: number,
     applicationId: number,
@@ -517,6 +618,13 @@ export class PesoDashboardService {
       throw new BadRequestException(
         'Status must be approved_for_referral or rejected_for_referral',
       );
+    }
+    const rejectionRemark = dto.remark?.trim();
+    if (
+      dto.status === ApplicationStatusFilter.REJECTED_FOR_REFERRAL &&
+      !rejectionRemark
+    ) {
+      throw new BadRequestException('A rejection remark is required.');
     }
 
     let pendingEmailPayload: ReferralEmailPayload | null = null;
@@ -580,7 +688,7 @@ export class PesoDashboardService {
             updated_at = CURRENT_TIMESTAMP
           WHERE application_id = $3
         `,
-        [dto.status, dto.remark || null, applicationId],
+        [dto.status, rejectionRemark || null, applicationId],
       );
 
       if (dto.status === ApplicationStatusFilter.APPROVED_FOR_REFERRAL) {
@@ -739,6 +847,11 @@ export class PesoDashboardService {
         FROM public.vw_referral_details referral_details
         JOIN public.student s ON s.student_id = referral_details.student_id
         WHERE referral_details.referral_id = $1
+          AND NOT EXISTS (
+            SELECT 1 FROM public.referral_visibility rv
+            WHERE rv.referral_id = referral_details.referral_id
+              AND rv.qc_peso_hidden_at IS NOT NULL
+          )
       `,
       [referralId],
     );

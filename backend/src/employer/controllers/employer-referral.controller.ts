@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -44,6 +45,14 @@ export class EmployerReferralController {
     @Param('referralId', ParseIntPipe) referralId: number,
   ) {
     return this.referralService.getById(user.userAccountId, referralId);
+  }
+
+  @Patch(':referralId/review')
+  review(
+    @CurrentUser() user: EmployerCurrentUser,
+    @Param('referralId', ParseIntPipe) referralId: number,
+  ) {
+    return this.referralService.markUnderReview(user.userAccountId, referralId);
   }
 
   @Patch(':referralId/accept')
@@ -97,10 +106,20 @@ export class EmployerReferralController {
   withdrawAcceptance(
     @CurrentUser() user: EmployerCurrentUser,
     @Param('referralId', ParseIntPipe) referralId: number,
+    @Body() dto: RejectReferralDto,
   ) {
     return this.referralService.withdrawAcceptance(
       user.userAccountId,
       referralId,
+      dto,
     );
+  }
+
+  @Delete(':referralId')
+  hide(
+    @CurrentUser() user: EmployerCurrentUser,
+    @Param('referralId', ParseIntPipe) referralId: number,
+  ) {
+    return this.referralService.hide(user.userAccountId, referralId);
   }
 }

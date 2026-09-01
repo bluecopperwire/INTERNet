@@ -79,6 +79,32 @@ export class EmployerReferralService {
     return this.mapDetail(row, documents);
   }
 
+  async markUnderReview(userAccountId: number, referralId: number) {
+    const company = await this.companyResolver.resolve(userAccountId);
+    await withStatusActor(this.dataSource, userAccountId, async (runner) => {
+      const row = await this.findScoped(
+        runner,
+        company.companyId,
+        referralId,
+        true,
+      );
+      if (
+        row.referral_status === 'sent' &&
+        row.company_response === 'pending'
+      ) {
+        await runner.query(
+          `UPDATE public.referral
+           SET referral_status = 'under_review', updated_at = CURRENT_TIMESTAMP
+           WHERE referral_id = $1`,
+          [referralId],
+        );
+      } else if (row.referral_status !== 'under_review') {
+        throw new ConflictException('Referral is not in a reviewable state.');
+      }
+    });
+    return this.getById(userAccountId, referralId);
+  }
+
   async accept(userAccountId: number, referralId: number) {
     const company = await this.companyResolver.resolve(userAccountId);
     await withStatusActor(this.dataSource, userAccountId, async (runner) => {
@@ -206,6 +232,19 @@ export class EmployerReferralService {
     referralId: number,
     dto: RejectReferralDto,
   ) {
+    return this.rejectWithPolicy(userAccountId, referralId, dto, false);
+  }
+
+  private async rejectWithPolicy(
+    userAccountId: number,
+    referralId: number,
+    dto: RejectReferralDto,
+    acceptedOnly: boolean,
+  ) {
+    const remark = dto.remark?.trim();
+    if (!remark) {
+      throw new BadRequestException('A rejection remark is required.');
+    }
     const company = await this.companyResolver.resolve(userAccountId);
     await withStatusActor(this.dataSource, userAccountId, async (runner) => {
       const row = await this.findScoped(
@@ -214,11 +253,26 @@ export class EmployerReferralService {
         referralId,
         true,
       );
+      if (acceptedOnly && row.company_response !== 'accepted') {
+        throw new ConflictException(
+          'Only an accepted referral can be withdrawn.',
+        );
+      }
       if (
-        !['pending', 'for_interview'].includes(String(row.company_response))
+        !['pending', 'for_interview', 'accepted'].includes(
+          String(row.company_response),
+        )
       ) {
         throw new ConflictException(
           'Only pending or for_interview referrals can be rejected.',
+        );
+      }
+      if (
+        row.company_response === 'accepted' &&
+        row.student_response !== 'pending'
+      ) {
+        throw new ConflictException(
+          'An accepted offer cannot be reversed after the student responds.',
         );
       }
       if (row.referral_status === 'sent') {
@@ -238,7 +292,13 @@ export class EmployerReferralService {
               remark = $2
           WHERE referral_id = $1
         `,
-        [referralId, dto.remark ?? null],
+        [referralId, remark],
+      );
+      await runner.query(
+        `UPDATE public.application
+         SET application_status = 'closed', updated_at = CURRENT_TIMESTAMP
+         WHERE application_id = $1`,
+        [row.application_id],
       );
     });
     return this.getById(userAccountId, referralId);
@@ -247,7 +307,12 @@ export class EmployerReferralService {
   async withdrawAcceptance(
     userAccountId: number,
     referralId: number,
+    dto: RejectReferralDto,
   ) {
+    return this.rejectWithPolicy(userAccountId, referralId, dto, true);
+  }
+
+  async hide(userAccountId: number, referralId: number) {
     const company = await this.companyResolver.resolve(userAccountId);
     await withStatusActor(this.dataSource, userAccountId, async (runner) => {
       const row = await this.findScoped(
@@ -255,27 +320,26 @@ export class EmployerReferralService {
         company.companyId,
         referralId,
         true,
+        true,
       );
-      if (row.company_response !== 'accepted') {
-        throw new ConflictException(
-          'Only an accepted referral can be withdrawn.',
-        );
-      }
-      if (row.student_response !== 'pending') {
-        throw new ConflictException(
-          'Acceptance cannot be withdrawn after the student has responded.',
-        );
+      if (
+        !['closed', 'withdrawn', 'expired'].includes(
+          String(row.referral_status),
+        )
+      ) {
+        throw new ConflictException('Only terminal referrals can be hidden.');
       }
       await runner.query(
-        `UPDATE public.referral
-         SET referral_status = 'closed',
-             company_response = 'rejected',
-             company_responded_at = CURRENT_TIMESTAMP
-         WHERE referral_id = $1`,
-        [referralId],
+        `INSERT INTO public.referral_visibility (
+           referral_id, employer_hidden_at, employer_hidden_by_user_account_id
+         ) VALUES ($1, CURRENT_TIMESTAMP, $2)
+         ON CONFLICT (referral_id) DO UPDATE SET
+           employer_hidden_at = COALESCE(public.referral_visibility.employer_hidden_at, EXCLUDED.employer_hidden_at),
+           employer_hidden_by_user_account_id = COALESCE(public.referral_visibility.employer_hidden_by_user_account_id, EXCLUDED.employer_hidden_by_user_account_id)`,
+        [referralId, userAccountId],
       );
     });
-    return this.getById(userAccountId, referralId);
+    return { referralId, hidden: true };
   }
 
   async getDocumentDownload(
@@ -367,6 +431,11 @@ export class EmployerReferralService {
         JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
         JOIN public.student s ON s.student_id = a.student_id
         WHERE o.company_id = $1
+          AND NOT EXISTS (
+            SELECT 1 FROM public.referral_visibility rv
+            WHERE rv.referral_id = r.referral_id
+              AND rv.employer_hidden_at IS NOT NULL
+          )
           AND ($2::text IS NULL OR r.company_response::text = $2)
           AND ($3::text IS NULL OR concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) ILIKE '%' || $3 || '%' OR o.title ILIKE '%' || $3 || '%')
           AND ($4::integer IS NULL OR o.opportunity_id = $4)
@@ -388,6 +457,11 @@ export class EmployerReferralService {
         JOIN public.student s ON s.student_id = a.student_id
         LEFT JOIN public.student_academic_information sai ON sai.student_id = s.student_id
         WHERE o.company_id = $1
+          AND NOT EXISTS (
+            SELECT 1 FROM public.referral_visibility rv
+            WHERE rv.referral_id = r.referral_id
+              AND rv.employer_hidden_at IS NOT NULL
+          )
           AND ($2::text IS NULL OR r.company_response::text = $2)
           AND ($3::text IS NULL OR concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) ILIKE '%' || $3 || '%' OR o.title ILIKE '%' || $3 || '%')
           AND ($4::integer IS NULL OR o.opportunity_id = $4)
@@ -420,12 +494,13 @@ export class EmployerReferralService {
     companyId: number,
     referralId: number,
     forUpdate = false,
+    includeHidden = false,
   ): Promise<ReferralRow> {
     const rows: ReferralRow[] = await executor.query(
       `
         SELECT r.referral_id, r.referral_status, r.company_response,
                r.company_responded_at, r.remark AS referral_remark,
-               a.application_id, a.submitted_at, a.student_response,
+               a.application_id, a.application_status, a.submitted_at, a.student_response,
                s.student_id,
                concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS student_full_name,
                s.contact_email, s.contact_number, s.address_line,
@@ -446,7 +521,16 @@ export class EmployerReferralService {
         LEFT JOIN public.internship_preference ip ON ip.student_id = s.student_id
         LEFT JOIN public.interview iv ON iv.referral_id = r.referral_id
         WHERE r.referral_id = $1 AND o.company_id = $2
-        ${forUpdate ? 'FOR UPDATE OF r' : ''}
+          ${
+            includeHidden
+              ? ''
+              : `AND NOT EXISTS (
+            SELECT 1 FROM public.referral_visibility rv
+            WHERE rv.referral_id = r.referral_id
+              AND rv.employer_hidden_at IS NOT NULL
+          )`
+          }
+        ${forUpdate ? 'FOR UPDATE OF r, a' : ''}
       `,
       [referralId, companyId],
     );

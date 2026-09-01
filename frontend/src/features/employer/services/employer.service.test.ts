@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   canWithdrawCandidate,
+  mapInterviewSchedulePayload,
   mapAssignmentCandidate,
   mapStudentResponse,
 } from './employer.service';
@@ -48,5 +49,29 @@ describe('assignment candidate mapping', () => {
     expect(canWithdrawCandidate({ studentResponse: 'Declined', internshipAssignmentId: null })).toBe(false);
     expect(canWithdrawCandidate({ studentResponse: 'Unknown', internshipAssignmentId: null })).toBe(false);
     expect(canWithdrawCandidate({ studentResponse: 'Pending Response', internshipAssignmentId: 99 })).toBe(false);
+  });
+});
+
+describe('interview schedule payload mapping', () => {
+  it('sends the online URL and clears the physical location', () => {
+    expect(mapInterviewSchedulePayload({
+      date: '2026-09-20', time: '10:00', mode: 'online',
+      meetingUrl: 'https://meet.example.test/interview',
+      location: 'stale location', remarks: ' Prepare ',
+    })).toEqual({
+      interviewDate: '2026-09-20', interviewTime: '10:00', interviewMode: 'online',
+      onlineMeetingUrl: 'https://meet.example.test/interview',
+      physicalLocation: null, remark: 'Prepare',
+    });
+  });
+
+  it('sends the physical location and clears the online URL', () => {
+    expect(mapInterviewSchedulePayload({
+      date: '2026-09-21', time: '11:00', mode: 'in-person',
+      meetingUrl: 'https://stale.example.test', location: 'Room 3', remarks: '',
+    })).toEqual({
+      interviewDate: '2026-09-21', interviewTime: '11:00', interviewMode: 'physical',
+      onlineMeetingUrl: null, physicalLocation: 'Room 3', remark: null,
+    });
   });
 });

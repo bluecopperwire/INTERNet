@@ -31,6 +31,7 @@ interface StudentTrackingState {
   fetchApplicationStatus: (applicationId: number) => Promise<UserApplication | null>;
   submitOfferResponse: (applicationId: number, choice: 'accepted' | 'declined') => Promise<void>;
   withdrawApplication: (applicationId: number) => Promise<void>;
+  hideApplication: (applicationId: number) => Promise<void>;
 
   fetchRequirements: () => Promise<void>;
   uploadRequirement: (file: File, type: string, name: string) => Promise<void>;
@@ -124,6 +125,25 @@ export const useStudentTrackingStore = create<StudentTrackingState>((set, get) =
     } catch (err: any) {
       const norm = normalizeApiError(err);
       throw norm;
+    }
+  },
+
+  hideApplication: async (applicationId: number) => {
+    const studentId = useAuthStore.getState().user?.studentId;
+    if (!studentId) throw new Error('Student ID not found');
+    try {
+      await studentApiService.hideApplication(studentId, applicationId);
+      set((state) => ({
+        applications: state.applications.filter(
+          (application) => application.id !== String(applicationId),
+        ),
+        selectedApplication:
+          state.selectedApplication?.id === String(applicationId)
+            ? null
+            : state.selectedApplication,
+      }));
+    } catch (err: unknown) {
+      throw normalizeApiError(err);
     }
   },
 

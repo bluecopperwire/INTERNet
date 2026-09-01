@@ -61,20 +61,14 @@ export class EmployerOpportunityService {
     );
   }
 
-  async create(
-    userAccountId: number,
-    dto: CreateOpportunityDto,
-  ) {
+  async create(userAccountId: number, dto: CreateOpportunityDto) {
     const company = await this.companyResolver.resolve(userAccountId);
     assertValidDate(dto.applicationDeadline, 'applicationDeadline');
     if (dto.applicationDeadline <= currentManilaDate()) {
       throw new ConflictException('applicationDeadline must be in the future.');
     }
 
-    const allowance = this.normalizeAllowance(
-      dto.allowance,
-      dto.hasAllowance,
-    );
+    const allowance = this.normalizeAllowance(dto.allowance, dto.hasAllowance);
 
     let createdId: number;
     await withStatusActor(this.dataSource, userAccountId, async (runner) => {
@@ -130,14 +124,20 @@ export class EmployerOpportunityService {
     dto: UpdateOpportunityDto,
   ) {
     const company = await this.companyResolver.resolve(userAccountId);
-    const existing = await this.findScoped(this.dataSource, company.companyId, opportunityId);
+    const existing = await this.findScoped(
+      this.dataSource,
+      company.companyId,
+      opportunityId,
+    );
     if (existing.opportunity_status === 'archived') {
       throw new ConflictException('Archived opportunities cannot be edited.');
     }
     if (dto.applicationDeadline) {
       assertValidDate(dto.applicationDeadline, 'applicationDeadline');
       if (dto.applicationDeadline <= currentManilaDate()) {
-        throw new ConflictException('applicationDeadline must be in the future.');
+        throw new ConflictException(
+          'applicationDeadline must be in the future.',
+        );
       }
     }
 
@@ -238,16 +238,73 @@ export class EmployerOpportunityService {
         true,
       );
       if (row.opportunity_status === 'archived') return;
-      if (row.opportunity_status === 'open') {
-        await runner.query(
-          `UPDATE public.opportunity SET opportunity_status = 'closed' WHERE opportunity_id = $1`,
-          [opportunityId],
-        );
-      }
       await runner.query(
         `UPDATE public.opportunity SET opportunity_status = 'archived' WHERE opportunity_id = $1`,
         [opportunityId],
       );
+
+      const applications: OpportunityRow[] = await runner.query(
+        `SELECT a.application_id, a.application_status
+         FROM public.application a
+         WHERE a.opportunity_id = $1
+           AND a.application_status IN ('submitted', 'under_review', 'approved_for_referral')
+           AND a.student_response = 'pending'
+         ORDER BY a.application_id
+         FOR UPDATE`,
+        [opportunityId],
+      );
+      const applicationIds = applications.map((application) =>
+        asNumber(application.application_id),
+      );
+      if (applicationIds.length > 0) {
+        const referrals: OpportunityRow[] = await runner.query(
+          `SELECT referral_id, application_id, referral_status
+           FROM public.referral
+           WHERE application_id = ANY($1::integer[])
+           ORDER BY referral_id
+           FOR UPDATE`,
+          [applicationIds],
+        );
+        const activeReferralApplicationIds = referrals
+          .filter((referral) =>
+            ['sent', 'under_review'].includes(String(referral.referral_status)),
+          )
+          .map((referral) => asNumber(referral.application_id));
+        const noReferralIds = applicationIds.filter(
+          (applicationId) =>
+            !referrals.some(
+              (referral) => asNumber(referral.application_id) === applicationId,
+            ),
+        );
+
+        if (activeReferralApplicationIds.length > 0) {
+          await runner.query(
+            `UPDATE public.referral
+             SET referral_status = 'expired',
+                 remark = 'The internship opportunity has been archived by the company.',
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE application_id = ANY($1::integer[])
+               AND referral_status IN ('sent', 'under_review')`,
+            [activeReferralApplicationIds],
+          );
+          await runner.query(
+            `UPDATE public.application
+             SET application_status = 'expired', updated_at = CURRENT_TIMESTAMP
+             WHERE application_id = ANY($1::integer[])`,
+            [activeReferralApplicationIds],
+          );
+        }
+        if (noReferralIds.length > 0) {
+          await runner.query(
+            `UPDATE public.application
+             SET application_status = 'expired',
+                 remark = 'The internship opportunity is no longer available.',
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE application_id = ANY($1::integer[])`,
+            [noReferralIds],
+          );
+        }
+      }
     });
     return this.getById(userAccountId, opportunityId);
   }

@@ -283,14 +283,16 @@
 }
 
 .rejected .indicator,
-.withdrawn .indicator {
+.withdrawn .indicator,
+.expired .indicator {
   border-color: #e35c64;
   color: #e35c64;
   background: #fff5f5;
 }
 
 .rejected .timelineLine,
-.withdrawn .timelineLine {
+.withdrawn .timelineLine,
+.expired .timelineLine {
   background: #e35c64;
 }
 

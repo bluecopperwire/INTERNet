@@ -33,6 +33,14 @@ export const qcpesoApiService = {
     return response.data;
   },
 
+  async markApplicationUnderReview(applicationId: number): Promise<any> {
+    const response = await api.patch(
+      `/dashboard/peso/applications/${applicationId}/review`,
+      {},
+    );
+    return response.data;
+  },
+
   async updateApplicationStatus(
     applicationId: number,
     status: "approved_for_referral" | "rejected_for_referral",

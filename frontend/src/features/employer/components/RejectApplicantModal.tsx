@@ -7,9 +7,12 @@ interface RejectApplicantModalProps {
   isSaving?: boolean
   onClose: () => void
   onConfirm: (remark: string) => void
+  title?: string
+  description?: string
+  confirmLabel?: string
 }
 
-export function RejectApplicantModal({ applicantName, isSaving = false, onClose, onConfirm }: RejectApplicantModalProps) {
+export function RejectApplicantModal({ applicantName, isSaving = false, onClose, onConfirm, title = 'Reject Applicant', description, confirmLabel = 'Reject Applicant' }: RejectApplicantModalProps) {
   const [remark, setRemark] = useState('')
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -22,8 +25,8 @@ export function RejectApplicantModal({ applicantName, isSaving = false, onClose,
       <form className={styles.modal} onClick={(event) => event.stopPropagation()} onSubmit={handleSubmit}>
         <header className={styles.header}>
           <div>
-            <h2>Reject Applicant</h2>
-            <p>Reject {applicantName}'s application. A remark is optional.</p>
+            <h2>{title}</h2>
+            <p>{description ?? `Reject ${applicantName}'s application. A remark is required.`}</p>
           </div>
           <button type="button" className={styles.closeButton} aria-label="Close rejection dialog" onClick={onClose}>
             <X />
@@ -32,13 +35,14 @@ export function RejectApplicantModal({ applicantName, isSaving = false, onClose,
 
         <div className={styles.body}>
           <label className={styles.field}>
-            Remarks <span>(Optional)</span>
+            Remarks <span>(Required)</span>
             <textarea
               value={remark}
               onChange={(event) => setRemark(event.target.value)}
               placeholder="Add a remark for the applicant..."
               maxLength={500}
               rows={5}
+              required
             />
             <small>{remark.length}/500</small>
           </label>
@@ -46,7 +50,7 @@ export function RejectApplicantModal({ applicantName, isSaving = false, onClose,
 
         <footer className={styles.actions}>
           <button type="button" className={styles.cancelButton} disabled={isSaving} onClick={onClose}>Cancel</button>
-          <button type="submit" className={styles.rejectButton} disabled={isSaving}>{isSaving ? 'Rejecting...' : 'Reject Applicant'}</button>
+          <button type="submit" className={styles.rejectButton} disabled={isSaving}>{isSaving ? 'Saving...' : confirmLabel}</button>
         </footer>
       </form>
     </div>

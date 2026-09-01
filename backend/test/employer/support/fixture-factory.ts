@@ -268,6 +268,14 @@ export class EmployerFixtureFactory {
         `UPDATE public.application SET student_response=$2, student_responded_at=CURRENT_TIMESTAMP WHERE application_id=$1`,
         [applicationId, options.studentResponse],
       );
+      await this.db.query(
+        `UPDATE public.referral SET referral_status='closed' WHERE referral_id=$1`,
+        [referralId],
+      );
+      await this.db.query(
+        `UPDATE public.application SET application_status='closed' WHERE application_id=$1`,
+        [applicationId],
+      );
     }
     return { opportunityId, applicationId, referralId, student };
   }
@@ -305,7 +313,14 @@ export class EmployerFixtureFactory {
       );
       await this.db.query(
         `UPDATE public.referral SET referral_status='closed', company_response='rejected',
-          company_responded_at=CURRENT_TIMESTAMP WHERE referral_id=$1`,
+          company_responded_at=CURRENT_TIMESTAMP, remark='Not selected for this role.'
+          WHERE referral_id=$1`,
+        [referralId],
+      );
+      await this.db.query(
+        `UPDATE public.application a SET application_status='closed'
+         FROM public.referral r
+         WHERE r.referral_id=$1 AND a.application_id=r.application_id`,
         [referralId],
       );
     }

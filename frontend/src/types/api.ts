@@ -194,6 +194,7 @@ export interface StudentApplicationDto {
     companyResponse: CompanyResponse;
     referredAt: string;
     companyRespondedAt?: string | null;
+    remark?: string | null;
   } | null;
   assignment?: {
     internshipAssignmentId: number;
@@ -208,13 +209,25 @@ export interface StudentApplicationDto {
 export interface StudentApplicationStatusDto extends StudentApplicationDto {
   remark?: string | null;
   interview?: {
-    interview_schedule_id: number;
-    interview_mode: string;
+    interview_id: number;
+    interview_mode: 'online' | 'physical';
     scheduled_at: string;
     physical_location?: string | null;
     online_meeting_url?: string | null;
     remark?: string | null;
+    created_at?: string | null;
+    updated_at?: string | null;
   } | null;
+  timeline?: StatusHistoryDto[];
+  referralTimeline?: StatusHistoryDto[];
+}
+
+export interface StatusHistoryDto {
+  statusHistoryId: number;
+  previousStatus: string;
+  newStatus: string;
+  changedAt: string;
+  changedByRole?: UserRole | null;
 }
 
 export interface StudentRequirementsResponse {
