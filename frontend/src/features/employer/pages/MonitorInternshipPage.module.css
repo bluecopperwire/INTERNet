@@ -125,7 +125,7 @@
   width: 100%;
   min-width: 820px;
   border-collapse: collapse;
-  text-align: left;
+  table-layout: auto;
 }
 
 .table th {
@@ -134,7 +134,8 @@
   background: #f8fafc;
   font-size: 14px;
   font-weight: 600;
-  white-space: nowrap;
+  text-align: center;
+  white-space: normal;
 }
 
 .table td {
@@ -142,6 +143,9 @@
   border-bottom: 1px solid #e2e8f0;
   color: #1e293b;
   font-size: 14px;
+  text-align: center;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
 }
 
 .table tbody tr:last-child td {
@@ -192,8 +196,13 @@
 
 .viewButton {
   display: inline-flex;
+  box-sizing: border-box;
+  width: 120px;
+  min-width: 120px;
   min-height: 36px;
+  flex: none;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   padding: 0 14px;
   border: 1px solid #160e6f;
@@ -203,9 +212,12 @@
   font-family: 'Poppins', sans-serif;
   font-size: 13px;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition: background-color 150ms ease, color 150ms ease;
 }
+
+.rowActions { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; }
 
 .viewButton:hover {
   color: #ffffff;

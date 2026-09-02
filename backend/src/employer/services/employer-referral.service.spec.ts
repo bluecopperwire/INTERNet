@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/require-await, @typescript-eslint/unbound-method */
 import { ConflictException } from '@nestjs/common';
 import type { DataSource, QueryRunner } from 'typeorm';
-import { InterviewMode } from '../dto';
+import { InterviewMode, ReferralListView } from '../dto';
 import { EmployerReferralService } from './employer-referral.service';
 import type { EmployerCompanyResolver } from './company-resolver.service';
 
@@ -31,6 +31,46 @@ const resolver = {
 } as unknown as EmployerCompanyResolver;
 
 describe('EmployerReferralService workflows', () => {
+  it('keeps all non-hidden lifecycle states in employer referral history', async () => {
+    const query = jest
+      .fn()
+      .mockResolvedValueOnce([{ total: '2' }])
+      .mockResolvedValueOnce([
+        {
+          referral_id: 10,
+          referral_status: 'withdrawn',
+          company_response: 'accepted',
+          application_id: 20,
+          application_status: 'withdrawn',
+          student_response: 'pending',
+        },
+        {
+          referral_id: 11,
+          referral_status: 'expired',
+          company_response: 'pending',
+          application_id: 21,
+          application_status: 'expired',
+          student_response: 'pending',
+        },
+      ]);
+    const service = new EmployerReferralService(
+      { query } as unknown as DataSource,
+      resolver,
+    );
+
+    const result = await service.list(70, { page: 1, limit: 10 });
+
+    expect(result.data).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ referralId: 10, referralStatus: 'withdrawn' }),
+        expect.objectContaining({ referralId: 11, referralStatus: 'expired' }),
+      ]),
+    );
+    const sql = query.mock.calls.map(([statement]) => String(statement)).join('\n');
+    expect(sql).not.toContain("r.referral_status IN ('sent', 'under_review')");
+    expect(sql).toContain('rv.employer_hidden_at IS NOT NULL');
+  });
+
   it.each(['pending', 'for_interview'])(
     'accepts a %s employer response and keeps the referral under review',
     async (companyResponse) => {
@@ -56,6 +96,26 @@ describe('EmployerReferralService workflows', () => {
       ).toBe(true);
     },
   );
+
+  it('enforces the employer review queue in both count and data queries', async () => {
+    const query = jest.fn().mockResolvedValueOnce([{ total: '0' }]).mockResolvedValueOnce([]);
+    const service = new EmployerReferralService(
+      { query } as unknown as DataSource,
+      resolver,
+    );
+
+    await service.list(70, {
+      page: 1,
+      limit: 10,
+      view: ReferralListView.REVIEW,
+    });
+
+    for (const [sql] of query.mock.calls) {
+      expect(String(sql)).toContain("r.referral_status = 'sent'");
+      expect(String(sql)).toContain("r.referral_status = 'under_review'");
+      expect(String(sql)).toContain("r.company_response IN ('pending', 'for_interview')");
+    }
+  });
 
   it('schedules as under_review + for_interview and upserts one interview', async () => {
     const { dataSource, query } = transactionMocks({

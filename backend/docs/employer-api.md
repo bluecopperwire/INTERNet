@@ -344,9 +344,7 @@ The raw student enum is `declined` (a UI may label it “Rejected”).
 
 Response uses the endpoint 25 detail shape.
 
-### 19. PATCH `/employer/referrals/:referralId/withdraw-acceptance`
-
-The employer withdraws a previously accepted referral, transitioning company response from `accepted -> rejected`. In one transaction, `referral.company_response` is set to `'rejected'`, `company_responded_at` is updated, and status history records the authenticated employer actor. Response returns `200` with the updated referral model.
+The former `PATCH /employer/referrals/:referralId/withdraw-acceptance` endpoint has been removed. Employer acceptance is final while the student response is pending. Opportunity archival is the supported way to expire an active accepted workflow when the opportunity becomes unavailable.
 
 ## Attendance
 
@@ -550,8 +548,6 @@ Referral interview: sent -> under_review
 Referral accept:    pending|for_interview -> accepted (under_review)
 Referral reject:    sent -> under_review -> closed
                     pending|for_interview -> rejected
-Referral withdraw:  accepted -> rejected
-
 Assignment: pending -> ongoing (scheduler)
             pending|ongoing -> cancelled
             ongoing -> completed (hours requirement met)

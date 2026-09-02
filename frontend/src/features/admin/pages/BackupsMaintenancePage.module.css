@@ -308,8 +308,9 @@
 
 .table {
   width: 100%;
+  min-width: 820px;
   border-collapse: collapse;
-  text-align: left;
+  table-layout: auto;
 }
 
 .table th {
@@ -319,6 +320,8 @@
   color: #160e6f;
   background: #f8fafc;
   border-bottom: 2px solid #160e6f;
+  text-align: center;
+  white-space: normal;
 }
 
 .table td {
@@ -326,6 +329,9 @@
   font-size: 13px;
   color: #26324a;
   border-bottom: 1px solid #dfe3eb;
+  text-align: center;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
 }
 
 .table tbody tr:hover {
@@ -367,6 +373,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  justify-content: center;
 }
 
 .tableIconBtn {

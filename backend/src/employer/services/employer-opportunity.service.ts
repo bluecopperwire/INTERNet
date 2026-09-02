@@ -32,6 +32,7 @@ export class EmployerOpportunityService {
         SELECT count(*)::text AS total
         FROM public.opportunity o
         WHERE o.company_id = $1
+          AND o.opportunity_status IN ('open', 'closed')
           AND ($2::text IS NULL OR o.opportunity_status::text = $2)
       `,
       [company.companyId, query.status ?? null],
@@ -45,6 +46,7 @@ export class EmployerOpportunityService {
         LEFT JOIN public.application a ON a.opportunity_id = o.opportunity_id
         LEFT JOIN public.referral r ON r.application_id = a.application_id
         WHERE o.company_id = $1
+          AND o.opportunity_status IN ('open', 'closed')
           AND ($2::text IS NULL OR o.opportunity_status::text = $2)
         GROUP BY o.opportunity_id
         ORDER BY o.created_at DESC, o.opportunity_id DESC
@@ -61,20 +63,14 @@ export class EmployerOpportunityService {
     );
   }
 
-  async create(
-    userAccountId: number,
-    dto: CreateOpportunityDto,
-  ) {
+  async create(userAccountId: number, dto: CreateOpportunityDto) {
     const company = await this.companyResolver.resolve(userAccountId);
     assertValidDate(dto.applicationDeadline, 'applicationDeadline');
     if (dto.applicationDeadline <= currentManilaDate()) {
       throw new ConflictException('applicationDeadline must be in the future.');
     }
 
-    const allowance = this.normalizeAllowance(
-      dto.allowance,
-      dto.hasAllowance,
-    );
+    const allowance = this.normalizeAllowance(dto.allowance, dto.hasAllowance);
 
     let createdId: number;
     await withStatusActor(this.dataSource, userAccountId, async (runner) => {
@@ -130,14 +126,20 @@ export class EmployerOpportunityService {
     dto: UpdateOpportunityDto,
   ) {
     const company = await this.companyResolver.resolve(userAccountId);
-    const existing = await this.findScoped(this.dataSource, company.companyId, opportunityId);
+    const existing = await this.findScoped(
+      this.dataSource,
+      company.companyId,
+      opportunityId,
+    );
     if (existing.opportunity_status === 'archived') {
       throw new ConflictException('Archived opportunities cannot be edited.');
     }
     if (dto.applicationDeadline) {
       assertValidDate(dto.applicationDeadline, 'applicationDeadline');
-      if (dto.applicationDeadline <= currentManilaDate()) {
-        throw new ConflictException('applicationDeadline must be in the future.');
+      if (dto.applicationDeadline < currentManilaDate()) {
+        throw new ConflictException(
+          'applicationDeadline must be today or later in Asia/Manila.',
+        );
       }
     }
 
@@ -214,16 +216,43 @@ export class EmployerOpportunityService {
         company.companyId,
         opportunityId,
         true,
+        true,
       );
-      if (row.opportunity_status === 'archived') {
-        throw new ConflictException('Archived opportunities cannot be closed.');
+      if (row.opportunity_status !== 'open') {
+        throw new ConflictException('Only open opportunities can be closed.');
       }
-      if (row.opportunity_status === 'open') {
-        await runner.query(
-          `UPDATE public.opportunity SET opportunity_status = 'closed' WHERE opportunity_id = $1`,
-          [opportunityId],
+      await runner.query(
+        `UPDATE public.opportunity SET opportunity_status = 'closed', updated_at = CURRENT_TIMESTAMP WHERE opportunity_id = $1`,
+        [opportunityId],
+      );
+    });
+    return this.getById(userAccountId, opportunityId);
+  }
+
+  async reopen(userAccountId: number, opportunityId: number) {
+    const company = await this.companyResolver.resolve(userAccountId);
+    await withStatusActor(this.dataSource, userAccountId, async (runner) => {
+      const row = await this.findScoped(
+        runner,
+        company.companyId,
+        opportunityId,
+        true,
+        true,
+      );
+      if (row.opportunity_status !== 'closed') {
+        throw new ConflictException(
+          'Only closed opportunities can be reopened.',
         );
       }
+      if (String(row.deadline_date) < currentManilaDate()) {
+        throw new ConflictException(
+          'The application deadline has passed. Update it before reopening this opportunity.',
+        );
+      }
+      await runner.query(
+        `UPDATE public.opportunity SET opportunity_status = 'open', updated_at = CURRENT_TIMESTAMP WHERE opportunity_id = $1`,
+        [opportunityId],
+      );
     });
     return this.getById(userAccountId, opportunityId);
   }
@@ -236,20 +265,82 @@ export class EmployerOpportunityService {
         company.companyId,
         opportunityId,
         true,
+        true,
       );
-      if (row.opportunity_status === 'archived') return;
-      if (row.opportunity_status === 'open') {
-        await runner.query(
-          `UPDATE public.opportunity SET opportunity_status = 'closed' WHERE opportunity_id = $1`,
-          [opportunityId],
+      if (row.opportunity_status !== 'closed') {
+        throw new ConflictException(
+          'Only closed opportunities can be deleted.',
         );
       }
       await runner.query(
         `UPDATE public.opportunity SET opportunity_status = 'archived' WHERE opportunity_id = $1`,
         [opportunityId],
       );
+
+      const applications: OpportunityRow[] = await runner.query(
+        `SELECT a.application_id, a.application_status
+         FROM public.application a
+         WHERE a.opportunity_id = $1
+           AND a.application_status IN ('submitted', 'under_review', 'approved_for_referral')
+           AND a.student_response = 'pending'
+         ORDER BY a.application_id
+         FOR UPDATE`,
+        [opportunityId],
+      );
+      const applicationIds = applications.map((application) =>
+        asNumber(application.application_id),
+      );
+      if (applicationIds.length > 0) {
+        const referrals: OpportunityRow[] = await runner.query(
+          `SELECT referral_id, application_id, referral_status
+           FROM public.referral
+           WHERE application_id = ANY($1::integer[])
+           ORDER BY referral_id
+           FOR UPDATE`,
+          [applicationIds],
+        );
+        const activeReferralApplicationIds = referrals
+          .filter((referral) =>
+            ['sent', 'under_review'].includes(String(referral.referral_status)),
+          )
+          .map((referral) => asNumber(referral.application_id));
+        const noReferralIds = applicationIds.filter(
+          (applicationId) =>
+            !referrals.some(
+              (referral) => asNumber(referral.application_id) === applicationId,
+            ),
+        );
+
+        if (activeReferralApplicationIds.length > 0) {
+          await runner.query(
+            `UPDATE public.referral
+             SET referral_status = 'expired',
+                 remark = 'The internship opportunity has been archived by the company.',
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE application_id = ANY($1::integer[])
+               AND referral_status IN ('sent', 'under_review')`,
+            [activeReferralApplicationIds],
+          );
+          await runner.query(
+            `UPDATE public.application
+             SET application_status = 'expired', updated_at = CURRENT_TIMESTAMP
+             WHERE application_id = ANY($1::integer[])`,
+            [activeReferralApplicationIds],
+          );
+        }
+        if (noReferralIds.length > 0) {
+          await runner.query(
+            `UPDATE public.application
+             SET application_status = 'expired',
+                 remark = 'The internship opportunity is no longer available.',
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE application_id = ANY($1::integer[])`,
+            [noReferralIds],
+          );
+        }
+      }
     });
-    return this.getById(userAccountId, opportunityId);
+    return { opportunityId, archived: true };
   }
 
   private async findScoped(
@@ -257,6 +348,7 @@ export class EmployerOpportunityService {
     companyId: number,
     opportunityId: number,
     forUpdate = false,
+    includeArchived = false,
   ): Promise<OpportunityRow> {
     const rows: OpportunityRow[] = await executor.query(
       `
@@ -268,6 +360,7 @@ export class EmployerOpportunityService {
             WHERE a.opportunity_id = o.opportunity_id) AS total_applicant_count
         FROM public.opportunity o
         WHERE o.opportunity_id = $1 AND o.company_id = $2
+          ${includeArchived ? '' : "AND o.opportunity_status <> 'archived'"}
         ${forUpdate ? 'FOR UPDATE' : ''}
       `,
       [opportunityId, companyId],

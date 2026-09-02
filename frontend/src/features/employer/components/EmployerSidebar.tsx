@@ -43,9 +43,9 @@ export function EmployerSidebar({ isOpen, onClose }: EmployerSidebarProps) {
     return text.toLowerCase().includes(search.trim().toLowerCase())
   }
 
-  const applicantsActive = location.pathname.startsWith('/employer/applicants') || location.pathname.startsWith('/employer/internship-assignments')
+  const applicantsActive = location.pathname.startsWith('/employer/applicants') || location.pathname.startsWith('/employer/internship-assignments') || location.pathname.startsWith('/employer/referrals-history')
   const internsActive = location.pathname.startsWith('/employer/attendance') || location.pathname.startsWith('/employer/manage-internship')
-  const showApplicantsGroup = matchesSearch('Applicants') || matchesSearch('Review Applicants') || matchesSearch('Create Internship Assignment')
+  const showApplicantsGroup = matchesSearch('Referrals') || matchesSearch('Review Referrals') || matchesSearch('Create Internship Assignment') || matchesSearch('Referrals History')
   const showInternsGroup = matchesSearch('Interns') || matchesSearch('Monitor Attendance') || matchesSearch('Manage Internship')
   const applicantsOpen = applicantsExpanded || Boolean(search.trim())
   const internsOpen = internsExpanded || Boolean(search.trim())
@@ -138,13 +138,14 @@ export function EmployerSidebar({ isOpen, onClose }: EmployerSidebarProps) {
               tabIndex={isOpen ? 0 : -1}
             >
               <Users size={20} />
-              <span>Applicants</span>
+              <span>Referrals</span>
               {applicantsOpen ? <ChevronDown className={styles.groupChevron} /> : <ChevronRight className={styles.groupChevron} />}
             </button>
             {applicantsOpen && (
               <div className={styles.subNav}>
-                {matchesSearch('Review Applicants') && <NavLink className={({ isActive }) => `${styles.subNavItem} ${isActive ? styles.active : ''}`} to="/employer/applicants" onClick={onClose} tabIndex={isOpen ? 0 : -1}><Users size={17} /><span>Review Applicants</span></NavLink>}
+                {matchesSearch('Review Referrals') && <NavLink className={({ isActive }) => `${styles.subNavItem} ${isActive ? styles.active : ''}`} to="/employer/applicants" onClick={onClose} tabIndex={isOpen ? 0 : -1}><Users size={17} /><span>Review Referrals</span></NavLink>}
                 {matchesSearch('Create Internship Assignment') && <NavLink className={({ isActive }) => `${styles.subNavItem} ${isActive ? styles.active : ''}`} to="/employer/internship-assignments" onClick={onClose} tabIndex={isOpen ? 0 : -1}><ClipboardPlus size={17} /><span>Create Internship Assignment</span></NavLink>}
+                {matchesSearch('Referrals History') && <NavLink className={({ isActive }) => `${styles.subNavItem} ${isActive ? styles.active : ''}`} to="/employer/referrals-history" onClick={onClose} tabIndex={isOpen ? 0 : -1}><FileText size={17} /><span>Referrals History</span></NavLink>}
               </div>
             )}
           </div>

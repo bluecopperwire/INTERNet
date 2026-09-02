@@ -209,7 +209,11 @@
 
 .manageButton {
   display: inline-flex;
+  box-sizing: border-box;
+  width: 120px;
+  min-width: 120px;
   min-height: 36px;
+  flex: none;
   align-items: center;
   justify-content: center;
   gap: 8px;
@@ -221,6 +225,7 @@
   font: inherit;
   font-size: 13px;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition: background 150ms ease, color 150ms ease, transform 160ms ease;
 }
@@ -243,7 +248,7 @@
   width: 100%;
   min-width: 900px;
   border-collapse: collapse;
-  text-align: left;
+  table-layout: auto;
 }
 
 .tableWrap th {
@@ -252,7 +257,8 @@
   background: #f8fafc;
   font-size: 14px;
   font-weight: 700;
-  white-space: nowrap;
+  text-align: center;
+  white-space: normal;
 }
 
 .tableWrap td {
@@ -261,6 +267,8 @@
   color: #26324a;
   font-size: 14px;
   vertical-align: middle;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .tableWrap tbody tr:last-child td {
@@ -272,9 +280,11 @@
   font-weight: 600;
 }
 
-.tableWrap th:last-child,
-.tableWrap td:last-child {
-  text-align: right;
+.tableWrap th:first-child,
+.tableWrap td:first-child,
+.tableWrap th:nth-child(2),
+.tableWrap td:nth-child(2) {
+  min-width: 210px;
 }
 
 .statusBadge {

@@ -237,7 +237,7 @@
   width: 100%;
   min-width: 1000px;
   border-collapse: collapse;
-  text-align: left;
+  table-layout: auto;
 }
 
 .table th {
@@ -247,7 +247,8 @@
   color: #160e6f;
   font-size: 14px;
   font-weight: 700;
-  white-space: nowrap;
+  text-align: center;
+  white-space: normal;
 }
 
 .table td {
@@ -256,6 +257,8 @@
   color: #26324a;
   font-size: 14px;
   vertical-align: middle;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .table tbody tr:last-child td {
@@ -269,10 +272,6 @@
 .table td strong {
   color: #160e6f;
   font-weight: 600;
-}
-
-.table th:last-child,.table td:last-child {
-  text-align: right;
 }
 
 .statusBadge {

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
@@ -16,11 +17,23 @@ import {
   StudentRequirementUploadDto,
 } from '../dto/students.dto';
 import { withStatusActor } from '../../database/status-actor.transaction';
+import { StudentResponse } from '../../common/enums/student-response.enum';
 import { ProfilePictureStorageService } from '../../storage/profile-picture-storage.service';
 import {
   assertValidDate,
   currentManilaDate,
 } from '../../employer/utils/time.utils';
+
+type StatusActor = { userAccountId?: number };
+
+type ApplicationWorkflowRow = {
+  application_id: number;
+  application_status: string;
+  student_response: string;
+  referral_id: number;
+  referral_status: string;
+  company_response: string;
+};
 
 @Injectable()
 export class StudentsService {
@@ -565,74 +578,142 @@ export class StudentsService {
       );
     }
 
-    // Check opportunity status and deadline
-    const [opportunity] = await this.dataSource.query(
-      `
-        SELECT opportunity_id, title, opportunity_status, application_deadline
-        FROM public.opportunity
-        WHERE opportunity_id = $1
-      `,
-      [dto.opportunityId],
-    );
+    try {
+      return await withStatusActor(
+        this.dataSource,
+        currentUser?.userAccountId ?? null,
+        async (runner) => {
+          // Serialize application submissions for this student/opportunity pair.
+          // The active-only unique index remains the final concurrency guard.
+          await runner.query('SELECT pg_advisory_xact_lock($1, $2)', [
+            studentId,
+            dto.opportunityId,
+          ]);
 
-    if (!opportunity) {
-      throw new NotFoundException('Opportunity not found');
-    }
+          const [opportunity] = await runner.query(
+            `
+              SELECT opportunity_id, title, opportunity_status, application_deadline,
+                     (application_deadline AT TIME ZONE 'Asia/Manila')::date
+                       < (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date AS deadline_passed
+              FROM public.opportunity
+              WHERE opportunity_id = $1
+              FOR SHARE
+            `,
+            [dto.opportunityId],
+          );
 
-    if (opportunity.opportunity_status !== 'open') {
-      throw new BadRequestException(
-        `Cannot apply to an opportunity that is ${opportunity.opportunity_status}`,
+          if (!opportunity) {
+            throw new NotFoundException('Opportunity not found');
+          }
+
+          if (opportunity.opportunity_status !== 'open') {
+            throw new BadRequestException(
+              `Cannot apply to an opportunity that is ${opportunity.opportunity_status}`,
+            );
+          }
+
+          if (opportunity.deadline_passed) {
+            throw new BadRequestException(
+              'The application deadline for this opportunity has already passed',
+            );
+          }
+
+          const attempts = (await runner.query(
+            `
+              SELECT a.application_id, a.application_status,
+                     a.student_response, r.company_response
+              FROM public.application a
+              LEFT JOIN public.referral r ON r.application_id = a.application_id
+              WHERE a.student_id = $1 AND a.opportunity_id = $2
+              ORDER BY a.application_id
+              FOR UPDATE OF a
+            `,
+            [studentId, dto.opportunityId],
+          )) as unknown as Array<{
+            application_id: number;
+            application_status: string;
+            student_response: string;
+            company_response: string | null;
+          }>;
+
+          const activeAttempt = attempts.find((attempt) =>
+            ['submitted', 'under_review', 'approved_for_referral'].includes(
+              attempt.application_status,
+            ),
+          );
+          if (activeAttempt) {
+            throw new ConflictException(
+              `You already have an active application (ID: ${activeAttempt.application_id}, Status: ${activeAttempt.application_status}) for this opportunity`,
+            );
+          }
+
+          const blockedAttempt = attempts.find((attempt) => {
+            if (attempt.application_status === 'withdrawn') return false;
+            if (attempt.application_status === 'rejected_for_referral') {
+              return false;
+            }
+            if (
+              attempt.application_status === 'closed' &&
+              attempt.company_response === 'rejected'
+            ) {
+              return false;
+            }
+            if (
+              attempt.application_status === 'closed' &&
+              attempt.company_response === 'accepted' &&
+              attempt.student_response === 'declined'
+            ) {
+              return false;
+            }
+            return true;
+          });
+          if (blockedAttempt) {
+            const reason =
+              blockedAttempt.application_status === 'expired'
+                ? 'An expired application cannot be reapplied.'
+                : 'You cannot reapply after accepting this internship offer.';
+            throw new ConflictException(reason);
+          }
+
+          const [created] = await runner.query(
+            `
+              INSERT INTO public.application (
+                student_id,
+                opportunity_id,
+                application_status,
+                student_response,
+                remark
+              ) VALUES ($1, $2, 'submitted', 'pending', $3)
+              RETURNING *
+            `,
+            [studentId, dto.opportunityId, dto.remark ?? null],
+          );
+
+          return {
+            applicationId: created.application_id,
+            studentId: created.student_id,
+            opportunityId: created.opportunity_id,
+            applicationStatus: created.application_status,
+            studentResponse: created.student_response,
+            submittedAt: created.submitted_at,
+            updatedAt: created.updated_at,
+            remark: created.remark,
+          };
+        },
       );
+    } catch (error: unknown) {
+      const databaseError = error as { code?: string; constraint?: string };
+      if (
+        databaseError.code === '23505' &&
+        databaseError.constraint ===
+          'uq_application_active_student_opportunity'
+      ) {
+        throw new ConflictException(
+          'You already have an active application for this opportunity.',
+        );
+      }
+      throw error;
     }
-
-    if (new Date(opportunity.application_deadline) <= new Date()) {
-      throw new BadRequestException(
-        'The application deadline for this opportunity has already passed',
-      );
-    }
-
-    // Check for existing active application
-    const [existingActive] = await this.dataSource.query(
-      `
-        SELECT application_id, application_status
-        FROM public.application
-        WHERE student_id = $1
-          AND opportunity_id = $2
-          AND application_status IN ('submitted', 'under_review', 'approved_for_referral')
-      `,
-      [studentId, dto.opportunityId],
-    );
-
-    if (existingActive) {
-      throw new BadRequestException(
-        `You already have an active application (ID: ${existingActive.application_id}, Status: ${existingActive.application_status}) for this opportunity`,
-      );
-    }
-
-    const [created] = await this.dataSource.query(
-      `
-        INSERT INTO public.application (
-          student_id,
-          opportunity_id,
-          application_status,
-          student_response,
-          remark
-        ) VALUES ($1, $2, 'submitted', 'pending', $3)
-        RETURNING *
-      `,
-      [studentId, dto.opportunityId, dto.remark ?? null],
-    );
-
-    return {
-      applicationId: created.application_id,
-      studentId: created.student_id,
-      opportunityId: created.opportunity_id,
-      applicationStatus: created.application_status,
-      studentResponse: created.student_response,
-      submittedAt: created.submitted_at,
-      updatedAt: created.updated_at,
-      remark: created.remark,
-    };
   }
 
   async getStudentApplications(studentId: number) {
@@ -654,13 +735,21 @@ export class StudentsService {
           ad.company_id AS "companyId",
           ad.company_name AS "companyName",
           ad.industry_name AS "industryName",
+          c.logo_file_path AS "companyLogoFilePath",
+          c.updated_at AS "companyProfileUpdatedAt",
           ad.referral_id AS "referralId",
           ad.referral_status AS "referralStatus",
           ad.company_response AS "companyResponse",
           ad.internship_assignment_id AS "internshipAssignmentId",
           ad.assignment_status AS "assignmentStatus"
         FROM public.vw_application_details ad
+        JOIN public.company c ON c.company_id = ad.company_id
         WHERE ad.student_id = $1
+          AND NOT EXISTS (
+            SELECT 1 FROM public.application_visibility av
+            WHERE av.application_id = ad.application_id
+              AND av.student_hidden_at IS NOT NULL
+          )
         ORDER BY ad.submitted_at DESC
       `,
       [studentId],
@@ -685,6 +774,8 @@ export class StudentsService {
         companyId: r.companyId,
         companyName: r.companyName,
         industryName: r.industryName,
+        logoFilePath: r.companyLogoFilePath,
+        profileUpdatedAt: r.companyProfileUpdatedAt,
       },
       referral: r.referralId
         ? {
@@ -721,13 +812,25 @@ export class StudentsService {
           ad.company_id,
           ad.company_name,
           ad.industry_name,
+          c.logo_file_path AS company_logo_file_path,
+          c.updated_at AS company_profile_updated_at,
           ad.referral_id,
           ad.referral_status,
           ad.company_response,
+          r.referred_at,
+          r.company_responded_at,
+          r.remark AS referral_remark,
           ad.internship_assignment_id,
           ad.assignment_status
         FROM public.vw_application_details ad
+        JOIN public.company c ON c.company_id = ad.company_id
+        LEFT JOIN public.referral r ON r.referral_id = ad.referral_id
         WHERE ad.application_id = $1 AND ad.student_id = $2
+          AND NOT EXISTS (
+            SELECT 1 FROM public.application_visibility av
+            WHERE av.application_id = ad.application_id
+              AND av.student_hidden_at IS NOT NULL
+          )
       `,
       [applicationId, studentId],
     );
@@ -746,7 +849,9 @@ export class StudentsService {
             iv.interview_mode,
             iv.physical_location,
             iv.online_meeting_url,
-            iv.remark
+            iv.remark,
+            iv.created_at,
+            iv.updated_at
           FROM public.interview iv
           WHERE iv.referral_id = $1
           ORDER BY iv.scheduled_at DESC
@@ -775,6 +880,25 @@ export class StudentsService {
       [applicationId],
     );
 
+    const referralTimeline = detail.referral_id
+      ? await this.dataSource.query(
+          `
+            SELECT
+              rsh.referral_status_history_id AS "statusHistoryId",
+              rsh.previous_referral_status AS "previousStatus",
+              rsh.new_referral_status AS "newStatus",
+              rsh.changed_at AS "changedAt",
+              ua.user_role AS "changedByRole"
+            FROM public.referral_status_history rsh
+            LEFT JOIN public.user_account ua
+              ON ua.user_account_id = rsh.changed_by_user_account_id
+            WHERE rsh.referral_id = $1
+            ORDER BY rsh.changed_at ASC
+          `,
+          [detail.referral_id],
+        )
+      : [];
+
     return {
       applicationId: detail.application_id,
       studentId,
@@ -795,12 +919,17 @@ export class StudentsService {
         companyId: detail.company_id,
         companyName: detail.company_name,
         industryName: detail.industry_name,
+        logoFilePath: detail.company_logo_file_path,
+        profileUpdatedAt: detail.company_profile_updated_at,
       },
       referral: detail.referral_id
         ? {
             referralId: detail.referral_id,
             referralStatus: detail.referral_status,
             companyResponse: detail.company_response,
+            referredAt: detail.referred_at,
+            companyRespondedAt: detail.company_responded_at,
+            remark: detail.referral_remark,
           }
         : null,
       interview,
@@ -811,6 +940,7 @@ export class StudentsService {
           }
         : null,
       timeline,
+      referralTimeline,
     };
   }
 
@@ -818,46 +948,38 @@ export class StudentsService {
     studentId: number,
     applicationId: number,
     dto: StudentApplicationResponseDto,
-    currentUser: any,
+    currentUser: StatusActor,
   ) {
-    const [application] = await this.dataSource.query(
-      `
-        SELECT a.application_id, a.student_id, a.application_status, a.student_response
-        FROM public.application a
-        WHERE a.application_id = $1 AND a.student_id = $2
-      `,
-      [applicationId, studentId],
-    );
-
-    if (!application) {
-      throw new NotFoundException('Application not found for this student');
-    }
-
-    if (application.student_response !== 'pending') {
-      throw new BadRequestException(
-        `Student has already responded to this application (${application.student_response})`,
-      );
-    }
-
-    const [referral] = await this.dataSource.query(
-      `
-        SELECT referral_id, referral_status, company_response
-        FROM public.referral
-        WHERE application_id = $1
-      `,
-      [applicationId],
-    );
-
-    if (!referral || referral.company_response !== 'accepted') {
-      throw new BadRequestException(
-        'A student may respond only after company acceptance of referral',
-      );
-    }
-
     return withStatusActor(
       this.dataSource,
       currentUser?.userAccountId ?? null,
       async (runner) => {
+        const rows = (await runner.query(
+          `
+            SELECT a.application_id, a.application_status, a.student_response,
+                   r.referral_id, r.referral_status, r.company_response
+            FROM public.application a
+            JOIN public.referral r ON r.application_id = a.application_id
+            WHERE a.application_id = $1 AND a.student_id = $2
+            FOR UPDATE OF a, r
+          `,
+          [applicationId, studentId],
+        )) as unknown as ApplicationWorkflowRow[];
+        const application = rows[0];
+        if (!application) {
+          throw new NotFoundException('Application not found for this student');
+        }
+        if (
+          application.application_status !== 'approved_for_referral' ||
+          application.referral_status !== 'under_review' ||
+          application.company_response !== 'accepted' ||
+          application.student_response !== 'pending'
+        ) {
+          throw new ConflictException(
+            'This internship offer is no longer awaiting a student response.',
+          );
+        }
+
         const [updated] = await runner.query(
           `
             UPDATE public.application
@@ -869,6 +991,59 @@ export class StudentsService {
           `,
           [applicationId, dto.response],
         );
+
+        await runner.query(
+          `UPDATE public.referral
+           SET referral_status = 'closed', updated_at = CURRENT_TIMESTAMP
+           WHERE referral_id = $1`,
+          [application.referral_id],
+        );
+        await runner.query(
+          `UPDATE public.application
+           SET application_status = 'closed', updated_at = CURRENT_TIMESTAMP
+           WHERE application_id = $1`,
+          [applicationId],
+        );
+
+        if (dto.response === StudentResponse.ACCEPTED) {
+          const otherApplications = (await runner.query(
+            `SELECT application_id
+             FROM public.application
+             WHERE student_id = $1
+               AND application_id <> $2
+               AND application_status IN ('submitted', 'under_review', 'approved_for_referral')
+             ORDER BY application_id
+             FOR UPDATE`,
+            [studentId, applicationId],
+          )) as unknown as Array<{ application_id: number }>;
+          const otherIds = otherApplications.map((row) =>
+            Number(row.application_id),
+          );
+          if (otherIds.length > 0) {
+            await runner.query(
+              `SELECT referral_id
+               FROM public.referral
+               WHERE application_id = ANY($1::integer[])
+               ORDER BY referral_id
+               FOR UPDATE`,
+              [otherIds],
+            );
+            await runner.query(
+              `UPDATE public.referral
+               SET referral_status = 'withdrawn', updated_at = CURRENT_TIMESTAMP
+               WHERE application_id = ANY($1::integer[])
+                 AND referral_status IN ('sent', 'under_review')`,
+              [otherIds],
+            );
+            await runner.query(
+              `UPDATE public.application
+               SET application_status = 'withdrawn', updated_at = CURRENT_TIMESTAMP
+               WHERE application_id = ANY($1::integer[])
+                 AND application_status IN ('submitted', 'under_review', 'approved_for_referral')`,
+              [otherIds],
+            );
+          }
+        }
         return updated;
       },
     );
@@ -877,35 +1052,67 @@ export class StudentsService {
   async withdrawApplication(
     studentId: number,
     applicationId: number,
-    currentUser: any,
+    currentUser: StatusActor,
   ) {
-    const [application] = await this.dataSource.query(
-      `
-        SELECT a.application_id, a.student_id, a.application_status
-        FROM public.application a
-        WHERE a.application_id = $1 AND a.student_id = $2
-      `,
-      [applicationId, studentId],
-    );
-
-    if (!application) {
-      throw new NotFoundException('Application not found for this student');
-    }
-
-    if (
-      !['submitted', 'under_review', 'approved_for_referral'].includes(
-        application.application_status,
-      )
-    ) {
-      throw new BadRequestException(
-        `Cannot withdraw an application with status: ${application.application_status}`,
-      );
-    }
-
     return withStatusActor(
       this.dataSource,
       currentUser?.userAccountId ?? null,
       async (runner) => {
+        const rows = (await runner.query(
+          `SELECT a.application_id, a.application_status, a.student_response
+           FROM public.application a
+           WHERE a.application_id = $1 AND a.student_id = $2
+           FOR UPDATE OF a`,
+          [applicationId, studentId],
+        )) as unknown as Array<
+          Pick<
+            ApplicationWorkflowRow,
+            'application_id' | 'application_status' | 'student_response'
+          >
+        >;
+        const application = rows[0];
+        if (!application) {
+          throw new NotFoundException('Application not found for this student');
+        }
+        const referrals = (await runner.query(
+          `SELECT referral_id, referral_status, company_response
+           FROM public.referral
+           WHERE application_id = $1
+           FOR UPDATE`,
+          [applicationId],
+        )) as unknown as Array<
+          Pick<
+            ApplicationWorkflowRow,
+            'referral_id' | 'referral_status' | 'company_response'
+          >
+        >;
+        const referral = referrals[0] ?? null;
+        const activeApplication = [
+          'submitted',
+          'under_review',
+          'approved_for_referral',
+        ].includes(application.application_status);
+        const activeReferral =
+          !referral ||
+          ['sent', 'under_review'].includes(referral.referral_status);
+        if (
+          !activeApplication ||
+          !activeReferral ||
+          application.student_response !== 'pending' ||
+          referral?.company_response === 'rejected'
+        ) {
+          throw new ConflictException(
+            'This application is no longer eligible for withdrawal.',
+          );
+        }
+        if (referral) {
+          await runner.query(
+            `UPDATE public.referral
+             SET referral_status = 'withdrawn', updated_at = CURRENT_TIMESTAMP
+             WHERE referral_id = $1`,
+            [referral.referral_id],
+          );
+        }
         const [updated] = await runner.query(
           `
             UPDATE public.application
@@ -917,6 +1124,95 @@ export class StudentsService {
           [applicationId],
         );
         return updated;
+      },
+    );
+  }
+
+  async hideApplication(
+    studentId: number,
+    applicationId: number,
+    currentUser: StatusActor,
+  ) {
+    return withStatusActor(
+      this.dataSource,
+      currentUser?.userAccountId ?? null,
+      async (runner) => {
+        const rows = (await runner.query(
+          `SELECT application_status
+           FROM public.application
+           WHERE application_id = $1 AND student_id = $2
+           FOR UPDATE`,
+          [applicationId, studentId],
+        )) as unknown as Array<{ application_status: string }>;
+        if (!rows[0]) {
+          throw new NotFoundException('Application not found for this student');
+        }
+        if (
+          !['rejected_for_referral', 'closed', 'withdrawn', 'expired'].includes(
+            rows[0].application_status,
+          )
+        ) {
+          throw new ConflictException(
+            'Only terminal applications can be hidden.',
+          );
+        }
+        await runner.query(
+          `INSERT INTO public.application_visibility (
+             application_id, student_hidden_at, student_hidden_by_user_account_id
+           ) VALUES ($1, CURRENT_TIMESTAMP, $2)
+           ON CONFLICT (application_id) DO UPDATE SET
+             student_hidden_at = COALESCE(public.application_visibility.student_hidden_at, EXCLUDED.student_hidden_at),
+             student_hidden_by_user_account_id = COALESCE(public.application_visibility.student_hidden_by_user_account_id, EXCLUDED.student_hidden_by_user_account_id)`,
+          [applicationId, currentUser?.userAccountId],
+        );
+        return { applicationId, hidden: true };
+      },
+    );
+  }
+
+  async hideAssignment(
+    studentId: number,
+    assignmentId: number,
+    currentUser: StatusActor,
+  ) {
+    return withStatusActor(
+      this.dataSource,
+      currentUser?.userAccountId ?? null,
+      async (runner) => {
+        const rows = (await runner.query(
+          `SELECT ia.assignment_status
+           FROM public.internship_assignment ia
+           JOIN public.referral r ON r.referral_id = ia.referral_id
+           JOIN public.application a ON a.application_id = r.application_id
+           WHERE ia.internship_assignment_id = $1 AND a.student_id = $2
+           FOR UPDATE OF ia`,
+          [assignmentId, studentId],
+        )) as unknown as Array<{ assignment_status: string }>;
+        if (!rows[0]) {
+          throw new NotFoundException(
+            'Internship assignment not found for this student',
+          );
+        }
+        if (
+          !['completed', 'withdrawn', 'cancelled'].includes(
+            rows[0].assignment_status,
+          )
+        ) {
+          throw new ConflictException(
+            'Only completed, withdrawn, or cancelled assignments can be hidden.',
+          );
+        }
+        await runner.query(
+          `INSERT INTO public.internship_assignment_visibility (
+             internship_assignment_id, student_hidden_at,
+             student_hidden_by_user_account_id
+           ) VALUES ($1, CURRENT_TIMESTAMP, $2)
+           ON CONFLICT (internship_assignment_id) DO UPDATE SET
+             student_hidden_at = COALESCE(public.internship_assignment_visibility.student_hidden_at, EXCLUDED.student_hidden_at),
+             student_hidden_by_user_account_id = COALESCE(public.internship_assignment_visibility.student_hidden_by_user_account_id, EXCLUDED.student_hidden_by_user_account_id)`,
+          [assignmentId, currentUser?.userAccountId],
+        );
+        return { assignmentId, hidden: true };
       },
     );
   }
@@ -1225,6 +1521,11 @@ export class StudentsService {
         LEFT JOIN public.vw_attendance_summary ats ON ats.internship_assignment_id = ia.internship_assignment_id
         WHERE a.student_id = $1
           AND ia.deleted_at IS NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM public.internship_assignment_visibility iav
+            WHERE iav.internship_assignment_id = ia.internship_assignment_id
+              AND iav.student_hidden_at IS NOT NULL
+          )
         ORDER BY 
           CASE WHEN ia.assignment_status = 'ongoing' THEN 1 
                WHEN ia.assignment_status = 'pending' THEN 2 
@@ -1267,9 +1568,7 @@ export class StudentsService {
       expectedEndDate: rawAssignment.expected_end_date
         ? String(rawAssignment.expected_end_date)
         : null,
-      endDate: rawAssignment.end_date
-        ? String(rawAssignment.end_date)
-        : null,
+      endDate: rawAssignment.end_date ? String(rawAssignment.end_date) : null,
       startShift: rawAssignment.start_shift,
       endShift: rawAssignment.end_shift,
       assignmentStatus: rawAssignment.assignment_status,
@@ -1390,6 +1689,11 @@ export class StudentsService {
         JOIN public.application a ON a.application_id = r.application_id
         WHERE ia.internship_assignment_id = $1 AND a.student_id = $2
           AND ia.deleted_at IS NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM public.internship_assignment_visibility iav
+            WHERE iav.internship_assignment_id = ia.internship_assignment_id
+              AND iav.student_hidden_at IS NOT NULL
+          )
       `,
       [assignmentId, studentId],
     );

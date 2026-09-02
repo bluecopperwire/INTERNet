@@ -27,8 +27,9 @@ This guide documents the database schema redesign implemented in migration `1787
    - Dropped `employee_id_file_path`, `verification_status`, `reviewed_at`, `reviewed_by_user_account_id`, and `verification_remark` columns from `peso_personnel`.
    - Dropped retired `peso_personnel_verification_history` table and `personnel_verification_status_enum` type.
    - QC PESO personnel accounts are directly active upon creation without gating verification steps.
-5. **Referral Company Response Transition (`accepted -> rejected`)**:
-   - Updated `fn_validate_referral()` trigger to allow transition from `company_response = 'accepted'` to `'rejected'`, enabling employer acceptance withdrawal while student response is pending.
+5. **Referral Company Response Transitions**:
+   - Migration `002` historically allowed `company_response = 'accepted'` to transition to `'rejected'`.
+   - Forward migration `005_remove_accepted_referral_reversal` removes that obsolete transition. Valid rejection paths remain `pending -> rejected` and `for_interview -> rejected`; opportunity archival expires accepted/student-pending workflows.
 6. **Internship Assignment Soft Deletion (`internship_assignment.deleted_at`)**:
    - Added nullable `deleted_at TIMESTAMPTZ` column with partial index `ix_internship_assignment_deleted_at` (`WHERE deleted_at IS NOT NULL`).
    - Terminal assignments (`completed`, `cancelled`, `withdrawn`) are soft-deleted via `deleted_at`, preserving foreign key integrity and attendance histories while filtering them from active views (`vw_internship_assignment_details`, `vw_attendance_summary`, `vw_application_details`, `vw_referral_details`).

@@ -73,6 +73,10 @@ describe('Database migration paths and behavioral validation', () => {
       'InitialSchema1785860400000',
       'ApprovedDatabaseRedesign1787788800000',
       'AddStudentCustomIndustry1788134400000',
+      'ApplicationWorkflowAlignment1788220800000',
+      'ApplicationInitialStatusHistory1788307200000',
+      'RemoveAcceptedReferralReversal1788393600000',
+      'OpportunityLifecycleRules1788480000000',
     ]);
 
     // Validate redesigned columns
@@ -124,6 +128,91 @@ describe('Database migration paths and behavioral validation', () => {
       `SELECT industry_name FROM public.industry WHERE is_custom_text = true`,
     );
     expect(customIndustries).toEqual([{ industry_name: 'Other' }]);
+
+    await dataSource.undoLastMigration();
+    const revertedOpportunityLifecycle = await dataSource.query(`
+      SELECT
+        pg_get_functiondef('public.fn_validate_opportunity_transition()'::regprocedure) AS definition,
+        (SELECT count(*)::int FROM public.migrations
+         WHERE name = 'OpportunityLifecycleRules1788480000000') AS migration_rows
+    `);
+    expect(revertedOpportunityLifecycle[0].definition).toContain(
+      "OLD.opportunity_status = 'open' AND NEW.opportunity_status IN ('closed', 'archived')",
+    );
+    expect(revertedOpportunityLifecycle[0].migration_rows).toBe(0);
+
+    await dataSource.undoLastMigration();
+    const revertedReversalRemoval = await dataSource.query(`
+      SELECT
+        pg_get_functiondef('public.fn_validate_referral()'::regprocedure) AS definition,
+        (SELECT count(*)::int FROM public.migrations
+         WHERE name = 'RemoveAcceptedReferralReversal1788393600000') AS migration_rows
+    `);
+    expect(revertedReversalRemoval[0].definition).toContain(
+      "OLD.company_response = 'accepted' AND NEW.company_response = 'rejected'",
+    );
+    expect(revertedReversalRemoval[0].migration_rows).toBe(0);
+
+    await dataSource.undoLastMigration();
+    const revertedInitialHistory = await dataSource.query(`
+      SELECT
+        (SELECT is_nullable FROM information_schema.columns
+         WHERE table_schema = 'public'
+           AND table_name = 'application_status_history'
+           AND column_name = 'previous_application_status') AS previous_status_nullable,
+        to_regprocedure('public.fn_record_application_initial_status_history()') AS initial_history_function,
+        (SELECT count(*)::int FROM public.migrations
+         WHERE name = 'ApplicationInitialStatusHistory1788307200000') AS migration_rows
+    `);
+    expect(revertedInitialHistory[0]).toEqual({
+      previous_status_nullable: 'NO',
+      initial_history_function: null,
+      migration_rows: 0,
+    });
+
+    await dataSource.undoLastMigration();
+    const revertedWorkflow = await dataSource.query(`
+      SELECT
+        to_regclass('public.application_visibility') AS application_visibility,
+        to_regclass('public.referral_visibility') AS referral_visibility,
+        to_regclass('public.internship_assignment_visibility') AS assignment_visibility,
+        (SELECT count(*)::int FROM pg_constraint
+         WHERE conname IN (
+           'ck_application_rejection_remark_required',
+           'ck_referral_rejection_remark_required'
+         )) AS remark_constraints,
+        (SELECT count(*)::int FROM public.migrations
+         WHERE name = 'ApplicationWorkflowAlignment1788220800000') AS migration_rows
+    `);
+    expect(revertedWorkflow[0]).toEqual({
+      application_visibility: null,
+      referral_visibility: null,
+      assignment_visibility: null,
+      remark_constraints: 0,
+      migration_rows: 0,
+    });
+
+    await dataSource.runMigrations();
+    const reappliedWorkflow = await dataSource.query(`
+      SELECT
+        to_regclass('public.application_visibility') IS NOT NULL AS application_visibility,
+        to_regclass('public.referral_visibility') IS NOT NULL AS referral_visibility,
+        to_regclass('public.internship_assignment_visibility') IS NOT NULL AS assignment_visibility,
+        (SELECT count(*)::int FROM pg_constraint
+         WHERE conname IN (
+           'ck_application_rejection_remark_required',
+           'ck_referral_rejection_remark_required'
+         )) AS remark_constraints,
+        (SELECT count(*)::int FROM public.migrations
+         WHERE name = 'ApplicationWorkflowAlignment1788220800000') AS migration_rows
+    `);
+    expect(reappliedWorkflow[0]).toEqual({
+      application_visibility: true,
+      referral_visibility: true,
+      assignment_visibility: true,
+      remark_constraints: 2,
+      migration_rows: 1,
+    });
   });
 
   it('Historical AuthAlignmentV3 upgrade path: reproduces historical schema & data, runs redesign migration, preserves history, and validates', async () => {
@@ -221,6 +310,54 @@ describe('Database migration paths and behavioral validation', () => {
       SET student_response = 'accepted', student_responded_at = CURRENT_TIMESTAMP
       WHERE application_id = (SELECT application_id FROM public.application LIMIT 1);
 
+      INSERT INTO public.application (student_id, opportunity_id)
+      VALUES (
+        (SELECT student_id FROM public.student WHERE contact_email = 'legacy-active@example.test'),
+        (SELECT opportunity_id FROM public.opportunity WHERE title = 'Unpaid Role')
+      );
+      UPDATE public.application
+      SET application_status = 'under_review'
+      WHERE opportunity_id = (SELECT opportunity_id FROM public.opportunity WHERE title = 'Unpaid Role');
+      UPDATE public.application
+      SET application_status = 'approved_for_referral'
+      WHERE opportunity_id = (SELECT opportunity_id FROM public.opportunity WHERE title = 'Unpaid Role');
+      INSERT INTO public.referral (
+        application_id, peso_personnel_id, referral_document_file_path
+      ) VALUES (
+        (SELECT application_id FROM public.application
+         WHERE opportunity_id = (SELECT opportunity_id FROM public.opportunity WHERE title = 'Unpaid Role')),
+        (SELECT peso_personnel_id FROM public.peso_personnel LIMIT 1),
+        '/uploads/referrals/legacy-rejected-referral.pdf'
+      );
+      UPDATE public.referral
+      SET referral_status = 'under_review'
+      WHERE application_id = (
+        SELECT application_id FROM public.application
+        WHERE opportunity_id = (SELECT opportunity_id FROM public.opportunity WHERE title = 'Unpaid Role')
+      );
+      UPDATE public.referral
+      SET referral_status = 'closed', company_response = 'rejected',
+          company_responded_at = CURRENT_TIMESTAMP
+      WHERE application_id = (
+        SELECT application_id FROM public.application
+        WHERE opportunity_id = (SELECT opportunity_id FROM public.opportunity WHERE title = 'Unpaid Role')
+      );
+      UPDATE public.application
+      SET application_status = 'closed'
+      WHERE opportunity_id = (SELECT opportunity_id FROM public.opportunity WHERE title = 'Unpaid Role');
+
+      INSERT INTO public.application (student_id, opportunity_id)
+      VALUES (
+        (SELECT student_id FROM public.student WHERE contact_email = 'legacy-suspended@example.test'),
+        (SELECT opportunity_id FROM public.opportunity WHERE title = 'Paid Role')
+      );
+      UPDATE public.application
+      SET application_status = 'under_review'
+      WHERE student_id = (SELECT student_id FROM public.student WHERE contact_email = 'legacy-suspended@example.test');
+      UPDATE public.application
+      SET application_status = 'rejected_for_referral'
+      WHERE student_id = (SELECT student_id FROM public.student WHERE contact_email = 'legacy-suspended@example.test');
+
       INSERT INTO public.internship_assignment (referral_id, required_hours, start_date, expected_end_date, working_days, start_shift, end_shift, assignment_status)
       VALUES (
         (SELECT referral_id FROM public.referral LIMIT 1),
@@ -252,7 +389,54 @@ describe('Database migration paths and behavioral validation', () => {
       'AuthAlignmentV31786125600000',
       'ApprovedDatabaseRedesign1787788800000',
       'AddStudentCustomIndustry1788134400000',
+      'ApplicationWorkflowAlignment1788220800000',
+      'ApplicationInitialStatusHistory1788307200000',
+      'RemoveAcceptedReferralReversal1788393600000',
+      'OpportunityLifecycleRules1788480000000',
     ]);
+
+    await dataSource.query(`
+      UPDATE public.opportunity
+      SET application_deadline = CURRENT_TIMESTAMP + INTERVAL '30 days'
+      WHERE title = 'Unpaid Role';
+    `);
+    const [newAttempt] = await dataSource.query(`
+      INSERT INTO public.application (student_id, opportunity_id)
+      VALUES (
+        (SELECT student_id FROM public.student
+         WHERE contact_email = 'legacy-active@example.test'),
+        (SELECT opportunity_id FROM public.opportunity
+         WHERE title = 'Unpaid Role')
+      )
+      RETURNING application_id;
+    `);
+    const creationHistory = await dataSource.query(
+      `SELECT previous_application_status, new_application_status
+       FROM public.application_status_history
+       WHERE application_id = $1
+       ORDER BY application_status_history_id`,
+      [newAttempt.application_id],
+    );
+    expect(creationHistory).toEqual([
+      {
+        previous_application_status: null,
+        new_application_status: 'submitted',
+      },
+    ]);
+
+    const backfilledRejections = await dataSource.query(`
+      SELECT
+        (SELECT remark FROM public.application
+         WHERE application_status = 'rejected_for_referral') AS application_remark,
+        (SELECT remark FROM public.referral
+         WHERE company_response = 'rejected') AS referral_remark
+    `);
+    expect(backfilledRejections[0]).toEqual({
+      application_remark:
+        'No rejection reason was recorded before workflow validation was enabled.',
+      referral_remark:
+        'No rejection reason was recorded before workflow validation was enabled.',
+    });
 
     const canonicalAuth = await dataSource.query(`
       SELECT

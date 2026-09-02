@@ -38,6 +38,15 @@ export function OpportunitiesPage() {
     }
   }
 
+  const openApplicants = (opportunity: Opportunity) => {
+    setOpportunityForApplicants(opportunity)
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current)
+      next.set('viewApplicants', opportunity.id)
+      return next
+    })
+  }
+
   const fetchOpportunities = async () => {
     setIsLoading(true)
     try {
@@ -115,16 +124,16 @@ export function OpportunitiesPage() {
                       Status: <span className={`${styles.statusValue} ${styles[opp.status.toLowerCase()]}`}>{opp.status}</span>
                     </p>
                     <p className={styles.applicantsText}>
-                      Applicants: {opp.applicants}
+                      Referrals: {opp.applicants}
                     </p>
                   </div>
                 </div>
                 <div className={styles.cardActions}>
                   <button 
                     className={styles.actionBtn}
-                    onClick={() => setOpportunityForApplicants(opp)}
+                    onClick={() => openApplicants(opp)}
                   >
-                    View Applicants
+                    View Referrals
                   </button>
                   <button 
                     className={styles.actionBtn}

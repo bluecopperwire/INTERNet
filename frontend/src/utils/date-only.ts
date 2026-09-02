@@ -70,3 +70,12 @@ export function formatDateOnly(value: unknown, options?: Intl.DateTimeFormatOpti
     year: 'numeric',
   }).format(new Date(year, month - 1, day))
 }
+
+/** Compact, timezone-safe date formatting for user-facing table cells. */
+export function formatTableDate(value: unknown) {
+  return formatDateOnly(value, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}

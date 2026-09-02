@@ -3,7 +3,10 @@ import { DataSource } from 'typeorm';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
 import { PaginatedResponse } from '../../../common/interfaces/paginated-response.interface';
 import { getDateBoundaries } from '../../../common/helpers/date-filter.helper';
-import { QueryApplicationsDto } from '../../dto/peso-dashboard.dto';
+import {
+  ApplicationListView,
+  QueryApplicationsDto,
+} from '../../dto/peso-dashboard.dto';
 
 @Injectable()
 export class ApplicationQueryService {
@@ -13,9 +16,13 @@ export class ApplicationQueryService {
     queryDto: QueryApplicationsDto,
     paginationDto: PaginationDto,
     companyId?: number,
+    excludeQcPesoHidden = false,
   ): Promise<PaginatedResponse<any>> {
     const page = Math.max(1, Number(paginationDto?.page) || 1);
-    const limit = Math.max(1, Math.min(100, Number(paginationDto?.limit) || 20));
+    const limit = Math.max(
+      1,
+      Math.min(100, Number(paginationDto?.limit) || 20),
+    );
     const offset = (page - 1) * limit;
 
     const whereClauses: string[] = [];
@@ -23,13 +30,31 @@ export class ApplicationQueryService {
     let paramIndex = 1;
 
     if (companyId) {
-      whereClauses.push(`company_id = $${paramIndex++}`);
+      whereClauses.push(`ad.company_id = $${paramIndex++}`);
       params.push(companyId);
     }
 
     if (queryDto.status) {
-      whereClauses.push(`application_status = $${paramIndex++}`);
+      whereClauses.push(`ad.application_status = $${paramIndex++}`);
       params.push(queryDto.status);
+    }
+
+    if (queryDto.view === ApplicationListView.REVIEW) {
+      whereClauses.push(
+        `ad.application_status IN ('submitted', 'under_review')`,
+      );
+    }
+
+    const search = queryDto.search?.trim();
+    if (search) {
+      whereClauses.push(`(
+        ad.student_full_name ILIKE $${paramIndex}
+        OR ad.company_name ILIKE $${paramIndex}
+        OR ad.opportunity_title ILIKE $${paramIndex}
+        OR COALESCE(ad.strand_program, '') ILIKE $${paramIndex}
+      )`);
+      params.push(`%${search}%`);
+      paramIndex++;
     }
 
     const boundaries = getDateBoundaries(
@@ -39,16 +64,24 @@ export class ApplicationQueryService {
     );
 
     if (boundaries) {
-      whereClauses.push(`submitted_at >= $${paramIndex++}`);
+      whereClauses.push(`ad.submitted_at >= $${paramIndex++}`);
       params.push(boundaries.start.toISOString());
-      whereClauses.push(`submitted_at <= $${paramIndex++}`);
+      whereClauses.push(`ad.submitted_at <= $${paramIndex++}`);
       params.push(boundaries.end.toISOString());
+    }
+
+    if (excludeQcPesoHidden) {
+      whereClauses.push(`NOT EXISTS (
+        SELECT 1 FROM public.application_visibility av
+        WHERE av.application_id = ad.application_id
+          AND av.qc_peso_hidden_at IS NOT NULL
+      )`);
     }
 
     const whereSql =
       whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
-    const countSql = `SELECT COUNT(*) AS count FROM public.vw_application_details ${whereSql}`;
+    const countSql = `SELECT COUNT(*) AS count FROM public.vw_application_details ad ${whereSql}`;
     const countResult = await this.dataSource.query(countSql, params);
     const total = Number(countResult[0]?.count || 0);
 
@@ -73,11 +106,13 @@ export class ApplicationQueryService {
         student_response AS "studentResponse",
         student_responded_at AS "studentRespondedAt",
         referral_id AS "referralId",
+        (SELECT r.referred_at FROM public.referral r
+         WHERE r.application_id = ad.application_id) AS "referredAt",
         referral_status AS "referralStatus",
         company_response AS "companyResponse",
         internship_assignment_id AS "internshipAssignmentId",
         assignment_status AS "assignmentStatus"
-      FROM public.vw_application_details
+      FROM public.vw_application_details ad
       ${whereSql}
       ORDER BY submitted_at DESC
       LIMIT $${paramIndex++} OFFSET $${paramIndex++}

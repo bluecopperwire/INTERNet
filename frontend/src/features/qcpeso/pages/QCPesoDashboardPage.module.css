@@ -234,8 +234,9 @@
 
 .table {
   width: 100%;
+  min-width: 760px;
   border-collapse: collapse;
-  text-align: left;
+  table-layout: auto;
 }
 
 .table th {
@@ -245,7 +246,8 @@
   color: #160e6f;
   background: #f8fafc;
   border-bottom: 2px solid #160e6f;
-  white-space: nowrap;
+  text-align: center;
+  white-space: normal;
 }
 
 .table td {
@@ -253,6 +255,9 @@
   font-size: 14px;
   color: #1e293b;
   border-bottom: 1px solid #e2e8f0;
+  text-align: center;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
 }
 
 .table tr:hover {
@@ -288,7 +293,13 @@
 
 .actionBtn {
   display: inline-flex;
+  box-sizing: border-box;
+  width: 120px;
+  min-width: 120px;
+  min-height: 36px;
+  flex: none;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   padding: 6px 14px;
   border: 1px solid #160e6f;
@@ -297,6 +308,7 @@
   color: #160e6f;
   font-size: 13px;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition: all 150ms;
 }

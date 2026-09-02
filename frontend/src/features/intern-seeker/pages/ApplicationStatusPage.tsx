@@ -1,15 +1,19 @@
-import { useState } from 'react'
-import { Check, ChevronRight, MapPin, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Building2, Check, ChevronRight, MapPin, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useApplications } from '../hooks/useApplications'
 import type { ApplicationDisplayStatus, ApplicationProgress, InterviewDetails, UserApplication } from '../types/application.types'
 import styles from './ApplicationStatusPage.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
+import { applicationsService } from '../services/applications.service'
+import { getErrorMessage } from '../../../utils/error-message'
+import { ConfirmDeleteModal } from '../../../components/feedback/ConfirmDeleteModal'
 
 type DialogState =
   | { type: 'remark'; title: string; remark: string }
   | { type: 'interview'; companyName: string; interview: InterviewDetails }
   | { type: 'student-decision'; application: UserApplication }
+  | { type: 'withdraw'; application: UserApplication }
   | null
 
 function ApplicationStatusPage() {
@@ -17,17 +21,70 @@ function ApplicationStatusPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [dialog, setDialog] = useState<DialogState>(null)
   const [isUpdating, setIsUpdating] = useState(false)
-  const toast = useToastStore()
-  const selectedApplication = applications.find((application) => application.id === selectedId) ?? applications[0]
+  const [deleteTarget, setDeleteTarget] = useState<UserApplication | null>(null)
+  const [detailResult, setDetailResult] = useState<{
+    id: string
+    application: UserApplication | null
+    error: string | null
+  } | null>(null)
+  const showSuccessToast = useToastStore((state) => state.success)
+  const showErrorToast = useToastStore((state) => state.error)
+  const validSelectedId = selectedId && applications.some((application) => application.id === selectedId)
+    ? selectedId
+    : applications[0]?.id ?? null
+  const selectedSummary = applications.find((application) => application.id === validSelectedId)
+  const selectedApplicationId = selectedSummary?.id
+  const selectedApplication = detailResult && detailResult.id === selectedApplicationId ? detailResult.application : null
+  const detailError = detailResult && detailResult.id === selectedApplicationId ? detailResult.error : null
+  const isLoadingDetail = Boolean(selectedSummary) && detailResult?.id !== selectedApplicationId
+
+  useEffect(() => {
+    const applicationId = selectedApplicationId
+    if (!applicationId) return
+    let active = true
+    applicationsService.getApplication(applicationId)
+      .then((application) => {
+        if (active) setDetailResult({ id: applicationId, application, error: null })
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          const message = getErrorMessage(error, 'Unable to load application status.')
+          setDetailResult({ id: applicationId, application: null, error: message })
+          showErrorToast(message)
+        }
+      })
+    return () => { active = false }
+  }, [selectedApplicationId, showErrorToast])
 
   const performUpdate = async (action: () => Promise<unknown>, successMessage: string) => {
     setIsUpdating(true)
     try {
-      await action()
+      const updated = await action()
+      if (updated && typeof updated === 'object' && 'id' in updated) {
+        const application = updated as UserApplication
+        setDetailResult({ id: application.id, application, error: null })
+      }
       setDialog(null)
-      toast.success(successMessage)
-    } catch {
-      toast.error('The application could not be updated. Please try again.')
+      showSuccessToast(successMessage)
+    } catch (error: unknown) {
+      showErrorToast(getErrorMessage(error, 'The application could not be updated. Please try again.'))
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    setIsUpdating(true)
+    try {
+      await deleteApplication(deleteTarget.id)
+      const nextSelection = applications.find((application) => application.id !== deleteTarget.id)?.id ?? null
+      setDeleteTarget(null)
+      setSelectedId(nextSelection)
+      setDetailResult(null)
+      showSuccessToast('Application deleted.')
+    } catch (error: unknown) {
+      showErrorToast(getErrorMessage(error, 'The application could not be deleted. Please try again.'))
     } finally {
       setIsUpdating(false)
     }
@@ -37,9 +94,7 @@ function ApplicationStatusPage() {
     <>
       {error && <p className={styles.feedback} role="alert">{error}</p>}
       {isLoading && <p className={styles.feedback}>Loading applications...</p>}
-      {!isLoading && applications.length === 0 && <p className={styles.feedback}>You have not submitted any applications yet.</p>}
-
-      {!isLoading && applications.length > 0 && (
+      {!isLoading && (
         <div className={styles.applicationLayout}>
           <section className={styles.applicationListPanel} aria-labelledby="applications-heading">
             <header className={styles.listHeader}>
@@ -47,39 +102,48 @@ function ApplicationStatusPage() {
               <Link to="/intern-seeker/search">Apply to Company <span>+</span></Link>
             </header>
             <div className={styles.applicationList}>
-              {applications.map((application) => <ApplicationListItem key={application.id} application={application} isSelected={application.id === selectedApplication?.id} onSelect={() => setSelectedId(application.id)} />)}
+              {applications.map((application) => <ApplicationListItem key={application.id} application={application} isSelected={application.id === selectedSummary?.id} onSelect={() => setSelectedId(application.id)} />)}
+              {applications.length === 0 && <div className={styles.emptyState}><h3>No applications yet</h3><p>There are currently no applications to track.</p></div>}
             </div>
           </section>
 
-          {selectedApplication && <ApplicationProgress application={selectedApplication} isUpdating={isUpdating} onWithdraw={() => void performUpdate(() => withdrawApplication(selectedApplication.id), 'Application withdrawn.')} onDelete={() => void performUpdate(() => deleteApplication(selectedApplication.id), 'Application deleted.')} onOpenDialog={setDialog} />}
+          {!selectedSummary && <section className={`${styles.progressPanel} ${styles.emptyProgress}`}><h2>Application Progress</h2><p>Select an application after you apply to view its progress.</p></section>}
+          {isLoadingDetail && <section className={styles.progressPanel}><p className={styles.feedback}>Loading application status...</p></section>}
+          {!isLoadingDetail && selectedApplication && <ApplicationProgress application={selectedApplication} isUpdating={isUpdating} onWithdraw={() => setDialog({ type: 'withdraw', application: selectedApplication })} onDelete={() => setDeleteTarget(selectedApplication)} onOpenDialog={setDialog} />}
+          {!isLoadingDetail && detailError && <section className={styles.progressPanel}><p className={styles.feedback} role="alert">{detailError}</p></section>}
         </div>
       )}
 
-      {dialog && <ApplicationDialog dialog={dialog} isUpdating={isUpdating} onClose={() => setDialog(null)} onDecision={(decision) => void performUpdate(() => respondToOffer(dialog.type === 'student-decision' ? dialog.application.id : '', decision), decision === 'accept' ? 'Internship offer accepted.' : 'Internship offer declined.')} />}
+      {dialog && <ApplicationDialog dialog={dialog} isUpdating={isUpdating} onClose={() => setDialog(null)} onDecision={(decision) => void performUpdate(() => respondToOffer(dialog.type === 'student-decision' ? dialog.application.id : '', decision), decision === 'accept' ? 'Internship offer accepted.' : 'Internship offer declined.')} onWithdraw={() => void performUpdate(() => withdrawApplication(dialog.type === 'withdraw' ? dialog.application.id : ''), 'Application withdrawn.')} />}
+      {deleteTarget && <ConfirmDeleteModal subject={`your ${deleteTarget.position} application`} isDeleting={isUpdating} onClose={() => setDeleteTarget(null)} onConfirm={() => void confirmDelete()} />}
     </>
   )
 }
 
 function ApplicationListItem({ application, isSelected, onSelect }: { application: UserApplication; isSelected: boolean; onSelect: () => void }) {
   return (
-    <button className={`${styles.applicationItem} ${isSelected ? styles.selectedItem : ''}`} type="button" onClick={onSelect}>
-      <span className={styles.applicationIcon} aria-hidden="true" />
-      <span className={styles.applicationInfo}><strong>{application.position}</strong><span>{application.companyName}</span></span>
-      <span className={styles.applicationMeta}><StatusBadge status={application.status} /><small>Applied: {application.appliedDate}</small></span>
-      <ChevronRight className={styles.chevron} />
-    </button>
+    <div className={`${styles.applicationItem} ${isSelected ? styles.selectedItem : ''}`}>
+      <button className={styles.applicationSelectButton} type="button" onClick={onSelect}>
+        <span className={styles.applicationIcon} aria-hidden="true">
+          <Building2 />
+          {application.companyLogoUrl && <img src={application.companyLogoUrl} alt="" onError={(event) => { event.currentTarget.style.display = 'none' }} />}
+        </span>
+        <span className={styles.applicationInfo}><strong>{application.position}</strong><span>{application.companyName}</span></span>
+        <span className={styles.applicationMeta}><StatusBadge status={application.status} /><small>Applied: {application.appliedDate}</small></span>
+        <ChevronRight className={styles.chevron} />
+      </button>
+    </div>
   )
 }
 
 function StatusBadge({ status }: { status: ApplicationDisplayStatus }) {
-  const statusClass = status === 'Accepted' ? styles.accepted : status === 'Rejected' || status === 'Withdrawn' ? styles.rejected : status.includes('For Review') ? styles.forReview : styles.inProgress
+  const statusClass = status === 'Accepted' ? styles.accepted : ['Rejected', 'Withdrawn', 'Expired', 'Offer Declined'].includes(status) ? styles.rejected : status.includes('For Review') ? styles.forReview : styles.inProgress
   return <span className={`${styles.statusBadge} ${statusClass}`}>{status}</span>
 }
 
 function ApplicationProgress({ application, isUpdating, onWithdraw, onDelete, onOpenDialog }: { application: UserApplication; isUpdating: boolean; onWithdraw: () => void; onDelete: () => void; onOpenDialog: (dialog: DialogState) => void }) {
-  const studentDecision = application.progress.find((step) => step.stage === 'Student Decision')
-  const canWithdraw = studentDecision?.state !== 'completed' && studentDecision?.state !== 'rejected' && studentDecision?.state !== 'withdrawn'
-  const canDelete = application.status === 'Rejected' || application.status === 'Withdrawn'
+  const canWithdraw = application.canWithdraw
+  const canDelete = application.canHide
 
   return (
     <section className={styles.progressPanel} aria-labelledby="progress-heading">
@@ -88,7 +152,7 @@ function ApplicationProgress({ application, isUpdating, onWithdraw, onDelete, on
         {application.progress.map((step, index) => <ProgressStep key={step.stage} step={step} isLast={index === application.progress.length - 1} onOpenDialog={onOpenDialog} application={application} />)}
       </div>
       <div className={styles.withdrawArea}>
-        <button type="button" className={canDelete ? styles.deleteApplicationButton : styles.withdrawButton} disabled={(!canWithdraw && !canDelete) || isUpdating} onClick={canDelete ? onDelete : onWithdraw}>{isUpdating ? 'Updating...' : canDelete ? 'Delete Application' : 'Withdraw Application'}</button>
+        {(canWithdraw || canDelete) && <button type="button" className={canDelete ? styles.deleteApplicationButton : styles.withdrawButton} disabled={isUpdating} onClick={canDelete ? onDelete : onWithdraw}>{isUpdating ? 'Updating...' : canDelete ? 'Delete Application' : 'Withdraw Application'}</button>}
       </div>
     </section>
   )
@@ -98,8 +162,8 @@ function ProgressStep({ step, isLast, application, onOpenDialog }: { step: Appli
   const dialog = step.interview
     ? { type: 'interview' as const, companyName: application.companyName, interview: step.interview }
     : step.remark
-      ? { type: 'remark' as const, title: `${step.stage} Remark`, remark: step.remark }
-      : step.stage === 'Student Decision' && step.state === 'current'
+      ? { type: 'remark' as const, title: 'Application Rejection Remark', remark: step.remark }
+      : step.stage === 'Student Decision' && step.state === 'current' && application.canRespondToOffer
         ? { type: 'student-decision' as const, application }
         : null
   const isClickable = Boolean(dialog)
@@ -108,7 +172,7 @@ function ProgressStep({ step, isLast, application, onOpenDialog }: { step: Appli
   return (
     <div className={`${styles.timelineStep} ${styles[step.state]} ${isClickable ? styles.clickableStep : ''}`}>
       <div className={styles.indicatorColumn}>
-        <span className={styles.indicator}>{step.state === 'completed' ? <Check /> : step.state === 'rejected' || step.state === 'withdrawn' ? <X /> : <i />}</span>
+        <span className={styles.indicator}>{step.state === 'completed' ? <Check /> : ['rejected', 'withdrawn', 'expired'].includes(step.state) ? <X /> : <i />}</span>
         {!isLast && <span className={styles.timelineLine} />}
       </div>
       <button className={styles.stepContent} type="button" disabled={!isClickable} onClick={() => dialog && onOpenDialog(dialog)}>
@@ -121,10 +185,11 @@ function ProgressStep({ step, isLast, application, onOpenDialog }: { step: Appli
   )
 }
 
-function ApplicationDialog({ dialog, isUpdating, onClose, onDecision }: { dialog: Exclude<DialogState, null>; isUpdating: boolean; onClose: () => void; onDecision: (decision: 'accept' | 'reject') => void }) {
+function ApplicationDialog({ dialog, isUpdating, onClose, onDecision, onWithdraw }: { dialog: Exclude<DialogState, null>; isUpdating: boolean; onClose: () => void; onDecision: (decision: 'accept' | 'reject') => void; onWithdraw: () => void }) {
   const isInterview = dialog.type === 'interview'
   const isDecision = dialog.type === 'student-decision'
-  const title = isInterview ? 'Interview Details' : isDecision ? 'Respond to Internship Offer' : dialog.title
+  const isWithdraw = dialog.type === 'withdraw'
+  const title = isInterview ? 'Interview Details' : isDecision ? 'Respond to Internship Offer' : isWithdraw ? 'Withdraw Application' : dialog.title
 
   return (
     <div className={styles.modalBackdrop} role="presentation" onMouseDown={onClose}>
@@ -134,13 +199,14 @@ function ApplicationDialog({ dialog, isUpdating, onClose, onDecision }: { dialog
         {isInterview && <InterviewContent interview={dialog.interview} companyName={dialog.companyName} />}
         {dialog.type === 'remark' && <p className={styles.remarkText}>{dialog.remark}</p>}
         {isDecision && <><p className={styles.decisionText}>Would you like to accept this internship offer from {dialog.application.companyName}?</p><div className={styles.decisionActions}><button type="button" className={styles.rejectButton} disabled={isUpdating} onClick={() => onDecision('reject')}>Reject Offer</button><button type="button" className={styles.acceptButton} disabled={isUpdating} onClick={() => onDecision('accept')}>{isUpdating ? 'Updating...' : 'Accept Offer'}</button></div></>}
+        {isWithdraw && <><p className={styles.decisionText}>Are you sure you want to withdraw your application for {dialog.application.position}?</p><div className={styles.decisionActions}><button type="button" className={styles.rejectButton} disabled={isUpdating} onClick={onClose}>Cancel</button><button type="button" className={styles.acceptButton} disabled={isUpdating} onClick={onWithdraw}>{isUpdating ? 'Withdrawing...' : 'Withdraw Application'}</button></div></>}
       </section>
     </div>
   )
 }
 
 function InterviewContent({ companyName, interview }: { companyName: string; interview: InterviewDetails }) {
-  return <><p className={styles.modalSubtitle}>{companyName} has scheduled an interview.</p><dl className={styles.interviewDetails}><div><dt>Date</dt><dd>{interview.date}</dd></div><div><dt>Time</dt><dd>{interview.time}</dd></div><div><dt>Interview Mode</dt><dd>{interview.mode === 'online' ? 'Online' : 'In-person'}</dd></div>{interview.mode === 'online' && interview.meetingUrl && <div><dt>Meeting URL</dt><dd><a href={interview.meetingUrl} target="_blank" rel="noreferrer">{interview.meetingUrl}</a></dd></div>}{interview.mode === 'in-person' && interview.location && <div><dt><MapPin size={16} />Location</dt><dd>{interview.location}</dd></div>}</dl>{interview.remark && <div className={styles.remarkBox}><strong>Remark</strong><p>{interview.remark}</p></div>}</>
+  return <><p className={styles.modalSubtitle}>{companyName} has scheduled an interview.</p><dl className={styles.interviewDetails}><div><dt>Date</dt><dd>{interview.date}</dd></div><div><dt>Time</dt><dd>{interview.time}</dd></div><div><dt>Interview Mode</dt><dd>{interview.mode === 'online' ? 'Online' : 'Physical'}</dd></div>{interview.mode === 'online' && interview.meetingUrl && <div><dt>Meeting URL</dt><dd><a href={interview.meetingUrl} target="_blank" rel="noreferrer">{interview.meetingUrl}</a></dd></div>}{interview.mode === 'physical' && interview.location && <div><dt><MapPin size={16} />Physical Location</dt><dd>{interview.location}</dd></div>}</dl>{interview.remark && <div className={styles.remarkBox}><strong>Remark</strong><p>{interview.remark}</p></div>}</>
 }
 
 export default ApplicationStatusPage

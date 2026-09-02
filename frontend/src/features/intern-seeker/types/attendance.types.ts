@@ -19,6 +19,7 @@ export interface TodayAttendance {
 }
 
 export interface InternshipDetails {
+  assignmentId: number
   companyName: string
   jobTitle: string
   workingDays: string

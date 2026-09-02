@@ -47,7 +47,7 @@ export class EmployerInternshipService {
   ) {
     const company = await this.companyResolver.resolve(userAccountId);
     const search = query.search?.trim() || null;
-    const params = [company.companyId, query.studentResponse ?? null, search];
+    const params = [company.companyId, search];
     const countRows: Array<{ total: string }> = await this.dataSource.query(
       `
         SELECT count(*)::text AS total
@@ -57,41 +57,54 @@ export class EmployerInternshipService {
         JOIN public.student s ON s.student_id = a.student_id
         WHERE o.company_id = $1
           AND r.company_response = 'accepted'
+          AND a.student_response = 'accepted'
+          AND a.application_status = 'closed'
+          AND r.referral_status = 'closed'
           AND NOT EXISTS (
-            SELECT 1 FROM public.internship_assignment deleted_assignment
-            WHERE deleted_assignment.referral_id = r.referral_id
-              AND deleted_assignment.deleted_at IS NOT NULL
+            SELECT 1 FROM public.referral_visibility rv
+            WHERE rv.referral_id = r.referral_id
+              AND rv.employer_hidden_at IS NOT NULL
           )
-          AND ($2::text IS NULL OR a.student_response::text = $2)
-          AND ($3::text IS NULL OR concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) ILIKE '%' || $3 || '%' OR o.title ILIKE '%' || $3 || '%')
+          AND NOT EXISTS (
+            SELECT 1 FROM public.internship_assignment existing_assignment
+            WHERE existing_assignment.referral_id = r.referral_id
+          )
+          AND ($2::text IS NULL OR concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) ILIKE '%' || $2 || '%' OR o.title ILIKE '%' || $2 || '%')
       `,
       params,
     );
     const rows: AssignmentRow[] = await this.dataSource.query(
       `
-        SELECT r.referral_id, r.company_responded_at,
+        SELECT r.referral_id,
                a.application_id, a.student_response, a.student_responded_at,
                s.student_id,
                concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS student_full_name,
+               sai.strand_program,
                o.opportunity_id, o.title AS job_title,
-               c.company_name, ia.internship_assignment_id
+               c.company_name
         FROM public.referral r
         JOIN public.application a ON a.application_id = r.application_id
         JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
         JOIN public.company c ON c.company_id = o.company_id
         JOIN public.student s ON s.student_id = a.student_id
-        LEFT JOIN public.internship_assignment ia ON ia.referral_id = r.referral_id
+        LEFT JOIN public.student_academic_information sai ON sai.student_id = s.student_id
         WHERE o.company_id = $1
           AND r.company_response = 'accepted'
+          AND a.student_response = 'accepted'
+          AND a.application_status = 'closed'
+          AND r.referral_status = 'closed'
           AND NOT EXISTS (
-            SELECT 1 FROM public.internship_assignment deleted_assignment
-            WHERE deleted_assignment.referral_id = r.referral_id
-              AND deleted_assignment.deleted_at IS NOT NULL
+            SELECT 1 FROM public.referral_visibility rv
+            WHERE rv.referral_id = r.referral_id
+              AND rv.employer_hidden_at IS NOT NULL
           )
-          AND ($2::text IS NULL OR a.student_response::text = $2)
-          AND ($3::text IS NULL OR concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) ILIKE '%' || $3 || '%' OR o.title ILIKE '%' || $3 || '%')
-        ORDER BY r.company_responded_at DESC, r.referral_id DESC
-        LIMIT $4 OFFSET $5
+          AND NOT EXISTS (
+            SELECT 1 FROM public.internship_assignment existing_assignment
+            WHERE existing_assignment.referral_id = r.referral_id
+          )
+          AND ($2::text IS NULL OR concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) ILIKE '%' || $2 || '%' OR o.title ILIKE '%' || $2 || '%')
+        ORDER BY a.student_responded_at DESC, r.referral_id DESC
+        LIMIT $3 OFFSET $4
       `,
       [...params, query.limit, (query.page - 1) * query.limit],
     );
@@ -101,16 +114,14 @@ export class EmployerInternshipService {
         applicationId: asNumber(row.application_id),
         studentId: asNumber(row.student_id),
         studentFullName: row.student_full_name,
+        strandProgram: row.strand_program,
         opportunityId: asNumber(row.opportunity_id),
         jobTitle: row.job_title,
         companyName: row.company_name,
-        acceptanceDate: row.company_responded_at,
+        acceptanceDate: row.student_responded_at,
         studentResponse: row.student_response,
         studentRespondedAt: row.student_responded_at,
-        internshipAssignmentId:
-          row.internship_assignment_id === null
-            ? null
-            : asNumber(row.internship_assignment_id),
+        internshipAssignmentId: null,
       })),
       query.page,
       query.limit,
@@ -134,7 +145,8 @@ export class EmployerInternshipService {
       async (runner) => {
         const referrals: AssignmentRow[] = await runner.query(
           `
-            SELECT r.referral_id, r.company_response, a.student_response
+            SELECT r.referral_id, r.referral_status, r.company_response,
+                   a.application_status, a.student_response
             FROM public.referral r
             JOIN public.application a ON a.application_id = r.application_id
             JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
@@ -147,7 +159,9 @@ export class EmployerInternshipService {
         if (!referral) throw new NotFoundException('Referral not found');
         if (
           referral.company_response !== 'accepted' ||
-          referral.student_response !== 'accepted'
+          referral.student_response !== 'accepted' ||
+          referral.application_status !== 'closed' ||
+          referral.referral_status !== 'closed'
         ) {
           throw new ConflictException(
             'Assignment creation requires employer and student acceptance.',
@@ -412,16 +426,14 @@ export class EmployerInternshipService {
     return this.getById(userAccountId, internshipAssignmentId);
   }
 
-  async softDelete(
-    userAccountId: number,
-    internshipAssignmentId: number,
-  ) {
+  async softDelete(userAccountId: number, internshipAssignmentId: number) {
     const company = await this.companyResolver.resolve(userAccountId);
     await withStatusActor(this.dataSource, userAccountId, async (runner) => {
       const row = await this.findAssignmentScoped(
         runner,
         company.companyId,
         internshipAssignmentId,
+        true,
         true,
       );
       if (
@@ -434,10 +446,14 @@ export class EmployerInternshipService {
         );
       }
       await runner.query(
-        `UPDATE public.internship_assignment
-         SET deleted_at = CURRENT_TIMESTAMP
-         WHERE internship_assignment_id = $1`,
-        [internshipAssignmentId],
+        `INSERT INTO public.internship_assignment_visibility (
+           internship_assignment_id, employer_hidden_at,
+           employer_hidden_by_user_account_id
+         ) VALUES ($1, CURRENT_TIMESTAMP, $2)
+         ON CONFLICT (internship_assignment_id) DO UPDATE SET
+           employer_hidden_at = COALESCE(public.internship_assignment_visibility.employer_hidden_at, EXCLUDED.employer_hidden_at),
+           employer_hidden_by_user_account_id = COALESCE(public.internship_assignment_visibility.employer_hidden_by_user_account_id, EXCLUDED.employer_hidden_by_user_account_id)`,
+        [internshipAssignmentId, userAccountId],
       );
     });
     return { internshipAssignmentId, deleted: true };
@@ -475,6 +491,11 @@ export class EmployerInternshipService {
         JOIN public.student s ON s.student_id = a.student_id
         WHERE c.company_id = $1
           AND ia.deleted_at IS NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM public.internship_assignment_visibility iav
+            WHERE iav.internship_assignment_id = ia.internship_assignment_id
+              AND iav.employer_hidden_at IS NOT NULL
+          )
           AND ($2::text IS NULL OR concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) ILIKE '%' || $2 || '%' OR o.title ILIKE '%' || $2 || '%')
         ORDER BY ia.created_at DESC, ia.internship_assignment_id DESC
       `,
@@ -487,6 +508,7 @@ export class EmployerInternshipService {
     companyId: number,
     internshipAssignmentId: number,
     forUpdate = false,
+    includeHidden = false,
   ): Promise<AssignmentRow> {
     const rows: AssignmentRow[] = await executor.query(
       `
@@ -506,6 +528,15 @@ export class EmployerInternshipService {
         JOIN public.student s ON s.student_id = a.student_id
         WHERE ia.internship_assignment_id = $1 AND c.company_id = $2
           AND ia.deleted_at IS NULL
+          ${
+            includeHidden
+              ? ''
+              : `AND NOT EXISTS (
+            SELECT 1 FROM public.internship_assignment_visibility iav
+            WHERE iav.internship_assignment_id = ia.internship_assignment_id
+              AND iav.employer_hidden_at IS NOT NULL
+          )`
+          }
         ${forUpdate ? 'FOR UPDATE OF ia' : ''}
       `,
       [internshipAssignmentId, companyId],

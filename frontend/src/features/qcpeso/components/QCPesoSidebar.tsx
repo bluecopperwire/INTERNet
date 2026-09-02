@@ -95,9 +95,9 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
           {matchesSearch('Employers') && <SubLink to="/qcpeso/monitor-users/employers" label="Employers" icon={<Building2 size={18} />} isOpen={isOpen} onClose={onClose} />}
         </NavigationGroup>
 
-        <NavigationGroup icon={<ClipboardCheck size={20} aria-hidden="true" />} label="Manage Applicants" isOpen={manageApplicantsOpen} onToggle={() => setManageApplicantsOpen((current) => !current)} visible={matchesSearch('Manage Applicants') || matchesSearch('Review Applicants') || matchesSearch('Track Referrals')}>
+        <NavigationGroup icon={<ClipboardCheck size={20} aria-hidden="true" />} label="Manage Applicants" isOpen={manageApplicantsOpen} onToggle={() => setManageApplicantsOpen((current) => !current)} visible={matchesSearch('Manage Applicants') || matchesSearch('Review Applicants') || matchesSearch('Applications History')}>
           {matchesSearch('Review Applicants') && <SubLink to="/qcpeso/manage-applicants/review" label="Review Applicants" icon={<Eye size={18} />} isOpen={isOpen} onClose={onClose} />}
-          {matchesSearch('Track Referrals') && <SubLink to="/qcpeso/manage-applicants/referrals" label="Track Referrals" icon={<Route size={18} />} isOpen={isOpen} onClose={onClose} />}
+          {matchesSearch('Applications History') && <SubLink to="/qcpeso/manage-applicants/history" label="Applications History" icon={<Route size={18} />} isOpen={isOpen} onClose={onClose} />}
         </NavigationGroup>
 
         <NavigationGroup icon={<BriefcaseBusiness size={20} aria-hidden="true" />} label="Manage Interns" isOpen={manageInternsOpen} onToggle={() => setManageInternsOpen((current) => !current)} visible={matchesSearch('Manage Interns') || matchesSearch('Monitor Attendance') || matchesSearch('Manage Internship')}>

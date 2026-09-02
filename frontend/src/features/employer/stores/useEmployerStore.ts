@@ -48,11 +48,11 @@ interface EmployerState {
   createOpportunity: (payload: any) => Promise<Opportunity>;
   updateOpportunity: (id: number, payload: any) => Promise<Opportunity>;
   closeOpportunity: (id: number) => Promise<void>;
+  reopenOpportunity: (id: number) => Promise<void>;
   archiveOpportunity: (id: number) => Promise<void>;
   fetchReferrals: (params?: any) => Promise<void>;
   acceptReferral: (id: number, remark?: string) => Promise<void>;
   rejectReferral: (id: number, remark?: string) => Promise<void>;
-  withdrawAcceptance: (id: number) => Promise<void>;
   scheduleInterview: (id: number, payload: any) => Promise<void>;
   fetchInternships: (params?: any) => Promise<void>;
   deleteInternship: (id: number) => Promise<void>;
@@ -182,6 +182,16 @@ export const useEmployerStore = create<EmployerState>((set, get) => ({
     }
   },
 
+  reopenOpportunity: async (id: number) => {
+    try {
+      await employerApiService.reopenOpportunity(id);
+      await get().fetchOpportunities();
+    } catch (err: any) {
+      const norm = normalizeApiError(err);
+      throw norm;
+    }
+  },
+
   archiveOpportunity: async (id: number) => {
     try {
       await employerApiService.archiveOpportunity(id);
@@ -220,16 +230,6 @@ export const useEmployerStore = create<EmployerState>((set, get) => ({
   rejectReferral: async (id: number, remark?: string) => {
     try {
       await employerApiService.rejectReferral(id, remark);
-      await get().fetchReferrals();
-    } catch (err: any) {
-      const norm = normalizeApiError(err);
-      throw norm;
-    }
-  },
-
-  withdrawAcceptance: async (id: number) => {
-    try {
-      await employerApiService.withdrawAcceptance(id);
       await get().fetchReferrals();
     } catch (err: any) {
       const norm = normalizeApiError(err);

@@ -40,14 +40,32 @@ export const qcpesoService = {
 
   async getRecentApplications(): Promise<QCPesoReviewApplicant[]> {
     const store = useQCPesoStore.getState();
-    await store.fetchApplications({ page: 1, limit: 5 });
+    await store.fetchApplications({ view: 'review', page: 1, limit: 5 });
     return useQCPesoStore.getState().applications;
   },
 
   async getReviewApplicants(): Promise<QCPesoReviewApplicant[]> {
-    const store = useQCPesoStore.getState();
-    await store.fetchApplications();
-    return useQCPesoStore.getState().applications;
+    const records: QCPesoReviewApplicant[] = [];
+    let page = 1;
+    do {
+      const result = await qcpesoApiService.getApplications({ view: 'review', page, limit: 100 });
+      records.push(...result.data.map(adaptPesoApplication));
+      if (page >= result.meta.totalPages) break;
+      page++;
+    } while (true);
+    return records;
+  },
+
+  async getApplicationHistory(): Promise<QCPesoReviewApplicant[]> {
+    const records: QCPesoReviewApplicant[] = [];
+    let page = 1;
+    do {
+      const result = await qcpesoApiService.getApplications({ view: 'history', page, limit: 100 });
+      records.push(...result.data.map(adaptPesoApplication));
+      if (page >= result.meta.totalPages) break;
+      page++;
+    } while (true);
+    return records;
   },
 
   async getReviewApplicant(id: string): Promise<QCPesoReviewApplicant | null> {
@@ -60,15 +78,14 @@ export const qcpesoService = {
     status: QCPesoReviewApplicant['status'],
     remark?: string,
   ): Promise<QCPesoReviewApplicant | null> {
-    const apiStatus =
-      status === 'Accepted' ? 'approved_for_referral' : 'rejected_for_referral';
+    const apiStatus = status === 'Accepted' ? 'approved_for_referral' : 'rejected_for_referral';
     const store = useQCPesoStore.getState();
-    const updated = await store.updateApplicationStatus(
-      Number(id),
-      apiStatus,
-      remark,
-    );
+    const updated = await store.updateApplicationStatus(Number(id), apiStatus, remark);
     return updated;
+  },
+
+  async deleteApplication(id: string): Promise<void> {
+    await qcpesoApiService.hideApplication(Number(id));
   },
 
   async getReferrals(): Promise<QCPesoReferral[]> {
@@ -80,6 +97,10 @@ export const qcpesoService = {
   async getReferral(id: string): Promise<QCPesoReferral | null> {
     const raw = await qcpesoApiService.getReferralDetail(Number(id));
     return adaptPesoReferral(raw);
+  },
+
+  async deleteReferral(id: string): Promise<void> {
+    await qcpesoApiService.hideReferral(Number(id));
   },
 
   async getInternships(): Promise<QCPesoInternshipRecord[]> {
@@ -147,10 +168,12 @@ export const qcpesoService = {
 
   async createEmployer(payload: CreateEmployerPayload): Promise<void> {
     const industries = await referenceService.getIndustries();
-    const normalize = (v: string) => v.toLowerCase().replace(/\s*\/\s*/g, '/').trim();
-    const match = industries.find(
-      (item) => normalize(item.industryName) === normalize(payload.industry),
-    );
+    const normalize = (v: string) =>
+      v
+        .toLowerCase()
+        .replace(/\s*\/\s*/g, '/')
+        .trim();
+    const match = industries.find((item) => normalize(item.industryName) === normalize(payload.industry));
     if (!match) {
       throw new Error(`Unknown industry: ${payload.industry}`);
     }
@@ -208,17 +231,13 @@ export const qcpesoService = {
       school: a.school,
       program: a.program,
       date: a.dateApplied,
-      status:
-        a.status === 'Accepted'
-          ? 'Verified'
-          : a.status === 'Rejected'
-            ? 'Rejected'
-            : 'Pending',
+      status: a.status === 'Accepted' ? 'Verified' : a.status === 'Rejected' ? 'Rejected' : 'Pending',
       email: a.email,
       phone: a.phone,
       gwa: 'N/A',
       submittedDocuments: [],
       appliedFor: a.jobTitle,
+      applicationStatus: a.applicationStatus,
     }));
   },
 

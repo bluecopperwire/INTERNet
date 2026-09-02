@@ -2,10 +2,12 @@ import { Type } from 'class-transformer';
 import {
   IsEnum,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
   Max,
   Min,
+  ValidateIf,
 } from 'class-validator';
 import { DateFilterDto } from '../../common/dto/date-filter.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
@@ -20,6 +22,11 @@ export enum ApplicationStatusFilter {
   EXPIRED = 'expired',
 }
 
+export enum ApplicationListView {
+  REVIEW = 'review',
+  HISTORY = 'history',
+}
+
 export enum ReferralResponseFilter {
   PENDING = 'pending',
   FOR_INTERVIEW = 'for_interview',
@@ -28,6 +35,14 @@ export enum ReferralResponseFilter {
 }
 
 export class QueryApplicationsDto extends DateFilterDto {
+  @IsOptional()
+  @IsEnum(ApplicationListView)
+  view?: ApplicationListView = ApplicationListView.HISTORY;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
+
   @IsOptional()
   @IsEnum(ApplicationStatusFilter)
   status?: ApplicationStatusFilter;
@@ -116,8 +131,11 @@ export class UpdateApplicationStatusDto {
   @IsEnum(ApplicationStatusFilter)
   status: ApplicationStatusFilter;
 
-  @IsOptional()
+  @ValidateIf(
+    (dto: UpdateApplicationStatusDto) =>
+      dto.status === ApplicationStatusFilter.REJECTED_FOR_REFERRAL,
+  )
   @IsString()
+  @IsNotEmpty()
   remark?: string;
 }
-

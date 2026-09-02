@@ -43,6 +43,7 @@ export interface EmployerAssignmentCandidateDto {
   applicationId: number;
   studentId: number;
   studentFullName: string;
+  strandProgram: string;
   opportunityId: number;
   jobTitle: string;
   companyName: string;
@@ -187,6 +188,8 @@ export interface StudentApplicationDto {
     companyName: string;
     companyType: CompanyType;
     industryName?: string | null;
+    logoFilePath?: string | null;
+    profileUpdatedAt?: string | null;
   };
   referral?: {
     referralId: number;
@@ -194,6 +197,7 @@ export interface StudentApplicationDto {
     companyResponse: CompanyResponse;
     referredAt: string;
     companyRespondedAt?: string | null;
+    remark?: string | null;
   } | null;
   assignment?: {
     internshipAssignmentId: number;
@@ -208,13 +212,25 @@ export interface StudentApplicationDto {
 export interface StudentApplicationStatusDto extends StudentApplicationDto {
   remark?: string | null;
   interview?: {
-    interview_schedule_id: number;
-    interview_mode: string;
+    interview_id: number;
+    interview_mode: 'online' | 'physical';
     scheduled_at: string;
     physical_location?: string | null;
     online_meeting_url?: string | null;
     remark?: string | null;
+    created_at?: string | null;
+    updated_at?: string | null;
   } | null;
+  timeline?: StatusHistoryDto[];
+  referralTimeline?: StatusHistoryDto[];
+}
+
+export interface StatusHistoryDto {
+  statusHistoryId: number;
+  previousStatus: string | null;
+  newStatus: string;
+  changedAt: string;
+  changedByRole?: UserRole | null;
 }
 
 export interface StudentRequirementsResponse {
@@ -295,6 +311,11 @@ export interface DashboardApplicationDto {
   yearLevel?: string | null;
   submittedAt: string;
   applicationStatus: ApplicationStatus;
+  referralId?: number | null;
+  referredAt?: string | null;
+  referralStatus?: ReferralStatus | null;
+  companyResponse?: CompanyResponse | null;
+  studentResponse?: StudentResponse | null;
 }
 
 export interface PesoReferralDto {
@@ -392,13 +413,18 @@ export interface UpdateOpportunityRequest {
 
 export interface EmployerReferralListItemDto {
   referralId: number;
+  applicationId: number;
   opportunityId: number;
   opportunityTitle: string;
   studentFullName: string;
   strandProgram?: string | null;
   yearLevel?: string | null;
   submittedAt: string;
+  referredAt: string;
+  applicationStatus: ApplicationStatus;
+  referralStatus: ReferralStatus;
   companyResponse: CompanyResponse;
+  studentResponse: StudentResponse;
 }
 
 export interface EmployerAttendanceItemDto {

@@ -15,12 +15,14 @@ import type {
   EmployerInternshipDetails,
   InternshipAssignment,
 } from '../types/employer.types';
+import { assignmentCandidateResponse } from '../../workflow/status-mappings';
 import type {
   CreateOpportunityRequest,
   UpdateOpportunityRequest,
   WorkArrangement,
   EmployerAssignmentCandidateDto,
 } from '../../../types/api';
+import { formatTableDate, todayDateOnly } from '../../../utils/date-only';
 
 function mapWorkArrangement(arrangement?: string): WorkArrangement {
   if (arrangement === 'Remote' || arrangement === 'remote') return 'remote';
@@ -41,15 +43,29 @@ function mapAllowance(allowance?: string | number | null): string | null {
   return trimmed;
 }
 
+export function mapInterviewSchedulePayload(details: {
+  date: string;
+  time: string;
+  mode: 'online' | 'in-person';
+  meetingUrl?: string;
+  location?: string;
+  remarks: string;
+}) {
+  return {
+    interviewDate: details.date,
+    interviewTime: details.time,
+    interviewMode: details.mode === 'online' ? 'online' : 'physical',
+    onlineMeetingUrl: details.mode === 'online' ? details.meetingUrl : null,
+    physicalLocation: details.mode === 'in-person' ? details.location : null,
+    remark: details.remarks.trim() || null,
+  } as const;
+}
+
 export function isOpportunityDeadlineExpired(
   applicationDeadline: string,
 ): boolean {
   if (!applicationDeadline) return false;
-  const deadline = new Date(`${applicationDeadline}T00:00:00`);
-  if (Number.isNaN(deadline.getTime())) return false;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return today >= deadline;
+  return applicationDeadline < todayDateOnly();
 }
 
 export function formatOpportunityDeadline(applicationDeadline: string): string {
@@ -64,31 +80,13 @@ export function formatOpportunityDeadline(applicationDeadline: string): string {
 
 export function mapStudentResponse(
   response: unknown,
-): 'Pending Response' | 'Accepted' | 'Declined' | 'Unknown' {
-  if (response === 'pending') return 'Pending Response';
-  if (response === 'accepted') return 'Accepted';
-  if (response === 'declined') return 'Declined';
-  return 'Unknown';
-}
-
-export function canWithdrawCandidate(candidate: {
-  studentResponse?: 'Pending Response' | 'Accepted' | 'Declined' | 'Unknown';
-  internshipAssignmentId?: number | null;
-  isWithdrawing?: boolean;
-}): boolean {
-  return (
-    candidate.studentResponse === 'Pending Response' &&
-    candidate.internshipAssignmentId === null &&
-    !candidate.isWithdrawing
-  );
+): 'Pending' | 'Accepted' | 'Rejected' | 'Unknown' {
+  return assignmentCandidateResponse(response as any);
 }
 
 function formatAcceptanceDate(value: string | null): string {
   if (!value) return 'Not recorded';
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? 'Invalid date'
-    : date.toLocaleDateString();
+  return formatTableDate(value) || 'Invalid date';
 }
 
 export function mapAssignmentCandidate(
@@ -100,9 +98,10 @@ export function mapAssignmentCandidate(
     referralId: c.referralId,
     internshipAssignmentId: c.internshipAssignmentId,
     studentName: c.studentFullName,
+    strandProgram: c.strandProgram || 'N/A',
     company: c.companyName,
     jobTitle: c.jobTitle,
-    acceptanceDate: formatAcceptanceDate(c.acceptanceDate),
+    acceptanceDate: formatAcceptanceDate(c.studentRespondedAt),
     studentResponse: mapStudentResponse(c.studentResponse),
     workingDays: 'Weekdays',
     requiredHours: 200,
@@ -132,7 +131,7 @@ export const employerService = {
 
   async getRecentApplicants(limit = 4): Promise<Applicant[]> {
     const store = useEmployerStore.getState();
-    await store.fetchReferrals({ page: 1, limit });
+    await store.fetchReferrals({ view: 'review', page: 1, limit });
     return useEmployerStore.getState().referrals;
   },
 
@@ -218,14 +217,54 @@ export const employerService = {
   },
 
   async getAllApplicants(): Promise<Applicant[]> {
-    const store = useEmployerStore.getState();
-    await store.fetchReferrals();
-    return useEmployerStore.getState().referrals;
+    const records: Applicant[] = [];
+    let page = 1;
+    do {
+      const result = await employerApiService.getReferrals({ view: 'review', page, limit: 100 });
+      records.push(...result.data.map(adaptEmployerReferral));
+      if (page >= result.meta.totalPages) break;
+      page++;
+    } while (true);
+    return records;
+  },
+
+  async closeOpportunity(id: string): Promise<void> {
+    await useEmployerStore.getState().closeOpportunity(Number(id));
+  },
+
+  async reopenOpportunity(id: string): Promise<void> {
+    await useEmployerStore.getState().reopenOpportunity(Number(id));
+  },
+
+  async getReferralHistory(): Promise<Applicant[]> {
+    const records: Applicant[] = [];
+    let page = 1;
+    do {
+      const result = await employerApiService.getReferrals({ view: 'history', page, limit: 100 });
+      records.push(...result.data.map(adaptEmployerReferral));
+      if (page >= result.meta.totalPages) break;
+      page++;
+    } while (true);
+    return records;
   },
 
   async getApplicantById(id: string): Promise<Applicant | undefined> {
     const raw = await employerApiService.getReferral(Number(id));
     return adaptEmployerReferral(raw);
+  },
+
+  async markApplicantUnderReview(id: string): Promise<void> {
+    await employerApiService.markReferralUnderReview(Number(id));
+  },
+
+  async scheduleInterview(
+    id: string,
+    details: { date: string; time: string; mode: 'online' | 'in-person'; meetingUrl?: string; location?: string; remarks: string },
+  ): Promise<void> {
+    await useEmployerStore.getState().scheduleInterview(
+      Number(id),
+      mapInterviewSchedulePayload(details),
+    );
   },
 
   async updateApplicantStatus(
@@ -241,18 +280,27 @@ export const employerService = {
     }
   },
 
-  async withdrawAcceptance(referralId: string): Promise<void> {
-    const store = useEmployerStore.getState();
-    await store.withdrawAcceptance(Number(referralId));
+  async deleteReferral(referralId: string): Promise<void> {
+    await employerApiService.hideReferral(Number(referralId));
   },
 
   async getApplicantsForOpportunity(
     opportunityId: string,
   ): Promise<Applicant[]> {
-    const res = await employerApiService.getReferrals({
-      opportunityId: Number(opportunityId),
-    });
-    return res.data.map(adaptEmployerReferral);
+    const records: Applicant[] = [];
+    let page = 1;
+    let totalPages = 1;
+    while (page <= totalPages) {
+      const result = await employerApiService.getOpportunityReferrals(Number(opportunityId), {
+        view: 'history',
+        page,
+        limit: 100,
+      });
+      records.push(...result.data.map(adaptEmployerReferral));
+      totalPages = result.meta.totalPages;
+      page++;
+    }
+    return records;
   },
 
   async getAttendanceRecords(): Promise<EmployerAttendanceRecord[]> {
@@ -309,6 +357,17 @@ export const employerService = {
   async getInternshipAssignments(): Promise<InternshipAssignment[]> {
     const res = await employerApiService.getAssignmentCandidates();
     return res.data.map(mapAssignmentCandidate);
+  },
+
+  async createInternshipAssignment(referralId: number, payload: {
+    workingDays: string
+    requiredHours: number
+    startDate: string
+    expectedEndDate?: string | null
+    startShift: string
+    endShift: string
+  }): Promise<unknown> {
+    return employerApiService.createInternshipAssignment(referralId, payload)
   },
 
   async getInternshipAssignmentById(

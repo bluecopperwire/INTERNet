@@ -107,25 +107,18 @@ export function TrackingDataProvider({ children }: { children: ReactNode }) {
 
   const updateApplication = useCallback(async (action: (applicationId: string) => Promise<UserApplication>, applicationId: string) => {
     setApplicationsError(null)
-    try {
-      const updated = await action(applicationId)
-      setApplications((current) => current?.map((item) => item.id === applicationId ? updated : item) ?? [updated])
-      return updated
-    } catch {
-      throw new Error('Application update failed.')
-    }
+    const updated = await action(applicationId)
+    const refreshed = await applicationsService.getMyApplications()
+    setApplications(refreshed.map((item) => item.id === applicationId ? updated : item))
+    return updated
   }, [])
 
   const withdrawApplication = useCallback((applicationId: string) => updateApplication(applicationsService.withdrawApplication, applicationId), [updateApplication])
   const respondToOffer = useCallback((applicationId: string, decision: 'accept' | 'reject') => updateApplication((id) => applicationsService.respondToOffer(id, decision), applicationId), [updateApplication])
   const deleteApplication = useCallback(async (applicationId: string) => {
     setApplicationsError(null)
-    try {
-      await applicationsService.deleteApplication(applicationId)
-      setApplications((current) => current?.filter((item) => item.id !== applicationId) ?? [])
-    } catch {
-      throw new Error('Application deletion failed.')
-    }
+    await applicationsService.deleteApplication(applicationId)
+    setApplications(await applicationsService.getMyApplications())
   }, [])
 
   const checkIn = useCallback(async () => {

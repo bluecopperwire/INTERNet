@@ -392,9 +392,9 @@
 }
 
 .reviewCard:has(.statusPill.accepted) .actionGreen,
-.reviewCard:has(.statusPill.accepted) .actionRed,
+.reviewCard:has(.statusPill.accepted) .workflowAction,
 .reviewCard:has(.statusPill.rejected) .actionGreen,
-.reviewCard:has(.statusPill.rejected) .actionRed {
+.reviewCard:has(.statusPill.rejected) .workflowAction {
   pointer-events: none;
   opacity: .5;
 }

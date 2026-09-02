@@ -1,7 +1,12 @@
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Trash2 } from 'lucide-react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { TrackingDataProvider, useTrackingData } from '../components/TrackingDataContext'
 import styles from './InternshipDetailsPage.module.css'
+import { ConfirmDeleteModal } from '../../../components/feedback/ConfirmDeleteModal'
+import { useStudentTrackingStore } from '../stores/useStudentTrackingStore'
+import { useToastStore } from '../../../stores/useToastStore'
+import { getErrorMessage } from '../../../utils/error-message'
 
 export function InternshipDetailsPage() {
   return (
@@ -14,6 +19,10 @@ export function InternshipDetailsPage() {
 function InternshipDetailsContent() {
   const navigate = useNavigate()
   const { internshipDetails, isInitializing, attendanceError } = useTrackingData()
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const hideAssignment = useStudentTrackingStore((state) => state.hideAssignment)
+  const toast = useToastStore()
 
   if (isInitializing) return <main className={styles.feedback}>Loading internship details...</main>
   if (!internshipDetails) return <main className={styles.feedback}>{attendanceError ?? 'Internship details are unavailable.'}</main>
@@ -35,6 +44,21 @@ function InternshipDetailsContent() {
     ['Rendered Hours', `${internshipDetails.renderedHours} hours`],
     ['Remaining Hours', `${internshipDetails.remainingHours} hours`],
   ]
+
+  const canDelete = ['Completed', 'Withdrawn', 'Cancelled'].includes(internshipDetails.status)
+
+  const deleteAssignment = async () => {
+    setIsDeleting(true)
+    try {
+      await hideAssignment(internshipDetails.assignmentId)
+      toast.success('Internship assignment deleted.')
+      navigate('/intern-seeker/attendance')
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to delete internship assignment.'))
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   return (
     <main className={styles.page}>
@@ -60,9 +84,12 @@ function InternshipDetailsContent() {
         </header>
         <div className={styles.cardBody}>
           <DetailGrid fields={statusFields} />
-          <button className={styles.withdrawButton} type="button">Withdraw Internship</button>
+          {canDelete
+            ? <button className={styles.withdrawButton} type="button" onClick={() => setShowDeleteModal(true)}><Trash2 size={17} />Delete</button>
+            : <button className={styles.withdrawButton} type="button">Withdraw Internship</button>}
         </div>
       </section>
+      {showDeleteModal && <ConfirmDeleteModal subject="your internship assignment" isDeleting={isDeleting} onClose={() => setShowDeleteModal(false)} onConfirm={() => void deleteAssignment()} />}
     </main>
   )
 }

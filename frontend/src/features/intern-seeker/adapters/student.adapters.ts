@@ -27,7 +27,7 @@ import type {
   AttendanceRecord,
   AttendanceSummary,
 } from '../types/attendance.types';
-import { todayDateOnly, toDateOnly } from '../../../utils/date-only';
+import { formatTableDate, todayDateOnly, toDateOnly } from '../../../utils/date-only';
 
 export function adaptOpportunity(
   dto: OpportunitySummaryDto,
@@ -321,141 +321,242 @@ export function adaptStudentProfileToUpdateDto(
 export function adaptApplicationDisplayStatus(
   app: StudentApplicationDto | StudentApplicationStatusDto,
 ): ApplicationDisplayStatus {
+  if (app.applicationStatus === 'expired') return 'Expired';
   if (app.applicationStatus === 'withdrawn') return 'Withdrawn';
   if (app.applicationStatus === 'rejected_for_referral') return 'Rejected';
 
+  if (
+    app.applicationStatus === 'closed' &&
+    app.referral?.companyResponse === 'accepted' &&
+    app.studentResponse === 'accepted'
+  ) return 'Accepted';
+  if (
+    app.applicationStatus === 'closed' &&
+    app.referral?.companyResponse === 'accepted' &&
+    app.studentResponse === 'declined'
+  ) return 'Offer Declined';
+  if (
+    app.applicationStatus === 'closed' &&
+    app.referral?.companyResponse === 'rejected'
+  ) return 'Rejected';
+
   if (app.referral) {
-    if (app.referral.companyResponse === 'accepted') return 'Accepted';
     if (app.referral.companyResponse === 'rejected') return 'Rejected';
+    if (
+      app.referral.companyResponse === 'accepted' &&
+      app.studentResponse === 'pending'
+    ) return 'Offer Received';
     if (app.referral.companyResponse === 'for_interview')
       return 'Interview Scheduled';
+    if (app.referral.referralStatus === 'under_review')
+      return 'Under Review (Company)';
     return 'Endorsed to Company';
   }
 
+  if (app.applicationStatus === 'under_review')
+    return 'Under Review (QC PESO)';
   if (app.applicationStatus === 'approved_for_referral')
     return 'Endorsed to Company';
   return 'For Review (QC PESO)';
 }
 
+const MANILA_TIME_ZONE = 'Asia/Manila';
+
+function formatTrackerTimestamp(value?: string | null): string | undefined {
+  if (!value) return undefined;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return undefined;
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: MANILA_TIME_ZONE,
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(date);
+}
+
+function historyTime(
+  history: StudentApplicationStatusDto['timeline'] | undefined,
+  status: string,
+): string | undefined {
+  return formatTrackerTimestamp(
+    history?.find((entry) => entry.newStatus === status)?.changedAt,
+  );
+}
+
 export function buildApplicationTimeline(
-  app: StudentApplicationStatusDto,
+  app: StudentApplicationDto | StudentApplicationStatusDto,
 ): ApplicationProgress[] {
-  const steps: ApplicationProgress[] = [];
-
-  // Stage 1: Submission
-  steps.push({
-    stage: 'Application Submission',
-    state: 'completed',
-    message: 'Application received and submitted successfully',
-    timestamp: new Date(app.submittedAt).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }),
-  });
-
-  // Stage 2: QC PESO Endorsement
-  if (app.applicationStatus === 'rejected_for_referral') {
-    steps.push({
-      stage: 'QC PESO Endorsement',
-      state: 'rejected',
-      message: 'Application was not approved for referral',
-      remark: app.remark || undefined,
-    });
-    return steps;
-  }
-
-  if (app.referral || app.applicationStatus === 'approved_for_referral') {
-    steps.push({
-      stage: 'QC PESO Endorsement',
+  const detail = app as StudentApplicationStatusDto;
+  const steps: ApplicationProgress[] = [
+    {
+      stage: 'Application Submission',
       state: 'completed',
-      message: 'Endorsed to partner employer',
-    });
-  } else {
-    steps.push({
+      message: 'You have submitted your application.',
+      timestamp: formatTrackerTimestamp(app.submittedAt),
+    },
+    {
       stage: 'QC PESO Endorsement',
-      state: 'current',
-      message: 'Under review by QC PESO Officers',
+      state: 'pending',
+      message: 'Your application is yet to be reviewed by QC PESO.',
+    },
+    {
+      stage: 'Company Review',
+      state: 'pending',
+      message: 'Your application is yet to be reviewed by the company.',
+    },
+    {
+      stage: 'Company Decision',
+      state: 'pending',
+      message: 'The company has yet to make their decision.',
+    },
+    {
+      stage: 'Student Decision',
+      state: 'pending',
+      message: 'You are yet to make your decision.',
+    },
+  ];
+
+  const qc = steps[1];
+  const companyReview = steps[2];
+  const companyDecision = steps[3];
+  const studentDecision = steps[4];
+  const referral = app.referral;
+
+  if (app.applicationStatus === 'rejected_for_referral') {
+    Object.assign(qc, {
+      state: 'rejected',
+      message: 'Your application has been rejected by QC PESO.',
+      remark: detail.remark || app.applicationRemark || undefined,
+      timestamp: historyTime(detail.timeline, 'rejected_for_referral'),
     });
     return steps;
   }
 
-  // Stage 3: Company Review & Interview
-  if (app.referral) {
-    if (app.referral.companyResponse === 'rejected') {
-      steps.push({
-        stage: 'Company Review',
-        state: 'rejected',
-        message: 'Application declined by partner company',
-      });
-      return steps;
-    }
+  if (app.applicationStatus === 'expired' && !referral) {
+    Object.assign(qc, {
+      state: 'expired',
+      message: 'The internship opportunity is no longer available.',
+      remark: detail.remark || app.applicationRemark || undefined,
+      timestamp: historyTime(detail.timeline, 'expired'),
+    });
+  } else if (referral || app.applicationStatus === 'approved_for_referral' || app.applicationStatus === 'closed') {
+    Object.assign(qc, {
+      state: 'completed',
+      message: 'Your application has been endorsed by QC PESO.',
+      timestamp:
+        historyTime(detail.timeline, 'approved_for_referral') ||
+        formatTrackerTimestamp(referral?.referredAt),
+    });
+  } else if (
+    app.applicationStatus === 'under_review' ||
+    detail.timeline?.some((entry) => entry.newStatus === 'under_review')
+  ) {
+    Object.assign(qc, {
+      state: 'current',
+      message: 'Your application is under review by QC PESO.',
+      timestamp: historyTime(detail.timeline, 'under_review'),
+    });
+  }
 
-    if (app.interview) {
-      steps.push({
-        stage: 'Company Review',
-        state: 'completed',
-        message: 'Interview completed or scheduled',
+  if (referral) {
+    const companyReviewStarted =
+      historyTime(detail.referralTimeline, 'under_review');
+    if (referral.companyResponse === 'for_interview') {
+      Object.assign(companyReview, {
+        state: 'interview-scheduled',
+        message: 'The company has scheduled an interview.',
+        timestamp: formatTrackerTimestamp(
+          detail.interview?.created_at || detail.interview?.updated_at,
+        ),
         interview: {
-          date: new Date(app.interview.scheduled_at).toLocaleDateString(),
-          time: new Date(app.interview.scheduled_at).toLocaleTimeString(),
-          mode:
-            app.interview.interview_mode === 'online' ? 'online' : 'in-person',
-          meetingUrl: app.interview.online_meeting_url || undefined,
-          location: app.interview.physical_location || undefined,
-          remark: app.interview.remark || undefined,
+          date: detail.interview
+            ? new Intl.DateTimeFormat('en-US', {
+                timeZone: MANILA_TIME_ZONE,
+                month: 'long', day: 'numeric', year: 'numeric',
+              }).format(new Date(detail.interview.scheduled_at))
+            : '',
+          time: detail.interview
+            ? new Intl.DateTimeFormat('en-US', {
+                timeZone: MANILA_TIME_ZONE,
+                hour: 'numeric', minute: '2-digit', hour12: true,
+              }).format(new Date(detail.interview.scheduled_at))
+            : '',
+          mode: detail.interview?.interview_mode || 'online',
+          meetingUrl: detail.interview?.online_meeting_url || undefined,
+          location: detail.interview?.physical_location || undefined,
+          remark: detail.interview?.remark || undefined,
         },
       });
-    } else if (app.referral.companyResponse === 'for_interview') {
-      steps.push({
-        stage: 'Company Review',
-        state: 'interview-scheduled',
-        message: 'Interview invitation sent by company',
+    } else if (['accepted', 'rejected'].includes(referral.companyResponse)) {
+      Object.assign(companyReview, {
+        state: 'completed',
+        message: 'The company has made their final decision.',
+        timestamp: formatTrackerTimestamp(referral.companyRespondedAt),
       });
-    } else {
-      steps.push({
-        stage: 'Company Review',
-        state:
-          app.referral.companyResponse === 'accepted' ? 'completed' : 'current',
-        message: 'Partner company is reviewing your qualifications',
+    } else if (referral.referralStatus === 'under_review') {
+      Object.assign(companyReview, {
+        state: 'current',
+        message: 'Your application is under review by the company.',
+        timestamp: companyReviewStarted,
       });
     }
   }
 
-  // Stage 4: Company Decision
-  if (app.referral?.companyResponse === 'accepted') {
-    steps.push({
-      stage: 'Company Decision',
-      state: 'completed',
-      message: 'Official internship offer extended',
+  if (referral?.companyResponse === 'rejected') {
+    Object.assign(companyDecision, {
+      state: 'rejected',
+      message: 'Your application has been rejected by the company.',
+      remark: referral.remark || undefined,
+      timestamp: formatTrackerTimestamp(referral.companyRespondedAt),
     });
+  } else if (referral?.companyResponse === 'accepted') {
+    Object.assign(companyDecision, {
+      state: 'completed',
+      message: 'Your application has been accepted by the company.',
+      timestamp: formatTrackerTimestamp(referral.companyRespondedAt),
+    });
+  }
 
-    // Stage 5: Student Decision
-    if (app.studentResponse === 'accepted') {
-      steps.push({
-        stage: 'Student Decision',
-        state: 'completed',
-        message: 'Offer accepted! Internship assignment confirmed.',
-        timestamp: app.studentRespondedAt
-          ? new Date(app.studentRespondedAt).toLocaleDateString()
-          : undefined,
-      });
-    } else if (app.studentResponse === 'declined') {
-      steps.push({
-        stage: 'Student Decision',
-        state: 'rejected',
-        message: 'Offer declined by applicant.',
-        timestamp: app.studentRespondedAt
-          ? new Date(app.studentRespondedAt).toLocaleDateString()
-          : undefined,
-      });
-    } else {
-      steps.push({
-        stage: 'Student Decision',
-        state: 'current',
-        message: 'Awaiting your response to accept or decline the offer.',
-      });
-    }
+  if (app.applicationStatus === 'expired' && referral) {
+    const expiration = {
+      state: 'expired' as const,
+      message: 'The internship opportunity is no longer available.',
+      remark: referral.remark || undefined,
+      timestamp:
+        historyTime(detail.referralTimeline, 'expired') ||
+        historyTime(detail.timeline, 'expired'),
+    };
+    if (referral.companyResponse === 'accepted') Object.assign(companyDecision, expiration);
+    else Object.assign(companyReview, expiration);
+  }
+
+  if (app.applicationStatus === 'withdrawn') {
+    Object.assign(studentDecision, {
+      state: 'withdrawn',
+      message: 'You have withdrawn your application.',
+      timestamp: historyTime(detail.timeline, 'withdrawn'),
+    });
+  } else if (app.studentResponse === 'accepted') {
+    Object.assign(studentDecision, {
+      state: 'completed',
+      message: 'You have accepted the internship offer.',
+      timestamp: formatTrackerTimestamp(app.studentRespondedAt),
+    });
+  } else if (app.studentResponse === 'declined') {
+    Object.assign(studentDecision, {
+      state: 'rejected',
+      message: 'You have declined the internship offer.',
+      timestamp: formatTrackerTimestamp(app.studentRespondedAt),
+    });
+  } else if (
+    app.applicationStatus === 'approved_for_referral' &&
+    referral?.companyResponse === 'accepted' &&
+    referral.referralStatus === 'under_review'
+  ) {
+    studentDecision.state = 'current';
   }
 
   return steps;
@@ -466,30 +567,38 @@ export function adaptApplication(
   statusDetail?: StudentApplicationStatusDto,
 ): UserApplication {
   const displayStatus = adaptApplicationDisplayStatus(statusDetail || dto);
-  const progress = statusDetail
-    ? buildApplicationTimeline(statusDetail)
-    : [
-        {
-          stage: 'Application Submission' as const,
-          state: 'completed' as const,
-          message: 'Application submitted',
-          timestamp: new Date(dto.submittedAt).toLocaleDateString(),
-        },
-      ];
+  const source = statusDetail || dto;
+  const progress = buildApplicationTimeline(source);
+  const terminal = ['rejected_for_referral', 'closed', 'withdrawn', 'expired'].includes(
+    source.applicationStatus,
+  );
+  const canRespondToOffer =
+    source.applicationStatus === 'approved_for_referral' &&
+    source.referral?.referralStatus === 'under_review' &&
+    source.referral.companyResponse === 'accepted' &&
+    source.studentResponse === 'pending';
+  const canWithdraw =
+    ['submitted', 'under_review', 'approved_for_referral'].includes(source.applicationStatus) &&
+    source.studentResponse === 'pending' &&
+    source.referral?.companyResponse !== 'rejected' &&
+    (!source.referral || ['sent', 'under_review'].includes(source.referral.referralStatus));
 
   return {
     id: String(dto.applicationId),
     companyName: dto.company.companyName,
+    companyLogoUrl: publicUploadUrl(
+      dto.company.logoFilePath,
+      dto.company.profileUpdatedAt || undefined,
+    ),
     position: dto.opportunity.title,
     industry: dto.company.industryName || 'Technology',
     location: 'Quezon City',
     status: displayStatus,
-    appliedDate: new Date(dto.submittedAt).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }),
+    appliedDate: formatTableDate(dto.submittedAt),
     progress,
+    canWithdraw,
+    canRespondToOffer,
+    canHide: terminal,
   };
 }
 
@@ -574,6 +683,7 @@ export function adaptAttendance(res: StudentAttendanceResponse): {
     };
 
     internshipDetails = {
+      assignmentId: a.internshipAssignmentId,
       companyName: a.companyName,
       jobTitle: a.jobTitle,
       workingDays: a.workingDays,

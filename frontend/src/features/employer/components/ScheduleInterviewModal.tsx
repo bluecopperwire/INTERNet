@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { CalendarDays, Clock3, MapPin, Video, X } from 'lucide-react'
 import styles from './ScheduleInterviewModal.module.css'
 import { todayDateOnly } from '../../../utils/date-only'
+import { openNativePicker } from '../../../utils/native-picker'
 
 interface ScheduleInterviewModalProps {
   applicantName: string
@@ -17,6 +18,8 @@ export function ScheduleInterviewModal({ applicantName, isSaving = false, onClos
   const [meetingUrl, setMeetingUrl] = useState('')
   const [location, setLocation] = useState('')
   const [remarks, setRemarks] = useState('')
+  const dateInputRef = useRef<HTMLInputElement>(null)
+  const timeInputRef = useRef<HTMLInputElement>(null)
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -41,8 +44,8 @@ export function ScheduleInterviewModal({ applicantName, isSaving = false, onClos
 
         <div className={styles.formBody}>
           <div className={styles.dateTimeGrid}>
-            <label className={styles.field}>Date<input name="interview-date" type="date" min={todayDateOnly()} value={date} onChange={(event) => { event.currentTarget.setCustomValidity(''); setDate(event.target.value) }} required /><CalendarDays aria-hidden="true" /></label>
-            <label className={styles.field}>Time<input type="time" value={time} onChange={(event) => setTime(event.target.value)} required /><Clock3 aria-hidden="true" /></label>
+            <label className={styles.field}><span>Date</span><div className={styles.pickerControl} onClick={() => openNativePicker(dateInputRef.current)}><input ref={dateInputRef} name="interview-date" type="date" min={todayDateOnly()} value={date} onClick={(event) => { event.stopPropagation(); openNativePicker(event.currentTarget) }} onChange={(event) => { event.currentTarget.setCustomValidity(''); setDate(event.target.value) }} required /><button type="button" aria-label="Open date picker" onClick={(event) => { event.stopPropagation(); openNativePicker(dateInputRef.current) }}><CalendarDays aria-hidden="true" /></button></div></label>
+            <label className={styles.field}><span>Time</span><div className={styles.pickerControl} onClick={() => openNativePicker(timeInputRef.current)}><input ref={timeInputRef} name="interview-time" type="time" value={time} onClick={(event) => { event.stopPropagation(); openNativePicker(event.currentTarget) }} onChange={(event) => setTime(event.target.value)} required /><button type="button" aria-label="Open time picker" onClick={(event) => { event.stopPropagation(); openNativePicker(timeInputRef.current) }}><Clock3 aria-hidden="true" /></button></div></label>
           </div>
 
           <fieldset className={styles.modeField}><legend>Interview Mode</legend><div className={styles.modeChoices}>

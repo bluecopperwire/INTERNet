@@ -85,20 +85,33 @@
 }
 
 .applicationItem {
-  display: grid;
+  display: flex;
   width: 100%;
-  grid-template-columns: 66px minmax(0, 1fr) auto 26px;
   align-items: center;
-  gap: 12px;
-  padding: 14px;
+  gap: 6px;
+  padding: 6px;
   border: 1px solid #e1e4ec;
   border-radius: 10px;
   color: #21167b;
   background: #ffffff;
   font-family: inherit;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease, background 160ms ease;
+}
+
+.applicationSelectButton {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  grid-template-columns: 66px minmax(0, 1fr) auto 26px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease, background 160ms ease;
 }
 
 .applicationItem:hover {
@@ -114,10 +127,29 @@
 }
 
 .applicationIcon {
+  display: grid;
+  position: relative;
   width: 58px;
   height: 58px;
+  flex: none;
+  place-items: center;
+  overflow: hidden;
   border-radius: 10px;
   background: #e8ebf3;
+  color: #777fa0;
+}
+
+.applicationIcon img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.applicationIcon svg {
+  width: 26px;
+  height: 26px;
 }
 
 .selectedItem .applicationIcon {
@@ -186,6 +218,9 @@
 
 .rejected {
   color: #ff5a57;
+}
+
+.statusBadge.rejected {
   background: #fff0ef;
 }
 
@@ -283,14 +318,21 @@
 }
 
 .rejected .indicator,
-.withdrawn .indicator {
+.withdrawn .indicator,
+.expired .indicator {
   border-color: #e35c64;
   color: #e35c64;
-  background: #fff5f5;
+  background: #ffffff;
+}
+
+.withdrawn,
+.expired {
+  color: #e35c64;
 }
 
 .rejected .timelineLine,
-.withdrawn .timelineLine {
+.withdrawn .timelineLine,
+.expired .timelineLine {
   background: #e35c64;
 }
 
@@ -376,6 +418,28 @@
   border-radius: 12px;
   box-shadow: 0 6px 18px rgba(16, 13, 51, 0.05);
   text-align: center;
+}
+
+.emptyState,
+.emptyProgress {
+  display: grid;
+  min-height: 220px;
+  place-content: center;
+  padding: 32px;
+  color: #5d6881;
+  text-align: center;
+}
+
+.emptyState h3,
+.emptyProgress h2 {
+  margin: 0 0 7px;
+  color: #21167b;
+}
+
+.emptyState p,
+.emptyProgress p {
+  margin: 0;
+  font-size: 13px;
 }
 
 @media (max-width: 1050px) {

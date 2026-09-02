@@ -95,6 +95,30 @@ export const employerApiService = {
     return response.data;
   },
 
+  async getOpportunityReferrals(
+    opportunityId: number,
+    params?: any,
+  ): Promise<PaginatedResponse<EmployerReferralListItemDto>> {
+    const response = await api.get<PaginatedResponse<EmployerReferralListItemDto>>(
+      `/employer/opportunities/${opportunityId}/referrals`,
+      { params },
+    );
+    return response.data;
+  },
+
+  async reopenOpportunity(id: number): Promise<EmployerOpportunityDto> {
+    const response = await api.patch<EmployerOpportunityDto>(
+      `/employer/opportunities/${id}/reopen`,
+      {},
+    );
+    return response.data;
+  },
+
+  async markReferralUnderReview(referralId: number): Promise<any> {
+    const response = await api.patch(`/employer/referrals/${referralId}/review`, {});
+    return response.data;
+  },
+
   async acceptReferral(referralId: number, remark?: string): Promise<any> {
     const response = await api.patch(`/employer/referrals/${referralId}/accept`, {
       remark,
@@ -109,14 +133,6 @@ export const employerApiService = {
     return response.data;
   },
 
-  async withdrawAcceptance(referralId: number): Promise<any> {
-    const response = await api.patch(
-      `/employer/referrals/${referralId}/withdraw-acceptance`,
-      {},
-    );
-    return response.data;
-  },
-
   async scheduleInterview(referralId: number, payload: any): Promise<any> {
     const response = await api.put(
       `/employer/referrals/${referralId}/interview`,
@@ -125,7 +141,11 @@ export const employerApiService = {
     return response.data;
   },
 
-  async getAssignmentCandidates(params?: { page?: number; limit?: number; search?: string; studentResponse?: 'pending' | 'accepted' | 'declined' }): Promise<PaginatedResponse<EmployerAssignmentCandidateDto>> {
+  async hideReferral(referralId: number): Promise<void> {
+    await api.delete(`/employer/referrals/${referralId}`);
+  },
+
+  async getAssignmentCandidates(params?: { page?: number; limit?: number; search?: string }): Promise<PaginatedResponse<EmployerAssignmentCandidateDto>> {
     const response = await api.get<PaginatedResponse<EmployerAssignmentCandidateDto>>(
       '/employer/internship-assignment-candidates',
       { params },

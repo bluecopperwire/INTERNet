@@ -16,7 +16,14 @@ import type {
   MonitoredStudentUser,
   MonitoredCompanyUser,
 } from "../types/qcpeso.types";
-import { formatDateOnly, toDateOnly } from "../../../utils/date-only";
+import {
+  applicationDisplayStatus,
+  applicationHistoryStatus,
+  isTerminalApplication,
+  isTerminalReferral,
+  referralDisplayStatus,
+} from "../../workflow/status-mappings";
+import { formatDateOnly, formatTableDate, toDateOnly } from "../../../utils/date-only";
 
 function formatCalendarDate(value: unknown): string {
   if (!value || value === "N/A") return "N/A";
@@ -84,28 +91,12 @@ export function adaptPesoApplication(
   d: DashboardApplicationDto | any,
 ): QCPesoReviewApplicant {
   if (!d) return {} as any;
-  const statusMap: Record<string, any> = {
-    submitted: "Pending",
-    under_review: "Pending",
-    approved_for_referral: "Accepted",
-    rejected_for_referral: "Rejected",
-    withdrawn: "Rejected",
-    closed: "Rejected",
-  };
-
   const rawStatus = d.applicationStatus || d.application_status;
+  const referralStatus = d.referralStatus || d.referral_status;
+  const companyResponse = d.companyResponse || d.company_response;
+  const studentResponse = d.studentResponse || d.student_response;
   const rawDate = d.submittedAt || d.submitted_at;
-  let formattedDate = "N/A";
-  if (rawDate) {
-    const parsed = new Date(rawDate);
-    if (!isNaN(parsed.getTime())) {
-      formattedDate = parsed.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
-    }
-  }
+  const formattedDate = formatTableDate(rawDate) || "N/A";
 
   const address =
     [d.address_line, d.address_barangay, d.address_city]
@@ -129,7 +120,23 @@ export function adaptPesoApplication(
     program: d.strandProgram || d.strand_program || "N/A",
     yearLevel: formatYearLevel(rawYear),
     dateApplied: formattedDate,
-    status: statusMap[rawStatus] || "Pending",
+    referralDate: d.referredAt || d.referred_at
+      ? formatTableDate(d.referredAt || d.referred_at)
+      : "—",
+    status: applicationDisplayStatus({
+      applicationStatus: rawStatus,
+      referralStatus,
+      companyResponse,
+      studentResponse,
+    }),
+    historyStatus: applicationHistoryStatus({
+      applicationStatus: rawStatus,
+      referralStatus,
+      companyResponse,
+      studentResponse,
+    }),
+    applicationStatus: rawStatus,
+    canHide: isTerminalApplication(rawStatus),
     email: d.studentContactEmail || d.student_contact_email || "N/A",
     phone: d.studentContactNumber || d.student_contact_number || "N/A",
     address,
@@ -182,20 +189,11 @@ export function adaptPesoReferral(r: PesoReferralDto | any): QCPesoReferral {
   };
 
   const rawDate = r.referredAt || r.referred_at;
-  let formattedDate = "N/A";
-  if (rawDate) {
-    const parsed = new Date(rawDate);
-    if (!isNaN(parsed.getTime())) {
-      formattedDate = parsed.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
-    }
-  }
+  const formattedDate = formatTableDate(rawDate) || "N/A";
 
   const rawCompResponse = r.companyResponse || r.company_response || "pending";
   const rawStudResponse = r.studentResponse || r.student_response || "pending";
+  const rawReferralStatus = r.referralStatus || r.referral_status;
 
   const address =
     [r.address_line, r.address_barangay, r.address_city]
@@ -209,11 +207,22 @@ export function adaptPesoReferral(r: PesoReferralDto | any): QCPesoReferral {
     studentName: r.studentFullName || r.student_full_name || "Applicant",
     company: r.companyName || r.company_name || "Partner Company",
     jobTitle: r.opportunityTitle || r.opportunity_title || "Internship Role",
+    program: r.strandProgram || r.strand_program || "N/A",
+    applicationDate: formatTableDate(r.submittedAt || r.submitted_at) || "N/A",
     referralDate: formattedDate,
     companyResponse:
       compMap[String(rawCompResponse).toLowerCase()] || "Pending",
     studentResponse:
       studMap[String(rawStudResponse).toLowerCase()] || "Pending",
+    workflowStatus: referralDisplayStatus({
+      referralStatus: rawReferralStatus,
+      companyResponse: rawCompResponse,
+      studentResponse: rawStudResponse,
+    }),
+    referralStatus: rawReferralStatus,
+    companyResponseValue: rawCompResponse,
+    studentResponseValue: rawStudResponse,
+    canHide: isTerminalReferral(rawReferralStatus),
     email: r.studentContactEmail || r.student_contact_email || "N/A",
     phone: r.studentContactNumber || r.student_contact_number || "N/A",
     address,
@@ -307,7 +316,7 @@ export function adaptPesoDtr(d: PesoDtrEntryDto | any): QCPesoAttendanceRecord {
   };
 
   const rawDate = d.date || d.dtrDate || "";
-  const formattedDate = toDateOnly(rawDate);
+  const formattedDate = formatTableDate(rawDate);
 
   const rawStatus = d.timeInStatus || d.status || "Present";
   const status = statusMap[rawStatus.toLowerCase()] || "Present";
@@ -483,7 +492,7 @@ export function adaptMonitoredStudent(row: any): MonitoredStudentUser {
     email: row.contact_email || row.contactEmail || row.email || "N/A",
     mobileNumber: row.contact_number || row.contactNumber || row.phone || "N/A",
     linkedIn: row.linkedin_url || row.linkedIn || "N/A",
-    dateRegistered: formatCalendarDate(row.created_at || row.createdAt),
+    dateRegistered: formatTableDate(row.created_at || row.createdAt) || "N/A",
     status:
       (row.account_status || row.accountStatus || "active").toLowerCase() ===
       "active"
@@ -535,13 +544,7 @@ export function adaptMonitoredCompany(row: any): MonitoredCompanyUser {
     companyName: row.company_name || row.companyName || "Company",
     email: row.contact_email || row.contactEmail || row.email || "N/A",
     contactNumber: row.contact_number || row.contactNumber || "N/A",
-    dateRegistered: row.created_at
-      ? new Date(row.created_at).toLocaleDateString("en-US", {
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-        })
-      : "N/A",
+    dateRegistered: formatTableDate(row.created_at || row.createdAt) || "N/A",
     status:
       (row.account_status || row.accountStatus || "active").toLowerCase() ===
       "active"

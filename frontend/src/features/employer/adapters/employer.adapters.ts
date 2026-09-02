@@ -1,5 +1,5 @@
 import { publicUploadUrl } from '../../../utils/public-upload-url';
-import { toDateOnly } from '../../../utils/date-only';
+import { formatTableDate, toDateOnly } from '../../../utils/date-only';
 import type {
   EmployerDashboardMetricsDto,
   EmployerOpportunityDto,
@@ -15,6 +15,12 @@ import type {
   EmployerAttendanceRecord,
   EmployerInternshipDetails,
 } from '../types/employer.types';
+import {
+  employerReviewStatus,
+  isTerminalReferral,
+  referralDisplayStatus,
+  referralHistoryStatus,
+} from '../../workflow/status-mappings';
 
 type EmployerInternshipDetailDto = {
   intern: {
@@ -88,14 +94,8 @@ export function adaptEmployerOpportunity(
 export function adaptEmployerReferral(
   r: EmployerReferralListItemDto | any,
 ): Applicant {
-  const statusMap: Record<string, any> = {
-    pending: 'Pending',
-    for_interview: 'For Interview',
-    accepted: 'Accepted',
-    rejected: 'Rejected',
-  };
-
   const referral = r.referral || r;
+  const application = r.application || r;
   const student = r.student || {};
   const opportunity = r.opportunity || {};
   const internshipPref = r.internshipPreference || {};
@@ -108,7 +108,17 @@ export function adaptEmployerReferral(
   const yLevel = student.yearLevel || r.yearLevel || 'N/A';
   const compResponse =
     referral.companyResponse || r.companyResponse || 'pending';
+  const referralStatus = referral.referralStatus || r.referralStatus;
+  const applicationStatus = application.applicationStatus || r.applicationStatus;
+  const studentResponse = application.studentResponse || r.studentResponse || 'pending';
   const subAt = r.application?.submittedAt || r.submittedAt;
+  const referredAt = referral.referredAt || r.referredAt;
+  const workflowInput = {
+    applicationStatus,
+    referralStatus,
+    companyResponse: compResponse,
+    studentResponse,
+  };
 
   const address =
     [student.addressLine, student.addressBarangay, student.addressCity]
@@ -122,14 +132,17 @@ export function adaptEmployerReferral(
     opportunityTitle: oppTitle,
     course: strandProg,
     yearLevel: yLevel,
-    dateApplied: subAt
-      ? new Date(subAt).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-        })
-      : 'N/A',
-    status: statusMap[compResponse] || 'Pending',
+    dateApplied: formatTableDate(subAt) || 'N/A',
+    applicationDate: formatTableDate(subAt) || 'N/A',
+    referralDate: formatTableDate(referredAt) || 'N/A',
+    status: referralDisplayStatus(workflowInput, 'For Review'),
+    reviewStatus: employerReviewStatus(workflowInput),
+    historyStatus: referralHistoryStatus(workflowInput),
+    applicationStatus,
+    referralStatus,
+    companyResponse: compResponse,
+    studentResponse,
+    canHide: isTerminalReferral(referralStatus),
     email: student.contactEmail || 'N/A',
     phone: student.contactNumber || 'N/A',
     location: address,
@@ -161,7 +174,7 @@ export function adaptEmployerAttendance(
     studentName: a.studentFullName,
     role: a.jobTitle,
     company: 'Company',
-    date: a.date,
+    date: formatTableDate(a.date) || 'N/A',
     timeIn: a.timeIn ? String(a.timeIn).substring(0, 5) : 'N/A',
     timeOut: a.timeOut ? String(a.timeOut).substring(0, 5) : 'N/A',
     status: statusMap[a.status] || 'Present',

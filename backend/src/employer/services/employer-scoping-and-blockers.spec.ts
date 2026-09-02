@@ -162,7 +162,7 @@ describe('employer scoping and DB migration blockers', () => {
     expect(result.title).toBe('Updated');
   });
 
-  it('withdraws accepted referral without 503 blocker', async () => {
+  it('does not allow the ordinary rejection path to reverse acceptance', async () => {
     const query = jest.fn(async (sql: string) => {
       if (sql.includes('set_config')) return [];
       if (sql.includes('SELECT r.referral_id'))
@@ -175,7 +175,6 @@ describe('employer scoping and DB migration blockers', () => {
             referral_status: 'under_review',
           },
         ];
-      if (sql.includes('UPDATE public.referral')) return [];
       return [];
     });
     const runner = {
@@ -193,9 +192,9 @@ describe('employer scoping and DB migration blockers', () => {
     } as unknown as DataSource;
 
     const service = new EmployerReferralService(dataSource, resolver());
-    jest.spyOn(service, 'getById').mockResolvedValue({ referralId: 2 } as any);
-    const result = await service.withdrawAcceptance(310, 2);
-    expect(result).toBeDefined();
+    await expect(service.reject(310, 2, {
+      remark: 'The internship slot was withdrawn.',
+    })).rejects.toThrow('Only pending or for_interview referrals can be rejected.');
   });
 
   it('soft deletes terminal internship without 503 blocker', async () => {
@@ -231,4 +230,3 @@ describe('employer scoping and DB migration blockers', () => {
     expect(result).toEqual({ deleted: true, internshipAssignmentId: 3 });
   });
 });
-

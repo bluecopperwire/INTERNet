@@ -196,6 +196,36 @@ export class StudentsController {
     );
   }
 
+  // Hides a terminal application from this student's normal application list.
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id/applications/:applicationId')
+  @HttpCode(HttpStatus.OK)
+  async hideStudentApplication(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('applicationId', ParseIntPipe) applicationId: number,
+    @CurrentUser() currentUser: any,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    return this.studentsService.hideApplication(id, applicationId, currentUser);
+  }
+
+  // Hides a terminal internship assignment from this student's tracking view.
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id/assignments/:assignmentId')
+  @HttpCode(HttpStatus.OK)
+  async hideStudentAssignment(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('assignmentId', ParseIntPipe) assignmentId: number,
+    @CurrentUser() currentUser: any,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    return this.studentsService.hideAssignment(
+      id,
+      assignmentId,
+      currentUser,
+    );
+  }
+
   // Accepts physical document upload (multipart/form-data) under backend/uploads/requirements.
   @UseGuards(JwtAuthGuard)
   @Post(':id/requirements')

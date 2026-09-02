@@ -27,6 +27,60 @@ const todayManila = () =>
     day: '2-digit',
   }).format(new Date());
 
+async function addApplicationForStudent(
+  studentId: number,
+  companyId: number,
+  stage: 'submitted' | 'for_interview' = 'submitted',
+) {
+  const opportunityId = await fixtures.opportunity(companyId, {
+    title: `Parallel application ${Date.now()} ${Math.random()}`,
+  });
+  const [application] = await db.query(
+    `INSERT INTO public.application (student_id, opportunity_id)
+     VALUES ($1, $2) RETURNING application_id`,
+    [studentId, opportunityId],
+  );
+  const applicationId = Number(application.application_id);
+  if (stage === 'submitted') {
+    return { applicationId, referralId: null };
+  }
+
+  await db.query(
+    `UPDATE public.application SET application_status = 'under_review'
+     WHERE application_id = $1`,
+    [applicationId],
+  );
+  await db.query(
+    `UPDATE public.application SET application_status = 'approved_for_referral'
+     WHERE application_id = $1`,
+    [applicationId],
+  );
+  const [personnel] = await db.query(
+    `SELECT peso_personnel_id FROM public.peso_personnel
+     ORDER BY peso_personnel_id LIMIT 1`,
+  );
+  const [referral] = await db.query(
+    `INSERT INTO public.referral
+       (application_id, peso_personnel_id, referral_document_file_path)
+     VALUES ($1, $2, $3) RETURNING referral_id`,
+    [
+      applicationId,
+      personnel.peso_personnel_id,
+      `student-${studentId}/parallel-referral.pdf`,
+    ],
+  );
+  const referralId = Number(referral.referral_id);
+  await db.query(
+    `UPDATE public.referral
+     SET referral_status = 'under_review',
+         company_response = 'for_interview',
+         company_responded_at = CURRENT_TIMESTAMP
+     WHERE referral_id = $1`,
+    [referralId],
+  );
+  return { applicationId, referralId };
+}
+
 beforeAll(async () => {
   await env.start();
   db = env.dataSource;
@@ -57,13 +111,14 @@ describe('shared HTTP authentication and authorization for all 29 routes', () =>
     ['get', '/employer/opportunities/1/referrals'],
     ['get', '/employer/referrals'],
     ['get', '/employer/referrals/1'],
+    ['patch', '/employer/referrals/1/review'],
     ['patch', '/employer/referrals/1/accept'],
     ['put', '/employer/referrals/1/interview'],
     ['patch', '/employer/referrals/1/reject'],
+    ['delete', '/employer/referrals/1'],
     ['get', '/employer/referrals/1/documents/1/download'],
     ['get', '/employer/internship-assignment-candidates'],
     ['post', '/employer/referrals/1/internship-assignment'],
-    ['patch', '/employer/referrals/1/withdraw-acceptance'],
     ['get', '/employer/attendance/summary'],
     ['get', '/employer/attendance'],
     ['get', '/employer/internships/1/attendance'],
@@ -247,7 +302,7 @@ describe('opportunity APIs', () => {
     const own = await fixtures.opportunity(companyA.companyId, {
       title: 'Own Open',
       allowance: '5000.00',
-      deadline: '2026-09-01T00:30:00+08:00',
+      deadline: '2026-09-02T00:30:00+08:00',
     });
     await fixtures.opportunity(companyA.companyId, {
       title: 'Own Closed',
@@ -270,7 +325,7 @@ describe('opportunity APIs', () => {
     expect(body.meta).toMatchObject({ page: 1, limit: 50 });
     expect(body.data.find((x: any) => x.opportunityId === own)).toMatchObject({
       allowance: '5000.00',
-      applicationDeadline: '2026-09-01',
+      applicationDeadline: '2026-09-02',
     });
     expect(
       body.data.find((x: any) => x.opportunityId === referred.opportunityId)
@@ -435,9 +490,141 @@ describe('opportunity APIs', () => {
       .set(auth(companyA.token))
       .expect(404);
   });
+
+  test('archives opportunities transactionally, expires active workflows, and preserves student-accepted work', async () => {
+    const unreferredApplicationId = await fixtures.unreferredApplication(
+      companyA.companyId,
+      'Archive Raw',
+    );
+    const [unreferred] = await db.query(
+      'SELECT opportunity_id FROM public.application WHERE application_id=$1',
+      [unreferredApplicationId],
+    );
+    const pending = await fixtures.referral(companyA.companyId, {
+      title: 'Archive Pending',
+    });
+    const interview = await fixtures.referral(companyA.companyId, {
+      title: 'Archive Interview',
+      response: 'for_interview',
+    });
+    const offerPending = await fixtures.referral(companyA.companyId, {
+      title: 'Archive Offer Pending',
+      response: 'accepted',
+    });
+    const accepted = await fixtures.referral(companyA.companyId, {
+      title: 'Archive Accepted',
+      response: 'accepted',
+      studentResponse: 'accepted',
+    });
+
+    for (const opportunityId of [
+      unreferred.opportunity_id,
+      pending.opportunityId,
+      interview.opportunityId,
+      offerPending.opportunityId,
+      accepted.opportunityId,
+    ]) {
+      await request(env.app.getHttpServer())
+        .delete(`/employer/opportunities/${opportunityId}`)
+        .set(auth(companyA.token))
+        .expect(200);
+    }
+
+    const applications = await db.query(
+      `SELECT application_id, application_status, remark
+       FROM public.application
+       WHERE application_id=ANY($1::integer[])`,
+      [
+        [
+          unreferredApplicationId,
+          pending.applicationId,
+          interview.applicationId,
+          offerPending.applicationId,
+          accepted.applicationId,
+        ],
+      ],
+    );
+    expect(
+      applications.find(
+        (row: any) => Number(row.application_id) === unreferredApplicationId,
+      ),
+    ).toMatchObject({
+      application_status: 'expired',
+      remark: 'The internship opportunity is no longer available.',
+    });
+    expect(
+      applications.find(
+        (row: any) => Number(row.application_id) === pending.applicationId,
+      ).application_status,
+    ).toBe('expired');
+    expect(
+      applications.find(
+        (row: any) => Number(row.application_id) === interview.applicationId,
+      ).application_status,
+    ).toBe('expired');
+    expect(
+      applications.find(
+        (row: any) => Number(row.application_id) === offerPending.applicationId,
+      ).application_status,
+    ).toBe('expired');
+    expect(
+      applications.find(
+        (row: any) => Number(row.application_id) === accepted.applicationId,
+      ).application_status,
+    ).toBe('closed');
+    const pendingReferral = await db.query(
+      'SELECT referral_status, company_response, remark FROM public.referral WHERE referral_id=$1',
+      [pending.referralId],
+    );
+    expect(pendingReferral[0]).toMatchObject({
+      referral_status: 'expired',
+      company_response: 'pending',
+      remark: 'The internship opportunity has been archived by the company.',
+    });
+    const retainedResponses = await db.query(
+      `SELECT referral_id, referral_status, company_response
+       FROM public.referral
+       WHERE referral_id = ANY($1::integer[])
+       ORDER BY referral_id`,
+      [[interview.referralId, offerPending.referralId]],
+    );
+    expect(retainedResponses).toEqual([
+      expect.objectContaining({
+        referral_status: 'expired',
+        company_response: 'for_interview',
+      }),
+      expect.objectContaining({
+        referral_status: 'expired',
+        company_response: 'accepted',
+      }),
+    ]);
+  });
 });
 
 describe('referral APIs', () => {
+  test('review is immediate, idempotent, scoped, and records one history transition', async () => {
+    const own = await fixtures.referral(companyA.companyId);
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await request(env.app.getHttpServer())
+        .patch(`/employer/referrals/${own.referralId}/review`)
+        .set(auth(companyA.token))
+        .expect(200);
+    }
+    const rows = await db.query(
+      `SELECT new_referral_status, changed_by_user_account_id
+       FROM public.referral_status_history
+       WHERE referral_id=$1 AND new_referral_status='under_review'`,
+      [own.referralId],
+    );
+    expect(rows).toHaveLength(1);
+    expect(Number(rows[0].changed_by_user_account_id)).toBe(companyA.accountId);
+    const foreign = await fixtures.referral(companyB.companyId);
+    await request(env.app.getHttpServer())
+      .patch(`/employer/referrals/${foreign.referralId}/review`)
+      .set(auth(companyA.token))
+      .expect(404);
+  });
+
   test('E2E-REF-001..006 list is scoped, excludes unreferred applications, and supports search/filter/pagination', async () => {
     const alice = await fixtures.referral(companyA.companyId, {
       title: 'Platform Engineer',
@@ -663,7 +850,7 @@ describe('referral APIs', () => {
       .expect(404);
   });
 
-  test('E2E-REF-029..036 rejection transitions pending/interview, stores optional remark/actor, and rejects terminal/cross-company', async () => {
+  test('E2E-REF-029..036 rejection closes application/referral, requires a remark, and permits accepted reversal while student pending', async () => {
     const pending = await fixtures.referral(companyA.companyId);
     const interviewing = await fixtures.referral(companyA.companyId, {
       response: 'for_interview',
@@ -672,7 +859,7 @@ describe('referral APIs', () => {
       .patch(`/employer/referrals/${pending.referralId}/reject`)
       .set(auth(companyA.token))
       .send({ remark: null })
-      .expect(200);
+      .expect(400);
     const rejected = await request(env.app.getHttpServer())
       .patch(`/employer/referrals/${interviewing.referralId}/reject`)
       .set(auth(companyA.token))
@@ -696,13 +883,23 @@ describe('referral APIs', () => {
     await request(env.app.getHttpServer())
       .patch(`/employer/referrals/${accepted.referralId}/reject`)
       .set(auth(companyA.token))
-      .send({})
-      .expect(409);
+      .send({ remark: 'Offer withdrawn before student response.' })
+      .expect(200);
+    const closedApplications = await db.query(
+      `SELECT application_status FROM public.application
+       WHERE application_id = ANY($1::integer[]) ORDER BY application_id`,
+      [[interviewing.applicationId, accepted.applicationId]],
+    );
+    expect(
+      closedApplications.every(
+        (row: any) => row.application_status === 'closed',
+      ),
+    ).toBe(true);
     const foreign = await fixtures.referral(companyB.companyId);
     await request(env.app.getHttpServer())
       .patch(`/employer/referrals/${foreign.referralId}/reject`)
       .set(auth(companyA.token))
-      .send({})
+      .send({ remark: 'Ownership check' })
       .expect(404);
   });
 
@@ -761,6 +958,40 @@ describe('referral APIs', () => {
       )
       .set(auth(companyA.token))
       .expect(404);
+  });
+
+  test('employer hide is terminal-only, idempotent, company-scoped, and preserves the referral', async () => {
+    const active = await fixtures.referral(companyA.companyId);
+    await request(env.app.getHttpServer())
+      .delete(`/employer/referrals/${active.referralId}`)
+      .set(auth(companyA.token))
+      .expect(409);
+    const terminal = await fixtures.referral(companyA.companyId, {
+      response: 'rejected',
+    });
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await request(env.app.getHttpServer())
+        .delete(`/employer/referrals/${terminal.referralId}`)
+        .set(auth(companyA.token))
+        .expect(200);
+    }
+    const list = await request(env.app.getHttpServer())
+      .get('/employer/referrals?page=1&limit=100')
+      .set(auth(companyA.token))
+      .expect(200);
+    expect(
+      list.body.data.some((row: any) => row.referralId === terminal.referralId),
+    ).toBe(false);
+    const persisted = await db.query(
+      `SELECT r.referral_id, rv.employer_hidden_at, rv.qc_peso_hidden_at
+       FROM public.referral r
+       JOIN public.referral_visibility rv ON rv.referral_id=r.referral_id
+       WHERE r.referral_id=$1`,
+      [terminal.referralId],
+    );
+    expect(persisted).toHaveLength(1);
+    expect(persisted[0].employer_hidden_at).not.toBeNull();
+    expect(persisted[0].qc_peso_hidden_at).toBeNull();
   });
 });
 
@@ -895,40 +1126,12 @@ describe('assignment workflow APIs', () => {
       .expect(404);
   });
 
-  test('E2E-ASG-019..022 withdraw acceptance transitions to rejected only for accepted own referrals', async () => {
-    const accepted = await fixtures.referral(companyA.companyId, {
-      response: 'accepted',
-    });
-    const withdrawn = await request(env.app.getHttpServer())
+  test('E2E-ASG-019 obsolete acceptance-withdrawal endpoint is removed', async () => {
+    const accepted = await fixtures.referral(companyA.companyId, { response: 'accepted' });
+    await request(env.app.getHttpServer())
       .patch(`/employer/referrals/${accepted.referralId}/withdraw-acceptance`)
       .set(auth(companyA.token))
-      .send({ remark: 'Company withdrew offer' })
-      .expect(200);
-    expect(withdrawn.body).toMatchObject({
-      referral: {
-        referralId: accepted.referralId,
-        companyResponse: 'rejected',
-      },
-    });
-    expect(
-      (
-        await db.query(
-          'SELECT company_response FROM public.referral WHERE referral_id=$1',
-          [accepted.referralId],
-        )
-      )[0].company_response,
-    ).toBe('rejected');
-    const pending = await fixtures.referral(companyA.companyId);
-    await request(env.app.getHttpServer())
-      .patch(`/employer/referrals/${pending.referralId}/withdraw-acceptance`)
-      .set(auth(companyA.token))
-      .expect(409);
-    const foreign = await fixtures.referral(companyB.companyId, {
-      response: 'accepted',
-    });
-    await request(env.app.getHttpServer())
-      .patch(`/employer/referrals/${foreign.referralId}/withdraw-acceptance`)
-      .set(auth(companyA.token))
+      .send({ remark: 'No longer supported' })
       .expect(404);
   });
 });
@@ -1592,9 +1795,10 @@ describe('manage internship APIs', () => {
 
   test('E2E-INT-025 pending partial edit persists while retaining untouched values', async () => {
     const pending = await makeInternship('pending', {
+      startDate: '2026-09-10',
       startShift: '08:00',
       endShift: '17:00',
-      expectedEndDate: '2026-09-01',
+      expectedEndDate: '2026-10-01',
     });
     const edited = await request(env.app.getHttpServer())
       .patch(`/employer/internships/${pending.assignmentId}`)
@@ -1733,7 +1937,7 @@ describe('manage internship APIs', () => {
       .expect(404);
   });
 
-  test('E2E-INT-049..055 delete soft deletes only terminal own rows and sets deleted_at', async () => {
+  test('E2E-INT-049..055 delete hides only terminal own rows for the employer company', async () => {
     for (const status of ['completed', 'cancelled', 'withdrawn'] as const) {
       const item = await makeInternship(status);
       const deleted = await request(env.app.getHttpServer())
@@ -1745,11 +1949,16 @@ describe('manage internship APIs', () => {
         internshipAssignmentId: item.assignmentId,
       });
       const rows = await db.query(
-        'SELECT deleted_at FROM public.internship_assignment WHERE internship_assignment_id=$1',
+        `SELECT ia.deleted_at, iav.employer_hidden_at
+         FROM public.internship_assignment ia
+         LEFT JOIN public.internship_assignment_visibility iav
+           ON iav.internship_assignment_id = ia.internship_assignment_id
+         WHERE ia.internship_assignment_id=$1`,
         [item.assignmentId],
       );
       expect(rows).toHaveLength(1);
-      expect(rows[0].deleted_at).not.toBeNull();
+      expect(rows[0].deleted_at).toBeNull();
+      expect(rows[0].employer_hidden_at).not.toBeNull();
     }
     for (const status of ['pending', 'ongoing'] as const) {
       const item = await makeInternship(status);
@@ -1868,14 +2077,14 @@ describe('scheduler integration and cross-API workflow', () => {
       .send({
         workingDays: 'weekdays',
         requiredHours: 8,
-        startDate: '2026-08-01',
+        startDate: todayManila(),
         startShift: '08:00',
         endShift: '17:00',
       })
       .expect(201);
     const assignmentId = created.body.assignment.internshipAssignmentId;
     await env.app.get(AssignmentStartScheduler).transitionDueAssignments();
-    await fixtures.attendance(assignmentId, '2026-08-17', '08:00', '17:00');
+    await fixtures.attendance(assignmentId, todayManila(), '08:00', '17:00');
     const completed = await request(env.app.getHttpServer())
       .patch(`/employer/internships/${assignmentId}/complete`)
       .set(auth(companyA.token))
@@ -1896,5 +2105,228 @@ describe('scheduler integration and cross-API workflow', () => {
     expect(Number(history[1].changed_by_user_account_id)).toBe(
       companyA.accountId,
     );
+  });
+});
+
+describe('student application workflow integration', () => {
+  test('accepting an offer closes it and atomically withdraws every other active workflow', async () => {
+    const selected = await fixtures.referral(companyA.companyId, {
+      response: 'accepted',
+      studentLabel: 'OfferAccept',
+    });
+    const submitted = await addApplicationForStudent(
+      selected.student.studentId,
+      companyB.companyId,
+    );
+    const interviewed = await addApplicationForStudent(
+      selected.student.studentId,
+      companyB.companyId,
+      'for_interview',
+    );
+
+    await request(env.app.getHttpServer())
+      .patch(
+        `/students/${selected.student.studentId}/applications/${selected.applicationId}/response`,
+      )
+      .set(auth(selected.student.token))
+      .send({ response: 'accepted' })
+      .expect(200);
+
+    const rows = await db.query(
+      `SELECT a.application_id, a.application_status, a.student_response,
+              r.referral_status, r.company_response
+       FROM public.application a
+       LEFT JOIN public.referral r ON r.application_id = a.application_id
+       WHERE a.application_id = ANY($1::integer[])
+       ORDER BY a.application_id`,
+      [
+        [
+          selected.applicationId,
+          submitted.applicationId,
+          interviewed.applicationId,
+        ],
+      ],
+    );
+    const byId = new Map(
+      rows.map((row: any) => [Number(row.application_id), row]),
+    );
+    expect(byId.get(selected.applicationId)).toMatchObject({
+      application_status: 'closed',
+      student_response: 'accepted',
+      referral_status: 'closed',
+      company_response: 'accepted',
+    });
+    expect(byId.get(submitted.applicationId)).toMatchObject({
+      application_status: 'withdrawn',
+      student_response: 'pending',
+    });
+    expect(byId.get(interviewed.applicationId)).toMatchObject({
+      application_status: 'withdrawn',
+      student_response: 'pending',
+      referral_status: 'withdrawn',
+      company_response: 'for_interview',
+    });
+
+    const history = await db.query(
+      `SELECT changed_by_user_account_id
+       FROM public.application_status_history
+       WHERE application_id = $1 AND new_application_status = 'withdrawn'`,
+      [interviewed.applicationId],
+    );
+    expect(Number(history[0].changed_by_user_account_id)).toBe(
+      selected.student.accountId,
+    );
+  });
+
+  test('declining an offer closes only that workflow', async () => {
+    const selected = await fixtures.referral(companyA.companyId, {
+      response: 'accepted',
+      studentLabel: 'OfferDecline',
+    });
+    const other = await addApplicationForStudent(
+      selected.student.studentId,
+      companyB.companyId,
+    );
+
+    await request(env.app.getHttpServer())
+      .patch(
+        `/students/${selected.student.studentId}/applications/${selected.applicationId}/response`,
+      )
+      .set(auth(selected.student.token))
+      .send({ response: 'declined' })
+      .expect(200);
+
+    const [selectedRow] = await db.query(
+      `SELECT a.application_status, a.student_response, r.referral_status,
+              r.company_response
+       FROM public.application a
+       JOIN public.referral r ON r.application_id = a.application_id
+       WHERE a.application_id = $1`,
+      [selected.applicationId],
+    );
+    const [otherRow] = await db.query(
+      `SELECT application_status FROM public.application WHERE application_id = $1`,
+      [other.applicationId],
+    );
+    expect(selectedRow).toMatchObject({
+      application_status: 'closed',
+      student_response: 'declined',
+      referral_status: 'closed',
+      company_response: 'accepted',
+    });
+    expect(otherRow.application_status).toBe('submitted');
+  });
+
+  test('withdrawal retains the company response and student hiding is terminal-only and role-scoped', async () => {
+    const selected = await fixtures.referral(companyA.companyId, {
+      response: 'for_interview',
+      studentLabel: 'WithdrawHide',
+    });
+    const active = await addApplicationForStudent(
+      selected.student.studentId,
+      companyB.companyId,
+    );
+
+    await request(env.app.getHttpServer())
+      .delete(
+        `/students/${selected.student.studentId}/applications/${active.applicationId}`,
+      )
+      .set(auth(selected.student.token))
+      .expect(409);
+    await request(env.app.getHttpServer())
+      .post(
+        `/students/${selected.student.studentId}/applications/${selected.applicationId}/withdraw`,
+      )
+      .set(auth(selected.student.token))
+      .expect(200);
+
+    const [workflow] = await db.query(
+      `SELECT a.application_status, r.referral_status, r.company_response
+       FROM public.application a
+       JOIN public.referral r ON r.application_id = a.application_id
+       WHERE a.application_id = $1`,
+      [selected.applicationId],
+    );
+    expect(workflow).toMatchObject({
+      application_status: 'withdrawn',
+      referral_status: 'withdrawn',
+      company_response: 'for_interview',
+    });
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await request(env.app.getHttpServer())
+        .delete(
+          `/students/${selected.student.studentId}/applications/${selected.applicationId}`,
+        )
+        .set(auth(selected.student.token))
+        .expect(200);
+    }
+    const list = await request(env.app.getHttpServer())
+      .get(`/students/${selected.student.studentId}/applications`)
+      .set(auth(selected.student.token))
+      .expect(200);
+    expect(
+      list.body.some(
+        (application: any) =>
+          Number(application.applicationId) === selected.applicationId,
+      ),
+    ).toBe(false);
+    await request(env.app.getHttpServer())
+      .get(`/employer/referrals/${selected.referralId}`)
+      .set(auth(companyA.token))
+      .expect(200);
+  });
+
+  test('student assignment hide is terminal-only, student-scoped, and preserves the assignment', async () => {
+    const terminalReferral = await fixtures.referral(companyA.companyId, {
+      response: 'accepted',
+      studentResponse: 'accepted',
+      studentLabel: 'StudentAssignmentHide',
+    });
+    const terminalAssignmentId = await fixtures.assignment(
+      terminalReferral.referralId,
+      { status: 'completed' },
+    );
+    const activeReferral = await fixtures.referral(companyA.companyId, {
+      response: 'accepted',
+      studentResponse: 'accepted',
+      studentLabel: 'StudentAssignmentActive',
+    });
+    const activeAssignmentId = await fixtures.assignment(activeReferral.referralId);
+
+    await request(env.app.getHttpServer())
+      .delete(
+        `/students/${activeReferral.student.studentId}/assignments/${activeAssignmentId}`,
+      )
+      .set(auth(activeReferral.student.token))
+      .expect(409);
+
+    await request(env.app.getHttpServer())
+      .delete(
+        `/students/${terminalReferral.student.studentId}/assignments/${terminalAssignmentId}`,
+      )
+      .set(auth(terminalReferral.student.token))
+      .expect(200);
+
+    const [persisted] = await db.query(
+      `SELECT ia.internship_assignment_id, ia.deleted_at,
+              iav.student_hidden_at, iav.employer_hidden_at
+       FROM public.internship_assignment ia
+       JOIN public.internship_assignment_visibility iav
+         ON iav.internship_assignment_id = ia.internship_assignment_id
+       WHERE ia.internship_assignment_id = $1`,
+      [terminalAssignmentId],
+    );
+    expect(persisted).toMatchObject({
+      internship_assignment_id: terminalAssignmentId,
+      deleted_at: null,
+      employer_hidden_at: null,
+    });
+    expect(persisted.student_hidden_at).not.toBeNull();
+
+    await request(env.app.getHttpServer())
+      .get(`/employer/internships/${terminalAssignmentId}`)
+      .set(auth(companyA.token))
+      .expect(200);
   });
 });

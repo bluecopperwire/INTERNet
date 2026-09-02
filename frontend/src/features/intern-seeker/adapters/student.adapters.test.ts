@@ -1,9 +1,41 @@
 import { describe, expect, it } from "vitest";
-import type { StudentProfileResponse } from "../../../types/api";
+import type { StudentApplicationStatusDto, StudentProfileResponse } from "../../../types/api";
 import {
+  adaptApplication,
   adaptStudentProfile,
   adaptStudentProfileToUpdateDto,
 } from "./student.adapters";
+
+function applicationStatus(
+  overrides: Partial<StudentApplicationStatusDto> = {},
+): StudentApplicationStatusDto {
+  return {
+    applicationId: 1,
+    submittedAt: "2026-07-20T03:15:00.000Z",
+    applicationStatus: "submitted",
+    studentResponse: "pending",
+    opportunity: {
+      opportunityId: 10,
+      title: "Software Intern",
+      department: "Engineering",
+      workArrangement: "hybrid",
+      minimumRequiredHours: 300,
+      applicationDeadline: "2026-09-30T00:00:00.000Z",
+      status: "open",
+    },
+    company: {
+      companyId: 5,
+      companyName: "Example Company",
+      companyType: "private",
+    },
+    referral: null,
+    assignment: null,
+    interview: null,
+    timeline: [],
+    referralTimeline: [],
+    ...overrides,
+  };
+}
 
 function profileResponse(
   overrides: Partial<StudentProfileResponse> = {},
@@ -188,5 +220,54 @@ describe("student profile adapters", () => {
     ]);
 
     expect(payload.preferredIndustries).toEqual([{ industryId: 1 }]);
+  });
+});
+
+describe("student application presentation", () => {
+  const referral = (
+    companyResponse: "pending" | "for_interview" | "accepted" | "rejected",
+    referralStatus: "sent" | "under_review" | "closed" | "withdrawn" | "expired" = "under_review",
+  ) => ({
+    referralId: 20,
+    referralStatus,
+    companyResponse,
+    referredAt: "2026-07-21T01:00:00.000Z",
+    companyRespondedAt: companyResponse === "pending" ? null : "2026-07-22T02:00:00.000Z",
+    remark: companyResponse === "rejected" ? "Role was filled." : null,
+  });
+
+  it.each([
+    ["submitted", applicationStatus(), "For Review (QC PESO)", ["completed", "pending", "pending", "pending", "pending"]],
+    ["QC review", applicationStatus({ applicationStatus: "under_review" }), "Under Review (QC PESO)", ["completed", "current", "pending", "pending", "pending"]],
+    ["QC rejected", applicationStatus({ applicationStatus: "rejected_for_referral", remark: "Missing credential" }), "Rejected", ["completed", "rejected", "pending", "pending", "pending"]],
+    ["endorsed", applicationStatus({ applicationStatus: "approved_for_referral", referral: referral("pending", "sent") }), "Endorsed to Company", ["completed", "completed", "pending", "pending", "pending"]],
+    ["company review", applicationStatus({ applicationStatus: "approved_for_referral", referral: referral("pending") }), "Under Review (Company)", ["completed", "completed", "current", "pending", "pending"]],
+    ["interview", applicationStatus({ applicationStatus: "approved_for_referral", referral: referral("for_interview") }), "Interview Scheduled", ["completed", "completed", "interview-scheduled", "pending", "pending"]],
+    ["offer", applicationStatus({ applicationStatus: "approved_for_referral", referral: referral("accepted") }), "Offer Received", ["completed", "completed", "completed", "completed", "current"]],
+    ["company rejected", applicationStatus({ applicationStatus: "closed", referral: referral("rejected", "closed") }), "Rejected", ["completed", "completed", "completed", "rejected", "pending"]],
+    ["student accepted", applicationStatus({ applicationStatus: "closed", studentResponse: "accepted", referral: referral("accepted", "closed") }), "Accepted", ["completed", "completed", "completed", "completed", "completed"]],
+    ["student declined", applicationStatus({ applicationStatus: "closed", studentResponse: "declined", referral: referral("accepted", "closed") }), "Offer Declined", ["completed", "completed", "completed", "completed", "rejected"]],
+    ["withdrawn", applicationStatus({ applicationStatus: "withdrawn" }), "Withdrawn", ["completed", "pending", "pending", "pending", "withdrawn"]],
+    ["expired before referral", applicationStatus({ applicationStatus: "expired" }), "Expired", ["completed", "expired", "pending", "pending", "pending"]],
+    ["expired at company review", applicationStatus({ applicationStatus: "expired", referral: referral("for_interview", "expired") }), "Expired", ["completed", "completed", "expired", "pending", "pending"]],
+    ["expired after acceptance", applicationStatus({ applicationStatus: "expired", referral: referral("accepted", "expired") }), "Expired", ["completed", "completed", "completed", "expired", "pending"]],
+  ] as const)("maps %s to one badge and five stages", (_name, dto, badge, states) => {
+    const presentation = adaptApplication(dto, dto);
+    expect(presentation.status).toBe(badge);
+    expect(presentation.progress).toHaveLength(5);
+    expect(presentation.progress.map((stage) => stage.state)).toEqual(states);
+  });
+
+  it("uses declined wording and never exposes offer actions after closure", () => {
+    const dto = applicationStatus({
+      applicationStatus: "closed",
+      studentResponse: "declined",
+      referral: referral("accepted", "closed"),
+    });
+    const presentation = adaptApplication(dto, dto);
+    expect(presentation.progress[4].message).toBe("You have declined the internship offer.");
+    expect(presentation.canRespondToOffer).toBe(false);
+    expect(presentation.canWithdraw).toBe(false);
+    expect(presentation.canHide).toBe(true);
   });
 });

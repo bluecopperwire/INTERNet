@@ -39,23 +39,27 @@ export function OpportunityDetailsPage() {
     employerService
       .getOpportunityById(id)
       .then((data) => setOpportunity(data ?? null))
+      .catch(() => setOpportunity(null))
       .finally(() => setIsLoading(false))
   }, [id])
 
   const isExpired = opportunity ? isOpportunityDeadlineExpired(opportunity.applicationDeadline) : false
 
   const handleStatusToggle = async () => {
-    if (!opportunity || isExpired) return
+    if (!opportunity) return
+    if (opportunity.status === 'Closed' && isExpired) {
+      toast.error('The application deadline has passed. Update it before reopening this opportunity.')
+      return
+    }
 
     setIsUpdating(true)
     try {
-      const updatedOpportunity: Opportunity = {
-        ...opportunity,
-        status: opportunity.status === 'Open' ? 'Closed' : 'Open',
-      }
-      await employerService.saveOpportunity(updatedOpportunity)
+      const nextStatus = opportunity.status === 'Open' ? 'Closed' : 'Open'
+      if (nextStatus === 'Closed') await employerService.closeOpportunity(opportunity.id)
+      else await employerService.reopenOpportunity(opportunity.id)
+      const updatedOpportunity: Opportunity = { ...opportunity, status: nextStatus }
       setOpportunity(updatedOpportunity)
-      toast.success(`Opportunity ${updatedOpportunity.status === 'Open' ? 'opened' : 'closed'}.`)
+      toast.success(`Opportunity ${nextStatus === 'Open' ? 'reopened' : 'closed'}.`)
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, 'Failed to update opportunity status.'))
     } finally {
@@ -140,19 +144,19 @@ export function OpportunityDetailsPage() {
             className={styles.editButton}
             onClick={() => navigate(`/employer/opportunities/${opportunity.id}/edit`)}
           >
-            Edit
+            Edit Opportunity
           </button>
           <button
             type="button"
             className={styles.closeButton}
-            disabled={isUpdating || isExpired}
+            disabled={isUpdating}
             onClick={handleStatusToggle}
           >
-            {isExpired ? 'Deadline Passed' : opportunity.status === 'Open' ? 'Close' : 'Open'}
+            {opportunity.status === 'Open' ? 'Close Opportunity' : 'Reopen Opportunity'}
           </button>
-          <button type="button" className={styles.deleteButton} disabled={isUpdating} onClick={handleDelete}>
-            Delete
-          </button>
+          {opportunity.status === 'Closed' && <button type="button" className={styles.deleteButton} disabled={isUpdating} onClick={handleDelete}>
+            Delete Opportunity
+          </button>}
         </footer>
       </section>
     </main>

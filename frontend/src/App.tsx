@@ -28,7 +28,7 @@ import { QCPesoProfileEditorPage } from './features/qcpeso/pages/QCPesoProfileEd
 import { MonitorUsersPage } from './features/qcpeso/pages/MonitorUsersPage'
 import { MonitorUserDetailsPage } from './features/qcpeso/pages/MonitorUserDetailsPage'
 import { CreateEmployerPage } from './features/qcpeso/pages/CreateEmployerPage'
-import { ReferralDetailsPage, ReviewApplicantDetailsPage, ReviewApplicantsPage, TrackReferralsPage } from './features/qcpeso/pages/ApplicantManagementPages'
+import { ApplicationHistoryDetailsPage, ApplicationsHistoryPage, ReviewApplicantDetailsPage, ReviewApplicantsPage } from './features/qcpeso/pages/ApplicantManagementPages'
 import { QCPesoOpportunityViewPage } from './features/qcpeso/pages/QCPesoOpportunityViewPage'
 import { QCPesoAttendanceDetailsPage, QCPesoAttendancePage, QCPesoInternshipDetailsPage, QCPesoManageInternshipPage } from './features/qcpeso/pages/InternManagementPages'
 
@@ -38,10 +38,10 @@ import { EmployerDashboardPage } from './features/employer/pages/EmployerDashboa
 import { OpportunitiesPage } from './features/employer/pages/OpportunitiesPage'
 import { CreateOpportunityPage } from './features/employer/pages/CreateOpportunityPage'
 import { OpportunityDetailsPage } from './features/employer/pages/OpportunityDetailsPage'
-import { ApplicantsPage } from './features/employer/pages/ApplicantsPage'
+import { ApplicantsPage, ReferralsHistoryPage } from './features/employer/pages/ApplicantsPage'
 import { CompanyProfilePage } from './features/employer/pages/CompanyProfilePage'
 import { CompanyProfileEditorPage } from './features/employer/pages/CompanyProfileEditorPage'
-import { ReviewApplicantPage } from './features/employer/pages/ReviewApplicantPage'
+import { ReferralHistoryDetailsPage, ReviewApplicantPage } from './features/employer/pages/ReviewApplicantPage'
 import { AttendanceMonitoringPage } from './features/employer/pages/AttendanceMonitoringPage'
 import { AttendanceInternshipDetailsPage } from './features/employer/pages/AttendanceInternshipDetailsPage'
 import { ReportsPage } from './features/employer/pages/ReportsPage'
@@ -123,8 +123,10 @@ function App() {
           <Route path="monitor-users/employers/:id" element={<MonitorUserDetailsPage />} />
           <Route path="manage-applicants/review" element={<ReviewApplicantsPage />} />
           <Route path="manage-applicants/review/:id" element={<ReviewApplicantDetailsPage />} />
-          <Route path="manage-applicants/referrals" element={<TrackReferralsPage />} />
-          <Route path="manage-applicants/referrals/:id" element={<ReferralDetailsPage />} />
+          <Route path="manage-applicants/history" element={<ApplicationsHistoryPage />} />
+          <Route path="manage-applicants/history/:id" element={<ApplicationHistoryDetailsPage />} />
+          <Route path="manage-applicants/referrals" element={<Navigate to="/qcpeso/manage-applicants/history" replace />} />
+          <Route path="manage-applicants/referrals/:id" element={<Navigate to="/qcpeso/manage-applicants/history" replace />} />
           <Route path="manage-applicants/opportunities/:id" element={<QCPesoOpportunityViewPage />} />
           <Route path="manage-interns/attendance" element={<QCPesoAttendancePage />} />
           <Route path="manage-interns/attendance/:id" element={<QCPesoAttendanceDetailsPage />} />
@@ -156,6 +158,8 @@ function App() {
           <Route path="opportunities/:id/edit" element={<CreateOpportunityPage />} />
           <Route path="applicants" element={<ApplicantsPage />} />
           <Route path="applicants/:id" element={<ReviewApplicantPage />} />
+          <Route path="referrals-history" element={<ReferralsHistoryPage />} />
+          <Route path="referrals-history/:id" element={<ReferralHistoryDetailsPage />} />
           <Route path="internship-assignments" element={<CreateInternshipAssignmentPage />} />
           <Route path="internship-assignments/:id" element={<ReviewInternshipAssignmentPage />} />
           <Route path="attendance" element={<AttendanceMonitoringPage />} />

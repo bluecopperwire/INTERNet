@@ -32,7 +32,16 @@ export enum InterviewMode {
   PHYSICAL = 'physical',
 }
 
+export enum ReferralListView {
+  REVIEW = 'review',
+  HISTORY = 'history',
+}
+
 export class ReferralListQueryDto extends EmployerPaginationDto {
+  @IsOptional()
+  @IsEnum(ReferralListView)
+  view?: ReferralListView = ReferralListView.HISTORY;
+
   @IsOptional()
   @Trim()
   @IsString()
@@ -72,11 +81,10 @@ export class ScheduleInterviewDto {
 }
 
 export class RejectReferralDto {
-  @IsOptional()
   @NullableTrim()
   @IsString()
   @IsNotEmpty()
-  remark?: string | null;
+  remark!: string;
 }
 
 export class AssignmentCandidateQueryDto extends EmployerPaginationDto {
@@ -85,9 +93,4 @@ export class AssignmentCandidateQueryDto extends EmployerPaginationDto {
   @IsString()
   search?: string;
 
-  @IsOptional()
-  @IsEnum(StudentResponse)
-  studentResponse?: StudentResponse;
 }
-
-export class WithdrawAcceptanceDto {}
