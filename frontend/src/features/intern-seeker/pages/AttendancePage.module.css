@@ -19,6 +19,32 @@
   margin: 0 auto;
 }
 
+.emptyState {
+  display: grid;
+  max-width: var(--tracking-content-width);
+  gap: 18px;
+  margin: 0 auto;
+  color: #5d6881;
+  text-align: center;
+}
+
+.emptyState .todayPanel,
+.emptyState .summaryPanel {
+  display: grid;
+  min-height: 180px;
+  place-content: center;
+}
+
+.emptyState h2 {
+  margin: 0 0 7px;
+  color: var(--tracking-purple);
+}
+
+.emptyState p {
+  margin: 0;
+  font-size: 13px;
+}
+
 .primaryColumn,
 .secondaryColumn {
   display: flex;
@@ -105,7 +131,10 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
 }
 
 .internshipDetailsButton:hover {
@@ -125,7 +154,9 @@
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 160ms ease, transform 160ms ease;
+  transition:
+    background 160ms ease,
+    transform 160ms ease;
 }
 
 .checkInButton:hover:not(:disabled) {
@@ -165,7 +196,9 @@
   color: var(--tracking-purple);
   background: linear-gradient(145deg, #ffffff 15%, var(--stat-background) 100%);
   text-align: left;
-  transition: border-color 160ms ease, transform 160ms ease;
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease;
 }
 
 .summaryCard::before {
@@ -175,7 +208,7 @@
   left: 0;
   height: 4px;
   background: var(--stat-accent);
-  content: '';
+  content: "";
 }
 
 .summaryCard:hover {

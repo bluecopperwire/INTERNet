@@ -73,7 +73,25 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition: transform 160ms ease, box-shadow 160ms ease;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.applyArea {
+  display: grid;
+  max-width: 230px;
+  flex: none;
+  justify-items: end;
+  gap: 7px;
+}
+
+.applyBlockedMessage {
+  margin: 0;
+  color: #6c5971;
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: right;
 }
 
 .applyButton:hover:not(:disabled) {
@@ -178,6 +196,15 @@
 
   .applyButton {
     width: 100%;
+  }
+
+  .applyArea {
+    width: 100%;
+    max-width: none;
+  }
+
+  .applyBlockedMessage {
+    text-align: left;
   }
 
   .quickFacts {

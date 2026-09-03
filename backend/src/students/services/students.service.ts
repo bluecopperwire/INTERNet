@@ -38,6 +38,31 @@ type ApplicationWorkflowRow = {
   company_response: string;
 };
 
+type StudentAssignmentRow = {
+  internship_assignment_id: number | string;
+  company_id: number | string;
+  company_name: string;
+  company_logo_file_path: string | null;
+  opportunity_id: number | string;
+  job_title: string;
+  working_days: number[];
+  required_minutes: number | string;
+  total_rendered_minutes: number | string;
+  start_date: string;
+  expected_end_date: string | null;
+  ended_at: Date | string | null;
+  start_shift: string;
+  end_shift: string;
+  assignment_status: string;
+  company_completion_remark: string | null;
+  company_cancellation_remark: string | null;
+  student_withdrawal_remark: string | null;
+  review_rating: number | string | null;
+  review_remark: string | null;
+  reviewed_at: Date | string | null;
+  created_at: Date | string;
+};
+
 @Injectable()
 export class StudentsService {
   constructor(
@@ -464,6 +489,25 @@ export class StudentsService {
       throw new NotFoundException('Student not found');
     }
 
+    const currentAssignments = await this.dataSource.query<
+      Array<{ internship_assignment_id: number }>
+    >(
+      `SELECT ia.internship_assignment_id
+       FROM public.internship_assignment ia
+       JOIN public.referral r ON r.referral_id = ia.referral_id
+       JOIN public.application a ON a.application_id = r.application_id
+       WHERE a.student_id = $1
+         AND ia.assignment_status <> 'finalized'
+         AND ia.deleted_at IS NULL
+       LIMIT 1`,
+      [studentId],
+    );
+    if (currentAssignments.length > 0) {
+      throw new ConflictException(
+        'You cannot apply for another internship while your current internship has not yet been finalized.',
+      );
+    }
+
     // Validate student personal information completeness
     if (
       !student.firstName ||
@@ -586,6 +630,30 @@ export class StudentsService {
         this.dataSource,
         currentUser?.userAccountId ?? null,
         async (runner) => {
+          // Serialize all application submissions for this Student, including
+          // simultaneous submissions to different opportunities.
+          await runner.query('SELECT pg_advisory_xact_lock($1, $2)', [
+            77321,
+            studentId,
+          ]);
+
+          const lockedCurrentAssignments = await runner.query(
+            `SELECT ia.internship_assignment_id
+             FROM public.internship_assignment ia
+             JOIN public.referral r ON r.referral_id = ia.referral_id
+             JOIN public.application a ON a.application_id = r.application_id
+             WHERE a.student_id = $1
+               AND ia.assignment_status <> 'finalized'
+               AND ia.deleted_at IS NULL
+             FOR SHARE OF ia`,
+            [studentId],
+          );
+          if (lockedCurrentAssignments.length > 0) {
+            throw new ConflictException(
+              'You cannot apply for another internship while your current internship has not yet been finalized.',
+            );
+          }
+
           // Serialize application submissions for this student/opportunity pair.
           // The active-only unique index remains the final concurrency guard.
           await runner.query('SELECT pg_advisory_xact_lock($1, $2)', [
@@ -1215,6 +1283,97 @@ export class StudentsService {
     );
   }
 
+  async getCurrentInternship(studentId: number) {
+    const rows = await this.dataSource.query<StudentAssignmentRow[]>(
+      `${this.studentAssignmentSelect()}
+       WHERE a.student_id = $1
+         AND ia.assignment_status <> 'finalized'
+         AND ia.deleted_at IS NULL
+         AND NOT EXISTS (
+           SELECT 1 FROM public.internship_assignment_visibility iav
+           WHERE iav.internship_assignment_id = ia.internship_assignment_id
+             AND iav.student_hidden_at IS NOT NULL
+         )
+       ORDER BY ia.created_at DESC, ia.internship_assignment_id DESC`,
+      [studentId],
+    );
+
+    if (rows.length > 1) {
+      throw new ConflictException(
+        'Multiple current internship assignments were found. Please contact QC PESO.',
+      );
+    }
+
+    return rows[0] ? this.mapStudentAssignment(rows[0]) : null;
+  }
+
+  async getInternshipHistory(
+    studentId: number,
+    pagination: { page?: number; limit?: number },
+  ) {
+    const page = Math.max(1, Number(pagination.page) || 1);
+    const limit = Math.max(1, Math.min(15, Number(pagination.limit) || 5));
+    const offset = (page - 1) * limit;
+    const visibilityClause = `
+      a.student_id = $1
+      AND ia.deleted_at IS NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM public.internship_assignment_visibility iav
+        WHERE iav.internship_assignment_id = ia.internship_assignment_id
+          AND iav.student_hidden_at IS NOT NULL
+      )`;
+
+    const [countRows, rows] = await Promise.all([
+      this.dataSource.query<Array<{ total: number | string }>>(
+        `SELECT count(*)::integer AS total
+         FROM public.internship_assignment ia
+         JOIN public.referral r ON r.referral_id = ia.referral_id
+         JOIN public.application a ON a.application_id = r.application_id
+         WHERE ${visibilityClause}`,
+        [studentId],
+      ),
+      this.dataSource.query<StudentAssignmentRow[]>(
+        `${this.studentAssignmentSelect()}
+         WHERE ${visibilityClause}
+         ORDER BY ia.created_at DESC, ia.internship_assignment_id DESC
+         LIMIT $2 OFFSET $3`,
+        [studentId, limit, offset],
+      ),
+    ]);
+
+    const total = Number(countRows[0]?.total ?? 0);
+    return {
+      data: rows.map((row) => this.mapStudentAssignment(row)),
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+      },
+    };
+  }
+
+  async getInternshipHistoryDetail(studentId: number, assignmentId: number) {
+    const rows = await this.dataSource.query<StudentAssignmentRow[]>(
+      `${this.studentAssignmentSelect()}
+       WHERE a.student_id = $1
+         AND ia.internship_assignment_id = $2
+         AND ia.deleted_at IS NULL
+         AND NOT EXISTS (
+           SELECT 1 FROM public.internship_assignment_visibility iav
+           WHERE iav.internship_assignment_id = ia.internship_assignment_id
+             AND iav.student_hidden_at IS NOT NULL
+         )`,
+      [studentId, assignmentId],
+    );
+    if (!rows[0]) {
+      throw new NotFoundException(
+        'Internship assignment not found for this student',
+      );
+    }
+    return this.mapStudentAssignment(rows[0]);
+  }
+
   async withdrawAssignment(
     studentId: number,
     assignmentId: number,
@@ -1621,21 +1780,23 @@ export class StudentsService {
         JOIN public.company c ON c.company_id = o.company_id
         LEFT JOIN public.vw_attendance_summary ats ON ats.internship_assignment_id = ia.internship_assignment_id
         WHERE a.student_id = $1
+          AND ia.assignment_status <> 'finalized'
           AND ia.deleted_at IS NULL
           AND NOT EXISTS (
             SELECT 1 FROM public.internship_assignment_visibility iav
             WHERE iav.internship_assignment_id = ia.internship_assignment_id
               AND iav.student_hidden_at IS NOT NULL
           )
-        ORDER BY 
-          CASE WHEN ia.assignment_status = 'ongoing' THEN 1 
-               WHEN ia.assignment_status = 'pending' THEN 2 
-               ELSE 3 END,
-          ia.created_at DESC
-        LIMIT 1
+        ORDER BY ia.created_at DESC, ia.internship_assignment_id DESC
       `,
       [studentId],
     );
+
+    if (assignmentRows.length > 1) {
+      throw new ConflictException(
+        'Multiple current internship assignments were found. Please contact QC PESO.',
+      );
+    }
 
     if (!assignmentRows || assignmentRows.length === 0) {
       return {
@@ -1794,6 +1955,81 @@ export class StudentsService {
 
     const normalized = (value ?? '').trim().toLowerCase().replace(/\s+/g, '_');
     return map[normalized] ?? normalized;
+  }
+
+  private studentAssignmentSelect(): string {
+    return `
+      SELECT
+        ia.internship_assignment_id,
+        c.company_id,
+        c.company_name,
+        c.logo_file_path AS company_logo_file_path,
+        o.opportunity_id,
+        o.title AS job_title,
+        ia.working_days,
+        ia.required_minutes,
+        COALESCE(ats.total_rendered_minutes, 0::bigint) AS total_rendered_minutes,
+        ia.start_date::text AS start_date,
+        ia.expected_end_date::text AS expected_end_date,
+        ia.ended_at,
+        ia.start_shift,
+        ia.end_shift,
+        ia.assignment_status,
+        ia.company_completion_remark,
+        ia.company_cancellation_remark,
+        ia.student_withdrawal_remark,
+        f.rating AS review_rating,
+        f.remark AS review_remark,
+        f.reviewed_at,
+        ia.created_at
+      FROM public.internship_assignment ia
+      JOIN public.referral r ON r.referral_id = ia.referral_id
+      JOIN public.application a ON a.application_id = r.application_id
+      JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
+      JOIN public.company c ON c.company_id = o.company_id
+      LEFT JOIN public.vw_attendance_summary ats
+        ON ats.internship_assignment_id = ia.internship_assignment_id
+      LEFT JOIN public.internship_feedback f
+        ON f.internship_assignment_id = ia.internship_assignment_id`;
+  }
+
+  private mapStudentAssignment(row: StudentAssignmentRow) {
+    const requiredMinutes = Number(row.required_minutes);
+    const renderedMinutes = Number(row.total_rendered_minutes ?? 0);
+    const remainingMinutes = Math.max(0, requiredMinutes - renderedMinutes);
+    return {
+      internshipAssignmentId: Number(row.internship_assignment_id),
+      companyId: Number(row.company_id),
+      companyName: row.company_name,
+      companyLogoFilePath: row.company_logo_file_path,
+      opportunityId: Number(row.opportunity_id),
+      jobTitle: row.job_title,
+      workingDays: row.working_days.map(Number),
+      requiredMinutes,
+      renderedMinutes,
+      remainingMinutes,
+      requiredHours: requiredMinutes / 60,
+      renderedHours: Number((renderedMinutes / 60).toFixed(2)),
+      remainingHours: Number((remainingMinutes / 60).toFixed(2)),
+      startDate: row.start_date,
+      expectedEndDate: row.expected_end_date,
+      endedAt: row.ended_at,
+      startShift: row.start_shift,
+      endShift: row.end_shift,
+      assignmentStatus: row.assignment_status,
+      companyCompletionRemark: row.company_completion_remark,
+      companyCancellationRemark: row.company_cancellation_remark,
+      studentWithdrawalRemark: row.student_withdrawal_remark,
+      studentReview:
+        row.review_rating === null
+          ? null
+          : {
+              rating: Number(row.review_rating),
+              remark: row.review_remark,
+              reviewedAt: row.reviewed_at,
+            },
+      createdAt: row.created_at,
+    };
   }
 
   private async validateAssignmentForStudent(

@@ -15,7 +15,9 @@ import { DashboardPage } from './features/intern-seeker/pages/DashboardPage'
 import { ProfileEditorPage } from './features/intern-seeker/pages/ProfileEditorPage'
 import ApplicationStatusPage from './features/intern-seeker/pages/ApplicationStatusPage'
 import AttendancePage from './features/intern-seeker/pages/AttendancePage'
-import { InternshipDetailsPage } from './features/intern-seeker/pages/InternshipDetailsPage'
+import InternshipPage from './features/intern-seeker/pages/InternshipPage'
+import InternshipHistoryPage from './features/intern-seeker/pages/InternshipHistoryPage'
+import InternshipHistoryDetailsPage from './features/intern-seeker/pages/InternshipHistoryDetailsPage'
 import TrackingLayout from './features/intern-seeker/components/TrackingLayout'
 
 // QCPESO
@@ -90,11 +92,14 @@ function App() {
           <Route path="profile" element={<DashboardPage />} />
           <Route path="profile/edit" element={<ProfileEditorPage />} />
           <Route path="digicv" element={<DigiCVPage />} />
-          <Route path="internship-details" element={<InternshipDetailsPage />} />
+          <Route path="internship-details" element={<Navigate to="/intern-seeker/internship" replace />} />
           <Route element={<TrackingLayout />}>
             <Route path="requirements" element={<RequirementsPage />} />
             <Route path="application-status" element={<ApplicationStatusPage />} />
+            <Route path="internship" element={<InternshipPage />} />
             <Route path="attendance" element={<AttendancePage />} />
+            <Route path="internship-history" element={<InternshipHistoryPage />} />
+            <Route path="internship-history/:assignmentId" element={<InternshipHistoryDetailsPage />} />
           </Route>
         </Route>
 

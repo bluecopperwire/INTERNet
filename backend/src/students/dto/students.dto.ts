@@ -10,6 +10,7 @@ import {
   IsOptional,
   IsString,
   Max,
+  Matches,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -201,6 +202,7 @@ export class StudentAttendanceClockDto {
 export class StudentAssignmentRemarkDto {
   @IsString()
   @IsNotEmpty()
+  @Matches(/\S/, { message: 'remark must contain non-whitespace text' })
   remark!: string;
 }
 

@@ -1,0 +1,154 @@
+.feedback {
+  max-width: var(--tracking-content-width);
+  margin: 0 auto;
+  padding: 48px;
+  border: 1px solid #d8dcea;
+  border-radius: 12px;
+  color: #5d6881;
+  background: #fff;
+  text-align: center;
+}
+.historyCard {
+  max-width: var(--tracking-content-width);
+  overflow: hidden;
+  margin: 0 auto;
+  border: 1px solid #d8dcea;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(16, 13, 51, 0.06);
+}
+.historyHeader {
+  padding: 20px 24px;
+  border-bottom: 2px solid #21167b;
+  background: #f8fafc;
+}
+.historyHeader h1 {
+  margin: 0;
+  color: #21167b;
+  font-size: 22px;
+}
+.historyHeader p {
+  margin: 5px 0 0;
+  color: #5d6881;
+  font-size: 13px;
+}
+.tableScroller {
+  overflow-x: auto;
+}
+.historyTable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  color: #24204f;
+}
+.historyTable th,
+.historyTable td {
+  padding: 15px 17px;
+  border-bottom: 1px solid #e2e5ee;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.historyTable th {
+  color: #21167b;
+  background: #fafbfe;
+  font-size: 13px;
+}
+.historyTable td {
+  font-size: 14px;
+}
+.tableStatus {
+  display: inline-flex;
+  padding: 6px 11px;
+  border-radius: 999px;
+  color: #21167b;
+  background: #f4e6a6;
+  font-size: 12px;
+  font-weight: 600;
+}
+.viewButton {
+  min-width: 76px;
+  padding: 8px 15px;
+  border: 1px solid #21167b;
+  border-radius: 7px;
+  color: #fff;
+  background: #21167b;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 16px 20px;
+  color: #5d6881;
+  font-size: 13px;
+}
+.pagination label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.pagination select,
+.pagination button {
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid #c7cddd;
+  border-radius: 6px;
+  color: #21167b;
+  background: #fff;
+  font: inherit;
+}
+.pagination div {
+  display: flex;
+  gap: 7px;
+}
+.pagination button {
+  cursor: pointer;
+}
+.pagination button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.emptyHistory {
+  display: grid;
+  min-height: 260px;
+  place-content: center;
+  padding: 32px;
+  color: #5d6881;
+  text-align: center;
+}
+.emptyHistory h2 {
+  margin: 0 0 7px;
+  color: #21167b;
+}
+.emptyHistory p {
+  margin: 0;
+  font-size: 13px;
+}
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 18px;
+  padding: 8px 0;
+  border: 0;
+  color: #21167b;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+@media (max-width: 700px) {
+  .historyTable {
+    min-width: 650px;
+  }
+  .pagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

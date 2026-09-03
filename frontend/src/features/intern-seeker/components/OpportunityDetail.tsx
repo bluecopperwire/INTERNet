@@ -4,6 +4,8 @@ import type { InternshipOpportunity } from '../types/internship.types'
 import { useStudentStore } from '../stores/useStudentStore'
 import { useStudentTrackingStore } from '../stores/useStudentTrackingStore'
 import { ApplyOpportunityModal } from './ApplyOpportunityModal'
+import { studentApiService } from '../services/student-api.service'
+import { useAuthStore } from '../../../stores/useAuthStore'
 import styles from './OpportunityDetail.module.css'
 
 function OpportunityDetail({ opportunity }: { opportunity: InternshipOpportunity }) {
@@ -12,6 +14,9 @@ function OpportunityDetail({ opportunity }: { opportunity: InternshipOpportunity
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false)
   const { profile, fetchProfile } = useStudentStore()
   const { requirements, fetchRequirements } = useStudentTrackingStore()
+  const studentId = useAuthStore((state) => state.user?.studentId)
+  const [hasCurrentInternship, setHasCurrentInternship] = useState(false)
+  const [isCheckingInternship, setIsCheckingInternship] = useState(Boolean(studentId))
 
   useEffect(() => {
     if (!profile) {
@@ -22,11 +27,36 @@ function OpportunityDetail({ opportunity }: { opportunity: InternshipOpportunity
     }
   }, [fetchProfile, fetchRequirements, profile, requirements])
 
+  useEffect(() => {
+    if (!studentId) {
+      return
+    }
+    let active = true
+    const timeoutId = window.setTimeout(() => {
+      setIsCheckingInternship(true)
+      studentApiService
+        .getCurrentInternship(studentId)
+        .then((assignment) => {
+          if (active) setHasCurrentInternship(Boolean(assignment))
+        })
+        .catch(() => {
+          if (active) setHasCurrentInternship(false)
+        })
+        .finally(() => {
+          if (active) setIsCheckingInternship(false)
+        })
+    }, 0)
+    return () => {
+      active = false
+      window.clearTimeout(timeoutId)
+    }
+  }, [studentId])
+
   const companyInitials = opportunity.companyName
     .split(' ')
     .filter(Boolean)
     .slice(0, 2)
-    .map(part => part[0])
+    .map((part) => part[0])
     .join('')
     .toUpperCase()
 
@@ -40,9 +70,7 @@ function OpportunityDetail({ opportunity }: { opportunity: InternshipOpportunity
     ['Application Deadline', details.applicationDeadline],
   ]
 
-  const tabContent = activeTab === 'description'
-    ? [details.description]
-    : [details.qualifications]
+  const tabContent = activeTab === 'description' ? [details.description] : [details.qualifications]
 
   return (
     <>
@@ -51,51 +79,58 @@ function OpportunityDetail({ opportunity }: { opportunity: InternshipOpportunity
           <div className={styles.headerCopy}>
             <div className={styles.companyRow}>
               <span className={styles.companyImage}>
-                {opportunity.companyLogoUrl ? (
-                  <img src={opportunity.companyLogoUrl} alt={`${opportunity.companyName} logo`} />
-                ) : companyInitials || <Building2 aria-hidden="true" />}
+                {opportunity.companyLogoUrl ? <img src={opportunity.companyLogoUrl} alt={`${opportunity.companyName} logo`} /> : companyInitials || <Building2 aria-hidden="true" />}
               </span>
               <span>{opportunity.companyName}</span>
             </div>
             <h1>{opportunity.position}</h1>
           </div>
-          {opportunity.isApplied ? (
-            <button className={`${styles.applyButton} ${styles.appliedButton}`} type="button" disabled>
-              <Check size={18} /> Applied
-            </button>
-          ) : (
-            <button
-              className={styles.applyButton}
-              type="button"
-              onClick={() => setIsApplyModalOpen(true)}
-            >
-              Apply
-            </button>
-          )}
+          <div className={styles.applyArea}>
+            {opportunity.isApplied ? (
+              <button className={`${styles.applyButton} ${styles.appliedButton}`} type="button" disabled>
+                <Check size={18} /> Applied
+              </button>
+            ) : (
+              <button className={styles.applyButton} type="button" disabled={isCheckingInternship || hasCurrentInternship} onClick={() => setIsApplyModalOpen(true)}>
+                {isCheckingInternship ? 'Checking...' : 'Apply'}
+              </button>
+            )}
+            {hasCurrentInternship && !opportunity.isApplied && <p className={styles.applyBlockedMessage}>You may apply again after QC PESO finalizes your current internship.</p>}
+          </div>
         </header>
 
         <dl className={styles.quickFacts}>
-          {facts.map(([label, value]) => <div className={label === 'Address' ? styles.addressFact : undefined} key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
+          {facts.map(([label, value]) => (
+            <div className={label === 'Address' ? styles.addressFact : undefined} key={label}>
+              <dt>{label}</dt>
+              <dd>{value}</dd>
+            </div>
+          ))}
         </dl>
 
         <div className={styles.detailTabs} role="tablist" aria-label="Opportunity details">
-          <button className={activeTab === 'description' ? styles.activeTab : ''} type="button" role="tab" aria-selected={activeTab === 'description'} onClick={() => setActiveTab('description')}>Job Description</button>
-          <button className={activeTab === 'qualifications' ? styles.activeTab : ''} type="button" role="tab" aria-selected={activeTab === 'qualifications'} onClick={() => setActiveTab('qualifications')}>Qualifications</button>
+          <button className={activeTab === 'description' ? styles.activeTab : ''} type="button" role="tab" aria-selected={activeTab === 'description'} onClick={() => setActiveTab('description')}>
+            Job Description
+          </button>
+          <button
+            className={activeTab === 'qualifications' ? styles.activeTab : ''}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'qualifications'}
+            onClick={() => setActiveTab('qualifications')}
+          >
+            Qualifications
+          </button>
         </div>
 
         <section className={styles.detailSection}>
-          {tabContent.map((paragraph, index) => <p key={`${index}-${paragraph}`}>{paragraph}</p>)}
+          {tabContent.map((paragraph, index) => (
+            <p key={`${index}-${paragraph}`}>{paragraph}</p>
+          ))}
         </section>
       </article>
 
-      {isApplyModalOpen && (
-        <ApplyOpportunityModal
-          opportunity={opportunity}
-          profile={profile}
-          requirements={requirements || []}
-          onClose={() => setIsApplyModalOpen(false)}
-        />
-      )}
+      {isApplyModalOpen && !hasCurrentInternship && <ApplyOpportunityModal opportunity={opportunity} profile={profile} requirements={requirements || []} onClose={() => setIsApplyModalOpen(false)} />}
     </>
   )
 }

@@ -85,11 +85,17 @@ describe('assignment lifecycle service foundations', () => {
     },
   );
 
-  it('rejects Student withdrawal after Company completion', async () => {
+  it.each([
+    'complete_company',
+    'complete_student',
+    'withdrawn',
+    'cancelled',
+    'finalized',
+  ])('rejects Student withdrawal from %s', async (assignmentStatus) => {
     const { dataSource, rollbackTransaction } = createDataSource((sql) => {
       if (sql.includes('set_config')) return [];
       if (sql.includes('FOR UPDATE OF ia')) {
-        return [{ assignment_status: 'complete_company' }];
+        return [{ assignment_status: assignmentStatus }];
       }
       throw new Error(`Unexpected SQL: ${sql}`);
     });
@@ -172,6 +178,33 @@ describe('assignment lifecycle service foundations', () => {
         41,
         { userAccountId: 112 },
         { rating: 4, remark: 'Repeated review.' },
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(rollbackTransaction).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    'pending',
+    'ongoing',
+    'complete_student',
+    'withdrawn',
+    'cancelled',
+    'finalized',
+  ])('rejects a Student Company review from %s', async (assignmentStatus) => {
+    const { dataSource, rollbackTransaction } = createDataSource((sql) => {
+      if (sql.includes('set_config')) return [];
+      if (sql.includes('FOR UPDATE OF ia')) {
+        return [{ assignment_status: assignmentStatus }];
+      }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    });
+
+    await expect(
+      createStudentsService(dataSource).submitCompanyReview(
+        12,
+        41,
+        { userAccountId: 112 },
+        { rating: 5, remark: 'Not eligible.' },
       ),
     ).rejects.toBeInstanceOf(ConflictException);
     expect(rollbackTransaction).toHaveBeenCalledTimes(1);

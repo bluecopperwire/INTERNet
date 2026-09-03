@@ -1,0 +1,240 @@
+.pageContent {
+  max-width: var(--tracking-content-width);
+  margin: 0 auto;
+  color: #21167b;
+}
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 20px;
+  padding: 24px 26px;
+  border-radius: 12px;
+  color: #fff;
+  background: #21167b;
+}
+.hero p {
+  margin: 0 0 5px;
+  color: #dedbf8;
+  font-size: 13px;
+}
+.hero h1 {
+  margin: 0;
+  font-size: clamp(21px, 3vw, 29px);
+  line-height: 1.25;
+}
+.statusArea {
+  display: grid;
+  flex: none;
+  justify-items: center;
+  gap: 7px;
+}
+.statusTag {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  padding: 7px 14px;
+  border-radius: 999px;
+  color: #21167b;
+  background: #ffd42a;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.remarkLink {
+  padding: 0;
+  border: 0;
+  color: #fff;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.card {
+  overflow: hidden;
+  margin-bottom: 18px;
+  border: 1px solid #d8dcea;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(16, 13, 51, 0.06);
+}
+.cardHeader {
+  padding: 18px 22px;
+  border-bottom: 2px solid #21167b;
+  background: #f8fafc;
+}
+.cardHeader h2 {
+  margin: 0;
+  font-size: 21px;
+}
+.cardHeader p {
+  margin: 4px 0 0;
+  color: #5d6881;
+  font-size: 13px;
+}
+.cardBody {
+  padding: 22px;
+}
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 22px;
+  margin: 0;
+}
+.field dt {
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.field dd {
+  min-height: 46px;
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid #cfd5e6;
+  border-radius: 8px;
+  color: #24204f;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.workflowActions {
+  display: grid;
+  gap: 10px;
+  margin-top: 22px;
+}
+.primaryButton,
+.secondaryButton,
+.dangerButton {
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.primaryButton {
+  border: 1px solid #21167b;
+  color: #fff;
+  background: #21167b;
+}
+.secondaryButton {
+  border: 1px solid #21167b;
+  color: #21167b;
+  background: #fff;
+}
+.dangerButton {
+  border: 1px solid #a52435;
+  color: #fff;
+  background: #a52435;
+}
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.dangerButton:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+.emptyState {
+  display: grid;
+  min-height: 180px;
+  place-content: center;
+  padding: 32px;
+  color: #5d6881;
+  text-align: center;
+}
+.emptyState h3 {
+  margin: 0 0 7px;
+  color: #21167b;
+}
+.emptyState p {
+  margin: 0;
+  font-size: 13px;
+}
+.backdrop {
+  position: fixed;
+  z-index: 120;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(14, 11, 45, 0.54);
+}
+.modal {
+  width: min(520px, 100%);
+  padding: 25px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.25);
+}
+.modal h2 {
+  margin: 0 0 18px;
+}
+.formField {
+  display: grid;
+  gap: 7px;
+  color: #21167b;
+  font-size: 14px;
+  font-weight: 600;
+}
+.formField textarea {
+  resize: vertical;
+  padding: 11px;
+  border: 1px solid #bac2d7;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 400;
+}
+.ratingField {
+  margin: 0 0 18px;
+  padding: 0;
+  border: 0;
+}
+.ratingField legend {
+  margin-bottom: 5px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.stars {
+  display: flex;
+  gap: 4px;
+}
+.stars button {
+  padding: 2px;
+  border: 0;
+  color: #a7adbc;
+  background: transparent;
+  font-size: 31px;
+  cursor: pointer;
+}
+.stars .selectedStar {
+  color: #e2ad00;
+}
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+.readOnlyRemark {
+  margin: 0;
+  color: #35415b;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+@media (max-width: 700px) {
+  .hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .statusArea {
+    justify-items: start;
+  }
+  .detailGrid {
+    grid-template-columns: 1fr;
+  }
+  .modalActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

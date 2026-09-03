@@ -8,19 +8,13 @@ import type {
   StudentRequirementsResponse,
   StudentAttendanceResponse,
 } from '../../../types/api';
-import type {
-  InternshipOpportunity,
-  UserProfile,
-} from '../types/internship.types';
+import type { InternshipOpportunity, UserProfile } from '../types/internship.types';
 import type {
   UserApplication,
   ApplicationProgress,
   ApplicationDisplayStatus,
 } from '../types/application.types';
-import type {
-  InternshipRequirement,
-  RequirementDocument,
-} from '../types/requirement.types';
+import type { InternshipRequirement, RequirementDocument } from '../types/requirement.types';
 import type {
   InternshipDetails,
   TodayAttendance,
@@ -28,27 +22,22 @@ import type {
   AttendanceSummary,
 } from '../types/attendance.types';
 import { formatTableDate, todayDateOnly, toDateOnly } from '../../../utils/date-only';
+import { formatWorkingDays, studentAssignmentStatus } from '../utils/internship-display';
 
-export function adaptOpportunity(
-  dto: OpportunitySummaryDto,
-): InternshipOpportunity {
+export function adaptOpportunity(dto: OpportunitySummaryDto): InternshipOpportunity {
   const workSetupMap: Record<string, 'On-site' | 'Remote' | 'Hybrid'> = {
     onsite: 'On-site',
     remote: 'Remote',
     hybrid: 'Hybrid',
   };
 
-  const allowanceStr =
-    dto.allowance === null ? 'No Allowance' : String(dto.allowance);
+  const allowanceStr = dto.allowance === null ? 'No Allowance' : String(dto.allowance);
 
   return {
     id: String(dto.opportunityId),
     companyId: String(dto.companyId),
     companyName: dto.companyName,
-    companyLogoUrl: publicUploadUrl(
-      dto.companyLogoFilePath,
-      dto.companyProfileUpdatedAt,
-    ),
+    companyLogoUrl: publicUploadUrl(dto.companyLogoFilePath, dto.companyProfileUpdatedAt),
     position: dto.title,
     location: dto.companyAddressCity || 'Quezon City',
     workSetup: workSetupMap[dto.workArrangement] || 'On-site',
@@ -159,14 +148,10 @@ export function adaptStudentProfile(dto: StudentProfileResponse): UserProfile {
   const uiYear = YEAR_LEVEL_MAP_TO_UI[rawYear] || rawYear;
 
   const rawSchedule = ip?.available_days || '';
-  const uiSchedule = rawSchedule
-    ? SCHEDULE_MAP_TO_UI[rawSchedule] || rawSchedule
-    : '';
+  const uiSchedule = rawSchedule ? SCHEDULE_MAP_TO_UI[rawSchedule] || rawSchedule : '';
 
   const rawHostOrg = ip?.preferred_company_type || '';
-  const uiHostOrg = rawHostOrg
-    ? HOST_ORG_MAP_TO_UI[rawHostOrg] || rawHostOrg
-    : '';
+  const uiHostOrg = rawHostOrg ? HOST_ORG_MAP_TO_UI[rawHostOrg] || rawHostOrg : '';
 
   const birthDateStr = toDateOnly(s.birth_date);
   const startDateStr = toDateOnly(ip?.start_date);
@@ -179,10 +164,7 @@ export function adaptStudentProfile(dto: StudentProfileResponse): UserProfile {
     lastName: s.last_name || '',
     extensionName: s.extension_name || '',
     role: 'Intern Seeker',
-    location: `${s.address_barangay || ''}, ${s.address_city || ''}`.replace(
-      /^, |, $/g,
-      '',
-    ),
+    location: `${s.address_barangay || ''}, ${s.address_city || ''}`.replace(/^, |, $/g, ''),
     email: s.contact_email || '',
     linkedinUrl: s.linkedin_url || '',
     internshipStatus: 'Not Employed',
@@ -211,12 +193,9 @@ export function adaptStudentProfile(dto: StudentProfileResponse): UserProfile {
             ? false
             : null,
       preferredIndustries: pi.map(
-        (p) =>
-          (p.custom_industry_name ? 'Other' : p.industry_name) ||
-          String(p.industry_id || ''),
+        (p) => (p.custom_industry_name ? 'Other' : p.industry_name) || String(p.industry_id || ''),
       ),
-      otherPreferredField:
-        pi.find((p) => p.custom_industry_name)?.custom_industry_name || '',
+      otherPreferredField: pi.find((p) => p.custom_industry_name)?.custom_industry_name || '',
       schedule: uiSchedule ? [uiSchedule] : [],
       startDate: startDateStr,
       hostOrgType: uiHostOrg,
@@ -232,17 +211,12 @@ export function adaptStudentProfileToUpdateDto(
     isCustomText?: boolean;
   }> = [],
 ) {
-  const normYear =
-    YEAR_LEVEL_MAP_TO_DTO[profile.academic?.yearLevel || ''] || '';
-  const normSchedule =
-    SCHEDULE_MAP_TO_DTO[profile.preferences?.schedule?.[0] || ''] || '';
-  const normOrgType =
-    HOST_ORG_MAP_TO_DTO[profile.preferences?.hostOrgType || ''] || '';
+  const normYear = YEAR_LEVEL_MAP_TO_DTO[profile.academic?.yearLevel || ''] || '';
+  const normSchedule = SCHEDULE_MAP_TO_DTO[profile.preferences?.schedule?.[0] || ''] || '';
+  const normOrgType = HOST_ORG_MAP_TO_DTO[profile.preferences?.hostOrgType || ''] || '';
 
   const birthDateValue =
-    profile.birthdate && profile.birthdate.trim()
-      ? toDateOnly(profile.birthdate)
-      : '2002-01-01';
+    profile.birthdate && profile.birthdate.trim() ? toDateOnly(profile.birthdate) : '2002-01-01';
 
   const startDateValue =
     profile.preferences?.startDate && profile.preferences.startDate.trim()
@@ -311,8 +285,7 @@ export function adaptStudentProfileToUpdateDto(
       availableDays: normSchedule,
       preferredCompanyType: normOrgType,
       startDate: startDateValue,
-      allowsOutsidePreferredField:
-        profile.preferences?.willingToAssignOutside ?? null,
+      allowsOutsidePreferredField: profile.preferences?.willingToAssignOutside ?? null,
     },
     preferredIndustries: preferredIndustriesDto,
   };
@@ -329,34 +302,28 @@ export function adaptApplicationDisplayStatus(
     app.applicationStatus === 'closed' &&
     app.referral?.companyResponse === 'accepted' &&
     app.studentResponse === 'accepted'
-  ) return 'Accepted';
+  )
+    return 'Accepted';
   if (
     app.applicationStatus === 'closed' &&
     app.referral?.companyResponse === 'accepted' &&
     app.studentResponse === 'declined'
-  ) return 'Offer Declined';
-  if (
-    app.applicationStatus === 'closed' &&
-    app.referral?.companyResponse === 'rejected'
-  ) return 'Rejected';
+  )
+    return 'Offer Declined';
+  if (app.applicationStatus === 'closed' && app.referral?.companyResponse === 'rejected')
+    return 'Rejected';
 
   if (app.referral) {
     if (app.referral.companyResponse === 'rejected') return 'Rejected';
-    if (
-      app.referral.companyResponse === 'accepted' &&
-      app.studentResponse === 'pending'
-    ) return 'Offer Received';
-    if (app.referral.companyResponse === 'for_interview')
-      return 'Interview Scheduled';
-    if (app.referral.referralStatus === 'under_review')
-      return 'Under Review (Company)';
+    if (app.referral.companyResponse === 'accepted' && app.studentResponse === 'pending')
+      return 'Offer Received';
+    if (app.referral.companyResponse === 'for_interview') return 'Interview Scheduled';
+    if (app.referral.referralStatus === 'under_review') return 'Under Review (Company)';
     return 'Endorsed to Company';
   }
 
-  if (app.applicationStatus === 'under_review')
-    return 'Under Review (QC PESO)';
-  if (app.applicationStatus === 'approved_for_referral')
-    return 'Endorsed to Company';
+  if (app.applicationStatus === 'under_review') return 'Under Review (QC PESO)';
+  if (app.applicationStatus === 'approved_for_referral') return 'Endorsed to Company';
   return 'For Review (QC PESO)';
 }
 
@@ -381,9 +348,7 @@ function historyTime(
   history: StudentApplicationStatusDto['timeline'] | undefined,
   status: string,
 ): string | undefined {
-  return formatTrackerTimestamp(
-    history?.find((entry) => entry.newStatus === status)?.changedAt,
-  );
+  return formatTrackerTimestamp(history?.find((entry) => entry.newStatus === status)?.changedAt);
 }
 
 export function buildApplicationTimeline(
@@ -442,7 +407,11 @@ export function buildApplicationTimeline(
       remark: detail.remark || app.applicationRemark || undefined,
       timestamp: historyTime(detail.timeline, 'expired'),
     });
-  } else if (referral || app.applicationStatus === 'approved_for_referral' || app.applicationStatus === 'closed') {
+  } else if (
+    referral ||
+    app.applicationStatus === 'approved_for_referral' ||
+    app.applicationStatus === 'closed'
+  ) {
     Object.assign(qc, {
       state: 'completed',
       message: 'Your application has been endorsed by QC PESO.',
@@ -462,8 +431,7 @@ export function buildApplicationTimeline(
   }
 
   if (referral) {
-    const companyReviewStarted =
-      historyTime(detail.referralTimeline, 'under_review');
+    const companyReviewStarted = historyTime(detail.referralTimeline, 'under_review');
     if (referral.companyResponse === 'for_interview') {
       Object.assign(companyReview, {
         state: 'interview-scheduled',
@@ -475,13 +443,17 @@ export function buildApplicationTimeline(
           date: detail.interview
             ? new Intl.DateTimeFormat('en-US', {
                 timeZone: MANILA_TIME_ZONE,
-                month: 'long', day: 'numeric', year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
               }).format(new Date(detail.interview.scheduled_at))
             : '',
           time: detail.interview
             ? new Intl.DateTimeFormat('en-US', {
                 timeZone: MANILA_TIME_ZONE,
-                hour: 'numeric', minute: '2-digit', hour12: true,
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
               }).format(new Date(detail.interview.scheduled_at))
             : '',
           mode: detail.interview?.interview_mode || 'online',
@@ -526,8 +498,7 @@ export function buildApplicationTimeline(
       message: 'The internship opportunity is no longer available.',
       remark: referral.remark || undefined,
       timestamp:
-        historyTime(detail.referralTimeline, 'expired') ||
-        historyTime(detail.timeline, 'expired'),
+        historyTime(detail.referralTimeline, 'expired') || historyTime(detail.timeline, 'expired'),
     };
     if (referral.companyResponse === 'accepted') Object.assign(companyDecision, expiration);
     else Object.assign(companyReview, expiration);
@@ -602,9 +573,7 @@ export function adaptApplication(
   };
 }
 
-export function adaptRequirements(
-  res: StudentRequirementsResponse,
-): InternshipRequirement[] {
+export function adaptRequirements(res: StudentRequirementsResponse): InternshipRequirement[] {
   const standardTypes = [
     {
       id: 'curriculum_vitae_resume',
@@ -631,9 +600,7 @@ export function adaptRequirements(
   return standardTypes.map((type) => {
     const normTarget = type.id.toLowerCase().replace(/[^a-z0-9]/g, '');
     const submission = res.requirements.find((r) => {
-      const normServer = (r.requirement_type_name || '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, '');
+      const normServer = (r.requirement_type_name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
       return (
         normServer === normTarget ||
         normServer.includes(normTarget) ||
@@ -674,25 +641,17 @@ export function adaptAttendance(res: StudentAttendanceResponse): {
   let internshipDetails: InternshipDetails | null = null;
 
   if (a) {
-    const statusMap: Record<string, any> = {
-      ongoing: 'Ongoing',
-      pending: 'Pending',
-      completed: 'Completed',
-      withdrawn: 'Withdrawn',
-      cancelled: 'Cancelled',
-    };
-
     internshipDetails = {
       assignmentId: a.internshipAssignmentId,
       companyName: a.companyName,
       jobTitle: a.jobTitle,
-      workingDays: a.workingDays,
+      workingDays: formatWorkingDays(a.workingDays),
       requiredHours: a.requiredHours,
       startDate: a.startDate,
       expectedEndDate: a.expectedEndDate || '',
       shiftStart: a.startShift,
       shiftEnd: a.endShift,
-      status: statusMap[a.assignmentStatus] || 'Ongoing',
+      status: studentAssignmentStatus(a.assignmentStatus) as InternshipDetails['status'],
       targetHours: a.requiredHours,
       renderedHours: a.totalRenderedHours,
       remainingHours: a.remainingHours,
@@ -701,8 +660,7 @@ export function adaptAttendance(res: StudentAttendanceResponse): {
 
   let todayAttendance: TodayAttendance | null = null;
   if (a) {
-    let todayStatus: 'not-checked-in' | 'checked-in' | 'checked-out' =
-      'not-checked-in';
+    let todayStatus: 'not-checked-in' | 'checked-in' | 'checked-out' = 'not-checked-in';
     if (res.today) {
       if (res.today.time_out) {
         todayStatus = 'checked-out';
@@ -715,15 +673,11 @@ export function adaptAttendance(res: StudentAttendanceResponse): {
       date: todayDateOnly(),
       status: todayStatus,
       companyName: a.companyName,
-      workingDays: a.workingDays,
+      workingDays: formatWorkingDays(a.workingDays),
       shiftStart: a.startShift,
       shiftEnd: a.endShift,
-      checkedInAt: res.today?.time_in
-        ? String(res.today.time_in).substring(0, 5)
-        : undefined,
-      checkedOutAt: res.today?.time_out
-        ? String(res.today.time_out).substring(0, 5)
-        : undefined,
+      checkedInAt: res.today?.time_in ? String(res.today.time_in).substring(0, 5) : undefined,
+      checkedOutAt: res.today?.time_out ? String(res.today.time_out).substring(0, 5) : undefined,
     };
   }
 

@@ -7,6 +7,7 @@ import type {
   StudentApplicationDto,
   StudentApplicationStatusDto,
   StudentAttendanceResponse,
+  StudentInternshipDto,
 } from '../../../types/api';
 
 export interface OpportunityFilters {
@@ -23,34 +24,24 @@ export const studentApiService = {
     filters?: OpportunityFilters,
     signal?: AbortSignal,
   ): Promise<PaginatedResponse<OpportunityCatalogItem>> {
-    const response = await api.get<PaginatedResponse<OpportunityCatalogItem>>(
-      '/opportunities',
-      {
-        params: filters,
-        signal,
-      },
-    );
+    const response = await api.get<PaginatedResponse<OpportunityCatalogItem>>('/opportunities', {
+      params: filters,
+      signal,
+    });
     return response.data;
   },
 
   async getOpportunity(opportunityId: number): Promise<OpportunityCatalogItem> {
-    const response = await api.get<OpportunityCatalogItem>(
-      `/opportunities/${opportunityId}`,
-    );
+    const response = await api.get<OpportunityCatalogItem>(`/opportunities/${opportunityId}`);
     return response.data;
   },
 
   async getProfile(studentId: number): Promise<StudentProfileResponse> {
-    const response = await api.get<StudentProfileResponse>(
-      `/students/${studentId}/profile`,
-    );
+    const response = await api.get<StudentProfileResponse>(`/students/${studentId}/profile`);
     return response.data;
   },
 
-  async saveProfile(
-    studentId: number,
-    payload: any,
-  ): Promise<StudentProfileResponse> {
+  async saveProfile(studentId: number, payload: any): Promise<StudentProfileResponse> {
     const response = await api.post<StudentProfileResponse>(
       `/students/${studentId}/profile`,
       payload,
@@ -58,10 +49,7 @@ export const studentApiService = {
     return response.data;
   },
 
-  async uploadProfilePicture(
-    studentId: number,
-    file: File,
-  ): Promise<StudentProfileResponse> {
+  async uploadProfilePicture(studentId: number, file: File): Promise<StudentProfileResponse> {
     const formData = new FormData();
     formData.append('image', file);
     const response = await api.put<StudentProfileResponse>(
@@ -76,9 +64,7 @@ export const studentApiService = {
     return response.data;
   },
 
-  async getRequirements(
-    studentId: number,
-  ): Promise<StudentRequirementsResponse> {
+  async getRequirements(studentId: number): Promise<StudentRequirementsResponse> {
     const response = await api.get<StudentRequirementsResponse>(
       `/students/${studentId}/requirements`,
     );
@@ -96,17 +82,11 @@ export const studentApiService = {
     formData.append('requirementType', requirementType);
     formData.append('requirementName', requirementName);
 
-    const response = await api.post(
-      `/students/${studentId}/requirements`,
-      formData,
-    );
+    const response = await api.post(`/students/${studentId}/requirements`, formData);
     return response.data;
   },
 
-  async deleteRequirement(
-    studentId: number,
-    requirementType: string,
-  ): Promise<any> {
+  async deleteRequirement(studentId: number, requirementType: string): Promise<any> {
     const response = await api.delete(
       `/students/${studentId}/requirements/${encodeURIComponent(requirementType)}`,
     );
@@ -114,9 +94,7 @@ export const studentApiService = {
   },
 
   async getApplications(studentId: number): Promise<StudentApplicationDto[]> {
-    const response = await api.get<StudentApplicationDto[]>(
-      `/students/${studentId}/applications`,
-    );
+    const response = await api.get<StudentApplicationDto[]>(`/students/${studentId}/applications`);
     return response.data;
   },
 
@@ -130,11 +108,7 @@ export const studentApiService = {
     return response.data;
   },
 
-  async submitApplication(
-    studentId: number,
-    opportunityId: number,
-    remark?: string,
-  ): Promise<any> {
+  async submitApplication(studentId: number, opportunityId: number, remark?: string): Promise<any> {
     const response = await api.post(`/students/${studentId}/applications`, {
       opportunityId,
       remark,
@@ -154,10 +128,7 @@ export const studentApiService = {
     return response.data;
   },
 
-  async withdrawApplication(
-    studentId: number,
-    applicationId: number,
-  ): Promise<any> {
+  async withdrawApplication(studentId: number, applicationId: number): Promise<any> {
     const response = await api.post(
       `/students/${studentId}/applications/${applicationId}/withdraw`,
       {},
@@ -165,10 +136,7 @@ export const studentApiService = {
     return response.data;
   },
 
-  async hideApplication(
-    studentId: number,
-    applicationId: number,
-  ): Promise<void> {
+  async hideApplication(studentId: number, applicationId: number): Promise<void> {
     await api.delete(`/students/${studentId}/applications/${applicationId}`);
   },
 
@@ -176,31 +144,69 @@ export const studentApiService = {
     await api.delete(`/students/${studentId}/assignments/${assignmentId}`);
   },
 
-  async getAttendance(
-    studentId: number,
-    params?: { startDate?: string; endDate?: string },
-  ): Promise<StudentAttendanceResponse> {
-    const response = await api.get<StudentAttendanceResponse>(
-      `/students/${studentId}/attendance`,
-      { params },
+  async getCurrentInternship(studentId: number): Promise<StudentInternshipDto | null> {
+    const response = await api.get<StudentInternshipDto | null>(
+      `/students/${studentId}/internship/current`,
     );
     return response.data;
   },
 
-  async clockIn(
+  async getInternshipHistory(
     studentId: number,
-    internshipAssignmentId: number,
-  ): Promise<any> {
+    page: number,
+    limit: number,
+  ): Promise<PaginatedResponse<StudentInternshipDto>> {
+    const response = await api.get<PaginatedResponse<StudentInternshipDto>>(
+      `/students/${studentId}/internship/history`,
+      { params: { page, limit } },
+    );
+    return response.data;
+  },
+
+  async getInternshipHistoryDetail(
+    studentId: number,
+    assignmentId: number,
+  ): Promise<StudentInternshipDto> {
+    const response = await api.get<StudentInternshipDto>(
+      `/students/${studentId}/internship/history/${assignmentId}`,
+    );
+    return response.data;
+  },
+
+  async withdrawAssignment(studentId: number, assignmentId: number, remark: string): Promise<void> {
+    await api.post(`/students/${studentId}/assignments/${assignmentId}/withdraw`, { remark });
+  },
+
+  async submitCompanyReview(
+    studentId: number,
+    assignmentId: number,
+    rating: number,
+    remark: string,
+  ): Promise<void> {
+    await api.post(`/students/${studentId}/assignments/${assignmentId}/company-review`, {
+      rating,
+      remark,
+    });
+  },
+
+  async getAttendance(
+    studentId: number,
+    params?: { startDate?: string; endDate?: string },
+  ): Promise<StudentAttendanceResponse> {
+    const response = await api.get<StudentAttendanceResponse>(`/students/${studentId}/attendance`, {
+      params,
+    });
+    return response.data;
+  },
+
+  async clockIn(studentId: number, internshipAssignmentId: number): Promise<any> {
     const response = await api.post(`/students/${studentId}/dtr/time-in`, {
       internshipAssignmentId,
     });
     return response.data;
   },
 
-  async clockOut(
-    studentId: number,
-    internshipAssignmentId: number,
-  ): Promise<any> {
+  async clockOut(studentId: number, internshipAssignmentId: number): Promise<any> {
     const response = await api.post(`/students/${studentId}/dtr/time-out`, {
       internshipAssignmentId,
     });

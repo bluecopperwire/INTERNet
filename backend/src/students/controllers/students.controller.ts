@@ -35,6 +35,7 @@ import {
 import { StudentAttendanceQueryDto } from '../dto/student-attendance-query.dto';
 import { requirementUploadOptions } from '../../storage/requirement-upload.config';
 import { profilePictureUploadOptions } from '../../storage/profile-picture-upload.config';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @Controller('students')
 export class StudentsController {
@@ -222,6 +223,41 @@ export class StudentsController {
   ) {
     await this.ensureStudentAccess(id, currentUser);
     return this.studentsService.hideAssignment(id, assignmentId, currentUser);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/internship/current')
+  @HttpCode(HttpStatus.OK)
+  async getCurrentStudentInternship(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() currentUser: any,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    return this.studentsService.getCurrentInternship(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/internship/history')
+  @HttpCode(HttpStatus.OK)
+  async getStudentInternshipHistory(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() currentUser: any,
+    @Query() pagination: PaginationDto,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    return this.studentsService.getInternshipHistory(id, pagination);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/internship/history/:assignmentId')
+  @HttpCode(HttpStatus.OK)
+  async getStudentInternshipHistoryDetail(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('assignmentId', ParseIntPipe) assignmentId: number,
+    @CurrentUser() currentUser: any,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    return this.studentsService.getInternshipHistoryDetail(id, assignmentId);
   }
 
   @UseGuards(JwtAuthGuard)

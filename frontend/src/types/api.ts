@@ -13,18 +13,21 @@ export type ApplicationStatus =
   | 'withdrawn'
   | 'expired';
 
-export type ReferralStatus =
-  'sent' | 'under_review' | 'closed' | 'withdrawn' | 'expired';
+export type ReferralStatus = 'sent' | 'under_review' | 'closed' | 'withdrawn' | 'expired';
 
-export type CompanyResponse =
-  'pending' | 'for_interview' | 'accepted' | 'rejected';
+export type CompanyResponse = 'pending' | 'for_interview' | 'accepted' | 'rejected';
 export type StudentResponse = 'pending' | 'accepted' | 'declined';
 export type AssignmentStatus =
-  'pending' | 'ongoing' | 'completed' | 'withdrawn' | 'cancelled';
+  | 'pending'
+  | 'ongoing'
+  | 'complete_company'
+  | 'complete_student'
+  | 'withdrawn'
+  | 'cancelled'
+  | 'finalized';
 
 export type TimeInStatus = 'on_time' | 'late';
-export type RenderedHoursStatus =
-  'complete' | 'undertime' | 'overtime' | 'incomplete';
+export type RenderedHoursStatus = 'complete' | 'undertime' | 'overtime' | 'incomplete';
 
 export interface PageMeta {
   page: number;
@@ -248,15 +251,20 @@ export interface StudentAttendanceResponse {
     internshipAssignmentId: number;
     companyName: string;
     jobTitle: string;
-    workingDays: string;
+    workingDays: number[];
+    requiredMinutes: number;
     requiredHours: number;
+    totalRenderedMinutes: number;
     totalRenderedHours: number;
+    remainingMinutes: number;
     remainingHours: number;
     startDate: string;
     expectedEndDate?: string | null;
+    endDate?: string | null;
+    endedAt?: string | null;
     startShift: string;
     endShift: string;
-    assignmentStatus: string;
+    assignmentStatus: AssignmentStatus;
   } | null;
   today: {
     time_in?: string | null;
@@ -276,6 +284,37 @@ export interface StudentAttendanceResponse {
     lateArrivals: number;
     attendanceRate: number;
   };
+}
+
+export interface StudentInternshipDto {
+  internshipAssignmentId: number;
+  companyId: number;
+  companyName: string;
+  companyLogoFilePath?: string | null;
+  opportunityId: number;
+  jobTitle: string;
+  workingDays: number[];
+  requiredMinutes: number;
+  renderedMinutes: number;
+  remainingMinutes: number;
+  requiredHours: number;
+  renderedHours: number;
+  remainingHours: number;
+  startDate: string;
+  expectedEndDate?: string | null;
+  endedAt?: string | null;
+  startShift: string;
+  endShift: string;
+  assignmentStatus: AssignmentStatus;
+  companyCompletionRemark?: string | null;
+  companyCancellationRemark?: string | null;
+  studentWithdrawalRemark?: string | null;
+  studentReview?: {
+    rating: number;
+    remark: string;
+    reviewedAt: string;
+  } | null;
+  createdAt: string;
 }
 
 export interface PesoStudentMetricsDto {
