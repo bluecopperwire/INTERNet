@@ -12,6 +12,7 @@ import { StudentsService } from './services/students.service';
 import { StudentsController } from './controllers/students.controller';
 import { ApplicationsModule } from '../applications/applications.module';
 import { ProfilePictureStorageModule } from '../storage/profile-picture-storage.module';
+import { AttendanceResolutionScheduler } from './scheduler/attendance-resolution.scheduler';
 
 @Module({
   imports: [
@@ -27,7 +28,7 @@ import { ProfilePictureStorageModule } from '../storage/profile-picture-storage.
     ProfilePictureStorageModule,
   ],
   controllers: [StudentsController],
-  providers: [StudentsService],
+  providers: [StudentsService, AttendanceResolutionScheduler],
   exports: [StudentsService],
 })
 export class StudentsModule {}

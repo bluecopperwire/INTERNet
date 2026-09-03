@@ -881,10 +881,9 @@ async function ensureAssignment(
   if (desired === 'completed' && status === 'ongoing') {
     await runner.query(
       `INSERT INTO public.attendance_record (
-         internship_assignment_id, attendance_date, time_in, time_out,
-         time_in_status, rendered_hours_status
-       ) VALUES ($1, CURRENT_DATE - 1, TIME '08:00', TIME '17:00',
-                 'on_time', 'incomplete')
+         internship_assignment_id, attendance_date, attendance_status,
+         time_in, time_out, rendered_minutes
+       ) VALUES ($1, CURRENT_DATE - 1, 'present', TIME '08:00', TIME '17:00', 0)
        ON CONFLICT (internship_assignment_id, attendance_date) DO NOTHING`,
       [assignmentId],
     );
@@ -1167,28 +1166,24 @@ async function seedDomain(dataSource: DataSource, ids: SeedIds): Promise<void> {
     );
 
     const attendance = [
-      [-4, '09:00', '17:00', `${DEV_PREFIX}attendance/on-time.jpg`],
-      [-3, '09:30', '16:00', `${DEV_PREFIX}attendance/late.jpg`],
-      [-2, '08:45', '18:00', `${DEV_PREFIX}attendance/overtime.jpg`],
-      [-1, '09:15', null, `${DEV_PREFIX}attendance/incomplete.jpg`],
+      [-4, '09:00', '17:00'],
+      [-3, '09:30', '16:00'],
+      [-2, '08:45', '18:00'],
+      [-1, '09:15', null],
     ] as const;
-    await runner.query(
-      `DELETE FROM public.attendance_record
-        WHERE internship_assignment_id = $1
-          AND photo_file_path LIKE 'dev-seed/%'`,
-      [ongoingAssignment],
-    );
-    for (const [dayOffset, timeIn, timeOut, photoPath] of attendance) {
+    for (const [dayOffset, timeIn, timeOut] of attendance) {
       await runner.query(
         `INSERT INTO public.attendance_record
-           (internship_assignment_id, attendance_date, time_in,
-            time_in_status, time_out, rendered_hours_status, photo_file_path)
-         VALUES ($1, CURRENT_DATE + $2::integer, $3, 'on_time', $4, 'incomplete', $5)
+           (internship_assignment_id, attendance_date, attendance_status,
+            time_in, time_out, rendered_minutes)
+         VALUES ($1, (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date + $2::integer,
+                 CASE WHEN $4::time IS NULL THEN 'incomplete'::public.attendance_status_enum ELSE 'present'::public.attendance_status_enum END,
+                 $3, $4, 0)
          ON CONFLICT (internship_assignment_id, attendance_date) DO UPDATE SET
+           attendance_status = EXCLUDED.attendance_status,
            time_in = EXCLUDED.time_in,
-           time_out = EXCLUDED.time_out,
-           photo_file_path = EXCLUDED.photo_file_path`,
-        [ongoingAssignment, dayOffset, timeIn, timeOut, photoPath],
+           time_out = EXCLUDED.time_out`,
+        [ongoingAssignment, dayOffset, timeIn, timeOut],
       );
     }
     await runner.query(

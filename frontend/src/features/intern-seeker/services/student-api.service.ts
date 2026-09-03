@@ -7,6 +7,7 @@ import type {
   StudentApplicationDto,
   StudentApplicationStatusDto,
   StudentAttendanceResponse,
+  StudentAttendanceHistoryResponse,
   StudentInternshipDto,
 } from '../../../types/api';
 
@@ -210,6 +211,18 @@ export const studentApiService = {
     const response = await api.post(`/students/${studentId}/dtr/time-out`, {
       internshipAssignmentId,
     });
+    return response.data;
+  },
+
+  async getAttendanceHistory(
+    studentId: number,
+    internshipAssignmentId: number,
+    params: { status?: string; date?: string; page: number; limit: number },
+  ): Promise<StudentAttendanceHistoryResponse> {
+    const response = await api.get<StudentAttendanceHistoryResponse>(
+      `/students/${studentId}/assignments/${internshipAssignmentId}/attendance-history`,
+      { params },
+    );
     return response.data;
   },
 };

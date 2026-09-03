@@ -23,7 +23,7 @@ export function AttendanceMonitoringPage() {
 
   const summary = useMemo(() => {
     const dateRecords = records.filter((record) => record.date === date)
-    return { active: new Set(records.map((record) => record.applicantId)).size, present: dateRecords.filter((record) => record.status === 'Present').length, absent: dateRecords.filter((record) => record.status === 'Absent').length, late: dateRecords.filter((record) => record.status === 'Late').length }
+    return { active: new Set(records.map((record) => record.applicantId)).size, present: dateRecords.filter((record) => record.status === 'Present').length, absent: dateRecords.filter((record) => record.status === 'Absent').length, incomplete: dateRecords.filter((record) => record.status === 'Incomplete').length }
   }, [records, date])
   const filtered = useMemo(() => records.filter((record) => {
     const query = search.trim().toLowerCase()
@@ -39,11 +39,11 @@ export function AttendanceMonitoringPage() {
     <EmployerHero title="Monitor Attendance" subtitle="Monitor attendance of your active interns" comfortableSpacing />
     <section className={styles.mainContent}>
       <div className={styles.summaryGrid}>
-        <SummaryCard label="Total Active Interns" value={summary.active} /><SummaryCard label="Present" value={summary.present} /><SummaryCard label="Absent" value={summary.absent} /><SummaryCard label="Late" value={summary.late} />
+        <SummaryCard label="Total Active Interns" value={summary.active} /><SummaryCard label="Present" value={summary.present} /><SummaryCard label="Absent" value={summary.absent} /><SummaryCard label="Incomplete" value={summary.incomplete} />
       </div>
       <div className={styles.toolbar}>
         <label className={styles.searchBox}><Search size={16} /><span className={styles.srOnly}>Search attendance records</span><input value={search} onChange={(event) => { setSearch(event.target.value); resetPage() }} placeholder="Search intern or role..." /></label>
-        <label className={styles.statusFilter}><SlidersHorizontal size={16} /><span className={styles.srOnly}>Filter by status</span><select value={status} onChange={(event) => { setStatus(event.target.value); resetPage() }}><option value="All">All Statuses</option><option value="Present">Present</option><option value="Absent">Absent</option><option value="Late">Late</option></select></label>
+        <label className={styles.statusFilter}><SlidersHorizontal size={16} /><span className={styles.srOnly}>Filter by status</span><select value={status} onChange={(event) => { setStatus(event.target.value); resetPage() }}><option value="All">All Statuses</option><option value="Present">Present</option><option value="Absent">Absent</option><option value="Incomplete">Incomplete</option></select></label>
         <label className={styles.dateFilter}><CalendarDays size={16} /><span className={styles.srOnly}>Filter by date</span><input type="date" value={date} max={todayDateOnly()} onChange={(event) => { setDate(event.target.value); resetPage() }} /></label>
       </div>
       <div className={styles.tableCard}><div className={styles.tableScroller}><table className={styles.table}><thead><tr><th>Student Name</th><th>Job Title</th><th>Date</th><th>Status</th><th>Action</th></tr></thead><tbody>{displayed.map((record) => <tr key={record.id}><td><strong>{record.studentName}</strong></td><td>{record.role}</td><td>{record.date}</td><td><span className={`${styles.statusPill} ${styles[record.status.toLowerCase()]}`}>{record.status}</span></td><td><button className={styles.actionBtn} onClick={() => navigate(`/employer/attendance/${record.applicantId}`)}><Eye size={14} />View</button></td></tr>)}</tbody></table></div>{displayed.length === 0 && <p className={styles.noData}>No attendance records match the selected filters.</p>}</div>

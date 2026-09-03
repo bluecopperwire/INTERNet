@@ -32,7 +32,10 @@ import {
   StudentProfileUpdateDto,
   StudentRequirementUploadDto,
 } from '../dto/students.dto';
-import { StudentAttendanceQueryDto } from '../dto/student-attendance-query.dto';
+import {
+  StudentAttendanceHistoryQueryDto,
+  StudentAttendanceQueryDto,
+} from '../dto/student-attendance-query.dto';
 import { requirementUploadOptions } from '../../storage/requirement-upload.config';
 import { profilePictureUploadOptions } from '../../storage/profile-picture-upload.config';
 import { PaginationDto } from '../../common/dto/pagination.dto';
@@ -333,6 +336,23 @@ export class StudentsController {
   ) {
     await this.ensureStudentAccess(id, currentUser);
     return this.studentsService.getStudentAttendance(id, query);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/assignments/:assignmentId/attendance-history')
+  @HttpCode(HttpStatus.OK)
+  async getStudentAttendanceHistory(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('assignmentId', ParseIntPipe) assignmentId: number,
+    @CurrentUser() currentUser: any,
+    @Query() query: StudentAttendanceHistoryQueryDto,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    return this.studentsService.getStudentAttendanceHistory(
+      id,
+      assignmentId,
+      query,
+    );
   }
 
   @UseGuards(JwtAuthGuard)

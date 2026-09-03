@@ -662,9 +662,9 @@ export function adaptAttendance(res: StudentAttendanceResponse): {
   if (a) {
     let todayStatus: 'not-checked-in' | 'checked-in' | 'checked-out' = 'not-checked-in';
     if (res.today) {
-      if (res.today.time_out) {
+      if (res.today.timeOut) {
         todayStatus = 'checked-out';
-      } else if (res.today.time_in) {
+      } else if (res.today.timeIn) {
         todayStatus = 'checked-in';
       }
     }
@@ -676,8 +676,8 @@ export function adaptAttendance(res: StudentAttendanceResponse): {
       workingDays: formatWorkingDays(a.workingDays),
       shiftStart: a.startShift,
       shiftEnd: a.endShift,
-      checkedInAt: res.today?.time_in ? String(res.today.time_in).substring(0, 5) : undefined,
-      checkedOutAt: res.today?.time_out ? String(res.today.time_out).substring(0, 5) : undefined,
+      checkedInAt: res.today?.timeIn ? String(res.today.timeIn).substring(0, 5) : undefined,
+      checkedOutAt: res.today?.timeOut ? String(res.today.timeOut).substring(0, 5) : undefined,
     };
   }
 

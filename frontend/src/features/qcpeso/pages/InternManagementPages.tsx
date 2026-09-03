@@ -62,14 +62,14 @@ export function QCPesoAttendancePage() {
   const activeInternsCount = internships.filter((i) => i.status === 'On Going').length || internships.length
   const dateRecords = records.filter((record) => !date || record.date === date)
   const presentCount = dateRecords.filter((record) => record.status === 'Present').length
-  const lateCount = dateRecords.filter((record) => record.status === 'Late').length
-  const absentCount = Math.max(0, activeInternsCount - presentCount - lateCount)
+  const incompleteCount = dateRecords.filter((record) => record.status === 'Incomplete').length
+  const absentCount = dateRecords.filter((record) => record.status === 'Absent').length
 
   const summary = {
     active: activeInternsCount,
     present: presentCount,
     absent: absentCount,
-    late: lateCount,
+    incomplete: incompleteCount,
   }
 
   return (
@@ -80,7 +80,7 @@ export function QCPesoAttendancePage() {
           <AttendanceSummaryCard label="Total Active Interns" value={summary.active} />
           <AttendanceSummaryCard label="Present" value={summary.present} />
           <AttendanceSummaryCard label="Absent" value={summary.absent} />
-          <AttendanceSummaryCard label="Late" value={summary.late} />
+          <AttendanceSummaryCard label="Incomplete" value={summary.incomplete} />
         </div>
         <div className={attendanceStyles.toolbar}>
           <label className={attendanceStyles.searchBox}>
@@ -106,7 +106,7 @@ export function QCPesoAttendancePage() {
               <option value="All">All Statuses</option>
               <option>Present</option>
               <option>Absent</option>
-              <option>Late</option>
+              <option>Incomplete</option>
             </select>
           </label>
           <label className={attendanceStyles.dateFilter}>
@@ -239,11 +239,10 @@ export function QCPesoAttendanceDetailsPage() {
               <thead>
                 <tr>
                   <th>Date</th>
-                  <th>Time In</th>
-                  <th>Time In Status</th>
-                  <th>Time Out</th>
-                  <th>Rendered Hours</th>
-                  <th>Rendered Hours Status</th>
+                  <th>Clock In Time</th>
+                  <th>Clock Out Time</th>
+                  <th>Rendered Time</th>
+                  <th>Attendance Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -251,13 +250,10 @@ export function QCPesoAttendanceDetailsPage() {
                   <tr key={record.id}>
                     <td>{record.date}</td>
                     <td>{record.timeIn}</td>
-                    <td>
-                      <DetailStatusPill value={record.status === 'Present' ? 'On Time' : record.status} />
-                    </td>
                     <td>{record.timeOut}</td>
                     <td>{record.hoursRendered} hrs</td>
                     <td>
-                      <DetailStatusPill value={renderedStatus(record)} />
+                      <DetailStatusPill value={record.status} />
                     </td>
                   </tr>
                 ))}
@@ -309,5 +305,3 @@ function InternSummary({ styles, internship, remaining }: { styles: Record<strin
 function ReadonlyField({ styles, label, value }: { styles: Record<string, string>; label: string; value: string }) { return <label className={styles.field}><span>{label}</span><input value={value} readOnly /></label> }
 
 function DetailStatusPill({ value }: { value: string }) { const className = value.replaceAll(' ', '').toLowerCase(); return <span className={`${attendanceDetailStyles.statusPill} ${attendanceDetailStyles[className] ?? ''}`}>{value}</span> }
-
-function renderedStatus(record: QCPesoAttendanceRecord) { if (record.status === 'Absent' || record.hoursRendered === 0) return 'Incomplete'; if (record.hoursRendered < 8) return 'Undertime'; if (record.hoursRendered > 8) return 'Overtime'; return 'Complete' }

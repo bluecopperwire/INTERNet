@@ -3,8 +3,8 @@ import { DATE_PATTERN, EmployerPaginationDto, Trim } from './common.dto';
 
 export enum AttendanceDisplayStatus {
   PRESENT = 'present',
-  LATE = 'late',
   ABSENT = 'absent',
+  INCOMPLETE = 'incomplete',
 }
 
 export class AttendanceDateQueryDto {

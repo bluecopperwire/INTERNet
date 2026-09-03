@@ -493,7 +493,7 @@ async function main() {
     const assignmentSet = new Set(
       assignmentStatuses.rows.map((row) => row.assignment_status),
     );
-    for (const status of ['pending', 'ongoing', 'completed']) {
+    for (const status of ['pending', 'ongoing', 'complete_student']) {
       assert(
         assignmentSet.has(status),
         `Assignment status ${status} is missing.`,
@@ -501,9 +501,17 @@ async function main() {
     }
 
     const attendance = await client.query(
-      `SELECT time_in_status, rendered_hours_status, hours_rendered
-         FROM public.attendance_record
-        WHERE photo_file_path LIKE 'dev-seed/%'`,
+      `SELECT attendance_status, time_in, time_out, rendered_minutes
+         FROM public.attendance_record ar
+         JOIN public.internship_assignment ia USING (internship_assignment_id)
+         JOIN public.referral r USING (referral_id)
+         JOIN public.application a USING (application_id)
+         JOIN public.opportunity o USING (opportunity_id)
+        WHERE o.title = 'DEV Remote Healthcare Internship'
+          AND ia.assignment_status = 'ongoing'
+          AND ar.attendance_date BETWEEN
+            (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date - 4
+            AND (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date - 1`,
     );
     assert(
       attendance.rowCount === 4,
@@ -512,28 +520,33 @@ async function main() {
     assert(
       attendance.rows.some(
         (row) =>
-          row.time_in_status === 'on_time' &&
-          row.rendered_hours_status === 'complete',
+          row.attendance_status === 'present' &&
+          Number(row.rendered_minutes) === 420,
       ),
-      'On-time complete attendance is missing.',
+      'Present attendance with 420 rendered minutes is missing.',
     );
     assert(
       attendance.rows.some(
         (row) =>
-          row.time_in_status === 'late' &&
-          row.rendered_hours_status === 'undertime',
+          row.attendance_status === 'present' &&
+          Number(row.rendered_minutes) === 330,
       ),
-      'Late undertime attendance is missing.',
-    );
-    assert(
-      attendance.rows.some((row) => row.rendered_hours_status === 'overtime'),
-      'Overtime attendance is missing.',
+      'Present attendance with 330 rendered minutes is missing.',
     );
     assert(
       attendance.rows.some(
         (row) =>
-          row.rendered_hours_status === 'incomplete' &&
-          row.hours_rendered === null,
+          row.attendance_status === 'present' &&
+          Number(row.rendered_minutes) === 495,
+      ),
+      'Late Clock Out rendered minutes are missing.',
+    );
+    assert(
+      attendance.rows.some(
+        (row) =>
+          row.attendance_status === 'incomplete' &&
+          row.time_out === null &&
+          Number(row.rendered_minutes) === 0,
       ),
       'Incomplete attendance is missing.',
     );

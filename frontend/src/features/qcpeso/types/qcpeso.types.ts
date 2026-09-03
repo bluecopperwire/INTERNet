@@ -234,7 +234,7 @@ export interface QCPesoAttendanceRecord {
   date: string;
   timeIn: string;
   timeOut: string;
-  status: "Present" | "Absent" | "Late";
+  status: "Present" | "Absent" | "Incomplete";
   hoursRendered: number;
 }
 

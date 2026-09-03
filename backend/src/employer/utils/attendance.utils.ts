@@ -1,12 +1,8 @@
 import { timeToMinutes } from './time.utils';
 
-export type RenderedHoursStatus =
-  'incomplete' | 'undertime' | 'complete' | 'overtime';
-
 export interface DerivedHours {
   renderedMinutes: number;
   renderedHours: number;
-  renderedHoursStatus: RenderedHoursStatus;
 }
 
 export function roundHours(value: number): number {
@@ -33,35 +29,20 @@ export function rawRenderedMinutes(
 }
 
 export function deriveRenderedHours(
-  timeIn: string,
+  timeIn: string | null,
   timeOut: string | null,
-  startShift: string,
-  endShift: string,
 ): DerivedHours {
-  if (!timeOut) {
+  if (!timeIn || !timeOut) {
     return {
       renderedMinutes: 0,
       renderedHours: 0,
-      renderedHoursStatus: 'incomplete',
     };
   }
 
   const renderedMinutes = rawRenderedMinutes(timeIn, timeOut);
-  const expectedMinutes = Math.max(
-    timeToMinutes(endShift) - timeToMinutes(startShift) - 60,
-    0,
-  );
-  const renderedHoursStatus: RenderedHoursStatus =
-    renderedMinutes < expectedMinutes
-      ? 'undertime'
-      : renderedMinutes > expectedMinutes
-        ? 'overtime'
-        : 'complete';
-
   return {
     renderedMinutes,
     renderedHours: roundHours(renderedMinutes / 60),
-    renderedHoursStatus,
   };
 }
 

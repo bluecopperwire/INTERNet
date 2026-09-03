@@ -89,6 +89,8 @@
   font-size: 13px;
   font-weight: 600;
 }
+.statusStack { display: grid; justify-items: end; gap: 5px; }
+.statusLabel { color: #6b7280; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
 
 .todayDetails {
   display: grid;
@@ -119,31 +121,10 @@
   font-size: 13px;
 }
 
-.internshipDetailsButton {
-  width: 100%;
-  min-height: 42px;
-  margin-top: 24px;
-  border: 1px solid var(--tracking-purple);
-  border-radius: 8px;
-  color: var(--tracking-purple);
-  background: #ffffff;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background 160ms ease,
-    color 160ms ease,
-    transform 160ms ease;
-}
-
-.internshipDetailsButton:hover {
-  color: #ffffff;
-  background: var(--tracking-purple);
-  transform: translateY(-1px);
-}
-
-.checkInButton {
+.clockActions { display: grid; gap: 10px; margin-top: 24px; }
+.checkInButton,
+.checkOutButton,
+.historyButton {
   width: 100%;
   min-height: 56px;
   border: 0;
@@ -159,15 +140,20 @@
     transform 160ms ease;
 }
 
-.checkInButton:hover:not(:disabled) {
+.checkInButton:hover:not(:disabled),
+.checkOutButton:hover:not(:disabled),
+.historyButton:hover:not(:disabled) {
   background: #30239a;
   transform: translateY(-1px);
 }
 
-.checkInButton:disabled {
+.checkInButton:disabled,
+.checkOutButton:disabled {
   cursor: default;
-  opacity: 0.82;
+  opacity: 0.45;
 }
+.checkOutButton { background: #fff; border: 1px solid var(--tracking-purple); color: var(--tracking-purple); }
+.historyButton { min-height: 42px; margin-top: 18px; }
 
 .summaryPanel {
   padding: 24px;
@@ -231,6 +217,10 @@
   letter-spacing: -0.035em;
   line-height: 1;
 }
+.renderedCard { --stat-accent: #9b6b00; --stat-background: #fff8dc; }
+.remainingCard { --stat-accent: #21167b; --stat-background: #f3f1ff; }
+.renderedCard span,
+.remainingCard span { font-size: 18px; letter-spacing: 0; }
 
 .presentCard {
   --stat-accent: #33258b;
@@ -240,17 +230,6 @@
 .absentCard {
   --stat-accent: #d62a30;
   --stat-background: #fff1f2;
-}
-
-.lateCard {
-  --stat-accent: #b77a00;
-  --stat-background: #fff8dc;
-}
-
-.rateCard {
-  --stat-accent: #21167b;
-  --stat-background: #fff9dc;
-  border-color: #ddd597;
 }
 
 .calendarPanel {
@@ -317,11 +296,10 @@
   border-radius: 50%;
 }
 
-.present {
-  background: rgba(33, 22, 123, 0.13);
+.workday {
+  background: #d9dce5;
 }
-
-.late {
+.present {
   background: var(--tracking-yellow);
 }
 
@@ -350,11 +328,10 @@
   border-radius: 50%;
 }
 
-.presentDot {
-  background: rgba(33, 22, 123, 0.25);
+.workdayDot {
+  background: #d9dce5;
 }
-
-.lateDot {
+.presentDot {
   background: var(--tracking-yellow);
 }
 

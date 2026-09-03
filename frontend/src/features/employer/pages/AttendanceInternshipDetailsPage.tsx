@@ -14,7 +14,6 @@ export function AttendanceInternshipDetailsPage() {
 
   useEffect(() => {
     if (!applicantId) {
-      setLoading(false)
       return
     }
     Promise.all([employerService.getInternshipDetails(applicantId), employerService.getAttendanceRecords()])
@@ -25,6 +24,7 @@ export function AttendanceInternshipDetailsPage() {
       .finally(() => setLoading(false))
   }, [applicantId])
 
+  if (!applicantId) return <main className={styles.feedback}>Internship details not found.</main>
   if (loading) return <main className={styles.feedback}>Loading internship details...</main>
   if (!details) return <main className={styles.feedback}>Internship details not found.</main>
 
@@ -46,14 +46,13 @@ export function AttendanceInternshipDetailsPage() {
         </header>
         <div className={styles.tableScroller}>
           <table className={styles.attendanceTable}>
-            <thead><tr><th>Date</th><th>Time In</th><th>Time In Status</th><th>Time Out</th><th>Rendered Hours</th><th>Rendered Hours Status</th></tr></thead>
+            <thead><tr><th>Date</th><th>Clock In Time</th><th>Clock Out Time</th><th>Rendered Time</th><th>Attendance Status</th></tr></thead>
             <tbody>{records.map((record) => <tr key={record.id}>
               <td>{record.date}</td>
               <td>{record.timeIn}</td>
-              <td><StatusPill value={record.status === 'Present' ? 'On Time' : record.status} /></td>
               <td>{record.timeOut}</td>
               <td>{record.hoursRendered} hrs</td>
-              <td><StatusPill value={getRenderedHoursStatus(record)} /></td>
+              <td><StatusPill value={record.status} /></td>
             </tr>)}</tbody>
           </table>
         </div>
@@ -66,11 +65,4 @@ export function AttendanceInternshipDetailsPage() {
 function StatusPill({ value }: { value: string }) {
   const styleName = value.replaceAll(' ', '').toLowerCase()
   return <span className={`${styles.statusPill} ${styles[styleName] ?? ''}`}>{value}</span>
-}
-
-function getRenderedHoursStatus(record: EmployerAttendanceRecord) {
-  if (record.status === 'Absent' || record.hoursRendered === 0) return 'Incomplete'
-  if (record.hoursRendered < 8) return 'Undertime'
-  if (record.hoursRendered > 8) return 'Overtime'
-  return 'Complete'
 }

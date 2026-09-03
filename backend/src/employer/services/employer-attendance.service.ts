@@ -4,7 +4,6 @@ import type { DataSource } from 'typeorm';
 import type { AttendanceDateQueryDto, AttendanceListQueryDto } from '../dto';
 import { EmployerCompanyResolver } from './company-resolver.service';
 import {
-  deriveRenderedHours,
   remainingMinutes,
   remainingHours,
   roundHours,
@@ -27,12 +26,11 @@ export interface DailyAttendanceRow {
   studentFullName: string;
   jobTitle: string;
   date: string;
-  status: 'present' | 'late' | 'absent';
+  status: 'present' | 'absent' | 'incomplete';
   timeIn: string | null;
   timeOut: string | null;
   renderedMinutes: number;
   renderedHours: number;
-  renderedHoursStatus: 'incomplete' | 'undertime' | 'complete' | 'overtime';
 }
 
 @Injectable()
@@ -49,12 +47,11 @@ export class EmployerAttendanceService {
       null,
     );
     const present = rows.filter((row) => row.status === 'present').length;
-    const late = rows.filter((row) => row.status === 'late').length;
     const absent = rows.filter((row) => row.status === 'absent').length;
     return {
-      totalActive: present + late + absent,
+      totalActive: rows.length,
       present,
-      late,
+      incomplete: rows.filter((row) => row.status === 'incomplete').length,
       absent,
     };
   }
@@ -107,7 +104,7 @@ export class EmployerAttendanceService {
     const records: AttendanceContextRow[] = await this.dataSource.query(
       `
         SELECT attendance_record_id, attendance_date::text AS attendance_date,
-               time_in, time_in_status, time_out, rendered_minutes
+               time_in, time_out, rendered_minutes, attendance_status
         FROM public.attendance_record
         WHERE internship_assignment_id = $1
         ORDER BY attendance_date ASC, attendance_record_id ASC
@@ -122,23 +119,15 @@ export class EmployerAttendanceService {
         record.attendance_date,
         'attendanceDate',
       );
-      const timeIn = record.time_in as string;
-      const timeOut = record.time_out as string | null;
-      const derived = deriveRenderedHours(
-        timeIn,
-        timeOut,
-        assignment.start_shift as string,
-        assignment.end_shift as string,
-      );
-      renderedMinutes += asNumber(record.rendered_minutes);
+      const recordRenderedMinutes = asNumber(record.rendered_minutes);
+      renderedMinutes += recordRenderedMinutes;
       history.set(attendanceDate, {
         date: attendanceDate,
         timeIn: record.time_in,
-        timeInStatus: record.time_in_status,
         timeOut: record.time_out,
-        renderedHours: derived.renderedHours,
-        renderedMinutes: derived.renderedMinutes,
-        renderedHoursStatus: derived.renderedHoursStatus,
+        renderedHours: roundHours(recordRenderedMinutes / 60),
+        renderedMinutes: recordRenderedMinutes,
+        attendanceStatus: record.attendance_status,
       });
     }
     const renderedHours = roundHours(renderedMinutes / 60);
@@ -162,11 +151,10 @@ export class EmployerAttendanceService {
         history.set(date, {
           date,
           timeIn: null,
-          timeInStatus: null,
           timeOut: null,
           renderedHours: 0,
           renderedMinutes: 0,
-          renderedHoursStatus: 'incomplete',
+          attendanceStatus: 'absent',
         });
       }
     }
@@ -209,7 +197,8 @@ export class EmployerAttendanceService {
                s.student_id,
                concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS student_full_name,
                o.title AS job_title,
-               ar.attendance_record_id, ar.time_in, ar.time_in_status, ar.time_out,
+               ar.attendance_record_id, ar.time_in, ar.time_out,
+               ar.attendance_status, ar.rendered_minutes,
                (ia.ended_at AT TIME ZONE 'Asia/Manila')::date::text AS actual_terminal_date
         FROM public.internship_assignment ia
         JOIN public.referral r ON r.referral_id = ia.referral_id
@@ -246,28 +235,21 @@ export class EmployerAttendanceService {
           timeOut: null,
           renderedMinutes: 0,
           renderedHours: 0,
-          renderedHoursStatus: 'incomplete',
         });
         continue;
       }
-      const derived = deriveRenderedHours(
-        row.time_in as string,
-        row.time_out as string | null,
-        row.start_shift as string,
-        row.end_shift as string,
-      );
+      const renderedMinutes = asNumber(row.rendered_minutes);
       result.push({
         internshipAssignmentId: asNumber(row.internship_assignment_id),
         studentId: asNumber(row.student_id),
         studentFullName: String(row.student_full_name),
         jobTitle: String(row.job_title),
         date,
-        status: row.time_in_status === 'late' ? 'late' : 'present',
-        timeIn: row.time_in as string,
+        status: row.attendance_status as 'present' | 'absent' | 'incomplete',
+        timeIn: row.time_in as string | null,
         timeOut: row.time_out as string | null,
-        renderedMinutes: derived.renderedMinutes,
-        renderedHours: derived.renderedHours,
-        renderedHoursStatus: derived.renderedHoursStatus,
+        renderedMinutes,
+        renderedHours: roundHours(renderedMinutes / 60),
       });
     }
     return result;

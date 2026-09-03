@@ -376,15 +376,8 @@ export class PesoDashboardService {
 
   // D2. GET DTR dashboard details/metrics
   async getDtrDashboardMetrics(): Promise<PesoDtrDashboardMetricsDto> {
-    const overtimeSql = `
-      SELECT COUNT(DISTINCT ia.internship_assignment_id) AS count
-      FROM public.attendance_record ar
-      JOIN public.internship_assignment ia ON ia.internship_assignment_id = ar.internship_assignment_id
-      WHERE ar.rendered_hours_status = 'overtime'
-        AND ia.deleted_at IS NULL
-    `;
-    const overtimeRes = await this.dataSource.query(overtimeSql);
-    const applicantsOvertime = Number(overtimeRes[0]?.count || 0);
+    // Overtime is no longer an Attendance status in the finalized model.
+    const applicantsOvertime = 0;
 
     const pendingSql = `
       SELECT COUNT(*) AS count 

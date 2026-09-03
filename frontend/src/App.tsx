@@ -18,6 +18,7 @@ import AttendancePage from './features/intern-seeker/pages/AttendancePage'
 import InternshipPage from './features/intern-seeker/pages/InternshipPage'
 import InternshipHistoryPage from './features/intern-seeker/pages/InternshipHistoryPage'
 import InternshipHistoryDetailsPage from './features/intern-seeker/pages/InternshipHistoryDetailsPage'
+import AttendanceHistoryPage from './features/intern-seeker/pages/AttendanceHistoryPage'
 import TrackingLayout from './features/intern-seeker/components/TrackingLayout'
 
 // QCPESO
@@ -98,6 +99,7 @@ function App() {
             <Route path="application-status" element={<ApplicationStatusPage />} />
             <Route path="internship" element={<InternshipPage />} />
             <Route path="attendance" element={<AttendancePage />} />
+            <Route path="attendance-history/:assignmentId" element={<AttendanceHistoryPage />} />
             <Route path="internship-history" element={<InternshipHistoryPage />} />
             <Route path="internship-history/:assignmentId" element={<InternshipHistoryDetailsPage />} />
           </Route>

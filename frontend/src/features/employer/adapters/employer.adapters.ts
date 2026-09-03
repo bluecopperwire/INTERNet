@@ -162,10 +162,10 @@ export function adaptEmployerReferral(
 export function adaptEmployerAttendance(
   a: EmployerAttendanceItemDto,
 ): EmployerAttendanceRecord {
-  const statusMap: Record<string, 'Present' | 'Absent' | 'Late'> = {
+  const statusMap: Record<string, EmployerAttendanceRecord['status']> = {
     present: 'Present',
-    late: 'Late',
     absent: 'Absent',
+    incomplete: 'Incomplete',
   };
 
   return {

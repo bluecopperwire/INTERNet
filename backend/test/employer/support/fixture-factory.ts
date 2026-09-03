@@ -406,15 +406,15 @@ export class EmployerFixtureFactory {
   ): Promise<number> {
     const rows = await this.db.query(
       `INSERT INTO public.attendance_record
-        (internship_assignment_id,attendance_date,time_in,time_out,time_in_status,hours_rendered,rendered_hours_status)
-       VALUES ($1,$2,$3,$4,'on_time',$5,CASE WHEN $4::time IS NULL THEN 'incomplete'::public.rendered_hours_status_enum ELSE 'complete'::public.rendered_hours_status_enum END)
+        (internship_assignment_id,attendance_date,attendance_status,time_in,time_out,rendered_minutes)
+       VALUES ($1,$2,CASE WHEN $4::time IS NULL THEN 'incomplete'::public.attendance_status_enum ELSE 'present'::public.attendance_status_enum END,$3,$4,$5)
        RETURNING attendance_record_id`,
       [
         assignmentId,
         date,
         timeIn,
         timeOut,
-        timeOut ? (storedHours ?? 99) : null,
+        timeOut ? (storedHours ?? 99) * 60 : 0,
       ],
     );
     return Number(rows[0].attendance_record_id);

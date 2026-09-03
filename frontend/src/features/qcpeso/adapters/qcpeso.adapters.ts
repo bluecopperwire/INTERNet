@@ -310,15 +310,15 @@ export function adaptPesoDtr(d: PesoDtrEntryDto | any): QCPesoAttendanceRecord {
   if (!d) return {} as any;
   const statusMap: Record<string, any> = {
     on_time: "Present",
-    late: "Late",
     present: "Present",
     absent: "Absent",
+    incomplete: "Incomplete",
   };
 
   const rawDate = d.date || d.dtrDate || "";
   const formattedDate = formatTableDate(rawDate);
 
-  const rawStatus = d.timeInStatus || d.status || "Present";
+  const rawStatus = d.attendanceStatus || d.status || "Present";
   const status = statusMap[rawStatus.toLowerCase()] || "Present";
 
   return {

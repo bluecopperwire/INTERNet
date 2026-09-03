@@ -21,8 +21,9 @@ function attendanceRow(
     job_title: 'Developer',
     attendance_record_id: 11,
     time_in: '08:00:00',
-    time_in_status: 'on_time',
     time_out: '17:00:00',
+    attendance_status: 'present',
+    rendered_minutes: 480,
     ...overrides,
   };
 }
@@ -40,7 +41,7 @@ function attendanceServiceWithRows(rows: Array<Record<string, unknown>>) {
 }
 
 describe('EmployerAttendanceService', () => {
-  it('classifies on-time, late, and missing scheduled past rows exclusively', async () => {
+  it('classifies persisted Present and missing scheduled past rows exclusively', async () => {
     const { service } = attendanceServiceWithRows([
       attendanceRow({
         internship_assignment_id: 1,
@@ -53,11 +54,10 @@ describe('EmployerAttendanceService', () => {
         assignment_status: 'cancelled',
         actual_terminal_date: '2026-08-20',
         student_id: 2,
-        student_full_name: 'Late Student',
+        student_full_name: 'Second Present Student',
         job_title: 'Designer',
         attendance_record_id: 12,
         time_in: '08:11:00',
-        time_in_status: 'late',
       }),
       attendanceRow({
         internship_assignment_id: 3,
@@ -68,7 +68,6 @@ describe('EmployerAttendanceService', () => {
         job_title: 'Analyst',
         attendance_record_id: null,
         time_in: null,
-        time_in_status: null,
         time_out: null,
       }),
     ]);
@@ -77,12 +76,12 @@ describe('EmployerAttendanceService', () => {
 
     expect(result).toEqual({
       totalActive: 3,
-      present: 1,
-      late: 1,
+      present: 2,
+      incomplete: 0,
       absent: 1,
     });
     expect(result.totalActive).toBe(
-      result.present + result.late + result.absent,
+      result.present + result.incomplete + result.absent,
     );
   });
 
@@ -156,7 +155,12 @@ describe('EmployerAttendanceService', () => {
     } as unknown as EmployerCompanyResolver;
     const service = new EmployerAttendanceService(dataSource, resolver);
     const result = await service.summary(1, { date: '2099-01-01' });
-    expect(result).toEqual({ totalActive: 0, present: 0, late: 0, absent: 0 });
+    expect(result).toEqual({
+      totalActive: 0,
+      present: 0,
+      incomplete: 0,
+      absent: 0,
+    });
     expect(resolver.resolve).not.toHaveBeenCalled();
   });
 

@@ -5,7 +5,7 @@ const presentDays = [3, 4, 5, 6, 7, 11, 12, 13, 14, 17, 18, 19, 20, 21, 24, 25, 
 export const MOCK_ATTENDANCE_RECORDS: AttendanceRecord[] = [
   ...presentDays.map((day): AttendanceRecord => ({
     date: `2026-08-${String(day).padStart(2, '0')}`,
-    status: day === 6 || day === 18 ? 'late' : 'present',
+    status: 'present',
     checkIn: day === 6 || day === 18 ? '9:14 AM' : '8:55 AM',
     checkOut: '6:00 PM',
   })),

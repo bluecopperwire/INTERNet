@@ -8,26 +8,21 @@ import { hasShiftEnded, isScheduledWorkday } from './time.utils';
 
 describe('employer attendance derivation', () => {
   it.each([
-    ['08:00', '17:00', 8, 'complete'],
-    ['08:11', '17:00', 7.82, 'undertime'],
-    ['08:00', '16:00', 7, 'undertime'],
-    ['08:00', '18:00', 9, 'overtime'],
-  ])(
-    'deducts a one-hour break for %s-%s',
-    (timeIn, timeOut, expectedHours, expectedStatus) => {
-      expect(deriveRenderedHours(timeIn, timeOut, '08:00', '17:00')).toEqual({
-        renderedMinutes: Math.round(expectedHours * 60),
-        renderedHours: expectedHours,
-        renderedHoursStatus: expectedStatus,
-      });
-    },
-  );
+    ['08:00', '17:00', 8],
+    ['08:11', '17:00', 7.82],
+    ['08:00', '16:00', 7],
+    ['08:00', '18:00', 9],
+  ])('deducts a one-hour break for %s-%s', (timeIn, timeOut, expectedHours) => {
+    expect(deriveRenderedHours(timeIn, timeOut)).toEqual({
+      renderedMinutes: Math.round(expectedHours * 60),
+      renderedHours: expectedHours,
+    });
+  });
 
-  it('marks an open attendance row incomplete', () => {
-    expect(deriveRenderedHours('08:00', null, '08:00', '17:00')).toEqual({
+  it('leaves an open attendance row at zero rendered minutes', () => {
+    expect(deriveRenderedHours('08:00', null)).toEqual({
       renderedMinutes: 0,
       renderedHours: 0,
-      renderedHoursStatus: 'incomplete',
     });
   });
 

@@ -143,6 +143,19 @@
   font-weight: 600;
   cursor: pointer;
 }
+.attendanceButton {
+  display: block;
+  width: min(100%, 1280px);
+  min-height: 44px;
+  margin: 18px auto 0;
+  border: 1px solid #21167b;
+  border-radius: 8px;
+  color: #fff;
+  background: #21167b;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
 @media (max-width: 700px) {
   .historyTable {
     min-width: 650px;

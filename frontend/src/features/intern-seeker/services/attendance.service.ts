@@ -58,9 +58,9 @@ export const attendanceService = {
     const records = useStudentTrackingStore.getState().attendanceRecords;
     const summary = useStudentTrackingStore.getState().attendanceSummary || {
       daysPresent: 0,
-      absences: 0,
-      lateArrivals: 0,
-      attendanceRate: 100,
+      daysAbsent: 0,
+      renderedMinutes: 0,
+      remainingMinutes: 0,
     };
 
     return {

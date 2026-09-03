@@ -3,7 +3,6 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-  UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, Repository } from 'typeorm';
@@ -22,10 +21,13 @@ import { withStatusActor } from '../../database/status-actor.transaction';
 import { StudentResponse } from '../../common/enums/student-response.enum';
 import { ProfilePictureStorageService } from '../../storage/profile-picture-storage.service';
 import {
+  assertValidTime,
   assertValidDate,
   currentManilaDate,
   currentManilaTime,
+  isScheduledWorkday,
 } from '../../employer/utils/time.utils';
+import type { StudentAttendanceHistoryQueryDto } from '../dto/student-attendance-query.dto';
 
 type StatusActor = { userAccountId?: number };
 
@@ -1660,96 +1662,131 @@ export class StudentsService {
     return { success: true, message: 'Requirement deleted successfully' };
   }
 
-  // Records the assignment clock-in for the current day and validates the assignment ownership.
+  // Records one immutable clock-in for the current Manila workday.
   async timeInDtr(
     studentId: number,
-    dto: { internshipAssignmentId: number; timeIn?: string },
+    dto: { internshipAssignmentId: number },
+    now = new Date(),
   ) {
-    const assignment = await this.validateAssignmentForStudent(
-      studentId,
-      dto.internshipAssignmentId,
-    );
-    const timeInValue = dto.timeIn ?? this.currentClockTime();
+    const today = currentManilaDate(now);
+    const timeInValue = this.currentClockTime(now);
+    assertValidTime(timeInValue, 'timeIn');
 
-    const [record] = await this.dataSource.query(
-      `
-        INSERT INTO public.attendance_record (
-          internship_assignment_id,
-          attendance_date,
-          time_in,
-          time_in_status,
-          rendered_hours_status,
-          photo_file_path
-        ) VALUES ($1, (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date, $2, $3, 'incomplete', NULL)
-        ON CONFLICT (internship_assignment_id, attendance_date)
-        DO UPDATE SET
-          time_in = EXCLUDED.time_in,
-          time_in_status = EXCLUDED.time_in_status,
-          updated_at = CURRENT_TIMESTAMP
-        RETURNING *
-      `,
-      [
-        assignment.internship_assignment_id,
-        timeInValue,
-        this.resolveTimeInStatus(timeInValue),
-      ],
-    );
-
-    return record;
+    return this.dataSource.transaction(async (manager) => {
+      const [assignment] = await manager.query(
+        `SELECT ia.internship_assignment_id, ia.assignment_status,
+                ia.start_date::text AS start_date, ia.working_days
+         FROM public.internship_assignment ia
+         JOIN public.referral r ON r.referral_id = ia.referral_id
+         JOIN public.application a ON a.application_id = r.application_id
+         WHERE ia.internship_assignment_id = $1 AND a.student_id = $2
+           AND ia.deleted_at IS NULL
+         FOR UPDATE OF ia`,
+        [dto.internshipAssignmentId, studentId],
+      );
+      if (!assignment) {
+        throw new NotFoundException(
+          'No internship assignment exists for this student',
+        );
+      }
+      if (assignment.assignment_status !== 'ongoing') {
+        throw new ConflictException(
+          'Clock In is available only for an ongoing internship.',
+        );
+      }
+      if (today < String(assignment.start_date)) {
+        throw new ConflictException('The internship has not started yet.');
+      }
+      if (!isScheduledWorkday(today, assignment.working_days as number[])) {
+        throw new ConflictException('Today is not a selected working day.');
+      }
+      const existing = await manager.query(
+        `SELECT attendance_status, time_in, time_out
+         FROM public.attendance_record
+         WHERE internship_assignment_id = $1 AND attendance_date = $2::date
+         FOR UPDATE`,
+        [dto.internshipAssignmentId, today],
+      );
+      if (existing.length > 0) {
+        throw new ConflictException(
+          'Attendance for today has already been recorded and cannot be overwritten.',
+        );
+      }
+      const [record] = await manager.query(
+        `INSERT INTO public.attendance_record (
+           internship_assignment_id, attendance_date, attendance_status,
+           time_in, time_out, rendered_minutes
+         ) VALUES ($1, $2::date, 'present', $3::time, NULL, 0)
+         RETURNING *, attendance_date::text AS attendance_date`,
+        [dto.internshipAssignmentId, today, timeInValue],
+      );
+      return record;
+    });
   }
 
-  // Closes the same day attendance row and computes the rendered hours from the in/out timestamps.
+  // Closes the current Manila day's open Present row exactly once.
   async timeOutDtr(
     studentId: number,
-    dto: { internshipAssignmentId: number; timeOut?: string },
+    dto: { internshipAssignmentId: number },
+    now = new Date(),
   ) {
-    const assignment = await this.validateAssignmentForStudent(
-      studentId,
-      dto.internshipAssignmentId,
-    );
-    const [record] = await this.dataSource.query(
-      `
-        SELECT *
-        FROM public.attendance_record
-        WHERE internship_assignment_id = $1
-          AND attendance_date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date
-      `,
-      [assignment.internship_assignment_id],
-    );
+    const today = currentManilaDate(now);
+    const timeOutValue = this.currentClockTime(now);
+    assertValidTime(timeOutValue, 'timeOut');
 
-    if (!record) {
-      throw new UnprocessableEntityException(
-        'A time-in entry is required before time-out',
+    return this.dataSource.transaction(async (manager) => {
+      const [assignment] = await manager.query(
+        `SELECT ia.internship_assignment_id, ia.assignment_status
+         FROM public.internship_assignment ia
+         JOIN public.referral r ON r.referral_id = ia.referral_id
+         JOIN public.application a ON a.application_id = r.application_id
+         WHERE ia.internship_assignment_id = $1 AND a.student_id = $2
+           AND ia.deleted_at IS NULL
+         FOR UPDATE OF ia`,
+        [dto.internshipAssignmentId, studentId],
       );
-    }
-
-    const timeOutValue = dto.timeOut ?? this.currentClockTime();
-    const result = await this.dataSource.query(
-      `
-        UPDATE public.attendance_record
-        SET time_out = $2,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE attendance_record_id = $1
-        RETURNING *
-      `,
-      [record.attendance_record_id, timeOutValue],
-    );
-
-    const updated =
-      Array.isArray(result) && Array.isArray(result[0])
-        ? result[0][0]
-        : Array.isArray(result)
-          ? result[0]
-          : result;
-
-    return updated;
+      if (!assignment) {
+        throw new NotFoundException(
+          'No internship assignment exists for this student',
+        );
+      }
+      if (assignment.assignment_status !== 'ongoing') {
+        throw new ConflictException(
+          'Clock Out is available only for an ongoing internship.',
+        );
+      }
+      const [record] = await manager.query(
+        `SELECT attendance_record_id, attendance_status, time_in, time_out
+         FROM public.attendance_record
+         WHERE internship_assignment_id = $1 AND attendance_date = $2::date
+         FOR UPDATE`,
+        [dto.internshipAssignmentId, today],
+      );
+      if (
+        !record ||
+        record.attendance_status !== 'present' ||
+        !record.time_in ||
+        record.time_out
+      ) {
+        throw new ConflictException(
+          'Clock Out requires an open Clock In for today.',
+        );
+      }
+      const [updated] = await manager.query(
+        `UPDATE public.attendance_record
+         SET time_out = $2::time, attendance_status = 'present'
+         WHERE attendance_record_id = $1
+         RETURNING *, attendance_date::text AS attendance_date`,
+        [record.attendance_record_id, timeOutValue],
+      );
+      return updated;
+    });
   }
 
   async getStudentAttendance(
     studentId: number,
     query?: { startDate?: string; endDate?: string },
   ) {
-    // 1. Fetch current or latest assignment for the student
     const assignmentRows = await this.dataSource.query(
       `
         SELECT 
@@ -1772,7 +1809,10 @@ export class StudentsService {
           ia.student_withdrawal_remark,
           ia.finalized_at,
           COALESCE(ats.total_rendered_minutes, 0::bigint) AS total_rendered_minutes,
-          COALESCE(ats.total_rendered_hours, 0::numeric) AS total_rendered_hours
+          COALESCE(ats.total_rendered_hours, 0::numeric) AS total_rendered_hours,
+          COALESCE(ats.present_count, 0::bigint) AS present_count,
+          COALESCE(ats.absent_count, 0::bigint) AS absent_count,
+          COALESCE(ats.incomplete_count, 0::bigint) AS incomplete_count
         FROM public.internship_assignment ia
         JOIN public.referral r ON r.referral_id = ia.referral_id
         JOIN public.application a ON a.application_id = r.application_id
@@ -1805,10 +1845,9 @@ export class StudentsService {
         records: [],
         summary: {
           daysPresent: 0,
-          absences: 0,
-          lateArrivals: 0,
-          attendanceRate: 0,
-          totalRenderedHours: 0,
+          daysAbsent: 0,
+          renderedMinutes: 0,
+          remainingMinutes: 0,
         },
       };
     }
@@ -1840,6 +1879,7 @@ export class StudentsService {
         ? String(rawAssignment.expected_end_date)
         : null,
       endDate: rawAssignment.end_date ? String(rawAssignment.end_date) : null,
+      endedAt: rawAssignment.ended_at ?? null,
       startShift: rawAssignment.start_shift,
       endShift: rawAssignment.end_shift,
       assignmentStatus: rawAssignment.assignment_status,
@@ -1849,19 +1889,28 @@ export class StudentsService {
       remainingHours,
     };
 
-    // 2. Fetch today's record
     const todayRows = await this.dataSource.query(
       `
-        SELECT *, attendance_date::text AS attendance_date
+        SELECT attendance_record_id, attendance_date::text AS attendance_date,
+               attendance_status, time_in, time_out, rendered_minutes
         FROM public.attendance_record
         WHERE internship_assignment_id = $1
           AND attendance_date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date
       `,
       [assignment.internshipAssignmentId],
     );
-    const today = todayRows.length > 0 ? todayRows[0] : null;
+    const rawToday = todayRows.length > 0 ? todayRows[0] : null;
+    const today = rawToday
+      ? {
+          attendanceRecordId: Number(rawToday.attendance_record_id),
+          date: String(rawToday.attendance_date),
+          attendanceStatus: rawToday.attendance_status,
+          timeIn: rawToday.time_in,
+          timeOut: rawToday.time_out,
+          renderedMinutes: Number(rawToday.rendered_minutes),
+        }
+      : null;
 
-    // 3. Fetch records within query range or default
     const whereConditions = ['internship_assignment_id = $1'];
     const queryParams: any[] = [assignment.internshipAssignmentId];
     let pIdx = 2;
@@ -1876,9 +1925,19 @@ export class StudentsService {
       pIdx++;
     }
 
-    const recordsRows = await this.dataSource.query(
+    const recordsRows = await this.dataSource.query<
+      Array<{
+        attendance_record_id: number | string;
+        attendance_date: string;
+        attendance_status: 'present' | 'absent' | 'incomplete';
+        time_in: string | null;
+        time_out: string | null;
+        rendered_minutes: number | string;
+      }>
+    >(
       `
-        SELECT *, attendance_date::text AS attendance_date
+        SELECT attendance_record_id, attendance_date::text AS attendance_date,
+               attendance_status, time_in, time_out, rendered_minutes
         FROM public.attendance_record
         WHERE ${whereConditions.join(' AND ')}
         ORDER BY attendance_date DESC
@@ -1886,53 +1945,123 @@ export class StudentsService {
       queryParams,
     );
 
-    const records = recordsRows.map((row: any) => ({
+    const records = recordsRows.map((row) => ({
       attendanceRecordId: Number(row.attendance_record_id),
       date: String(row.attendance_date),
-      status: row.time_in_status === 'late' ? 'late' : 'present',
+      status: row.attendance_status,
       timeIn: row.time_in,
       timeOut: row.time_out,
-      renderedHours: Number(
-        (Number(row.rendered_minutes || 0) / 60).toFixed(2),
-      ),
       renderedMinutes: Number(row.rendered_minutes || 0),
-      renderedHoursStatus: row.rendered_hours_status,
     }));
-
-    // 4. Fetch summary from view
-    const summaryRows = await this.dataSource.query(
-      `
-        SELECT *
-        FROM public.vw_attendance_summary
-        WHERE internship_assignment_id = $1
-      `,
-      [assignment.internshipAssignmentId],
-    );
-
-    const summaryRow = summaryRows[0] || {};
-    const daysPresent = Number(summaryRow.attendance_record_count || 0);
-    const lateArrivals = Number(summaryRow.late_count || 0);
-    const absences = 0; // Schema does not record absent rows directly
-    const attendanceRate =
-      daysPresent > 0
-        ? Math.round(((daysPresent - lateArrivals) / daysPresent) * 100)
-        : 100;
 
     return {
       assignment,
       today,
       records,
       summary: {
-        daysPresent,
-        absences,
-        lateArrivals,
-        attendanceRate,
-        totalRenderedHours: Number(
-          summaryRow.total_rendered_hours || totalRendered,
-        ),
-        totalRenderedMinutes: Number(
-          summaryRow.total_rendered_minutes || totalRenderedMinutes,
-        ),
+        daysPresent: Number(rawAssignment.present_count),
+        daysAbsent: Number(rawAssignment.absent_count),
+        renderedMinutes: totalRenderedMinutes,
+        remainingMinutes,
+      },
+    };
+  }
+
+  async getStudentAttendanceHistory(
+    studentId: number,
+    assignmentId: number,
+    query: StudentAttendanceHistoryQueryDto,
+  ) {
+    const [assignment] = await this.dataSource.query(
+      `SELECT ia.internship_assignment_id, ia.assignment_status,
+              ia.required_minutes, ia.start_date::text AS start_date,
+              ia.expected_end_date::text AS expected_end_date, ia.ended_at,
+              ia.working_days, ia.start_shift, ia.end_shift,
+              o.title AS job_title, c.company_name,
+              COALESCE(ats.total_rendered_minutes, 0::bigint) AS rendered_minutes,
+              COALESCE(ats.present_count, 0::bigint) AS days_present,
+              COALESCE(ats.absent_count, 0::bigint) AS days_absent
+       FROM public.internship_assignment ia
+       JOIN public.referral r ON r.referral_id = ia.referral_id
+       JOIN public.application a ON a.application_id = r.application_id
+       JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
+       JOIN public.company c ON c.company_id = o.company_id
+       LEFT JOIN public.vw_attendance_summary ats
+         ON ats.internship_assignment_id = ia.internship_assignment_id
+       WHERE ia.internship_assignment_id = $1 AND a.student_id = $2
+         AND ia.deleted_at IS NULL
+         AND NOT EXISTS (
+           SELECT 1 FROM public.internship_assignment_visibility iav
+           WHERE iav.internship_assignment_id = ia.internship_assignment_id
+             AND iav.student_hidden_at IS NOT NULL
+         )`,
+      [assignmentId, studentId],
+    );
+    if (!assignment) {
+      throw new NotFoundException(
+        'Internship assignment not found for this student',
+      );
+    }
+
+    const limit = [5, 10, 15].includes(query.limit) ? query.limit : 5;
+    const page = Math.max(1, query.page || 1);
+    const params: unknown[] = [assignmentId];
+    const conditions = ['ar.internship_assignment_id = $1'];
+    if (query.status) {
+      params.push(query.status);
+      conditions.push(`ar.attendance_status = $${params.length}`);
+    }
+    if (query.date) {
+      assertValidDate(query.date, 'date');
+      params.push(query.date);
+      conditions.push(`ar.attendance_date = $${params.length}::date`);
+    }
+    const [{ total }] = await this.dataSource.query(
+      `SELECT COUNT(*)::int AS total FROM public.attendance_record ar
+       WHERE ${conditions.join(' AND ')}`,
+      params,
+    );
+    params.push(limit, (page - 1) * limit);
+    const records = await this.dataSource.query(
+      `SELECT ar.attendance_record_id AS "attendanceRecordId",
+              ar.attendance_date::text AS date,
+              ar.time_in AS "timeIn", ar.time_out AS "timeOut",
+              ar.rendered_minutes AS "renderedMinutes",
+              ar.attendance_status AS status
+       FROM public.attendance_record ar
+       WHERE ${conditions.join(' AND ')}
+       ORDER BY ar.attendance_date DESC, ar.attendance_record_id DESC
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params,
+    );
+    const requiredMinutes = Number(assignment.required_minutes);
+    const renderedMinutes = Number(assignment.rendered_minutes);
+    return {
+      assignment: {
+        internshipAssignmentId: Number(assignment.internship_assignment_id),
+        companyName: assignment.company_name,
+        jobTitle: assignment.job_title,
+        assignmentStatus: assignment.assignment_status,
+        requiredMinutes,
+        startDate: assignment.start_date,
+        expectedEndDate: assignment.expected_end_date,
+        endedAt: assignment.ended_at,
+        workingDays: assignment.working_days,
+        startShift: assignment.start_shift,
+        endShift: assignment.end_shift,
+      },
+      summary: {
+        daysPresent: Number(assignment.days_present),
+        daysAbsent: Number(assignment.days_absent),
+        renderedMinutes,
+        remainingMinutes: Math.max(requiredMinutes - renderedMinutes, 0),
+      },
+      records,
+      meta: {
+        page,
+        limit,
+        total: Number(total),
+        totalPages: Math.ceil(Number(total) / limit),
       },
     };
   }
@@ -2062,13 +2191,7 @@ export class StudentsService {
     return assignment;
   }
 
-  private resolveTimeInStatus(timeInValue: string): 'on_time' | 'late' {
-    const [hours, minutes] = timeInValue.split(':').map(Number);
-    const totalMinutes = hours * 60 + minutes;
-    return totalMinutes <= 9 * 60 ? 'on_time' : 'late';
-  }
-
-  private currentClockTime() {
-    return currentManilaTime();
+  private currentClockTime(now = new Date()) {
+    return currentManilaTime(now);
   }
 }

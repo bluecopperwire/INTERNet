@@ -47,6 +47,8 @@ export function formatAssignmentDate(value?: string | null): string {
   }).format(parsed)
 }
 
+export const formatManilaDate = formatAssignmentDate
+
 export function formatShift(value: string): string {
   const [hours, minutes] = value.split(':').map(Number)
   if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return value

@@ -185,18 +185,6 @@ export class StudentAttendanceClockDto {
   @IsInt()
   @Min(1)
   internshipAssignmentId!: number;
-
-  @IsOptional()
-  @IsString()
-  timeIn?: string;
-
-  @IsOptional()
-  @IsString()
-  timeOut?: string;
-
-  @IsOptional()
-  @IsString()
-  photoFilePath?: string;
 }
 
 export class StudentAssignmentRemarkDto {

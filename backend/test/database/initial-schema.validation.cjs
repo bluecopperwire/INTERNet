@@ -46,6 +46,7 @@ async function main() {
       'RemoveAcceptedReferralReversal1788393600000',
       'OpportunityLifecycleRules1788480000000',
       'AssignmentLifecycleFoundation1788566400000',
+      'AttendanceStudentWorkflow1788652800000',
     ];
     const recognizedHistoricalMigrations = new Set([
       'AuthAlignmentV31786125600000',
@@ -226,6 +227,29 @@ async function main() {
       'fn_validate_referral still allows accepted -> rejected',
     );
     pass('attendance deduction is installed and accepted-to-rejected referral reversal is blocked');
+
+    const attendanceModel = await client.query(`
+      SELECT
+        (SELECT array_agg(e.enumlabel ORDER BY e.enumsortorder)
+         FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid
+         WHERE t.typname = 'attendance_status_enum') AS statuses,
+        (SELECT is_nullable FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = 'attendance_record'
+           AND column_name = 'time_in') AS time_in_nullable,
+        (SELECT is_nullable FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = 'attendance_record'
+           AND column_name = 'rendered_minutes') AS rendered_minutes_nullable
+    `);
+    assert.equal(String(attendanceModel.rows[0].statuses), '{present,absent,incomplete}');
+    assert.equal(attendanceModel.rows[0].time_in_nullable, 'YES');
+    assert.equal(attendanceModel.rows[0].rendered_minutes_nullable, 'NO');
+    const obsoleteAttendanceColumns = await client.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'attendance_record'
+        AND column_name IN ('time_in_status', 'rendered_hours_status', 'photo_file_path', 'hours_rendered')
+    `);
+    assert.equal(obsoleteAttendanceColumns.rowCount, 0);
+    pass('final attendance status model and nullable Clock In are installed');
 
     const suspensionConstraint = await client.query(`
       SELECT conname, pg_get_constraintdef(oid) AS def

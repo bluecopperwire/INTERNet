@@ -26,9 +26,6 @@ export type AssignmentStatus =
   | 'cancelled'
   | 'finalized';
 
-export type TimeInStatus = 'on_time' | 'late';
-export type RenderedHoursStatus = 'complete' | 'undertime' | 'overtime' | 'incomplete';
-
 export interface PageMeta {
   page: number;
   limit: number;
@@ -267,23 +264,60 @@ export interface StudentAttendanceResponse {
     assignmentStatus: AssignmentStatus;
   } | null;
   today: {
-    time_in?: string | null;
-    time_out?: string | null;
-    time_in_status?: string | null;
-  } | null;
-  records: Array<{
+    attendanceRecordId: number;
     date: string;
-    status: 'present' | 'absent' | 'late';
+    attendanceStatus: AttendanceStatus;
     timeIn?: string | null;
     timeOut?: string | null;
-    hoursRendered?: number | null;
+    renderedMinutes: number;
+  } | null;
+  records: Array<{
+    attendanceRecordId: number;
+    date: string;
+    status: AttendanceStatus;
+    timeIn?: string | null;
+    timeOut?: string | null;
+    renderedMinutes: number;
   }>;
   summary: {
     daysPresent: number;
-    absences: number;
-    lateArrivals: number;
-    attendanceRate: number;
+    daysAbsent: number;
+    renderedMinutes: number;
+    remainingMinutes: number;
   };
+}
+
+export type AttendanceStatus = 'present' | 'absent' | 'incomplete';
+
+export interface StudentAttendanceHistoryResponse {
+  assignment: {
+    internshipAssignmentId: number;
+    companyName: string;
+    jobTitle: string;
+    assignmentStatus: AssignmentStatus;
+    requiredMinutes: number;
+    startDate: string;
+    expectedEndDate?: string | null;
+    endedAt?: string | null;
+    workingDays: number[];
+    startShift: string;
+    endShift: string;
+  };
+  summary: {
+    daysPresent: number;
+    daysAbsent: number;
+    renderedMinutes: number;
+    remainingMinutes: number;
+  };
+  records: Array<{
+    attendanceRecordId: number;
+    date: string;
+    timeIn: string | null;
+    timeOut: string | null;
+    renderedMinutes: number;
+    status: AttendanceStatus;
+  }>;
+  meta: { page: number; limit: number; total: number; totalPages: number };
 }
 
 export interface StudentInternshipDto {
@@ -397,7 +431,7 @@ export interface PesoDtrEntryDto {
   dtrDate: string;
   timeIn?: string | null;
   timeOut?: string | null;
-  timeInStatus: string;
+  attendanceStatus: AttendanceStatus;
   totalHours: number;
 }
 
@@ -473,7 +507,7 @@ export interface EmployerAttendanceItemDto {
   date: string;
   timeIn?: string | null;
   timeOut?: string | null;
-  status: 'present' | 'absent' | 'late';
+  status: AttendanceStatus;
   renderedHours: number;
 }
 
