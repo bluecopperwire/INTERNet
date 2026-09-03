@@ -32,7 +32,7 @@ type EmployerInternshipDetailDto = {
     internshipAssignmentId: number;
     companyName: string;
     jobTitle: string;
-    workingDays: string;
+    workingDays: number[];
     requiredHours: number;
     startDate: unknown;
     expectedEndDate: unknown;
@@ -188,8 +188,10 @@ export function adaptEmployerInternship(
 ): EmployerInternshipDetails {
   const statusMap: Record<string, EmployerInternshipDetails['status']> = {
     ongoing: 'On Going',
-    completed: 'Completed',
-    pending: 'Awaiting Completion',
+    complete_company: 'Complete (Company)',
+    complete_student: 'Complete (Student)',
+    finalized: 'Finalized',
+    pending: 'Pending',
     withdrawn: 'Withdrawn by Student',
     cancelled: 'Cancelled',
   };
@@ -211,7 +213,9 @@ export function adaptEmployerInternship(
     company: assignment?.companyName ?? 'Company',
     jobTitle: assignment?.jobTitle ?? intern?.jobTitle ??
       (isDetail ? '' : i.jobTitle),
-    workingDays: assignment?.workingDays ?? 'weekdays',
+    workingDays: assignment?.workingDays
+      ? assignment.workingDays.map((day) => ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][day]).join(', ')
+      : 'Monday, Tuesday, Wednesday, Thursday, Friday',
     requiredHours: Number(
       assignment?.requiredHours ?? intern?.requiredHours ??
         (isDetail ? 0 : i.requiredHours),

@@ -9,6 +9,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Max,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -17,7 +18,6 @@ import { WorkSchedule } from '../../common/enums/work-schedule.enum';
 import { CompanyType } from '../../common/enums/company-type.enum';
 import { InquiryMethod } from '../../common/enums/student-inquiry-method.enum';
 import { StudentResponse } from '../../common/enums/student-response.enum';
-
 
 // DTO layer: request/response contract for the API, not the database model.
 export class StudentAcademicProfileDto {
@@ -196,4 +196,17 @@ export class StudentAttendanceClockDto {
   @IsOptional()
   @IsString()
   photoFilePath?: string;
+}
+
+export class StudentAssignmentRemarkDto {
+  @IsString()
+  @IsNotEmpty()
+  remark!: string;
+}
+
+export class StudentCompanyReviewDto extends StudentAssignmentRemarkDto {
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  rating!: number;
 }

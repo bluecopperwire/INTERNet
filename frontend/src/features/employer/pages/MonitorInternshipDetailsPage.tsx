@@ -68,9 +68,15 @@ export function MonitorInternshipDetailsPage() {
 
   const updateInternshipStatus = async (status: EmployerInternshipDetails['status']) => {
     if (!applicantId) return
+    const transitionRemark = window.prompt(
+      status === 'Completed'
+        ? 'Enter a completion remark about the Student internship experience.'
+        : 'Enter the reason for cancelling this internship.',
+    )?.trim()
+    if (!transitionRemark) return
     setSaving(true)
     try {
-      const updated = await employerService.updateInternshipDetails(applicantId, { status })
+      const updated = await employerService.updateInternshipDetails(applicantId, { status, transitionRemark })
       if (updated) {
         setDetails(updated)
         setForm(toForm(updated))
@@ -98,7 +104,7 @@ export function MonitorInternshipDetailsPage() {
   }
 
   const canMarkCompleted = details.renderedHours >= details.requiredHours && ['On Going', 'Awaiting Completion'].includes(details.status)
-  const canDeleteRecord = ['Completed', 'Cancelled', 'Withdrawn by Student'].includes(details.status)
+  const canDeleteRecord = details.status === 'Finalized'
 
   return <main className={styles.page}>
     <div className={styles.wrap}>

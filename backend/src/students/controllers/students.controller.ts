@@ -26,7 +26,9 @@ import { ApplicationsService } from '../../applications/applications.service';
 import {
   CreateStudentApplicationDto,
   StudentApplicationResponseDto,
+  StudentAssignmentRemarkDto,
   StudentAttendanceClockDto,
+  StudentCompanyReviewDto,
   StudentProfileUpdateDto,
   StudentRequirementUploadDto,
 } from '../dto/students.dto';
@@ -219,10 +221,42 @@ export class StudentsController {
     @CurrentUser() currentUser: any,
   ) {
     await this.ensureStudentAccess(id, currentUser);
-    return this.studentsService.hideAssignment(
+    return this.studentsService.hideAssignment(id, assignmentId, currentUser);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/assignments/:assignmentId/withdraw')
+  @HttpCode(HttpStatus.OK)
+  async withdrawStudentAssignment(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('assignmentId', ParseIntPipe) assignmentId: number,
+    @CurrentUser() currentUser: any,
+    @Body() dto: StudentAssignmentRemarkDto,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    return this.studentsService.withdrawAssignment(
       id,
       assignmentId,
       currentUser,
+      dto,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/assignments/:assignmentId/company-review')
+  @HttpCode(HttpStatus.CREATED)
+  async submitStudentCompanyReview(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('assignmentId', ParseIntPipe) assignmentId: number,
+    @CurrentUser() currentUser: any,
+    @Body() dto: StudentCompanyReviewDto,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    return this.studentsService.submitCompanyReview(
+      id,
+      assignmentId,
+      currentUser,
+      dto,
     );
   }
 

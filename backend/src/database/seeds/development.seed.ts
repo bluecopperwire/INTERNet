@@ -851,16 +851,17 @@ async function ensureAssignment(
     status = existing[0].assignment_status;
   } else {
     const startDateSql =
-      desired === 'pending' ? 'CURRENT_DATE + 14' : 'CURRENT_DATE - 30';
+      desired === 'pending' ? 'CURRENT_DATE + 14' : 'CURRENT_DATE - 60';
+    const requiredMinutes = desired === 'completed' ? 480 : 24_000;
     assignmentId = await oneId(
       runner.manager,
       `INSERT INTO public.internship_assignment
-         (referral_id, required_hours, start_date, expected_end_date,
+         (referral_id, required_minutes, start_date, expected_end_date,
           working_days, start_shift, end_shift)
-       VALUES ($1, 400, ${startDateSql}, CURRENT_DATE + 90,
-               'weekdays', TIME '09:00', TIME '17:00')
+       VALUES ($1, $2, ${startDateSql}, CURRENT_DATE + 90,
+               ARRAY[1, 2, 3, 4, 5]::smallint[], TIME '09:00', TIME '17:00')
        RETURNING internship_assignment_id`,
-      [referralId],
+      [referralId, requiredMinutes],
       'internship_assignment_id',
     );
     status = 'pending';
@@ -879,9 +880,47 @@ async function ensureAssignment(
   }
   if (desired === 'completed' && status === 'ongoing') {
     await runner.query(
+      `INSERT INTO public.attendance_record (
+         internship_assignment_id, attendance_date, time_in, time_out,
+         time_in_status, rendered_hours_status
+       ) VALUES ($1, CURRENT_DATE - 1, TIME '08:00', TIME '17:00',
+                 'on_time', 'incomplete')
+       ON CONFLICT (internship_assignment_id, attendance_date) DO NOTHING`,
+      [assignmentId],
+    );
+    await runner.query(
       `UPDATE public.internship_assignment
-          SET assignment_status = 'completed', end_date = CURRENT_DATE
+          SET assignment_status = 'complete_company',
+              company_completion_remark = 'Synthetic Company completion review.',
+              ended_at = CURRENT_TIMESTAMP,
+              end_date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date
         WHERE internship_assignment_id = $1`,
+      [assignmentId],
+    );
+    const [studentActor] = (await runner.query(
+      `SELECT s.user_account_id
+       FROM public.internship_assignment ia
+       JOIN public.referral r ON r.referral_id = ia.referral_id
+       JOIN public.application a ON a.application_id = r.application_id
+       JOIN public.student s ON s.student_id = a.student_id
+       WHERE ia.internship_assignment_id = $1`,
+      [assignmentId],
+    )) as Array<{ user_account_id: number }>;
+    await setActor(runner, studentActor.user_account_id);
+    await runner.query(
+      `INSERT INTO public.internship_feedback
+         (internship_assignment_id, rating, remark)
+       SELECT $1, 5, 'Synthetic positive completion feedback.'
+       WHERE NOT EXISTS (
+         SELECT 1 FROM public.internship_feedback
+         WHERE internship_assignment_id = $1
+       )`,
+      [assignmentId],
+    );
+    await runner.query(
+      `UPDATE public.internship_assignment
+       SET assignment_status = 'complete_student'
+       WHERE internship_assignment_id = $1`,
       [assignmentId],
     );
   }
@@ -1154,10 +1193,12 @@ async function seedDomain(dataSource: DataSource, ids: SeedIds): Promise<void> {
     }
     await runner.query(
       `INSERT INTO public.internship_feedback
-         (internship_assignment_id, rating, feedback_text)
-       VALUES ($1, 5, 'Synthetic positive completion feedback.')
-       ON CONFLICT (internship_assignment_id) DO UPDATE SET
-         rating = EXCLUDED.rating, feedback_text = EXCLUDED.feedback_text`,
+         (internship_assignment_id, rating, remark)
+       SELECT $1, 5, 'Synthetic positive completion feedback.'
+       WHERE NOT EXISTS (
+         SELECT 1 FROM public.internship_feedback
+         WHERE internship_assignment_id = $1
+       )`,
       [completedAssignment],
     );
 

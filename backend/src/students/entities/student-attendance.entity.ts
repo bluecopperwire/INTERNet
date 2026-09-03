@@ -26,8 +26,8 @@ export class AttendanceRecord {
   @Column({ name: 'time_out', type: 'time', nullable: true })
   timeOut: string | null;
 
-  @Column({ name: 'hours_rendered', type: 'numeric', nullable: true })
-  hoursRendered: number | null;
+  @Column({ name: 'rendered_minutes', type: 'int', nullable: true })
+  renderedMinutes: number | null;
 
   @Column({
     name: 'rendered_hours_status',

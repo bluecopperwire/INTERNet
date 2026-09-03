@@ -124,7 +124,8 @@ export interface EmployerInternshipDetails {
   expectedEndDate: string
   shiftStartTime: string
   shiftEndTime: string
-  status: 'On Going' | 'Completed' | 'Awaiting Completion' | 'Withdrawn by Student' | 'Cancelled'
+  status: 'Pending' | 'On Going' | 'Completed' | 'Complete (Company)' | 'Complete (Student)' | 'Awaiting Completion' | 'Withdrawn by Student' | 'Cancelled' | 'Finalized'
+  transitionRemark?: string
   renderedHours: number
 }
 

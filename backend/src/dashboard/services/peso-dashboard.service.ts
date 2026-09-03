@@ -908,6 +908,44 @@ export class PesoDashboardService {
     return rows[0];
   }
 
+  async finalizeAssignment(
+    userAccountId: number,
+    internshipAssignmentId: number,
+  ) {
+    return withStatusActor(this.dataSource, userAccountId, async (runner) => {
+      const rows = (await runner.query(
+        `SELECT internship_assignment_id, assignment_status, ended_at
+         FROM public.internship_assignment
+         WHERE internship_assignment_id = $1 AND deleted_at IS NULL
+         FOR UPDATE`,
+        [internshipAssignmentId],
+      )) as Array<{ assignment_status: string }>;
+      if (!rows[0]) {
+        throw new NotFoundException('Internship assignment not found');
+      }
+      if (
+        !['complete_student', 'withdrawn', 'cancelled'].includes(
+          rows[0].assignment_status,
+        )
+      ) {
+        throw new ConflictException(
+          'Only Student-complete, withdrawn, or cancelled assignments may be finalized.',
+        );
+      }
+      const [updated] = await runner.query(
+        `UPDATE public.internship_assignment
+         SET assignment_status = 'finalized',
+             finalized_at = CURRENT_TIMESTAMP,
+             finalized_by_user_account_id = $2
+         WHERE internship_assignment_id = $1
+         RETURNING internship_assignment_id, assignment_status, ended_at,
+                   finalized_at, finalized_by_user_account_id`,
+        [internshipAssignmentId, userAccountId],
+      );
+      return updated;
+    });
+  }
+
   async getStudents(query: { search?: string; page?: number; limit?: number }) {
     const page = query.page && query.page > 0 ? query.page : 1;
     const limit = query.limit && query.limit > 0 ? query.limit : 10;

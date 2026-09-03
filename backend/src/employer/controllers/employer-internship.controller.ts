@@ -14,7 +14,11 @@ import { Roles } from '../../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { UserRole } from '../../users/entities/account.entities';
-import { InternshipListQueryDto, UpdateAssignmentDto } from '../dto';
+import {
+  AssignmentRemarkDto,
+  InternshipListQueryDto,
+  UpdateAssignmentDto,
+} from '../dto';
 import { EmployerInternshipService } from '../services/employer-internship.service';
 import type { EmployerCurrentUser } from '../types/employer.types';
 
@@ -68,10 +72,12 @@ export class EmployerInternshipController {
     @CurrentUser() user: EmployerCurrentUser,
     @Param('internshipAssignmentId', ParseIntPipe)
     internshipAssignmentId: number,
+    @Body() dto: AssignmentRemarkDto,
   ) {
     return this.internshipService.cancel(
       user.userAccountId,
       internshipAssignmentId,
+      dto,
     );
   }
 
@@ -80,10 +86,12 @@ export class EmployerInternshipController {
     @CurrentUser() user: EmployerCurrentUser,
     @Param('internshipAssignmentId', ParseIntPipe)
     internshipAssignmentId: number,
+    @Body() dto: AssignmentRemarkDto,
   ) {
     return this.internshipService.complete(
       user.userAccountId,
       internshipAssignmentId,
+      dto,
     );
   }
 

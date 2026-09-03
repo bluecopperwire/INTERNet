@@ -182,18 +182,18 @@ export const employerApiService = {
     return response.data;
   },
 
-  async cancelInternship(assignmentId: number): Promise<any> {
+  async cancelInternship(assignmentId: number, remark: string): Promise<any> {
     const response = await api.patch(
       `/employer/internships/${assignmentId}/cancel`,
-      {},
+      { remark },
     );
     return response.data;
   },
 
-  async completeInternship(assignmentId: number): Promise<any> {
+  async completeInternship(assignmentId: number, remark: string): Promise<any> {
     const response = await api.patch(
       `/employer/internships/${assignmentId}/complete`,
-      {},
+      { remark },
     );
     return response.data;
   },

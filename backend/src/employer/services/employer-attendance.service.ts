@@ -5,7 +5,7 @@ import type { AttendanceDateQueryDto, AttendanceListQueryDto } from '../dto';
 import { EmployerCompanyResolver } from './company-resolver.service';
 import {
   deriveRenderedHours,
-  rawRenderedHours,
+  remainingMinutes,
   remainingHours,
   roundHours,
 } from '../utils/attendance.utils';
@@ -30,6 +30,7 @@ export interface DailyAttendanceRow {
   status: 'present' | 'late' | 'absent';
   timeIn: string | null;
   timeOut: string | null;
+  renderedMinutes: number;
   renderedHours: number;
   renderedHoursStatus: 'incomplete' | 'undertime' | 'complete' | 'overtime';
 }
@@ -82,32 +83,18 @@ export class EmployerAttendanceService {
     const company = await this.companyResolver.resolve(userAccountId);
     const assignments: AttendanceContextRow[] = await this.dataSource.query(
       `
-        SELECT ia.internship_assignment_id, ia.required_hours,
+        SELECT ia.internship_assignment_id, ia.required_minutes,
                ia.start_date::text AS start_date,
                ia.working_days, ia.start_shift, ia.end_shift,
                ia.assignment_status, s.student_id,
                concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS student_full_name,
                o.title AS job_title,
-               CASE
-                 WHEN ia.assignment_status = 'completed' THEN ia.end_date::text
-                 WHEN ia.assignment_status IN ('cancelled', 'withdrawn') THEN terminal_transition.terminal_date::text
-                 ELSE NULL
-               END AS actual_terminal_date
+               (ia.ended_at AT TIME ZONE 'Asia/Manila')::date::text AS actual_terminal_date
         FROM public.internship_assignment ia
         JOIN public.referral r ON r.referral_id = ia.referral_id
         JOIN public.application a ON a.application_id = r.application_id
         JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
         JOIN public.student s ON s.student_id = a.student_id
-        LEFT JOIN LATERAL (
-          SELECT (history.changed_at AT TIME ZONE 'Asia/Manila')::date AS terminal_date
-          FROM public.internship_assignment_status_history history
-          WHERE history.internship_assignment_id = ia.internship_assignment_id
-            AND history.new_assignment_status = ia.assignment_status
-            AND history.new_assignment_status IN ('cancelled', 'withdrawn')
-          ORDER BY history.changed_at ASC,
-                   history.internship_assignment_status_history_id ASC
-          LIMIT 1
-        ) terminal_transition ON true
         WHERE ia.internship_assignment_id = $1 AND o.company_id = $2
           AND ia.deleted_at IS NULL
       `,
@@ -120,7 +107,7 @@ export class EmployerAttendanceService {
     const records: AttendanceContextRow[] = await this.dataSource.query(
       `
         SELECT attendance_record_id, attendance_date::text AS attendance_date,
-               time_in, time_in_status, time_out
+               time_in, time_in_status, time_out, rendered_minutes
         FROM public.attendance_record
         WHERE internship_assignment_id = $1
         ORDER BY attendance_date ASC, attendance_record_id ASC
@@ -129,7 +116,7 @@ export class EmployerAttendanceService {
     );
 
     const history = new Map<string, Record<string, unknown>>();
-    let renderedHours = 0;
+    let renderedMinutes = 0;
     for (const record of records) {
       const attendanceDate = normalizeDateOnly(
         record.attendance_date,
@@ -143,17 +130,18 @@ export class EmployerAttendanceService {
         assignment.start_shift as string,
         assignment.end_shift as string,
       );
-      renderedHours += rawRenderedHours(timeIn, timeOut);
+      renderedMinutes += asNumber(record.rendered_minutes);
       history.set(attendanceDate, {
         date: attendanceDate,
         timeIn: record.time_in,
         timeInStatus: record.time_in_status,
         timeOut: record.time_out,
         renderedHours: derived.renderedHours,
+        renderedMinutes: derived.renderedMinutes,
         renderedHoursStatus: derived.renderedHoursStatus,
       });
     }
-    renderedHours = roundHours(renderedHours);
+    const renderedHours = roundHours(renderedMinutes / 60);
 
     const today = currentManilaDate();
     const startDate = normalizeDateOnly(assignment.start_date, 'startDate');
@@ -168,7 +156,7 @@ export class EmployerAttendanceService {
     if (startDate <= end) {
       for (const date of enumerateDates(startDate, end)) {
         if (history.has(date)) continue;
-        if (!isScheduledWorkday(date, String(assignment.working_days)))
+        if (!isScheduledWorkday(date, assignment.working_days as number[]))
           continue;
         if (!hasShiftEnded(date, String(assignment.end_shift))) continue;
         history.set(date, {
@@ -177,20 +165,25 @@ export class EmployerAttendanceService {
           timeInStatus: null,
           timeOut: null,
           renderedHours: 0,
+          renderedMinutes: 0,
           renderedHoursStatus: 'incomplete',
         });
       }
     }
 
-    const requiredHours = asNumber(assignment.required_hours);
+    const requiredMinutes = asNumber(assignment.required_minutes);
+    const requiredHours = requiredMinutes / 60;
     return {
       header: {
         internshipAssignmentId,
         studentFullName: assignment.student_full_name,
         jobTitle: assignment.job_title,
         requiredHours,
+        requiredMinutes,
         renderedHours,
+        renderedMinutes,
         remainingHours: remainingHours(requiredHours, renderedHours),
+        remainingMinutes: remainingMinutes(requiredMinutes, renderedMinutes),
       },
       history: [...history.values()].sort((a, b) =>
         String(b.date).localeCompare(String(a.date)),
@@ -217,26 +210,12 @@ export class EmployerAttendanceService {
                concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS student_full_name,
                o.title AS job_title,
                ar.attendance_record_id, ar.time_in, ar.time_in_status, ar.time_out,
-               CASE
-                 WHEN ia.assignment_status = 'completed' THEN ia.end_date::text
-                 WHEN ia.assignment_status IN ('cancelled', 'withdrawn') THEN terminal_transition.terminal_date::text
-                 ELSE NULL
-               END AS actual_terminal_date
+               (ia.ended_at AT TIME ZONE 'Asia/Manila')::date::text AS actual_terminal_date
         FROM public.internship_assignment ia
         JOIN public.referral r ON r.referral_id = ia.referral_id
         JOIN public.application a ON a.application_id = r.application_id
         JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
         JOIN public.student s ON s.student_id = a.student_id
-        LEFT JOIN LATERAL (
-          SELECT (history.changed_at AT TIME ZONE 'Asia/Manila')::date AS terminal_date
-          FROM public.internship_assignment_status_history history
-          WHERE history.internship_assignment_id = ia.internship_assignment_id
-            AND history.new_assignment_status = ia.assignment_status
-            AND history.new_assignment_status IN ('cancelled', 'withdrawn')
-          ORDER BY history.changed_at ASC,
-                   history.internship_assignment_status_history_id ASC
-          LIMIT 1
-        ) terminal_transition ON true
         LEFT JOIN public.attendance_record ar
           ON ar.internship_assignment_id = ia.internship_assignment_id
          AND ar.attendance_date = $2::date
@@ -253,7 +232,7 @@ export class EmployerAttendanceService {
     const result: DailyAttendanceRow[] = [];
     for (const row of rows) {
       if (!this.isApplicableOnDate(row, date, isToday)) continue;
-      if (!isScheduledWorkday(date, String(row.working_days))) continue;
+      if (!isScheduledWorkday(date, row.working_days as number[])) continue;
       if (row.attendance_record_id === null) {
         if (!hasShiftEnded(date, String(row.end_shift))) continue;
         result.push({
@@ -265,6 +244,7 @@ export class EmployerAttendanceService {
           status: 'absent',
           timeIn: null,
           timeOut: null,
+          renderedMinutes: 0,
           renderedHours: 0,
           renderedHoursStatus: 'incomplete',
         });
@@ -285,6 +265,7 @@ export class EmployerAttendanceService {
         status: row.time_in_status === 'late' ? 'late' : 'present',
         timeIn: row.time_in as string,
         timeOut: row.time_out as string | null,
+        renderedMinutes: derived.renderedMinutes,
         renderedHours: derived.renderedHours,
         renderedHoursStatus: derived.renderedHoursStatus,
       });

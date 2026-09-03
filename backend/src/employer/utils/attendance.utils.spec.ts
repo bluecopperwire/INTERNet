@@ -1,4 +1,9 @@
-import { deriveRenderedHours, remainingHours } from './attendance.utils';
+import {
+  deriveRenderedHours,
+  rawRenderedMinutes,
+  remainingHours,
+  remainingMinutes,
+} from './attendance.utils';
 import { hasShiftEnded, isScheduledWorkday } from './time.utils';
 
 describe('employer attendance derivation', () => {
@@ -11,6 +16,7 @@ describe('employer attendance derivation', () => {
     'deducts a one-hour break for %s-%s',
     (timeIn, timeOut, expectedHours, expectedStatus) => {
       expect(deriveRenderedHours(timeIn, timeOut, '08:00', '17:00')).toEqual({
+        renderedMinutes: Math.round(expectedHours * 60),
         renderedHours: expectedHours,
         renderedHoursStatus: expectedStatus,
       });
@@ -19,6 +25,7 @@ describe('employer attendance derivation', () => {
 
   it('marks an open attendance row incomplete', () => {
     expect(deriveRenderedHours('08:00', null, '08:00', '17:00')).toEqual({
+      renderedMinutes: 0,
       renderedHours: 0,
       renderedHoursStatus: 'incomplete',
     });
@@ -28,11 +35,16 @@ describe('employer attendance derivation', () => {
     expect(remainingHours(400, 405.5)).toBe(0);
   });
 
-  it('applies weekdays and weekends without flexible absence logic', () => {
-    expect(isScheduledWorkday('2026-08-24', 'weekdays')).toBe(true);
-    expect(isScheduledWorkday('2026-08-24', 'weekends')).toBe(false);
-    expect(isScheduledWorkday('2026-08-23', 'weekends')).toBe(true);
-    expect(isScheduledWorkday('2026-08-23', 'flexible')).toBe(false);
+  it('uses integer minutes as the authoritative duration', () => {
+    expect(rawRenderedMinutes('07:45', '16:33')).toBe(468);
+    expect(remainingMinutes(12_000, 1_935)).toBe(10_065);
+    expect(remainingMinutes(60, 61)).toBe(0);
+  });
+
+  it('applies exact selected weekdays', () => {
+    expect(isScheduledWorkday('2026-08-24', [1, 3, 4, 6])).toBe(true);
+    expect(isScheduledWorkday('2026-08-25', [1, 3, 4, 6])).toBe(false);
+    expect(isScheduledWorkday('2026-08-29', [1, 3, 4, 6])).toBe(true);
   });
 
   it('does not consider the current shift ended before end time', () => {

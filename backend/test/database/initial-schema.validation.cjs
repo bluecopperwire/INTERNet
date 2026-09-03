@@ -44,6 +44,8 @@ async function main() {
       'ApplicationWorkflowAlignment1788220800000',
       'ApplicationInitialStatusHistory1788307200000',
       'RemoveAcceptedReferralReversal1788393600000',
+      'OpportunityLifecycleRules1788480000000',
+      'AssignmentLifecycleFoundation1788566400000',
     ];
     const recognizedHistoricalMigrations = new Set([
       'AuthAlignmentV31786125600000',
@@ -216,7 +218,7 @@ async function main() {
       functions.rows.map((row) => [row.proname, row.definition.toLowerCase()]),
     );
     assert.ok(definitions.has('fn_derive_attendance'), 'missing fn_derive_attendance function');
-    assert.match(definitions.get('fn_derive_attendance'), /interval '1 hour'/, 'fn_derive_attendance missing 1 hour deduction');
+    assert.match(definitions.get('fn_derive_attendance'), /actual_minutes[\s\S]*- 60/, 'fn_derive_attendance missing 60-minute lunch deduction');
     assert.ok(definitions.has('fn_validate_referral'), 'missing fn_validate_referral function');
     assert.doesNotMatch(
       definitions.get('fn_validate_referral'),
@@ -321,6 +323,54 @@ async function main() {
       history_trigger: true,
     });
     pass('new applications record their initial submitted status history');
+
+    const assignmentFoundation = await client.query(`
+      SELECT
+        (SELECT array_agg(enumlabel::text ORDER BY enumsortorder)
+         FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid
+         WHERE t.typname = 'assignment_status_enum') AS statuses,
+        (SELECT data_type FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = 'internship_assignment'
+           AND column_name = 'working_days') AS working_days_type,
+        (SELECT is_nullable FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = 'internship_assignment_status_history'
+           AND column_name = 'previous_assignment_status') AS initial_history_nullable,
+        to_regprocedure('public.fn_valid_working_days(smallint[])') IS NOT NULL AS working_days_validator
+    `);
+    assert.deepEqual(assignmentFoundation.rows[0].statuses, [
+      'pending', 'ongoing', 'complete_company', 'complete_student',
+      'withdrawn', 'cancelled', 'finalized',
+    ]);
+    assert.equal(assignmentFoundation.rows[0].working_days_type, 'ARRAY');
+    assert.equal(assignmentFoundation.rows[0].initial_history_nullable, 'YES');
+    assert.equal(assignmentFoundation.rows[0].working_days_validator, true);
+
+    const legacyAssignmentColumns = await client.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND (
+        (table_name = 'internship_assignment' AND column_name = 'required_hours')
+        OR (table_name = 'attendance_record' AND column_name = 'hours_rendered')
+      )
+    `);
+    assert.equal(legacyAssignmentColumns.rowCount, 0);
+    const invalidAssignmentData = await client.query(`
+      SELECT
+        (SELECT count(*)::integer FROM public.internship_assignment
+         WHERE NOT public.fn_valid_working_days(working_days)
+           OR required_minutes <= 0 OR required_minutes % 60 <> 0) AS assignments,
+        (SELECT count(*)::integer FROM public.internship_assignment ia
+         WHERE NOT EXISTS (
+           SELECT 1 FROM public.internship_assignment_status_history h
+           WHERE h.internship_assignment_id = ia.internship_assignment_id
+             AND h.previous_assignment_status IS NULL
+             AND h.new_assignment_status = 'pending'
+         )) AS missing_initial_history
+    `);
+    assert.deepEqual(invalidAssignmentData.rows[0], {
+      assignments: 0,
+      missing_initial_history: 0,
+    });
+    pass('assignment lifecycle foundation schema and migrated data are valid');
 
     const alignedFunctions = await client.query(`
       SELECT p.proname, pg_get_functiondef(p.oid) AS definition

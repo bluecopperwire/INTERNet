@@ -1,15 +1,24 @@
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, Matches, Min } from 'class-validator';
+import {
+  ArrayNotEmpty,
+  ArrayUnique,
+  IsArray,
+  IsInt,
+  IsOptional,
+  Matches,
+  Max,
+  Min,
+} from 'class-validator';
 import { DATE_PATTERN, TIME_PATTERN } from './common.dto';
 
-export enum EmployerWorkingDays {
-  WEEKDAYS = 'weekdays',
-  WEEKENDS = 'weekends',
-}
-
 export class CreateAssignmentDto {
-  @IsEnum(EmployerWorkingDays)
-  workingDays!: EmployerWorkingDays;
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayUnique()
+  @IsInt({ each: true })
+  @Min(0, { each: true })
+  @Max(6, { each: true })
+  workingDays!: number[];
 
   @Type(() => Number)
   @IsInt()
@@ -32,8 +41,13 @@ export class CreateAssignmentDto {
 
 export class UpdateAssignmentDto {
   @IsOptional()
-  @IsEnum(EmployerWorkingDays)
-  workingDays?: EmployerWorkingDays;
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayUnique()
+  @IsInt({ each: true })
+  @Min(0, { each: true })
+  @Max(6, { each: true })
+  workingDays?: number[];
 
   @IsOptional()
   @Type(() => Number)

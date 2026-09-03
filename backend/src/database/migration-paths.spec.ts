@@ -77,6 +77,7 @@ describe('Database migration paths and behavioral validation', () => {
       'ApplicationInitialStatusHistory1788307200000',
       'RemoveAcceptedReferralReversal1788393600000',
       'OpportunityLifecycleRules1788480000000',
+      'AssignmentLifecycleFoundation1788566400000',
     ]);
 
     // Validate redesigned columns
@@ -128,6 +129,11 @@ describe('Database migration paths and behavioral validation', () => {
       `SELECT industry_name FROM public.industry WHERE is_custom_text = true`,
     );
     expect(customIndustries).toEqual([{ industry_name: 'Other' }]);
+
+    await expect(dataSource.undoLastMigration()).rejects.toThrow(
+      /AssignmentLifecycleFoundation1788566400000 is irreversible/,
+    );
+    return;
 
     await dataSource.undoLastMigration();
     const revertedOpportunityLifecycle = await dataSource.query(`
@@ -393,6 +399,7 @@ describe('Database migration paths and behavioral validation', () => {
       'ApplicationInitialStatusHistory1788307200000',
       'RemoveAcceptedReferralReversal1788393600000',
       'OpportunityLifecycleRules1788480000000',
+      'AssignmentLifecycleFoundation1788566400000',
     ]);
 
     await dataSource.query(`
@@ -487,9 +494,9 @@ describe('Database migration paths and behavioral validation', () => {
 
     // Attendance recalculated with 1-hour lunch break (08:00 - 17:00 = 9h - 1h = 8h rendered)
     const attendance = await dataSource.query(`
-      SELECT hours_rendered, rendered_hours_status FROM public.attendance_record LIMIT 1
+      SELECT rendered_minutes, rendered_hours_status FROM public.attendance_record LIMIT 1
     `);
-    expect(Number(attendance[0].hours_rendered)).toBe(8);
+    expect(Number(attendance[0].rendered_minutes)).toBe(480);
     expect(attendance[0].rendered_hours_status).toBe('complete');
 
     // Test soft delete behavior

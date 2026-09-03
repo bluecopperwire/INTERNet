@@ -192,9 +192,13 @@ describe('employer scoping and DB migration blockers', () => {
     } as unknown as DataSource;
 
     const service = new EmployerReferralService(dataSource, resolver());
-    await expect(service.reject(310, 2, {
-      remark: 'The internship slot was withdrawn.',
-    })).rejects.toThrow('Only pending or for_interview referrals can be rejected.');
+    await expect(
+      service.reject(310, 2, {
+        remark: 'The internship slot was withdrawn.',
+      }),
+    ).rejects.toThrow(
+      'Only pending or for_interview referrals can be rejected.',
+    );
   });
 
   it('soft deletes terminal internship without 503 blocker', async () => {
@@ -205,7 +209,7 @@ describe('employer scoping and DB migration blockers', () => {
           {
             internship_assignment_id: 3,
             company_id: 31,
-            assignment_status: 'completed',
+            assignment_status: 'finalized',
           },
         ];
       if (sql.includes('UPDATE public.internship_assignment')) return [];

@@ -157,6 +157,18 @@ export class PesoDashboardController {
     return this.pesoService.getInternDetail(internshipAssignmentId);
   }
 
+  @Patch('interns/:internshipAssignmentId/finalize')
+  finalizeInternship(
+    @CurrentUser('userAccountId') userAccountId: number,
+    @Param('internshipAssignmentId', ParseIntPipe)
+    internshipAssignmentId: number,
+  ) {
+    return this.pesoService.finalizeAssignment(
+      userAccountId,
+      internshipAssignmentId,
+    );
+  }
+
   @Get('students')
   getStudents(@Query() queryDto: PaginationDto & { search?: string }) {
     return this.pesoService.getStudents(queryDto);
