@@ -16,6 +16,7 @@ describe('Phase 2 Student internship workflow responsibilities', () => {
     expect(compactApp).toContain('path="internship"element={<InternshipPage/>}')
     expect(compactApp).toContain('path="internship-history"element={<InternshipHistoryPage/>}')
     expect(app).toContain('path="internship-history/:assignmentId"')
+    expect(app.indexOf('path="internship-history/:assignmentId"')).toBeLessThan(app.indexOf('<Route element={<TrackingLayout />}>'))
     expect(compactApp).toContain('path="internship-details"element={<Navigateto="/intern-seeker/internship"replace/>}')
   })
 
@@ -87,8 +88,11 @@ describe('Phase 2 Student internship workflow responsibilities', () => {
     const headings = [...page.matchAll(/<th>([^<]+)<\/th>/g)].map((match) => match[1])
     expect(headings).toEqual(['Company', 'Job Title', 'Status', 'Action'])
     expect(page).toContain('const PAGE_SIZES = [5, 10, 15]')
-    expect(page).toMatch(/getInternshipHistory\(\s*studentId,\s*page,\s*limit,?\s*\)/)
-    expect(page).toContain('No internship history yet')
+    expect(page).toContain('studentApiService.getInternshipHistory(studentId, page, limit, {')
+    expect(page).toContain('placeholder="Search company or job title..."')
+    expect(page).toContain('All Statuses')
+    expect(page).toContain('No internship history found')
+    expect(page).toContain('<Eye size={15} />View')
     expect(page).not.toContain('Delete')
   })
 

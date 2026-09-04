@@ -35,10 +35,10 @@ import {
 import {
   StudentAttendanceHistoryQueryDto,
   StudentAttendanceQueryDto,
+  StudentInternshipHistoryQueryDto,
 } from '../dto/student-attendance-query.dto';
 import { requirementUploadOptions } from '../../storage/requirement-upload.config';
 import { profilePictureUploadOptions } from '../../storage/profile-picture-upload.config';
-import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @Controller('students')
 export class StudentsController {
@@ -245,7 +245,7 @@ export class StudentsController {
   async getStudentInternshipHistory(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() currentUser: any,
-    @Query() pagination: PaginationDto,
+    @Query() pagination: StudentInternshipHistoryQueryDto,
   ) {
     await this.ensureStudentAccess(id, currentUser);
     return this.studentsService.getInternshipHistory(id, pagination);

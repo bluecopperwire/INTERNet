@@ -8,12 +8,76 @@
   background: #fff;
   text-align: center;
 }
+.detailsPage {
+  --tracking-content-width: 1280px;
+  min-height: 100vh;
+  padding: 32px 48px 48px;
+  color: #21167b;
+  background: #fff;
+}
+.detailsContent {
+  width: 100%;
+  max-width: var(--tracking-content-width);
+  margin: 0 auto;
+}
+.historyPage {
+  max-width: var(--tracking-content-width);
+  margin: 0 auto;
+}
+.historyToolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.searchBox,
+.statusFilter {
+  display: flex;
+  height: 42px;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid #21167b;
+  border-radius: 6px;
+  color: #21167b;
+  background: #fff;
+}
+.searchBox {
+  min-width: 0;
+  flex: 1;
+}
+.searchBox input,
+.statusFilter select {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+}
+.statusFilter {
+  width: 230px;
+}
+.statusFilter select {
+  cursor: pointer;
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
 .historyCard {
   max-width: var(--tracking-content-width);
   overflow: hidden;
   margin: 0 auto;
   border: 1px solid #d8dcea;
-  border-radius: 12px;
+  border-radius: 8px;
   background: #fff;
   box-shadow: 0 8px 22px rgba(16, 13, 51, 0.06);
 }
@@ -37,6 +101,7 @@
 }
 .historyTable {
   width: 100%;
+  min-width: 700px;
   border-collapse: collapse;
   table-layout: fixed;
   color: #24204f;
@@ -49,6 +114,7 @@
   overflow-wrap: anywhere;
 }
 .historyTable th {
+  border-bottom: 2px solid #21167b;
   color: #21167b;
   background: #fafbfe;
   font-size: 13px;
@@ -60,30 +126,45 @@
   display: inline-flex;
   padding: 6px 11px;
   border-radius: 999px;
-  color: #21167b;
-  background: #f4e6a6;
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
 }
+.pending { color: #986a00; background: #fff6d8; }
+.ongoing { color: #2767a5; background: #e9f3ff; }
+.completed { color: #17775f; background: #eaf9f5; }
+.withdrawn { color: #a75b18; background: #fff1e5; }
+.cancelled { color: #b13f48; background: #fff0ef; }
+.finalized { color: #625d7d; background: #efeff5; }
 .viewButton {
-  min-width: 76px;
-  padding: 8px 15px;
+  display: inline-flex;
+  width: 120px;
+  min-width: 120px;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 14px;
   border: 1px solid #21167b;
-  border-radius: 7px;
-  color: #fff;
-  background: #21167b;
+  border-radius: 6px;
+  color: #21167b;
+  background: #fff;
   font: inherit;
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
 }
+.viewButton:hover {
+  color: #fff;
+  background: #21167b;
+}
 .pagination {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 15px;
-  padding: 16px 20px;
+  padding: 20px 0 0;
   color: #5d6881;
   font-size: 13px;
 }
@@ -113,9 +194,21 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
+.pagination .currentPage {
+  border-color: #21167b;
+  color: #fff;
+  background: #21167b;
+}
+.inlineFeedback {
+  max-width: none;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
 .emptyHistory {
   display: grid;
-  min-height: 260px;
+  min-height: 150px;
   place-content: center;
   padding: 32px;
   color: #5d6881;
@@ -157,6 +250,17 @@
   cursor: pointer;
 }
 @media (max-width: 700px) {
+  .detailsPage {
+    padding: 24px 20px 40px;
+  }
+  .historyToolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .searchBox,
+  .statusFilter {
+    width: 100%;
+  }
   .historyTable {
     min-width: 650px;
   }

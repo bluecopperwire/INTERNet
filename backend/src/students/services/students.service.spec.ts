@@ -460,6 +460,35 @@ describe('StudentsService Student internship queries', () => {
     );
   });
 
+  it('filters internship history by company or job title and grouped Completed status', async () => {
+    const { service, query } = assignmentQueryService((sql) => {
+      if (sql.includes('count(*)')) return Promise.resolve([{ total: 1 }]);
+      return Promise.resolve([assignmentRow('complete_student', 77)]);
+    });
+
+    await expect(
+      service.getInternshipHistory(7, {
+        page: 1,
+        limit: 5,
+        search: 'DevSeed',
+        status: 'completed',
+      }),
+    ).resolves.toMatchObject({
+      data: [{ assignmentStatus: 'complete_student' }],
+      meta: { total: 1 },
+    });
+
+    const sql = query.mock.calls.map(([value]) => String(value)).join('\n');
+    expect(sql).toContain('c.company_name ILIKE $2 OR o.title ILIKE $2');
+    expect(sql).toContain(
+      "ia.assignment_status IN ('complete_company', 'complete_student')",
+    );
+    expect(query).toHaveBeenLastCalledWith(
+      expect.stringContaining('LIMIT $3 OFFSET $4'),
+      [7, '%DevSeed%', 5, 0],
+    );
+  });
+
   it('loads a specific Student-owned historical assignment', async () => {
     const { service, query } = assignmentQueryService(() =>
       Promise.resolve([assignmentRow('finalized', 77)]),

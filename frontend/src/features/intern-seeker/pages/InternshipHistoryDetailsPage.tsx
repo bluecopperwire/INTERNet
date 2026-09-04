@@ -43,29 +43,31 @@ function InternshipHistoryDetailsPage() {
 
   if (!hasValidRequest)
     return (
-      <p className={styles.feedback} role="alert">
-        Internship assignment is unavailable.
-      </p>
+      <main className={styles.detailsPage}>
+        <p className={styles.feedback} role="alert">Internship assignment is unavailable.</p>
+      </main>
     )
-  if (isLoading) return <p className={styles.feedback}>Loading internship details...</p>
+  if (isLoading) return <main className={styles.detailsPage}><p className={styles.feedback}>Loading internship details...</p></main>
   if (error || !assignment)
     return (
-      <p className={styles.feedback} role="alert">
-        {error ?? 'Internship assignment is unavailable.'}
-      </p>
+      <main className={styles.detailsPage}>
+        <p className={styles.feedback} role="alert">{error ?? 'Internship assignment is unavailable.'}</p>
+      </main>
     )
 
   return (
-    <div>
-      <button className={styles.backButton} type="button" onClick={() => navigate('/intern-seeker/internship-history')}>
-        <ArrowLeft size={18} />
-        Back to Internship History
-      </button>
-      <StudentInternshipDetails assignment={assignment} />
-      <button className={styles.attendanceButton} type="button" onClick={() => navigate(`/intern-seeker/attendance-history/${assignment.internshipAssignmentId}`, { state: { attendanceHistoryBackPath: `/intern-seeker/internship-history/${assignment.internshipAssignmentId}` } })}>
-        View Attendance History
-      </button>
-    </div>
+    <main className={styles.detailsPage}>
+      <div className={styles.detailsContent}>
+        <button className={styles.backButton} type="button" onClick={() => navigate('/intern-seeker/internship-history')}>
+          <ArrowLeft size={18} />
+          Back to Internship History
+        </button>
+        <StudentInternshipDetails assignment={assignment} />
+        <button className={styles.attendanceButton} type="button" onClick={() => navigate(`/intern-seeker/attendance-history/${assignment.internshipAssignmentId}`, { state: { attendanceHistoryBackPath: `/intern-seeker/internship-history/${assignment.internshipAssignmentId}` } })}>
+          View Attendance History
+        </button>
+      </div>
+    </main>
   )
 }
 

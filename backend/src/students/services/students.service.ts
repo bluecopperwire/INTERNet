@@ -27,7 +27,10 @@ import {
   currentManilaTime,
   isScheduledWorkday,
 } from '../../employer/utils/time.utils';
-import type { StudentAttendanceHistoryQueryDto } from '../dto/student-attendance-query.dto';
+import type {
+  StudentAttendanceHistoryQueryDto,
+  StudentInternshipHistoryQueryDto,
+} from '../dto/student-attendance-query.dto';
 
 type StatusActor = { userAccountId?: number };
 
@@ -1321,19 +1324,38 @@ export class StudentsService {
 
   async getInternshipHistory(
     studentId: number,
-    pagination: { page?: number; limit?: number },
+    pagination: StudentInternshipHistoryQueryDto,
   ) {
     const page = Math.max(1, Number(pagination.page) || 1);
     const limit = Math.max(1, Math.min(15, Number(pagination.limit) || 5));
     const offset = (page - 1) * limit;
-    const visibilityClause = `
-      a.student_id = $1
-      AND ia.deleted_at IS NULL
-      AND NOT EXISTS (
+    const params: unknown[] = [studentId];
+    const filters = [
+      'a.student_id = $1',
+      'ia.deleted_at IS NULL',
+      `NOT EXISTS (
         SELECT 1 FROM public.internship_assignment_visibility iav
         WHERE iav.internship_assignment_id = ia.internship_assignment_id
           AND iav.student_hidden_at IS NOT NULL
-      )`;
+      )`,
+    ];
+    const search = pagination.search?.trim();
+    if (search) {
+      params.push(`%${search}%`);
+      filters.push(
+        `(c.company_name ILIKE $${params.length} OR o.title ILIKE $${params.length})`,
+      );
+    }
+    if (pagination.status === 'completed') {
+      filters.push(
+        `ia.assignment_status IN ('complete_company', 'complete_student')`,
+      );
+    } else if (pagination.status) {
+      params.push(pagination.status);
+      filters.push(`ia.assignment_status = $${params.length}`);
+    }
+    const visibilityClause = `
+      ${filters.join('\n      AND ')}`;
 
     const [countRows, rows] = await Promise.all([
       this.dataSource.query<Array<{ total: number | string }>>(
@@ -1341,15 +1363,17 @@ export class StudentsService {
          FROM public.internship_assignment ia
          JOIN public.referral r ON r.referral_id = ia.referral_id
          JOIN public.application a ON a.application_id = r.application_id
+         JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
+         JOIN public.company c ON c.company_id = o.company_id
          WHERE ${visibilityClause}`,
-        [studentId],
+        params,
       ),
       this.dataSource.query<StudentAssignmentRow[]>(
         `${this.studentAssignmentSelect()}
          WHERE ${visibilityClause}
          ORDER BY ia.created_at DESC, ia.internship_assignment_id DESC
-         LIMIT $2 OFFSET $3`,
-        [studentId, limit, offset],
+         LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+        [...params, limit, offset],
       ),
     ]);
 

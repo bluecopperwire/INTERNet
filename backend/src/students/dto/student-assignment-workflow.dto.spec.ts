@@ -4,6 +4,7 @@ import {
   StudentAssignmentRemarkDto,
   StudentCompanyReviewDto,
 } from './students.dto';
+import { StudentInternshipHistoryQueryDto } from './student-attendance-query.dto';
 
 describe('Student assignment workflow DTOs', () => {
   it('rejects a whitespace-only withdrawal reason', async () => {
@@ -27,5 +28,22 @@ describe('Student assignment workflow DTOs', () => {
       remark: 'A valid review remark.',
     });
     await expect(validate(dto)).resolves.toHaveLength(0);
+  });
+
+  it('accepts the supported internship history search and status filters', async () => {
+    const dto = Object.assign(new StudentInternshipHistoryQueryDto(), {
+      search: 'DevSeed',
+      status: 'completed',
+      page: 1,
+      limit: 5,
+    });
+    await expect(validate(dto)).resolves.toHaveLength(0);
+  });
+
+  it('rejects unsupported internship history statuses', async () => {
+    const dto = Object.assign(new StudentInternshipHistoryQueryDto(), {
+      status: 'under_review',
+    });
+    await expect(validate(dto)).resolves.not.toHaveLength(0);
   });
 });

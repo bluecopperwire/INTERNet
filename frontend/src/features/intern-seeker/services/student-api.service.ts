@@ -156,10 +156,11 @@ export const studentApiService = {
     studentId: number,
     page: number,
     limit: number,
+    filters?: { search?: string; status?: string },
   ): Promise<PaginatedResponse<StudentInternshipDto>> {
     const response = await api.get<PaginatedResponse<StudentInternshipDto>>(
       `/students/${studentId}/internship/history`,
-      { params: { page, limit } },
+      { params: { page, limit, ...filters } },
     );
     return response.data;
   },
