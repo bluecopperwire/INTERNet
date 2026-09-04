@@ -96,12 +96,12 @@ function App() {
           <Route path="profile/edit" element={<ProfileEditorPage />} />
           <Route path="digicv" element={<DigiCVPage />} />
           <Route path="internship-details" element={<Navigate to="/intern-seeker/internship" replace />} />
+          <Route path="attendance-history/:assignmentId" element={<AttendanceHistoryPage />} />
           <Route element={<TrackingLayout />}>
             <Route path="requirements" element={<RequirementsPage />} />
             <Route path="application-status" element={<ApplicationStatusPage />} />
             <Route path="internship" element={<InternshipPage />} />
             <Route path="attendance" element={<AttendancePage />} />
-            <Route path="attendance-history/:assignmentId" element={<AttendanceHistoryPage />} />
             <Route path="internship-history" element={<InternshipHistoryPage />} />
             <Route path="internship-history/:assignmentId" element={<InternshipHistoryDetailsPage />} />
           </Route>

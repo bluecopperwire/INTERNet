@@ -50,4 +50,9 @@ describe('cross-role attendance history presentation', () => {
       expect(destinationPages.some((source) => source.includes(label))).toBe(true)
     }
   })
+
+  it('renders Student attendance history outside the My Tracking banner and tabs', () => {
+    const app = readSource('src/App.tsx')
+    expect(app.indexOf('path="attendance-history/:assignmentId"')).toBeLessThan(app.indexOf('<Route element={<TrackingLayout />}>'))
+  })
 })
