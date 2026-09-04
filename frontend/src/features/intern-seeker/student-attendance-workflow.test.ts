@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import type { StudentAttendanceResponse } from '../../types/api'
-import { buildCalendarDays, getTodayTag } from './utils/attendance-display'
+import { buildCalendarDays, formatSummaryHours, getTodayTag } from './utils/attendance-display'
 
 const attendance = (overrides: Partial<StudentAttendanceResponse['assignment']> = {}): StudentAttendanceResponse => ({
   assignment: {
@@ -51,11 +51,20 @@ describe('Phase 3 Student Attendance workflow', () => {
     expect(byDate.get('2026-09-11')).toBe('workday')
   })
 
+  it('formats summary hour totals as unitless numbers', () => {
+    expect(formatSummaryHours(0)).toBe('0')
+    expect(formatSummaryHours(555)).toBe('9.25')
+    expect(formatSummaryHours(12000)).toBe('200')
+  })
+
   it('contains the exact summary/history labels, filters, columns, routes, and no legacy Late UI', () => {
     const page = readFileSync('src/features/intern-seeker/pages/AttendancePage.tsx', 'utf8')
     const history = readFileSync('src/features/intern-seeker/pages/AttendanceHistoryPage.tsx', 'utf8')
     const app = readFileSync('src/App.tsx', 'utf8')
     for (const label of ['Days Present', 'Days Absent', 'Rendered Hours', 'Remaining Hours', 'View Attendance History']) expect(page).toContain(label)
+    expect(page.indexOf('Assignment Status')).toBeLessThan(page.indexOf('Attendance Status'))
+    expect(page).toContain('styles.statusGroup')
+    expect(page).not.toContain('formatMinutes(summary.renderedMinutes)')
     for (const column of ['Date', 'Clock In Time', 'Clock Out Time', 'Rendered Time', 'Attendance Status']) expect(history).toContain(column)
     for (const filter of ['All', 'Present', 'Absent', 'Incomplete']) expect(history).toContain(filter)
     expect(history).toContain('[5, 10, 15]')

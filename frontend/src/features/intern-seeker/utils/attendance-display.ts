@@ -28,3 +28,7 @@ export function getTodayTag(status: AssignmentStatus, isWorkday: boolean, today:
   if (today?.attendanceStatus === 'present' && today.timeIn) return 'Clocked In'
   return 'Not Clocked In'
 }
+
+export function formatSummaryHours(minutes: number): string {
+  return new Intl.NumberFormat('en-PH', { maximumFractionDigits: 2 }).format(Math.max(0, minutes) / 60)
+}
