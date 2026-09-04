@@ -10,6 +10,7 @@ import type {
   AssignmentCandidateQueryDto,
   AssignmentRemarkDto,
   CreateAssignmentDto,
+  InternshipHistoryQueryDto,
   InternshipListQueryDto,
   UpdateAssignmentDto,
 } from '../dto';
@@ -212,26 +213,26 @@ export class EmployerInternshipService {
 
   async summary(userAccountId: number) {
     const company = await this.companyResolver.resolve(userAccountId);
-    const rows = await this.loadAssignmentRows(company.companyId);
+    const rows = await this.loadAssignmentRows(company.companyId, null, true);
     const enriched = await this.enrichWithRenderedHours(rows);
+    const pendingInternships = enriched.filter(
+      (row) => row.assignmentStatus === 'pending',
+    ).length;
+    const ongoingInternships = enriched.filter(
+      (row) =>
+        row.assignmentStatus === 'ongoing' &&
+        row.renderedMinutes < row.requiredMinutes,
+    ).length;
+    const awaitingCompletion = enriched.filter(
+      (row) =>
+        row.assignmentStatus === 'ongoing' &&
+        row.renderedMinutes >= row.requiredMinutes,
+    ).length;
     return {
-      totalInterns: enriched.length,
-      ongoingInterns: enriched.filter(
-        (row) =>
-          row.assignmentStatus === 'ongoing' &&
-          row.renderedMinutes < row.requiredMinutes,
-      ).length,
-      completedInterns: enriched.filter(
-        (row) =>
-          row.assignmentStatus === 'complete_company' ||
-          row.assignmentStatus === 'complete_student' ||
-          row.assignmentStatus === 'finalized',
-      ).length,
-      awaitingCompletionInterns: enriched.filter(
-        (row) =>
-          row.assignmentStatus === 'ongoing' &&
-          row.renderedMinutes >= row.requiredMinutes,
-      ).length,
+      activeInternships: enriched.length,
+      pendingInternships,
+      ongoingInternships,
+      awaitingCompletion,
     };
   }
 
@@ -240,6 +241,7 @@ export class EmployerInternshipService {
     const rows = await this.loadAssignmentRows(
       company.companyId,
       query.search?.trim() || null,
+      true,
     );
     let enriched = await this.enrichWithRenderedHours(rows);
     if (query.status) {
@@ -269,7 +271,54 @@ export class EmployerInternshipService {
     );
   }
 
+  async historySummary(userAccountId: number) {
+    const company = await this.companyResolver.resolve(userAccountId);
+    const rows = await this.loadAssignmentRows(company.companyId);
+    const activeInternships = rows.filter((row) =>
+      ['pending', 'ongoing'].includes(String(row.assignment_status)),
+    ).length;
+    return {
+      totalInternships: rows.length,
+      activeInternships,
+      closedInternships: rows.length - activeInternships,
+    };
+  }
+
+  async history(userAccountId: number, query: InternshipHistoryQueryDto) {
+    const company = await this.companyResolver.resolve(userAccountId);
+    const rows = await this.loadAssignmentRows(
+      company.companyId,
+      query.search?.trim() || null,
+    );
+    let enriched = await this.enrichWithRenderedHours(rows);
+    if (query.status) {
+      enriched = enriched.filter(
+        (row) => row.assignmentStatus === String(query.status),
+      );
+    }
+    const total = enriched.length;
+    const offset = (query.page - 1) * query.limit;
+    return paginate(
+      enriched.slice(offset, offset + query.limit),
+      query.page,
+      query.limit,
+      total,
+    );
+  }
+
   async getById(userAccountId: number, internshipAssignmentId: number) {
+    return this.getDetail(userAccountId, internshipAssignmentId, false);
+  }
+
+  async getHistoryById(userAccountId: number, internshipAssignmentId: number) {
+    return this.getDetail(userAccountId, internshipAssignmentId, true);
+  }
+
+  private async getDetail(
+    userAccountId: number,
+    internshipAssignmentId: number,
+    readOnly: boolean,
+  ) {
     const company = await this.companyResolver.resolve(userAccountId);
     const row = await this.findAssignmentScoped(
       this.dataSource,
@@ -288,6 +337,7 @@ export class EmployerInternshipService {
       intern: {
         studentId: enriched.studentId,
         studentFullName: enriched.studentFullName,
+        strandProgram: enriched.strandProgram,
         jobTitle: enriched.jobTitle,
         requiredHours: enriched.requiredHours,
         requiredMinutes: enriched.requiredMinutes,
@@ -319,11 +369,17 @@ export class EmployerInternshipService {
         renderedMinutes: enriched.renderedMinutes,
         remainingHours: enriched.remainingHours,
         remainingMinutes: enriched.remainingMinutes,
-        canEdit: enriched.assignmentStatus === 'pending',
-        canComplete,
-        canCancel,
-        canDelete,
+        canEdit: !readOnly && enriched.assignmentStatus === 'pending',
+        canComplete: !readOnly && canComplete,
+        canCancel: !readOnly && canCancel,
+        canDelete: readOnly && canDelete,
       },
+      remarks: {
+        studentWithdrawalRemark: row.student_withdrawal_remark,
+        companyCancellationRemark: row.company_cancellation_remark,
+        companyCompletionRemark: row.company_completion_remark,
+      },
+      readOnly,
     };
   }
 
@@ -503,6 +559,7 @@ export class EmployerInternshipService {
   private async loadAssignmentRows(
     companyId: number,
     search: string | null = null,
+    activeOnly = false,
   ): Promise<AssignmentRow[]> {
     return this.dataSource.query(
       `
@@ -513,6 +570,7 @@ export class EmployerInternshipService {
                ia.ended_at,
                r.referral_id, a.application_id, s.student_id,
                concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS student_full_name,
+               sai.strand_program,
                o.opportunity_id, o.title AS job_title,
                c.company_name
         FROM public.internship_assignment ia
@@ -521,8 +579,10 @@ export class EmployerInternshipService {
         JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
         JOIN public.company c ON c.company_id = o.company_id
         JOIN public.student s ON s.student_id = a.student_id
+        LEFT JOIN public.student_academic_information sai ON sai.student_id = s.student_id
         WHERE c.company_id = $1
           AND ia.deleted_at IS NULL
+          ${activeOnly ? "AND ia.assignment_status IN ('pending', 'ongoing')" : ''}
           AND NOT EXISTS (
             SELECT 1 FROM public.internship_assignment_visibility iav
             WHERE iav.internship_assignment_id = ia.internship_assignment_id
@@ -551,6 +611,7 @@ export class EmployerInternshipService {
                ia.ended_at,
                r.referral_id, a.application_id, s.student_id,
                concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS student_full_name,
+               sai.strand_program,
                o.opportunity_id, o.title AS job_title,
                c.company_name
         FROM public.internship_assignment ia
@@ -559,6 +620,7 @@ export class EmployerInternshipService {
         JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
         JOIN public.company c ON c.company_id = o.company_id
         JOIN public.student s ON s.student_id = a.student_id
+        LEFT JOIN public.student_academic_information sai ON sai.student_id = s.student_id
         WHERE ia.internship_assignment_id = $1 AND c.company_id = $2
           AND ia.deleted_at IS NULL
           ${
@@ -610,6 +672,7 @@ export class EmployerInternshipService {
         internshipAssignmentId,
         studentId: asNumber(row.student_id),
         studentFullName: row.student_full_name,
+        strandProgram: row.strand_program ?? null,
         jobTitle: row.job_title,
         requiredHours,
         requiredMinutes,
@@ -645,10 +708,10 @@ export class EmployerInternshipService {
     return (
       {
         pending: 'Pending',
-        ongoing: 'On Going',
+        ongoing: 'Ongoing',
         complete_company: 'Complete (Company)',
         complete_student: 'Complete (Student)',
-        withdrawn: 'Withdrawn by Student',
+        withdrawn: 'Withdrawn',
         cancelled: 'Cancelled',
         finalized: 'Finalized',
       }[assignmentStatus] ?? assignmentStatus

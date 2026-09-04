@@ -21,6 +21,10 @@
   gap: 16px;
 }
 
+.historySummaryGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .summaryCard {
   display: flex;
   min-height: 118px;

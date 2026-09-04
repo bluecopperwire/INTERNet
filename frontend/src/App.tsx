@@ -52,6 +52,8 @@ import { EmployerSettingsPage } from './features/employer/pages/EmployerSettings
 import { CreateInternshipAssignmentPage, ReviewInternshipAssignmentPage } from './features/employer/pages/InternshipWorkflowPages'
 import { MonitorInternshipPage } from './features/employer/pages/MonitorInternshipPage'
 import { MonitorInternshipDetailsPage } from './features/employer/pages/MonitorInternshipDetailsPage'
+import { EmployerInternshipHistoryPage } from './features/employer/pages/InternshipHistoryPage'
+import { EmployerInternshipHistoryDetailsPage } from './features/employer/pages/InternshipHistoryDetailsPage'
 
 // Admin
 import AdminLayout from './features/admin/components/AdminLayout'
@@ -173,6 +175,8 @@ function App() {
           <Route path="attendance/:applicantId" element={<AttendanceInternshipDetailsPage />} />
           <Route path="manage-internship" element={<MonitorInternshipPage />} />
           <Route path="manage-internship/:applicantId" element={<MonitorInternshipDetailsPage />} />
+          <Route path="internship-history" element={<EmployerInternshipHistoryPage />} />
+          <Route path="internship-history/:assignmentId" element={<EmployerInternshipHistoryDetailsPage />} />
           <Route path="reports" element={<ReportsPage />} />
           <Route path="settings" element={<EmployerSettingsPage />} />
           <Route path="*" element={<Navigate to="/employer/dashboard" replace />} />

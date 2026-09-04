@@ -11,7 +11,11 @@ import { Roles } from '../../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { UserRole } from '../../users/entities/account.entities';
-import { AttendanceDateQueryDto, AttendanceListQueryDto } from '../dto';
+import {
+  AttendanceDateQueryDto,
+  AttendanceHistoryQueryDto,
+  AttendanceListQueryDto,
+} from '../dto';
 import { EmployerAttendanceService } from '../services/employer-attendance.service';
 import type { EmployerCurrentUser } from '../types/employer.types';
 
@@ -42,10 +46,12 @@ export class EmployerAttendanceController {
     @CurrentUser() user: EmployerCurrentUser,
     @Param('internshipAssignmentId', ParseIntPipe)
     internshipAssignmentId: number,
+    @Query() query: AttendanceHistoryQueryDto,
   ) {
     return this.attendanceService.history(
       user.userAccountId,
       internshipAssignmentId,
+      query,
     );
   }
 }

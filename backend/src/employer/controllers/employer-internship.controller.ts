@@ -16,6 +16,7 @@ import { RolesGuard } from '../../auth/guards/roles.guard';
 import { UserRole } from '../../users/entities/account.entities';
 import {
   AssignmentRemarkDto,
+  InternshipHistoryQueryDto,
   InternshipListQueryDto,
   UpdateAssignmentDto,
 } from '../dto';
@@ -31,6 +32,31 @@ export class EmployerInternshipController {
   @Get('summary')
   summary(@CurrentUser() user: EmployerCurrentUser) {
     return this.internshipService.summary(user.userAccountId);
+  }
+
+  @Get('history/summary')
+  historySummary(@CurrentUser() user: EmployerCurrentUser) {
+    return this.internshipService.historySummary(user.userAccountId);
+  }
+
+  @Get('history')
+  history(
+    @CurrentUser() user: EmployerCurrentUser,
+    @Query() query: InternshipHistoryQueryDto,
+  ) {
+    return this.internshipService.history(user.userAccountId, query);
+  }
+
+  @Get('history/:internshipAssignmentId')
+  historyDetail(
+    @CurrentUser() user: EmployerCurrentUser,
+    @Param('internshipAssignmentId', ParseIntPipe)
+    internshipAssignmentId: number,
+  ) {
+    return this.internshipService.getHistoryById(
+      user.userAccountId,
+      internshipAssignmentId,
+    );
   }
 
   @Get()

@@ -502,22 +502,124 @@ export interface EmployerReferralListItemDto {
 
 export interface EmployerAttendanceItemDto {
   internshipAssignmentId: number;
+  studentId: number;
   studentFullName: string;
   jobTitle: string;
+  strandProgram: string | null;
   date: string;
   timeIn?: string | null;
   timeOut?: string | null;
-  status: AttendanceStatus;
+  status: AttendanceStatus | 'pending';
   renderedHours: number;
+  renderedMinutes: number;
 }
 
 export interface EmployerInternshipListItemDto {
   internshipAssignmentId: number;
+  studentId: number;
   studentFullName: string;
   jobTitle: string;
+  strandProgram: string | null;
   requiredHours: number;
+  requiredMinutes: number;
   renderedHours: number;
+  renderedMinutes: number;
+  remainingHours: number;
+  remainingMinutes: number;
   assignmentStatus: AssignmentStatus;
+  displayStatus: string;
+}
+
+export interface EmployerManageInternshipSummaryDto {
+  activeInternships: number;
+  pendingInternships: number;
+  ongoingInternships: number;
+  awaitingCompletion: number;
+}
+
+export interface EmployerInternshipHistorySummaryDto {
+  totalInternships: number;
+  activeInternships: number;
+  closedInternships: number;
+}
+
+export interface EmployerInternshipDetailDto {
+  intern: {
+    studentId: number;
+    studentFullName: string;
+    strandProgram: string | null;
+    jobTitle: string;
+    requiredHours: number;
+    requiredMinutes: number;
+    renderedHours: number;
+    renderedMinutes: number;
+    remainingHours: number;
+    remainingMinutes: number;
+  };
+  assignment: {
+    internshipAssignmentId: number;
+    companyName: string;
+    jobTitle: string;
+    workingDays: number[];
+    requiredHours: number;
+    requiredMinutes: number;
+    startDate: string;
+    expectedEndDate: string | null;
+    endDate: string | null;
+    endedAt: string | null;
+    startShift: string;
+    endShift: string;
+  };
+  status: {
+    assignmentStatus: AssignmentStatus;
+    displayStatus: string;
+    renderedMinutes: number;
+    remainingMinutes: number;
+    canEdit: boolean;
+    canComplete: boolean;
+    canCancel: boolean;
+    canDelete: boolean;
+  };
+  remarks: {
+    studentWithdrawalRemark: string | null;
+    companyCancellationRemark: string | null;
+    companyCompletionRemark: string | null;
+  };
+  readOnly: boolean;
+}
+
+export interface EmployerAttendanceSummaryDto {
+  ongoingInterns: number;
+  presentInterns: number;
+  absentInterns: number;
+}
+
+export interface EmployerAttendanceHistoryItemDto {
+  attendanceRecordId: number;
+  date: string;
+  timeIn: string | null;
+  timeOut: string | null;
+  renderedHours: number;
+  renderedMinutes: number;
+  attendanceStatus: AttendanceStatus;
+}
+
+export interface EmployerAttendanceHistoryDto {
+  header: {
+    internshipAssignmentId: number;
+    studentFullName: string;
+    strandProgram: string | null;
+    jobTitle: string;
+    companyName: string;
+    assignmentStatus: AssignmentStatus;
+  };
+  summary: {
+    daysPresent: number;
+    daysAbsent: number;
+    renderedMinutes: number;
+    remainingMinutes: number;
+  };
+  history: PaginatedResponse<EmployerAttendanceHistoryItemDto>;
 }
 
 export interface AdminMetricsDto {

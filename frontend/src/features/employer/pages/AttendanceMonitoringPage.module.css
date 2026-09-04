@@ -25,6 +25,8 @@
   gap: 16px;
 }
 
+.threeCards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
 .summaryCard {
   display: flex;
   min-height: 118px;
@@ -182,6 +184,16 @@
 .absent {
   color: #e25555;
   background: #fff0ef;
+}
+
+.pending {
+  color: #a56600;
+  background: #fff4e6;
+}
+
+.incomplete {
+  color: #6557a8;
+  background: #f0eef9;
 }
 
 .late {

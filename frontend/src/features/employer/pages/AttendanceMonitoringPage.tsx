@@ -1,57 +1,67 @@
-import { useEffect, useMemo, useState } from 'react'
-import { CalendarDays, ChevronLeft, ChevronRight, Eye, Search, SlidersHorizontal } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
-import { EmployerHero } from '../components/EmployerHero'
-import { employerService } from '../services/employer.service'
-import type { EmployerAttendanceRecord } from '../types/employer.types'
-import styles from './AttendanceMonitoringPage.module.css'
-import { todayDateOnly } from '../../../utils/date-only'
-
-const pageSizes = [7, 10, 15]
+import { CalendarDays, ChevronLeft, ChevronRight, Eye, Search, SlidersHorizontal } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import type { EmployerAttendanceItemDto, EmployerAttendanceSummaryDto, PageMeta } from '../../../types/api';
+import { todayDateOnly } from '../../../utils/date-only';
+import { getErrorMessage } from '../../../utils/error-message';
+import { EmployerHero } from '../components/EmployerHero';
+import { employerApiService } from '../services/employer-api.service';
+import { ATTENDANCE_MONITOR_COLUMNS, attendanceStatusLabel, COMPANY_PAGE_SIZES } from '../utils/internship-workflow';
+import styles from './AttendanceMonitoringPage.module.css';
 
 export function AttendanceMonitoringPage() {
-  const navigate = useNavigate()
-  const [records, setRecords] = useState<EmployerAttendanceRecord[]>([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState('All')
-  const [date, setDate] = useState(() => todayDateOnly())
-  const [perPage, setPerPage] = useState(7)
-  const [page, setPage] = useState(1)
+  const navigate = useNavigate();
+  const [rows, setRows] = useState<EmployerAttendanceItemDto[]>([]);
+  const [summary, setSummary] = useState<EmployerAttendanceSummaryDto>({ ongoingInterns: 0, presentInterns: 0, absentInterns: 0 });
+  const [meta, setMeta] = useState<PageMeta>({ page: 1, limit: 10, total: 0, totalPages: 0 });
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('');
+  const [date, setDate] = useState(todayDateOnly);
+  const [limit, setLimit] = useState(10);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  useEffect(() => { employerService.getAttendanceRecords().then(setRecords).finally(() => setLoading(false)) }, [])
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      employerApiService.getAttendanceSummary({ date }),
+      employerApiService.getAttendance({ page, limit, date, search: search.trim() || undefined, status: status || undefined }),
+    ]).then(([nextSummary, result]) => {
+      if (!active) return;
+      setSummary(nextSummary);
+      setRows(result.data);
+      setMeta(result.meta);
+    }).catch((reason: unknown) => {
+      if (active) setError(getErrorMessage(reason, 'Unable to load attendance monitoring.'));
+    }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [date, limit, page, search, status]);
 
-  const summary = useMemo(() => {
-    const dateRecords = records.filter((record) => record.date === date)
-    return { active: new Set(records.map((record) => record.applicantId)).size, present: dateRecords.filter((record) => record.status === 'Present').length, absent: dateRecords.filter((record) => record.status === 'Absent').length, incomplete: dateRecords.filter((record) => record.status === 'Incomplete').length }
-  }, [records, date])
-  const filtered = useMemo(() => records.filter((record) => {
-    const query = search.trim().toLowerCase()
-    return (!query || `${record.studentName} ${record.role}`.toLowerCase().includes(query)) && (status === 'All' || record.status === status) && record.date === date
-  }), [records, search, status, date])
-  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
-  const displayed = filtered.slice((page - 1) * perPage, page * perPage)
-  const resetPage = () => setPage(1)
-
-  if (loading) return <main className={styles.loading}>Loading attendance records...</main>
+  const resetPage = () => setPage(1);
+  const beginReload = () => { setLoading(true); setError(''); };
 
   return <main className={styles.pageContainer}>
-    <EmployerHero title="Monitor Attendance" subtitle="Monitor attendance of your active interns" comfortableSpacing />
+    <EmployerHero title="Monitor Attendance" subtitle="Review scheduled interns for a selected date" comfortableSpacing />
     <section className={styles.mainContent}>
-      <div className={styles.summaryGrid}>
-        <SummaryCard label="Total Active Interns" value={summary.active} /><SummaryCard label="Present" value={summary.present} /><SummaryCard label="Absent" value={summary.absent} /><SummaryCard label="Incomplete" value={summary.incomplete} />
+      <div className={`${styles.summaryGrid} ${styles.threeCards}`}>
+        <SummaryCard label="Ongoing Interns" value={summary.ongoingInterns} />
+        <SummaryCard label="Present Interns" value={summary.presentInterns} />
+        <SummaryCard label="Absent Interns" value={summary.absentInterns} />
       </div>
       <div className={styles.toolbar}>
-        <label className={styles.searchBox}><Search size={16} /><span className={styles.srOnly}>Search attendance records</span><input value={search} onChange={(event) => { setSearch(event.target.value); resetPage() }} placeholder="Search intern or role..." /></label>
-        <label className={styles.statusFilter}><SlidersHorizontal size={16} /><span className={styles.srOnly}>Filter by status</span><select value={status} onChange={(event) => { setStatus(event.target.value); resetPage() }}><option value="All">All Statuses</option><option value="Present">Present</option><option value="Absent">Absent</option><option value="Incomplete">Incomplete</option></select></label>
-        <label className={styles.dateFilter}><CalendarDays size={16} /><span className={styles.srOnly}>Filter by date</span><input type="date" value={date} max={todayDateOnly()} onChange={(event) => { setDate(event.target.value); resetPage() }} /></label>
+        <label className={styles.searchBox}><Search size={16} /><span className={styles.srOnly}>Search attendance</span><input value={search} onChange={(event) => { beginReload(); setSearch(event.target.value); resetPage(); }} placeholder="Search intern or job title..." /></label>
+        <label className={styles.statusFilter}><SlidersHorizontal size={16} /><span className={styles.srOnly}>Filter by status</span><select value={status} onChange={(event) => { beginReload(); setStatus(event.target.value); resetPage(); }}><option value="">All</option><option value="pending">Pending</option><option value="present">Present</option><option value="absent">Absent</option><option value="incomplete">Incomplete</option></select></label>
+        <label className={styles.dateFilter}><CalendarDays size={16} /><span className={styles.srOnly}>Selected date</span><input type="date" value={date} max={todayDateOnly()} onChange={(event) => { beginReload(); setDate(event.target.value); resetPage(); }} /></label>
       </div>
-      <div className={styles.tableCard}><div className={styles.tableScroller}><table className={styles.table}><thead><tr><th>Student Name</th><th>Job Title</th><th>Date</th><th>Status</th><th>Action</th></tr></thead><tbody>{displayed.map((record) => <tr key={record.id}><td><strong>{record.studentName}</strong></td><td>{record.role}</td><td>{record.date}</td><td><span className={`${styles.statusPill} ${styles[record.status.toLowerCase()]}`}>{record.status}</span></td><td><button className={styles.actionBtn} onClick={() => navigate(`/employer/attendance/${record.applicantId}`)}><Eye size={14} />View</button></td></tr>)}</tbody></table></div>{displayed.length === 0 && <p className={styles.noData}>No attendance records match the selected filters.</p>}</div>
-      <div className={styles.paginationRow}><div className={styles.leftControls}><span>View</span><div className={styles.viewSelectBox}><select value={perPage} onChange={(event) => { setPerPage(Number(event.target.value)); resetPage() }}>{pageSizes.map((size) => <option key={size}>{size}</option>)}</select></div><span>Students per page</span></div><div className={styles.pagination}><button disabled={page === 1} onClick={() => setPage(page - 1)}><ChevronLeft size={18} /></button>{Array.from({ length: totalPages }, (_, index) => index + 1).map((item) => <button key={item} className={item === page ? styles.active : ''} onClick={() => setPage(item)}>{item}</button>)}<button disabled={page === totalPages} onClick={() => setPage(page + 1)}><ChevronRight size={18} /></button></div></div>
+      <div className={styles.tableCard}><div className={styles.tableScroller}><table className={styles.table}><thead><tr>{ATTENDANCE_MONITOR_COLUMNS.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{rows.map((row) => <tr key={row.internshipAssignmentId}><td><strong>{row.studentFullName}</strong></td><td>{row.jobTitle}</td><td>{row.strandProgram || 'N/A'}</td><td><span className={`${styles.statusPill} ${styles[row.status] ?? ''}`}>{attendanceStatusLabel(row.status)}</span></td><td><button type="button" className={styles.actionBtn} onClick={() => navigate(`/employer/attendance/${row.internshipAssignmentId}`)}><Eye size={14} />View</button></td></tr>)}</tbody></table></div>{loading && <p className={styles.noData}>Loading attendance...</p>}{error && <p className={styles.noData} role="alert">{error}</p>}{!loading && !error && rows.length === 0 && <p className={styles.noData}>No interns match the selected date and status.</p>}</div>
+      <div className={styles.paginationRow}><div className={styles.leftControls}><span>View</span><div className={styles.viewSelectBox}><select value={limit} onChange={(event) => { beginReload(); setLimit(Number(event.target.value)); resetPage(); }}>{COMPANY_PAGE_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</select></div><span>Students per page</span></div><div className={styles.pagination}><button type="button" aria-label="Previous page" disabled={page <= 1} onClick={() => { beginReload(); setPage((current) => current - 1); }}><ChevronLeft size={18} /></button><button type="button" className={styles.active}>{page}</button><button type="button" aria-label="Next page" disabled={page >= Math.max(meta.totalPages, 1)} onClick={() => { beginReload(); setPage((current) => current + 1); }}><ChevronRight size={18} /></button></div></div>
     </section>
-  </main>
+  </main>;
 }
 
-function SummaryCard({ label, value }: { label: string; value: number }) { return <article className={styles.summaryCard}><h2>{label}</h2><p>{String(value).padStart(2, '0')}</p></article> }
+function SummaryCard({ label, value }: { label: string; value: number }) {
+  return <article className={styles.summaryCard}><h2>{label}</h2><p>{String(value).padStart(2, '0')}</p></article>;
+}
 
-export default AttendanceMonitoringPage
+export default AttendanceMonitoringPage;

@@ -1,23 +1,19 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import type { DataSource } from 'typeorm';
-import { EmployerAttendanceService } from './employer-attendance.service';
 import type { EmployerCompanyResolver } from './company-resolver.service';
+import {
+  EmployerAttendanceService,
+  HISTORICAL_ONGOING_ASSIGNMENT_PREDICATE,
+} from './employer-attendance.service';
 import { currentManilaDate, isScheduledWorkday } from '../utils/time.utils';
 
-function attendanceRow(
-  overrides: Record<string, unknown> = {},
-): Record<string, unknown> {
+function monitoringRow(overrides: Record<string, unknown> = {}) {
   return {
     internship_assignment_id: 1,
-    start_date: '2025-01-01',
-    assignment_status: 'ongoing',
-    actual_terminal_date: null,
-    expected_end_date: null,
-    working_days: 'weekdays',
-    start_shift: '08:00:00',
-    end_shift: '17:00:00',
+    working_days: [1, 2, 3, 4, 5],
     student_id: 1,
     student_full_name: 'Test Student',
+    strand_program: 'BS Information Technology',
     job_title: 'Developer',
     attendance_record_id: 11,
     time_in: '08:00:00',
@@ -28,218 +24,211 @@ function attendanceRow(
   };
 }
 
-function attendanceServiceWithRows(rows: Array<Record<string, unknown>>) {
-  const query = jest.fn().mockResolvedValue(rows);
-  const dataSource = { query } as unknown as DataSource;
-  const resolver = {
-    resolve: jest.fn().mockResolvedValue({ companyId: 9, userAccountId: 99 }),
-  } as unknown as EmployerCompanyResolver;
-  return {
-    service: new EmployerAttendanceService(dataSource, resolver),
-    query,
-  };
-}
+const resolver = {
+  resolve: jest.fn().mockResolvedValue({ companyId: 9, userAccountId: 99 }),
+} as unknown as EmployerCompanyResolver;
 
-describe('EmployerAttendanceService', () => {
-  it('classifies persisted Present and missing scheduled past rows exclusively', async () => {
-    const { service } = attendanceServiceWithRows([
-      attendanceRow({
-        internship_assignment_id: 1,
-        assignment_status: 'completed',
-        actual_terminal_date: '2026-08-20',
-        student_full_name: 'Present Student',
-      }),
-      attendanceRow({
+describe('EmployerAttendanceService Phase 4 monitoring', () => {
+  it('derives Pending and counts only Present/Absent in their summary cards', async () => {
+    const rows = [
+      monitoringRow(),
+      monitoringRow({
         internship_assignment_id: 2,
-        assignment_status: 'cancelled',
-        actual_terminal_date: '2026-08-20',
         student_id: 2,
-        student_full_name: 'Second Present Student',
-        job_title: 'Designer',
         attendance_record_id: 12,
-        time_in: '08:11:00',
-      }),
-      attendanceRow({
-        internship_assignment_id: 3,
-        assignment_status: 'withdrawn',
-        actual_terminal_date: '2026-08-20',
-        student_id: 3,
-        student_full_name: 'Absent Student',
-        job_title: 'Analyst',
-        attendance_record_id: null,
+        attendance_status: 'absent',
         time_in: null,
         time_out: null,
+        rendered_minutes: 0,
       }),
-    ]);
+      monitoringRow({
+        internship_assignment_id: 3,
+        student_id: 3,
+        attendance_record_id: 13,
+        attendance_status: 'incomplete',
+        time_out: null,
+        rendered_minutes: 0,
+      }),
+      monitoringRow({
+        internship_assignment_id: 4,
+        student_id: 4,
+        attendance_record_id: null,
+        attendance_status: null,
+        time_in: null,
+        time_out: null,
+        rendered_minutes: null,
+      }),
+    ];
+    const dataSource = {
+      query: jest.fn().mockResolvedValue(rows),
+    } as unknown as DataSource;
+    const service = new EmployerAttendanceService(dataSource, resolver);
 
-    const result = await service.summary(99, { date: '2026-08-17' });
-
-    expect(result).toEqual({
-      totalActive: 3,
-      present: 2,
-      incomplete: 0,
-      absent: 1,
+    await expect(service.summary(99, { date: '2026-08-17' })).resolves.toEqual({
+      ongoingInterns: 4,
+      presentInterns: 1,
+      absentInterns: 1,
     });
-    expect(result.totalActive).toBe(
-      result.present + result.incomplete + result.absent,
+    const pending = await service.list(99, {
+      date: '2026-08-17',
+      status: 'pending' as never,
+      page: 1,
+      limit: 5,
+    });
+    expect(pending.data).toEqual([
+      expect.objectContaining({
+        internshipAssignmentId: 4,
+        status: 'pending',
+      }),
+    ]);
+  });
+
+  it('uses status history, actual operational end, and Employer visibility in the reusable SQL predicate', async () => {
+    const query = jest.fn().mockResolvedValue([]);
+    const service = new EmployerAttendanceService(
+      { query } as unknown as DataSource,
+      resolver,
+    );
+
+    await service.list(99, { date: '2026-08-17', page: 1, limit: 5 });
+
+    const sql = String(query.mock.calls[0][0]);
+    expect(sql).toContain('internship_assignment_status_history');
+    expect(sql).toContain("new_assignment_status = 'ongoing'");
+    expect(sql).toContain('ia.ended_at');
+    expect(sql).toContain('ia.start_shift');
+    expect(sql).toContain('iav.employer_hidden_at IS NOT NULL');
+    expect(sql).not.toContain("ia.assignment_status = 'ongoing'");
+    expect(HISTORICAL_ONGOING_ASSIGNMENT_PREDICATE).not.toContain(
+      'expected_end_date',
     );
   });
 
-  it.each([
-    ['completed', '2025-01-15', '2025-01-13', true],
-    ['completed', '2025-01-15', '2025-01-16', false],
-    ['cancelled', '2025-01-15', '2025-01-13', true],
-    ['cancelled', '2025-01-15', '2025-01-16', false],
-    ['withdrawn', '2025-01-15', '2025-01-13', true],
-    ['withdrawn', '2025-01-15', '2025-01-16', false],
-    ['completed', '2025-01-15', '2025-01-15', true],
-    ['cancelled', '2025-01-15', '2025-01-15', true],
-    ['withdrawn', '2025-01-15', '2025-01-15', true],
-  ])(
-    'applies current %s assignment with terminal date %s correctly on %s',
-    async (assignmentStatus, terminalDate, selectedDate, included) => {
-      const { service } = attendanceServiceWithRows([
-        attendanceRow({
-          assignment_status: assignmentStatus,
-          actual_terminal_date: terminalDate,
-        }),
-      ]);
-      const result = await service.summary(99, { date: selectedDate });
-      expect(result.totalActive).toBe(included ? 1 : 0);
-    },
-  );
-
-  it('does not use expected_end_date as a historical terminal boundary', async () => {
-    const { service, query } = attendanceServiceWithRows([
-      attendanceRow({
-        assignment_status: 'ongoing',
-        expected_end_date: '2025-01-01',
-        actual_terminal_date: null,
-      }),
-    ]);
-    const result = await service.summary(99, { date: '2025-01-06' });
-    expect(result.totalActive).toBe(1);
-    expect(String(query.mock.calls[0][0])).not.toContain(
-      'COALESCE(ia.end_date, ia.expected_end_date)',
+  it('excludes interns not scheduled on the selected weekday', async () => {
+    const selectedDate = '2026-08-17';
+    const selectedWeekday = new Date(`${selectedDate}T00:00:00Z`).getUTCDay();
+    const otherDay = (selectedWeekday + 1) % 7;
+    const service = new EmployerAttendanceService(
+      {
+        query: jest.fn().mockResolvedValue([
+          monitoringRow({ working_days: [selectedWeekday] }),
+          monitoringRow({
+            internship_assignment_id: 2,
+            working_days: [otherDay],
+          }),
+        ]),
+      } as unknown as DataSource,
+      resolver,
     );
+
+    const result = await service.list(99, {
+      date: selectedDate,
+      page: 1,
+      limit: 5,
+    });
+    expect(result.meta.total).toBe(1);
   });
 
-  it('requires current ongoing status for the current Manila date', async () => {
-    const today = currentManilaDate();
-    const workingDays = isScheduledWorkday(today, 'weekdays')
-      ? 'weekdays'
-      : 'weekends';
-    const { service } = attendanceServiceWithRows([
-      attendanceRow({
-        start_date: today,
-        assignment_status: 'completed',
-        actual_terminal_date: today,
-        working_days: workingDays,
-      }),
-      attendanceRow({
-        internship_assignment_id: 2,
-        student_id: 2,
-        start_date: today,
-        assignment_status: 'ongoing',
-        working_days: workingDays,
-      }),
-    ]);
-    const result = await service.summary(99, { date: today });
-    expect(result.totalActive).toBe(1);
-  });
-
-  it('returns no future-date attendance or absences', async () => {
-    const dataSource = { query: jest.fn() } as unknown as DataSource;
-    const resolver = {
+  it('returns no future monitoring result and never resolves the Company', async () => {
+    const future = '2099-01-01';
+    const localResolver = {
       resolve: jest.fn(),
     } as unknown as EmployerCompanyResolver;
-    const service = new EmployerAttendanceService(dataSource, resolver);
-    const result = await service.summary(1, { date: '2099-01-01' });
-    expect(result).toEqual({
-      totalActive: 0,
-      present: 0,
-      incomplete: 0,
-      absent: 0,
+    const service = new EmployerAttendanceService(
+      { query: jest.fn() } as unknown as DataSource,
+      localResolver,
+    );
+
+    await expect(service.summary(1, { date: future })).resolves.toEqual({
+      ongoingInterns: 0,
+      presentInterns: 0,
+      absentInterns: 0,
     });
-    expect(resolver.resolve).not.toHaveBeenCalled();
+    expect(localResolver.resolve).not.toHaveBeenCalled();
   });
 
-  it('does not stop virtual absence history at expected_end_date', async () => {
+  it('supports current-day exact weekday arrays', () => {
+    const today = currentManilaDate();
+    const weekday = new Date(`${today}T00:00:00Z`).getUTCDay();
+    expect(isScheduledWorkday(today, [weekday])).toBe(true);
+  });
+});
+
+describe('EmployerAttendanceService Phase 4 history', () => {
+  it('returns only persisted records, assignment-wide cards, filters, and backend pagination', async () => {
     const query = jest
       .fn()
       .mockResolvedValueOnce([
         {
           internship_assignment_id: 1,
-          start_date: new Date('2026-08-16T16:00:00.000Z'),
-          expected_end_date: new Date('2026-08-17T16:00:00.000Z'),
-          end_date: null,
-          assignment_status: 'ongoing',
-          actual_terminal_date: null,
-          working_days: 'weekdays',
-          start_shift: '08:00:00',
-          end_shift: '17:00:00',
-          required_hours: 400,
+          required_minutes: 600,
+          assignment_status: 'finalized',
           student_id: 1,
           student_full_name: 'History Student',
+          strand_program: 'STEM',
           job_title: 'Developer',
+          company_name: 'Test Company',
         },
       ])
-      .mockResolvedValueOnce([]);
-    const dataSource = { query } as unknown as DataSource;
-    const resolver = {
-      resolve: jest.fn().mockResolvedValue({ companyId: 9, userAccountId: 99 }),
-    } as unknown as EmployerCompanyResolver;
-    const service = new EmployerAttendanceService(dataSource, resolver);
-
-    const result = await service.history(99, 1);
-
-    expect(result.history).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ date: '2026-08-19', timeIn: null }),
-      ]),
-    );
-    expect(String(query.mock.calls[0][0])).toContain(
-      "AT TIME ZONE 'Asia/Manila'",
-    );
-    expect(String(query.mock.calls[0][0])).toContain(
-      'ia.start_date::text AS start_date',
-    );
-  });
-
-  it('normalizes native Date terminal bounds and includes the terminal workday', async () => {
-    const query = jest
-      .fn()
       .mockResolvedValueOnce([
         {
-          internship_assignment_id: 1,
-          start_date: new Date('2026-08-16T16:00:00.000Z'),
-          assignment_status: 'cancelled',
-          actual_terminal_date: new Date('2026-08-19T16:00:00.000Z'),
-          working_days: 'weekdays',
-          start_shift: '08:00:00',
-          end_shift: '17:00:00',
-          required_hours: 400,
-          student_id: 1,
-          student_full_name: 'History Student',
-          job_title: 'Developer',
+          attendance_record_id: 1,
+          attendance_date: '2026-08-17',
+          time_in: '08:00:00',
+          time_out: '17:00:00',
+          rendered_minutes: 480,
+          attendance_status: 'present',
         },
-      ])
-      .mockResolvedValueOnce([]);
-    const dataSource = { query } as unknown as DataSource;
-    const resolver = {
-      resolve: jest.fn().mockResolvedValue({ companyId: 9, userAccountId: 99 }),
-    } as unknown as EmployerCompanyResolver;
-    const service = new EmployerAttendanceService(dataSource, resolver);
-
-    const result = await service.history(99, 1);
-
-    expect(result.history).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ date: '2026-08-20', timeIn: null }),
-      ]),
+        {
+          attendance_record_id: 2,
+          attendance_date: '2026-08-18',
+          time_in: null,
+          time_out: null,
+          rendered_minutes: 0,
+          attendance_status: 'absent',
+        },
+        {
+          attendance_record_id: 3,
+          attendance_date: '2026-08-19',
+          time_in: '08:00:00',
+          time_out: null,
+          rendered_minutes: 0,
+          attendance_status: 'incomplete',
+        },
+      ]);
+    const service = new EmployerAttendanceService(
+      { query } as unknown as DataSource,
+      resolver,
     );
-    expect(result.history).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ date: '2026-08-21' })]),
+
+    const result = await service.history(99, 1, {
+      status: 'absent' as never,
+      page: 1,
+      limit: 5,
+    });
+
+    expect(result.header).toEqual(
+      expect.objectContaining({
+        jobTitle: 'Developer',
+        companyName: 'Test Company',
+        assignmentStatus: 'finalized',
+      }),
     );
+    expect(result.summary).toEqual({
+      daysPresent: 1,
+      daysAbsent: 1,
+      renderedMinutes: 480,
+      remainingMinutes: 120,
+    });
+    expect(result.history.data).toEqual([
+      expect.objectContaining({ attendanceStatus: 'absent' }),
+    ]);
+    expect(result.history.meta).toEqual(
+      expect.objectContaining({ page: 1, limit: 5, total: 1 }),
+    );
+    const sql = query.mock.calls.map(([value]) => String(value)).join('\n');
+    expect(sql).not.toContain('internship_feedback');
+    expect(sql).not.toMatch(/INSERT|UPDATE public\.attendance_record/);
+    expect(sql).toContain('iav.employer_hidden_at IS NOT NULL');
   });
 });

@@ -6,6 +6,7 @@ import type {
   EmployerReferralListItemDto,
   EmployerAttendanceItemDto,
   EmployerInternshipListItemDto,
+  EmployerInternshipDetailDto,
 } from '../../../types/api';
 import type {
   EmployerDashboardSummary,
@@ -21,29 +22,6 @@ import {
   referralDisplayStatus,
   referralHistoryStatus,
 } from '../../workflow/status-mappings';
-
-type EmployerInternshipDetailDto = {
-  intern: {
-    studentFullName: string;
-    jobTitle: string;
-    requiredHours: number;
-  };
-  assignment: {
-    internshipAssignmentId: number;
-    companyName: string;
-    jobTitle: string;
-    workingDays: number[];
-    requiredHours: number;
-    startDate: unknown;
-    expectedEndDate: unknown;
-    startShift: string;
-    endShift: string;
-  };
-  status: {
-    assignmentStatus: string;
-    renderedHours: number;
-  };
-};
 
 export function adaptEmployerDashboardSummary(
   m: EmployerDashboardMetricsDto,
@@ -226,7 +204,7 @@ export function adaptEmployerInternship(
     shiftEndTime: String(assignment?.endShift ?? '17:00').slice(0, 5),
     status: statusMap[assignmentStatus] || 'On Going',
     renderedHours: Number(
-      status?.renderedHours ?? (isDetail ? 0 : i.renderedHours),
+      intern?.renderedHours ?? (isDetail ? 0 : i.renderedHours),
     ),
   };
 }

@@ -78,6 +78,17 @@
   font-size: 14px;
 }
 
+.statusTag {
+  margin-left: auto;
+  padding: 7px 13px;
+  border-radius: 999px;
+  color: #160e6f;
+  background: #ebeaf5;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .hoursSummary {
   display: flex;
   align-items: center;
@@ -226,6 +237,40 @@
   cursor: pointer;
 }
 
+.readOnlyRemark {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 13px 15px;
+  border: 1px solid #cfd5e6;
+  border-radius: 7px;
+  color: #28314e;
+  background: #f8fafc;
+  font: inherit;
+  font-weight: 400;
+  resize: none;
+}
+
+.dayOptions {
+  display: flex;
+  min-height: 52px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 8px 12px;
+  border: 1px solid #cfd5e6;
+  border-radius: 7px;
+}
+
+.dayOptions label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.dayOptions input { width: auto; height: auto; }
+
 .footer {
   display: flex;
   justify-content: flex-end;
@@ -320,6 +365,63 @@
   color: #b42318;
   font-size: 0.85rem;
   font-weight: 600;
+}
+
+.modalBackdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, .58);
+}
+
+.modal {
+  width: min(540px, 100%);
+  padding: 24px;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, .24);
+}
+
+.modal h2 { margin: 0 0 18px; }
+
+.modalField {
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.modalField textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #cfd5e6;
+  border-radius: 7px;
+  color: #28314e;
+  font: inherit;
+  resize: vertical;
+}
+
+.modal .validationError { padding: 10px 0 0; }
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.modalActions button {
+  min-height: 43px;
+  padding: 0 18px;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 @media (max-width: 768px) {

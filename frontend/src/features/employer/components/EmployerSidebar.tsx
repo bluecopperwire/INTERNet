@@ -44,9 +44,9 @@ export function EmployerSidebar({ isOpen, onClose }: EmployerSidebarProps) {
   }
 
   const applicantsActive = location.pathname.startsWith('/employer/applicants') || location.pathname.startsWith('/employer/internship-assignments') || location.pathname.startsWith('/employer/referrals-history')
-  const internsActive = location.pathname.startsWith('/employer/attendance') || location.pathname.startsWith('/employer/manage-internship')
+  const internsActive = location.pathname.startsWith('/employer/attendance') || location.pathname.startsWith('/employer/manage-internship') || location.pathname.startsWith('/employer/internship-history')
   const showApplicantsGroup = matchesSearch('Referrals') || matchesSearch('Review Referrals') || matchesSearch('Create Internship Assignment') || matchesSearch('Referrals History')
-  const showInternsGroup = matchesSearch('Interns') || matchesSearch('Monitor Attendance') || matchesSearch('Manage Internship')
+  const showInternsGroup = matchesSearch('Interns') || matchesSearch('Monitor Attendance') || matchesSearch('Manage Internship') || matchesSearch('Internship History')
   const applicantsOpen = applicantsExpanded || Boolean(search.trim())
   const internsOpen = internsExpanded || Boolean(search.trim())
 
@@ -168,6 +168,7 @@ export function EmployerSidebar({ isOpen, onClose }: EmployerSidebarProps) {
               <div className={styles.subNav}>
                 {matchesSearch('Monitor Attendance') && <NavLink className={({ isActive }) => `${styles.subNavItem} ${isActive ? styles.active : ''}`} to="/employer/attendance" onClick={onClose} tabIndex={isOpen ? 0 : -1}><Clock size={17} /><span>Monitor Attendance</span></NavLink>}
                 {matchesSearch('Manage Internship') && <NavLink className={({ isActive }) => `${styles.subNavItem} ${isActive ? styles.active : ''}`} to="/employer/manage-internship" onClick={onClose} tabIndex={isOpen ? 0 : -1}><UserRoundCheck size={17} /><span>Manage Internship</span></NavLink>}
+                {matchesSearch('Internship History') && <NavLink className={({ isActive }) => `${styles.subNavItem} ${isActive ? styles.active : ''}`} to="/employer/internship-history" onClick={onClose} tabIndex={isOpen ? 0 : -1}><FileText size={17} /><span>Internship History</span></NavLink>}
               </div>
             )}
           </div>

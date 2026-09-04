@@ -3,7 +3,7 @@ import { ConflictException } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import type { DataSource, QueryRunner } from 'typeorm';
-import { CreateAssignmentDto } from '../dto';
+import { AssignmentRemarkDto, CreateAssignmentDto } from '../dto';
 import { EmployerInternshipService } from './employer-internship.service';
 import type { EmployerCompanyResolver } from './company-resolver.service';
 import { currentManilaDate } from '../utils/time.utils';
@@ -269,5 +269,206 @@ describe('EmployerInternshipService', () => {
     await expect(
       service.complete(50, 8, { remark: 'Strong performance.' }),
     ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('completes an eligible ongoing assignment with remark and operational end', async () => {
+    let assignmentStatus = 'ongoing';
+    const query = jest.fn(async (sql: string) => {
+      if (sql.includes('set_config')) return [];
+      if (sql.includes("SET assignment_status = 'complete_company'")) {
+        assignmentStatus = 'complete_company';
+        return [];
+      }
+      if (sql.includes('SELECT ia.*')) {
+        return [
+          {
+            internship_assignment_id: 8,
+            assignment_status: assignmentStatus,
+            required_minutes: 600,
+            working_days: [1, 2, 3, 4, 5],
+            start_date: '2026-08-01',
+            expected_end_date: null,
+            end_date: assignmentStatus === 'ongoing' ? null : '2026-09-04',
+            ended_at: assignmentStatus === 'ongoing' ? null : new Date(),
+            start_shift: '08:00:00',
+            end_shift: '17:00:00',
+            student_id: 1,
+            student_full_name: 'Eligible Student',
+            strand_program: 'STEM',
+            job_title: 'Developer',
+            company_name: 'Test Company',
+            company_completion_remark: 'Excellent work.',
+          },
+        ];
+      }
+      if (sql.includes('attendance_record')) {
+        return [{ internship_assignment_id: 8, rendered_minutes: 600 }];
+      }
+      return [];
+    });
+    const runner = {
+      isTransactionActive: true,
+      query,
+      connect: jest.fn(),
+      startTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      rollbackTransaction: jest.fn(),
+      release: jest.fn(),
+    } as unknown as QueryRunner;
+    const service = new EmployerInternshipService(
+      {
+        query,
+        createQueryRunner: jest.fn(() => runner),
+      } as unknown as DataSource,
+      resolver,
+    );
+
+    const result = await service.complete(50, 8, {
+      remark: '  Excellent work.  ',
+    });
+
+    expect(result.status.assignmentStatus).toBe('complete_company');
+    expect(query).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /assignment_status = 'complete_company'[\s\S]*company_completion_remark = \$2[\s\S]*ended_at = CURRENT_TIMESTAMP[\s\S]*end_date/,
+      ),
+      [8, 'Excellent work.'],
+    );
+  });
+
+  it('cancels only through the scoped lifecycle update and preserves the reason', async () => {
+    const { dataSource, query } = makeTransactionDataSource({
+      internship_assignment_id: 8,
+      assignment_status: 'ongoing',
+      required_minutes: 600,
+      working_days: [1, 2, 3, 4, 5],
+      start_date: '2026-08-01',
+      expected_end_date: null,
+      end_date: null,
+      ended_at: null,
+      start_shift: '08:00:00',
+      end_shift: '17:00:00',
+      student_id: 1,
+      student_full_name: 'Cancelled Student',
+      strand_program: 'STEM',
+      job_title: 'Developer',
+      company_name: 'Test Company',
+    });
+    const service = new EmployerInternshipService(dataSource, resolver);
+
+    await service.cancel(50, 8, { remark: '  Placement ended early.  ' });
+
+    expect(query).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /assignment_status = 'cancelled'[\s\S]*company_cancellation_remark = \$2[\s\S]*ended_at = CURRENT_TIMESTAMP[\s\S]*end_date/,
+      ),
+      [8, 'Placement ended early.'],
+    );
+  });
+
+  it('rejects blank and whitespace-only Company transition remarks', async () => {
+    for (const remark of ['', '   ']) {
+      const dto = plainToInstance(AssignmentRemarkDto, { remark });
+      expect((await validate(dto)).map((error) => error.property)).toContain(
+        'remark',
+      );
+    }
+  });
+
+  it('calculates mutually exclusive Manage Internship summary cards', async () => {
+    const assignments = [
+      {
+        internship_assignment_id: 1,
+        assignment_status: 'pending',
+        required_minutes: 600,
+        student_id: 1,
+        student_full_name: 'Pending Student',
+        strand_program: 'STEM',
+        job_title: 'Developer',
+      },
+      {
+        internship_assignment_id: 2,
+        assignment_status: 'ongoing',
+        required_minutes: 600,
+        student_id: 2,
+        student_full_name: 'Ongoing Student',
+        strand_program: 'ABM',
+        job_title: 'Designer',
+      },
+      {
+        internship_assignment_id: 3,
+        assignment_status: 'ongoing',
+        required_minutes: 600,
+        student_id: 3,
+        student_full_name: 'Awaiting Student',
+        strand_program: 'ICT',
+        job_title: 'Analyst',
+      },
+    ];
+    const query = jest.fn(async (sql: string) => {
+      if (sql.includes('SELECT ia.*')) return assignments;
+      if (sql.includes('attendance_record')) {
+        return [
+          { internship_assignment_id: 2, rendered_minutes: 300 },
+          { internship_assignment_id: 3, rendered_minutes: 600 },
+        ];
+      }
+      return [];
+    });
+    const service = new EmployerInternshipService(
+      { query } as unknown as DataSource,
+      resolver,
+    );
+
+    await expect(service.summary(50)).resolves.toEqual({
+      activeInternships: 3,
+      pendingInternships: 1,
+      ongoingInternships: 1,
+      awaitingCompletion: 1,
+    });
+    expect(String(query.mock.calls[0][0])).toContain(
+      "ia.assignment_status IN ('pending', 'ongoing')",
+    );
+  });
+
+  it('keeps all seven visible statuses in Company history and omits Student review fields', async () => {
+    const statuses = [
+      'pending',
+      'ongoing',
+      'complete_company',
+      'complete_student',
+      'withdrawn',
+      'cancelled',
+      'finalized',
+    ];
+    const assignments = statuses.map((assignment_status, index) => ({
+      internship_assignment_id: index + 1,
+      assignment_status,
+      required_minutes: 600,
+      student_id: index + 1,
+      student_full_name: `Student ${index + 1}`,
+      strand_program: 'STEM',
+      job_title: 'Developer',
+    }));
+    const query = jest.fn(async (sql: string) => {
+      if (sql.includes('SELECT ia.*')) return assignments;
+      return [];
+    });
+    const service = new EmployerInternshipService(
+      { query } as unknown as DataSource,
+      resolver,
+    );
+
+    await expect(service.historySummary(50)).resolves.toEqual({
+      totalInternships: 7,
+      activeInternships: 2,
+      closedInternships: 5,
+    });
+    const result = await service.history(50, { page: 1, limit: 10 });
+    expect(result.data.map((row) => row.assignmentStatus)).toEqual(statuses);
+    const sql = query.mock.calls.map(([value]) => String(value)).join('\n');
+    expect(sql).toContain('iav.employer_hidden_at IS NOT NULL');
+    expect(sql).not.toContain('internship_feedback');
+    expect(sql).not.toContain('review_rating');
   });
 });
