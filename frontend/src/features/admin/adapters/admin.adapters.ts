@@ -12,6 +12,7 @@ import type {
 } from '../types/admin.types';
 import { publicUploadUrl } from '../../../utils/public-upload-url';
 import { toDateOnly } from '../../../utils/date-only';
+import { normalizeAvailabilityDays } from '../../../utils/availability-days';
 
 export function adaptAdminDashboardSummary(
   studentMetrics: AdminMetricsDto,
@@ -81,7 +82,7 @@ export function adaptAdminStudentItem(dto: AdminStudentListItemDto): StudentReco
     flexibleAssignment: Boolean(data.allowsOutsidePreferredField),
     preferredIndustries: preferred.map((item: any) => item.customIndustryName ? 'Other' : item.industryName),
     otherPreferredField: custom?.customIndustryName || '',
-    scheduleAvailability: [scheduleToUi(data.availableDays)],
+    scheduleAvailability: normalizeAvailabilityDays(data.availableDays),
     startDate: toDateOnly(data.startDate) || 'N/A',
     hostOrgType: data.preferredCompanyType === 'government' ? 'Government' : 'Private',
   };
@@ -188,12 +189,4 @@ function yearLevelToUi(value?: string): string {
   return value ? labels[value] || value : 'N/A';
 }
 
-function scheduleToUi(value?: string): string {
-  const labels: Record<string, string> = {
-    weekdays: 'Weekdays',
-    weekends: 'Weekends',
-    flexible: 'Flexible',
-  };
-  return value ? labels[value] || value : 'Weekdays';
-}
 import { formatTableDate } from '../../../utils/date-only'

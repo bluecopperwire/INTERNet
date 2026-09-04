@@ -76,7 +76,7 @@ export class AdminFixtureFactory {
       await manager.query(
         `INSERT INTO public.internship_preference
           (student_id, required_hours, available_days, allows_outside_preferred_field, start_date, preferred_company_type)
-         VALUES ($1,400,'weekdays',true,CURRENT_DATE,'private')`,
+         VALUES ($1,400,ARRAY[1, 2, 3, 4, 5]::smallint[],true,CURRENT_DATE,'private')`,
         [studentId],
       );
       await manager.query(

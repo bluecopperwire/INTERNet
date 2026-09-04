@@ -226,6 +226,37 @@
   gap: 12px 24px;
 }
 
+.dayOptions {
+  display: flex;
+  box-sizing: border-box;
+  min-height: 44px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  padding: 8px 12px;
+  border: 1px solid #cbd1e5;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.dayOptions label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #263554;
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.dayOptions input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: #160e6f;
+  cursor: pointer;
+}
+
 .industriesGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

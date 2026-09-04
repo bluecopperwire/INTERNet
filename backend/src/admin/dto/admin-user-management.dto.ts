@@ -1,5 +1,7 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayNotEmpty,
+  ArrayUnique,
   IsArray,
   IsBoolean,
   IsDateString,
@@ -18,7 +20,6 @@ import {
 } from 'class-validator';
 import { AccountStatus } from '../../users/entities/account.entities';
 import { CompanyType } from '../../common/enums/company-type.enum';
-import { WorkSchedule } from '../../common/enums/work-schedule.enum';
 import { NullableTrim, Trim } from '../../employer/dto/common.dto';
 
 export enum AdminStudentYearLevel {
@@ -93,7 +94,14 @@ export class UpdateAdminStudentDto {
   @IsOptional() @Trim() @IsString() @IsNotEmpty() strandProgram?: string;
 
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) requiredHours?: number;
-  @IsOptional() @IsEnum(WorkSchedule) availableDays?: WorkSchedule;
+  @IsOptional()
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayUnique()
+  @IsInt({ each: true })
+  @Min(0, { each: true })
+  @Max(6, { each: true })
+  availableDays?: number[];
   @IsOptional() @IsDateString({ strict: true }) startDate?: string;
   @IsOptional() @IsEnum(CompanyType) preferredCompanyType?: CompanyType;
   @IsOptional() @IsBoolean() allowsOutsidePreferredField?: boolean;

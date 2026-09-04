@@ -2,7 +2,6 @@ export type UserRole = 'student' | 'company' | 'peso_personnel' | 'admin';
 export type AccountStatus = 'active' | 'suspended' | 'archived';
 export type CompanyType = 'government' | 'private';
 export type WorkArrangement = 'onsite' | 'remote' | 'hybrid';
-export type WorkSchedule = 'weekdays' | 'weekends' | 'flexible';
 
 export type ApplicationStatus =
   | 'submitted'
@@ -102,6 +101,7 @@ export interface OpportunitySummaryDto {
   companyId: number;
   companyName: string;
   companyType: CompanyType;
+  companyDescription: string;
   companyLogoFilePath?: string | null;
   companyProfileUpdatedAt?: string;
   companyAddressCity: string;
@@ -157,7 +157,7 @@ export interface StudentProfileResponse {
     required_hours: number;
     allows_outside_preferred_field: boolean;
     preferred_company_type: string;
-    available_days: string;
+    available_days: number[];
     start_date: string;
   } | null;
   preferredIndustries: Array<{

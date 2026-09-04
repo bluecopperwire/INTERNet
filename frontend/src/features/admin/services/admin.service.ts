@@ -48,7 +48,7 @@ export const adminService = {
       yearLevel: mapYearLevel(updates.yearLevel),
       strandProgram: updates.programStrand,
       requiredHours: updates.requiredHours ? Number(updates.requiredHours) : undefined,
-      availableDays: updates.scheduleAvailability?.[0]?.toLowerCase(),
+      availableDays: updates.scheduleAvailability,
       startDate: updates.startDate,
       preferredCompanyType: updates.hostOrgType?.toLowerCase(),
       allowsOutsidePreferredField: updates.flexibleAssignment,

@@ -23,7 +23,6 @@ export const ApplyOpportunityModal: React.FC<ApplyOpportunityModalProps> = ({
   onSuccess,
 }) => {
   const navigate = useNavigate();
-  const [remark, setRemark] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { submitApplication } = useStudentStore();
   const toast = useToastStore();
@@ -107,7 +106,7 @@ export const ApplyOpportunityModal: React.FC<ApplyOpportunityModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      await submitApplication(Number(opportunity.id), remark.trim() || undefined);
+      await submitApplication(Number(opportunity.id));
       toast.success(
         `Application submitted for ${opportunity.position} at ${opportunity.companyName}!`,
       );
@@ -139,10 +138,6 @@ export const ApplyOpportunityModal: React.FC<ApplyOpportunityModalProps> = ({
         </button>
 
         <header className={styles.header}>
-          <div className={styles.badgeRow}>
-            <span className={styles.tag}>{opportunity.workSetup}</span>
-            {opportunity.isExclusive && <span className={styles.exclusiveTag}>PESO Exclusive</span>}
-          </div>
           <h2 id="apply-modal-title">{opportunity.position}</h2>
           <p className={styles.companyName}>
             <Building2 size={16} />
@@ -233,16 +228,6 @@ export const ApplyOpportunityModal: React.FC<ApplyOpportunityModalProps> = ({
                   <strong>4 / 4 Complete</strong>
                 </div>
               </div>
-
-              <label className={styles.field}>
-                <span>Cover Note / Remarks (Optional)</span>
-                <textarea
-                  rows={3}
-                  placeholder="Introduce yourself or highlight specific qualifications for this role..."
-                  value={remark}
-                  onChange={(e) => setRemark(e.target.value)}
-                />
-              </label>
 
               <div className={styles.modalActions}>
                 <button

@@ -6,6 +6,7 @@ import type {
   PesoDtrEntryDto,
 } from "../../../types/api";
 import { publicUploadUrl } from "../../../utils/public-upload-url";
+import { formatAvailabilityDays } from "../../../utils/availability-days";
 import type {
   QCPesoDashboardSummary,
   QCPesoReviewApplicant,
@@ -71,20 +72,8 @@ export function formatYearLevel(value?: string | null): string {
     .join(" ");
 }
 
-export function formatScheduleDays(value?: string | null): string {
-  if (!value) return "Weekdays";
-  const labels: Record<string, string> = {
-    weekdays: "Weekdays",
-    weekends: "Weekends",
-    flexible: "Flexible",
-  };
-  const key = value.toLowerCase().trim();
-  if (labels[key]) return labels[key];
-
-  return value
-    .split("_")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(" ");
+export function formatScheduleDays(value?: unknown): string {
+  return formatAvailabilityDays(value);
 }
 
 export function adaptPesoApplication(

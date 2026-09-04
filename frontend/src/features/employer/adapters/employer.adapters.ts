@@ -1,5 +1,6 @@
 import { publicUploadUrl } from '../../../utils/public-upload-url';
 import { formatTableDate, toDateOnly } from '../../../utils/date-only';
+import { formatAvailabilityDays } from '../../../utils/availability-days';
 import type {
   EmployerDashboardMetricsDto,
   EmployerOpportunityDto,
@@ -127,7 +128,7 @@ export function adaptEmployerReferral(
     school: student.schoolName || 'N/A',
     preferredField: 'N/A',
     requiredHours: Number(internshipPref.requiredHours || 0),
-    availabilityDays: internshipPref.availableDays || 'Weekdays',
+    availabilityDays: formatAvailabilityDays(internshipPref.availableDays),
     availabilityDate: toDateOnly(internshipPref.startDate) || 'N/A',
     profileImageUrl: publicUploadUrl(
       student.photoFilePath || r.photoFilePath,

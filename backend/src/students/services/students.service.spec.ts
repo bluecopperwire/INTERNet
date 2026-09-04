@@ -55,7 +55,7 @@ function applicationService(
       return [
         {
           required_hours: 400,
-          available_days: 'weekdays',
+          available_days: [1, 2, 3, 4, 5],
           start_date: '2099-01-01',
           preferred_company_type: 'private',
         },
@@ -196,8 +196,12 @@ describe('StudentsService application reapplication', () => {
 
       expect(transactionQuery).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO public.application'),
-        [7, 9, null],
+        [7, 9],
       );
+      const applicationInsert = transactionQuery.mock.calls.find(([sql]) =>
+        String(sql).includes('INSERT INTO public.application'),
+      );
+      expect(String(applicationInsert?.[0])).not.toContain('remark');
       expect(attempts).toEqual([previous]);
       expect(
         transactionQuery.mock.calls.some(([sql]) =>

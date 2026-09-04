@@ -767,12 +767,11 @@ export class StudentsService {
                 student_id,
                 opportunity_id,
                 application_status,
-                student_response,
-                remark
-              ) VALUES ($1, $2, 'submitted', 'pending', $3)
+                student_response
+              ) VALUES ($1, $2, 'submitted', 'pending')
               RETURNING *
             `,
-            [studentId, dto.opportunityId, dto.remark ?? null],
+            [studentId, dto.opportunityId],
           );
 
           return {
@@ -783,7 +782,6 @@ export class StudentsService {
             studentResponse: created.student_response,
             submittedAt: created.submitted_at,
             updatedAt: created.updated_at,
-            remark: created.remark,
           };
         },
       );

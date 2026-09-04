@@ -677,7 +677,7 @@ export class PesoDashboardService {
           UPDATE public.application
           SET 
             application_status = $1::application_status_enum,
-            remark = COALESCE($2, remark),
+            remark = $2,
             updated_at = CURRENT_TIMESTAMP
           WHERE application_id = $3
         `,

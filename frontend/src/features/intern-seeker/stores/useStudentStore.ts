@@ -35,7 +35,7 @@ interface StudentState {
     signal?: AbortSignal,
   ) => Promise<void>;
   fetchOpportunityById: (id: number) => Promise<InternshipOpportunity | null>;
-  submitApplication: (opportunityId: number, remark?: string) => Promise<void>;
+  submitApplication: (opportunityId: number) => Promise<void>;
 }
 
 export const useStudentStore = create<StudentState>((set) => ({
@@ -121,8 +121,8 @@ export const useStudentStore = create<StudentState>((set) => ({
           companyMap.set(opp.companyId, {
             id: opp.companyId,
             name: opp.companyName,
-            summary: `${opp.tags[0] || 'Company'} in ${opp.location}`,
-            description: opp.details.description || '',
+            industry: opp.companyIndustry,
+            about: opp.companyDescription,
             tags: opp.tags,
             logoUrl: opp.companyLogoUrl,
           });
@@ -155,16 +155,12 @@ export const useStudentStore = create<StudentState>((set) => ({
     }
   },
 
-  submitApplication: async (opportunityId: number, remark?: string) => {
+  submitApplication: async (opportunityId: number) => {
     const studentId = useAuthStore.getState().user?.studentId;
     if (!studentId) throw new Error('Student ID not found');
 
     try {
-      await studentApiService.submitApplication(
-        studentId,
-        opportunityId,
-        remark,
-      );
+      await studentApiService.submitApplication(studentId, opportunityId);
       // Mark card as applied locally
       set((state) => ({
         opportunities: state.opportunities.map((opp) =>

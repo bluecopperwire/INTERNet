@@ -284,23 +284,32 @@ async function main() {
         (SELECT count(*)::integer FROM public.application
          WHERE application_status = 'rejected_for_referral'
            AND (remark IS NULL OR btrim(remark) = '')) AS applications,
+        (SELECT count(*)::integer FROM public.application
+         WHERE application_status <> 'rejected_for_referral'
+           AND remark IS NOT NULL) AS non_rejection_application_remarks,
         (SELECT count(*)::integer FROM public.referral
          WHERE company_response = 'rejected'
            AND (remark IS NULL OR btrim(remark) = '')) AS referrals
     `);
-    assert.deepEqual(workflowRemarkGaps.rows[0], { applications: 0, referrals: 0 });
-    pass('legacy workflow rejection remarks are backfilled');
+    assert.deepEqual(workflowRemarkGaps.rows[0], {
+      applications: 0,
+      non_rejection_application_remarks: 0,
+      referrals: 0,
+    });
+    pass('application remarks are reserved for QC PESO rejections');
 
     const workflowConstraints = await client.query(`
       SELECT conname FROM pg_constraint
       WHERE convalidated AND conname IN (
         'ck_application_rejection_remark_required',
+        'ck_application_remark_rejection_only',
         'ck_referral_rejection_remark_required'
       )
       ORDER BY conname
     `);
     assert.deepEqual(workflowConstraints.rows.map((row) => row.conname), [
       'ck_application_rejection_remark_required',
+      'ck_application_remark_rejection_only',
       'ck_referral_rejection_remark_required',
     ]);
     pass('conditional workflow rejection-remark constraints are validated');
@@ -367,6 +376,9 @@ async function main() {
         (SELECT data_type FROM information_schema.columns
          WHERE table_schema = 'public' AND table_name = 'internship_assignment'
            AND column_name = 'working_days') AS working_days_type,
+        (SELECT data_type FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = 'internship_preference'
+           AND column_name = 'available_days') AS available_days_type,
         (SELECT is_nullable FROM information_schema.columns
          WHERE table_schema = 'public' AND table_name = 'internship_assignment_status_history'
            AND column_name = 'previous_assignment_status') AS initial_history_nullable,
@@ -377,6 +389,7 @@ async function main() {
       'withdrawn', 'cancelled', 'finalized',
     ]);
     assert.equal(assignmentFoundation.rows[0].working_days_type, 'ARRAY');
+    assert.equal(assignmentFoundation.rows[0].available_days_type, 'ARRAY');
     assert.equal(assignmentFoundation.rows[0].initial_history_nullable, 'YES');
     assert.equal(assignmentFoundation.rows[0].working_days_validator, true);
 

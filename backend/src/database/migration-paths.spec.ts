@@ -80,6 +80,8 @@ describe('Database migration paths and behavioral validation', () => {
       'AssignmentLifecycleFoundation1788566400000',
       'AttendanceStudentWorkflow1788652800000',
       'QcAssignmentVisibility1788739200000',
+      'StudentAvailabilityDays1788825600000',
+      'ApplicationRejectionRemarkOnly1788912000000',
     ]);
 
     // Validate redesigned columns
@@ -99,6 +101,28 @@ describe('Database migration paths and behavioral validation', () => {
         )
       `);
     expect(columns.length).toBe(4);
+
+    const [availabilitySchema] = await dataSource.query(`
+      SELECT
+        (SELECT data_type FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = 'internship_preference'
+           AND column_name = 'available_days') AS available_days_type,
+        (SELECT count(*)::int FROM pg_constraint
+         WHERE conname = 'ck_internship_preference_available_days') AS constraints,
+        to_regtype('public.work_schedule_enum') AS legacy_type
+    `);
+    expect(availabilitySchema).toEqual({
+      available_days_type: 'ARRAY',
+      constraints: 1,
+      legacy_type: null,
+    });
+
+    const [applicationRemarkSchema] = await dataSource.query(`
+      SELECT count(*)::int AS constraints
+      FROM pg_constraint
+      WHERE conname = 'ck_application_remark_rejection_only'
+    `);
+    expect(applicationRemarkSchema.constraints).toBe(1);
 
     // Validate views
     const views: Array<{ table_name: string }> = await dataSource.query(`
@@ -132,17 +156,8 @@ describe('Database migration paths and behavioral validation', () => {
     );
     expect(customIndustries).toEqual([{ industry_name: 'Other' }]);
 
-    await dataSource.undoLastMigration();
-    const qcVisibilityColumns = await dataSource.query(`
-      SELECT column_name FROM information_schema.columns
-      WHERE table_schema = 'public'
-        AND table_name = 'internship_assignment_visibility'
-        AND column_name LIKE 'qc_peso_hidden%'
-    `);
-    expect(qcVisibilityColumns).toEqual([]);
-
     await expect(dataSource.undoLastMigration()).rejects.toThrow(
-      /AttendanceStudentWorkflow1788652800000 is irreversible/,
+      /ApplicationRejectionRemarkOnly1788912000000 is irreversible/,
     );
     return;
 
@@ -289,6 +304,13 @@ describe('Database migration paths and behavioral validation', () => {
         ((SELECT user_account_id FROM public.user_account WHERE email = 'legacy-suspended@example.test'), 'Suspended', 'Student', 'Male', '2000-01-01', '09123456788', 'legacy-suspended@example.test', '456 Student St', 'Brgy 2', 'District 1', 'Quezon City', 'walk_in'),
         ((SELECT user_account_id FROM public.user_account WHERE email = 'legacy-archived@example.test'), 'Archived', 'Student', 'Male', '2000-01-01', '09123456787', 'legacy-archived@example.test', '456 Student St', 'Brgy 2', 'District 1', 'Quezon City', 'walk_in');
 
+      INSERT INTO public.internship_preference
+        (student_id, required_hours, available_days, allows_outside_preferred_field, start_date, preferred_company_type)
+      VALUES (
+        (SELECT student_id FROM public.student WHERE contact_email = 'legacy-active@example.test'),
+        400, 'weekends', true, '2099-01-01', 'private'
+      );
+
       INSERT INTO public.application (student_id, opportunity_id, application_status)
       VALUES (
         (SELECT student_id FROM public.student WHERE contact_email = 'legacy-active@example.test'),
@@ -412,7 +434,32 @@ describe('Database migration paths and behavioral validation', () => {
       'OpportunityLifecycleRules1788480000000',
       'AssignmentLifecycleFoundation1788566400000',
       'AttendanceStudentWorkflow1788652800000',
+      'QcAssignmentVisibility1788739200000',
+      'StudentAvailabilityDays1788825600000',
+      'ApplicationRejectionRemarkOnly1788912000000',
     ]);
+
+    const migratedPreference = await dataSource.query(`
+      SELECT available_days FROM public.internship_preference ip
+      JOIN public.student s USING (student_id)
+      WHERE s.contact_email = 'legacy-active@example.test'
+    `);
+    expect(migratedPreference).toEqual([{ available_days: [6, 0] }]);
+
+    const [applicationRemarkState] = await dataSource.query(`
+      SELECT
+        count(*) FILTER (
+          WHERE application_status <> 'rejected_for_referral'
+            AND remark IS NOT NULL
+        )::int AS invalid_remarks,
+        (SELECT count(*)::int FROM pg_constraint
+         WHERE conname = 'ck_application_remark_rejection_only') AS constraints
+      FROM public.application
+    `);
+    expect(applicationRemarkState).toEqual({
+      invalid_remarks: 0,
+      constraints: 1,
+    });
 
     await dataSource.query(`
       UPDATE public.opportunity

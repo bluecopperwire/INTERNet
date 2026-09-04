@@ -237,7 +237,7 @@ async function ensureStudent(
     `INSERT INTO public.internship_preference
        (student_id, required_hours, available_days,
         allows_outside_preferred_field, start_date, preferred_company_type)
-     VALUES ($1, 400, 'weekdays', true, CURRENT_DATE + 14, 'private')
+     VALUES ($1, 400, ARRAY[1, 2, 3, 4, 5]::smallint[], true, CURRENT_DATE + 14, 'private')
      ON CONFLICT (student_id) DO UPDATE SET
        required_hours = EXCLUDED.required_hours,
        available_days = EXCLUDED.available_days,
@@ -379,7 +379,7 @@ async function ensureCanonicalStudent(
     `INSERT INTO public.internship_preference
        (student_id, required_hours, available_days, allows_outside_preferred_field,
         start_date, preferred_company_type)
-     VALUES ($1, 400, 'weekdays', true, CURRENT_DATE + 14, 'private')
+     VALUES ($1, 400, ARRAY[1, 2, 3, 4, 5]::smallint[], true, CURRENT_DATE + 14, 'private')
      ON CONFLICT (student_id) DO UPDATE SET required_hours = EXCLUDED.required_hours,
        available_days = EXCLUDED.available_days,
        allows_outside_preferred_field = EXCLUDED.allows_outside_preferred_field,
@@ -629,9 +629,14 @@ async function transitionApplication(
   };
   for (const status of paths[desired]) {
     await runner.query(
-      `UPDATE public.application SET application_status = $2
+      `UPDATE public.application
+       SET application_status = $2,
+           remark = CASE
+             WHEN $2 = 'rejected_for_referral' THEN $3
+             ELSE NULL
+           END
         WHERE application_id = $1`,
-      [applicationId, status],
+      [applicationId, status, `${DEV_PREFIX}${status}`],
     );
   }
 }
@@ -697,9 +702,9 @@ async function ensureApplication(
   await setActor(runner, adminAccountId);
   const applicationId = await oneId(
     runner.manager,
-    `INSERT INTO public.application (student_id, opportunity_id, remark)
-     VALUES ($1, $2, $3) RETURNING application_id`,
-    [studentId, opportunityId, `${DEV_PREFIX}${desired}`],
+    `INSERT INTO public.application (student_id, opportunity_id)
+     VALUES ($1, $2) RETURNING application_id`,
+    [studentId, opportunityId],
     'application_id',
   );
   await transitionApplication(runner, applicationId, desired);

@@ -109,10 +109,9 @@ export const studentApiService = {
     return response.data;
   },
 
-  async submitApplication(studentId: number, opportunityId: number, remark?: string): Promise<any> {
+  async submitApplication(studentId: number, opportunityId: number): Promise<any> {
     const response = await api.post(`/students/${studentId}/applications`, {
       opportunityId,
-      remark,
     });
     return response.data;
   },

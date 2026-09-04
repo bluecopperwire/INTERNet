@@ -13,6 +13,7 @@ import { useInternshipPortal } from '../hooks/useInternshipPortal'
 import styles from './DashboardPage.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
 import { formatPreferredIndustries } from '../../../utils/preferred-industry-display'
+import { formatAvailabilityDays } from '../../../utils/availability-days'
 
 const displayValue = (value: string | number | null | undefined) =>
   value || 'Not provided'
@@ -182,7 +183,7 @@ export const DashboardPage: React.FC = () => {
             ],
             [
               'Internship Days Availability',
-              profile.preferences.schedule.join(', '),
+              formatAvailabilityDays(profile.preferences.schedule),
             ],
             [
               'Internship Start Date Availability',

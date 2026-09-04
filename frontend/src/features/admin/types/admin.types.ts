@@ -35,7 +35,7 @@ export interface StudentRecord extends BaseRecord {
   flexibleAssignment: boolean
   preferredIndustries: string[]
   otherPreferredField?: string
-  scheduleAvailability: string[]
+  scheduleAvailability: number[]
   startDate: string
   hostOrgType: string
 }

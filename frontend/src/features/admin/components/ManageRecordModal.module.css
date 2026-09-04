@@ -284,6 +284,31 @@
   border-color: #160e6f;
 }
 
+.dayOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 8px 12px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 6px;
+}
+
+.dayOptions label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #1e293b;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.dayOptions input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: #160e6f;
+}
+
 .modalFooter {
   padding: 16px 32px;
   background-color: #f8fafc;

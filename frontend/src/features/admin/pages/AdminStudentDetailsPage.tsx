@@ -7,6 +7,7 @@ import styles from './AdminStudentDetailsPage.module.css'
 import { formatPreferredIndustries } from '../../../utils/preferred-industry-display'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
+import { formatAvailabilityDays } from '../../../utils/availability-days'
 
 export function AdminStudentDetailsPage() {
   const { id } = useParams<{ id: string }>()
@@ -103,7 +104,7 @@ export function AdminStudentDetailsPage() {
             <InfoCard icon={<Building2 size={21} />} title="Internship Preferences">
               <Row label="Internship Required Hours" value={student.requiredHours} />
               <Row label="Preferred Host Organization Type" value={student.hostOrgType} />
-              <Row label="Internship Days Availability" value={student.scheduleAvailability.join(', ')} />
+              <Row label="Internship Days Availability" value={formatAvailabilityDays(student.scheduleAvailability)} />
               <Row label="Internship Start Date Availability" value={student.startDate} />
               <Row label="Preferred Field of Internship" value={formatPreferredIndustries(student.preferredIndustries, student.otherPreferredField)} />
               <Row label="Willing to Be Assigned Outside Preferred Field" value={student.flexibleAssignment ? 'Yes' : 'No'} />

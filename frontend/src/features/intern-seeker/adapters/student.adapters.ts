@@ -23,6 +23,7 @@ import type {
 } from '../types/attendance.types';
 import { formatTableDate, todayDateOnly, toDateOnly } from '../../../utils/date-only';
 import { formatWorkingDays, studentAssignmentStatus } from '../utils/internship-display';
+import { normalizeAvailabilityDays } from '../../../utils/availability-days';
 
 export function adaptOpportunity(dto: OpportunitySummaryDto): InternshipOpportunity {
   const workSetupMap: Record<string, 'On-site' | 'Remote' | 'Hybrid'> = {
@@ -38,6 +39,8 @@ export function adaptOpportunity(dto: OpportunitySummaryDto): InternshipOpportun
     companyId: String(dto.companyId),
     companyName: dto.companyName,
     companyLogoUrl: publicUploadUrl(dto.companyLogoFilePath, dto.companyProfileUpdatedAt),
+    companyIndustry: dto.industryName,
+    companyDescription: dto.companyDescription,
     position: dto.title,
     location: dto.companyAddressCity || 'Quezon City',
     workSetup: workSetupMap[dto.workArrangement] || 'On-site',
@@ -48,7 +51,6 @@ export function adaptOpportunity(dto: OpportunitySummaryDto): InternshipOpportun
     }),
     tags: [dto.industryName, workSetupMap[dto.workArrangement] || 'On-site'],
     isApplied: dto.hasApplied,
-    isExclusive: dto.companyType === 'government',
     details: {
       workplace: dto.companyAddressCity || 'Quezon City',
       department: dto.department,
@@ -92,24 +94,6 @@ const YEAR_LEVEL_MAP_TO_DTO: Record<string, string> = {
   fourth_year_college: 'fourth_year_college',
 };
 
-const SCHEDULE_MAP_TO_UI: Record<string, string> = {
-  weekdays: 'Weekdays',
-  weekends: 'Weekends',
-  flexible: 'Flexible',
-  Weekdays: 'Weekdays',
-  Weekends: 'Weekends',
-  Flexible: 'Flexible',
-};
-
-const SCHEDULE_MAP_TO_DTO: Record<string, string> = {
-  Weekdays: 'weekdays',
-  Weekends: 'weekends',
-  Flexible: 'flexible',
-  weekdays: 'weekdays',
-  weekends: 'weekends',
-  flexible: 'flexible',
-};
-
 const HOST_ORG_MAP_TO_UI: Record<string, string> = {
   government: 'Government',
   private: 'Private',
@@ -146,9 +130,6 @@ export function adaptStudentProfile(dto: StudentProfileResponse): UserProfile {
 
   const rawYear = ac?.year_level || '';
   const uiYear = YEAR_LEVEL_MAP_TO_UI[rawYear] || rawYear;
-
-  const rawSchedule = ip?.available_days || '';
-  const uiSchedule = rawSchedule ? SCHEDULE_MAP_TO_UI[rawSchedule] || rawSchedule : '';
 
   const rawHostOrg = ip?.preferred_company_type || '';
   const uiHostOrg = rawHostOrg ? HOST_ORG_MAP_TO_UI[rawHostOrg] || rawHostOrg : '';
@@ -196,7 +177,7 @@ export function adaptStudentProfile(dto: StudentProfileResponse): UserProfile {
         (p) => (p.custom_industry_name ? 'Other' : p.industry_name) || String(p.industry_id || ''),
       ),
       otherPreferredField: pi.find((p) => p.custom_industry_name)?.custom_industry_name || '',
-      schedule: uiSchedule ? [uiSchedule] : [],
+      schedule: normalizeAvailabilityDays(ip?.available_days),
       startDate: startDateStr,
       hostOrgType: uiHostOrg,
     },
@@ -212,7 +193,6 @@ export function adaptStudentProfileToUpdateDto(
   }> = [],
 ) {
   const normYear = YEAR_LEVEL_MAP_TO_DTO[profile.academic?.yearLevel || ''] || '';
-  const normSchedule = SCHEDULE_MAP_TO_DTO[profile.preferences?.schedule?.[0] || ''] || '';
   const normOrgType = HOST_ORG_MAP_TO_DTO[profile.preferences?.hostOrgType || ''] || '';
 
   const birthDateValue =
@@ -282,7 +262,7 @@ export function adaptStudentProfileToUpdateDto(
     },
     internshipPreference: {
       requiredHours: Number(profile.preferences?.requiredHours),
-      availableDays: normSchedule,
+      availableDays: normalizeAvailabilityDays(profile.preferences?.schedule),
       preferredCompanyType: normOrgType,
       startDate: startDateValue,
       allowsOutsidePreferredField: profile.preferences?.willingToAssignOutside ?? null,

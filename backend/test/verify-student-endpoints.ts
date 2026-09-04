@@ -138,7 +138,7 @@ async function runVerification() {
       },
       internshipPreference: {
         requiredHours: 486,
-        availableDays: 'weekdays',
+        availableDays: [1, 2, 3, 4, 5],
         preferredCompanyType: 'private',
         startDate: '2026-09-15',
         allowsOutsidePreferredField: true,
@@ -291,7 +291,6 @@ async function runVerification() {
     .set('Authorization', `Bearer ${studentToken}`)
     .send({
       opportunityId: 2,
-      remark: 'Applying for QA verification',
     });
   console.log('Status (Expect 201 or 400 if already exists):', tc9c.status);
   if (tc9c.status === 201) {
@@ -307,7 +306,6 @@ async function runVerification() {
     .set('Authorization', `Bearer ${studentToken}`)
     .send({
       opportunityId: 1, // Student 1 already has active application for Opportunity 1
-      remark: 'Duplicate attempt',
     });
   console.log('Status (Expect 400):', tc9d.status);
 

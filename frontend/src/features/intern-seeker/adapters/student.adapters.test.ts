@@ -93,7 +93,7 @@ describe("student profile adapters", () => {
       sex: "female",
       internshipPreference: {
         requiredHours: 0,
-        availableDays: "",
+        availableDays: [],
         preferredCompanyType: "",
         startDate: "",
         allowsOutsidePreferredField: null,
@@ -112,7 +112,7 @@ describe("student profile adapters", () => {
         required_hours: 400,
         allows_outside_preferred_field: true,
         preferred_company_type: "private",
-        available_days: "weekdays",
+        available_days: [1, 2, 3, 4, 5],
         start_date: "2098-12-31T16:00:00.000Z",
       },
     });
@@ -135,7 +135,7 @@ describe("student profile adapters", () => {
           required_hours: 400,
           allows_outside_preferred_field: true,
           preferred_company_type: "private",
-          available_days: "weekdays",
+          available_days: [1, 2, 3, 4, 5],
           start_date: firstSave.internshipPreference.startDate,
         },
       }),
@@ -156,7 +156,7 @@ describe("student profile adapters", () => {
           required_hours: 400,
           allows_outside_preferred_field: false,
           preferred_company_type: "private",
-          available_days: "weekends",
+          available_days: [0, 2, 4, 6],
           start_date: "2099-01-01",
         },
         preferredIndustries: [
@@ -188,7 +188,7 @@ describe("student profile adapters", () => {
       },
     ]);
     expect(payload.internshipPreference).toMatchObject({
-      availableDays: "weekends",
+      availableDays: [0, 2, 4, 6],
       preferredCompanyType: "private",
       allowsOutsidePreferredField: false,
     });
@@ -206,7 +206,7 @@ describe("student profile adapters", () => {
       willingToAssignOutside: true,
       preferredIndustries: ["Information Technology"],
       otherPreferredField: "Stale custom value",
-      schedule: ["Flexible"],
+      schedule: [0, 1, 2, 3, 4, 5, 6],
       startDate: "2099-01-01",
       hostOrgType: "Government",
     };

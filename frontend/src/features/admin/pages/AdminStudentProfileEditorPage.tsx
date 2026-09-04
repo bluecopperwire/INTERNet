@@ -7,6 +7,7 @@ import styles from '../../intern-seeker/pages/ProfileEditorPage.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
 import { birthdateMaximum, todayDateOnly } from '../../../utils/date-only'
+import { AVAILABILITY_DAYS } from '../../../utils/availability-days'
 
 const INDUSTRIES = [
   'Office Administration',
@@ -18,8 +19,6 @@ const INDUSTRIES = [
   'Human Resources',
   'Healthcare',
 ]
-
-const SCHEDULES = ['Weekdays', 'Weekends', 'Flexible']
 
 export function AdminStudentProfileEditorPage() {
   const { id } = useParams<{ id: string }>()
@@ -50,6 +49,17 @@ export function AdminStudentProfileEditorPage() {
         ? current.preferredIndustries.filter((item) => item !== industry)
         : [...current.preferredIndustries, industry]
       return { ...current, preferredIndustries }
+    })
+    setPreferenceError('')
+  }
+
+  const toggleAvailabilityDay = (day: number) => {
+    setFormData((current) => {
+      if (!current) return current
+      const scheduleAvailability = current.scheduleAvailability.includes(day)
+        ? current.scheduleAvailability.filter((item) => item !== day)
+        : [...current.scheduleAvailability, day].sort((a, b) => a - b)
+      return { ...current, scheduleAvailability }
     })
     setPreferenceError('')
   }
@@ -160,7 +170,7 @@ export function AdminStudentProfileEditorPage() {
                 <Field label="Preferred Host Organization Type" required><select required value={formData.hostOrgType} onChange={(event) => updateField('hostOrgType', event.target.value)}><option value="">Select organization type</option><option value="Government">Government</option><option value="Private">Private</option></select></Field>
               </div>
               <div className={`${styles.fieldGrid} ${styles.preferenceTopGrid}`}>
-                <fieldset className={styles.choiceField}><legend>Internship Days Availability <span>*</span></legend><div className={styles.radioGroup}>{SCHEDULES.map((schedule) => <label key={schedule}><input required type="radio" name="schedule" checked={formData.scheduleAvailability[0] === schedule} onChange={() => { updateField('scheduleAvailability', [schedule]); setPreferenceError('') }} />{schedule}</label>)}</div></fieldset>
+                <fieldset className={styles.choiceField}><legend>Internship Days Availability <span>*</span></legend><div className={styles.dayOptions}>{AVAILABILITY_DAYS.map((day, index) => <label key={day}><input type="checkbox" aria-label={day} checked={formData.scheduleAvailability.includes(index)} onChange={() => toggleAvailabilityDay(index)} />{day.slice(0, 3)}</label>)}</div></fieldset>
                 <Field label="Internship Start Date Availability" required><input required type="date" min={todayDateOnly()} title="The preferred internship start date cannot be in the past." value={formData.startDate} onChange={(event) => updateField('startDate', event.target.value)} /></Field>
               </div>
               <fieldset className={styles.choiceField}><legend>Preferred Field of Internship <span>*</span></legend><div className={styles.industriesGrid}>{INDUSTRIES.map((industry) => <label key={industry}><input type="checkbox" checked={formData.preferredIndustries.includes(industry)} onChange={() => toggleIndustry(industry)} />{industry}</label>)}<div className={styles.otherIndustry}><label><input type="checkbox" checked={formData.preferredIndustries.includes('Other')} onChange={() => toggleIndustry('Other')} />Other</label><input type="text" aria-label="Other preferred internship field" disabled={!formData.preferredIndustries.includes('Other')} value={formData.otherPreferredField ?? ''} placeholder="Please specify" onChange={(event) => { updateField('otherPreferredField', event.target.value); setPreferenceError('') }} /></div></div></fieldset>

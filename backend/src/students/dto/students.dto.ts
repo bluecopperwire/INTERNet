@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   ArrayNotEmpty,
+  ArrayUnique,
   IsArray,
   IsBoolean,
   IsDateString,
@@ -15,7 +16,6 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { YearLevel } from '../../common/enums/year-level.enum';
-import { WorkSchedule } from '../../common/enums/work-schedule.enum';
 import { CompanyType } from '../../common/enums/company-type.enum';
 import { InquiryMethod } from '../../common/enums/student-inquiry-method.enum';
 import { StudentResponse } from '../../common/enums/student-response.enum';
@@ -41,10 +41,13 @@ export class InternshipPreferenceDto {
   @Min(1)
   requiredHours!: number;
 
-  @IsEnum(WorkSchedule, {
-    message: `availableDays must be one of: ${Object.values(WorkSchedule).join(', ')}`,
-  })
-  availableDays!: WorkSchedule;
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayUnique()
+  @IsInt({ each: true })
+  @Min(0, { each: true })
+  @Max(6, { each: true })
+  availableDays!: number[];
 
   @IsEnum(CompanyType, {
     message: `preferredCompanyType must be one of: ${Object.values(CompanyType).join(', ')}`,
@@ -162,10 +165,6 @@ export class CreateStudentApplicationDto {
   @IsInt()
   @Min(1)
   opportunityId!: number;
-
-  @IsOptional()
-  @IsString()
-  remark?: string;
 }
 
 export class StudentApplicationResponseDto {

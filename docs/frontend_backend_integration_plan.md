@@ -167,7 +167,7 @@ Authentication acceptance criteria:
 |---|---|---|---|
 | Portal and internship search | **Gap:** `GET /opportunities` | `useStudentStore.fetchOpportunities(filters)` | Read `vw_opportunity_summary`; server-side query/work-arrangement/company/allowance/page filters; only active/open/non-expired records for students. |
 | Opportunity details | **Gap:** `GET /opportunities/:opportunityId` | `useStudentStore.fetchOpportunity` | Preserve numeric ID; format work arrangement and dates only in the adapter. |
-| Apply | `POST /students/:studentId/applications` | `useStudentStore.submitApplication` | Send `{ opportunityId, remark? }`; on 201 mark the card applied and refetch applications. Surface resume-required 400 next to the Apply button. |
+| Apply | `POST /students/:studentId/applications` | `useStudentStore.submitApplication` | Send `{ opportunityId }`; on 201 mark the card applied and refetch applications. Surface resume-required 400 next to the Apply button. `application.remark` is reserved for a QC PESO rejection reason. |
 | Profile read | `GET /students/:studentId/profile` | `useStudentStore.fetchProfile` | Map the backend's snake_case raw rows to the current `UserProfile` view model. |
 | Profile save | `POST /students/:studentId/profile` | `useStudentStore.saveProfile` | Send exact nested DTO and lowercase enum values. The route is POST even for updates. |
 | Industry choices | **Gap:** `GET /reference/industries` | `useReferenceStore.fetchIndustries` | Use database IDs; never hardcode seed IDs from display order. |
@@ -531,7 +531,7 @@ export type AccountStatus = 'active' | 'suspended' | 'archived'
 export type VerificationStatus = 'pending' | 'approved' | 'rejected'
 export type CompanyType = 'government' | 'private'
 export type WorkArrangement = 'onsite' | 'remote' | 'hybrid'
-export type WorkSchedule = 'weekdays' | 'weekends' | 'flexible'
+export type WorkDay = 0 | 1 | 2 | 3 | 4 | 5 | 6
 export type ApplicationStatus =
   | 'submitted' | 'under_review' | 'approved_for_referral'
   | 'rejected_for_referral' | 'closed' | 'withdrawn' | 'expired'
@@ -603,7 +603,7 @@ export interface InternshipPreferenceRowDto {
   internship_preference_id: number
   student_id: number
   required_hours: number
-  available_days: WorkSchedule
+  available_days: WorkDay[]
   allows_outside_preferred_field: boolean
   start_date: string
   preferred_company_type: CompanyType
@@ -632,6 +632,7 @@ export interface OpportunitySummaryDto {
   companyId: number
   companyName: string
   companyType: CompanyType
+  companyDescription: string
   industryId: number
   industryName: string
   companyLogoFilePath: string | null
@@ -766,7 +767,7 @@ export interface StudentAttendanceResponse {
     companyName: string
     opportunityId: number
     jobTitle: string
-    workingDays: WorkSchedule
+    workingDays: WorkDay[]
     requiredHours: number
     startDate: string
     expectedEndDate: string | null

@@ -214,20 +214,23 @@ function AssignmentField({ label, name, value, placeholder, type = 'text', input
 
 function WorkingDaysField({ value, disabled, onChange }: { value: number[]; disabled: boolean; onChange: Dispatch<SetStateAction<AssignmentFormData>> }) {
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-  return <fieldset className={styles.assignmentField} disabled={disabled}>
+  return <fieldset className={`${styles.assignmentField} ${styles.assignmentWorkingDays}`} disabled={disabled}>
     <legend>Working Days</legend>
-    {days.map((day, index) => <label key={day}>
-      <input
-        type="checkbox"
-        checked={value.includes(index)}
-        onChange={(event) => onChange((current) => ({
-          ...current,
-          workingDays: event.target.checked
-            ? [...current.workingDays, index].sort((a, b) => a - b)
-            : current.workingDays.filter((item) => item !== index),
-        }))}
-      />
-      {day}
-    </label>)}
+    <div className={styles.dayOptions}>
+      {days.map((day, index) => <label key={day}>
+        <input
+          type="checkbox"
+          aria-label={day}
+          checked={value.includes(index)}
+          onChange={(event) => onChange((current) => ({
+            ...current,
+            workingDays: event.target.checked
+              ? [...current.workingDays, index].sort((a, b) => a - b)
+              : current.workingDays.filter((item) => item !== index),
+          }))}
+        />
+        {day.slice(0, 3)}
+      </label>)}
+    </div>
   </fieldset>
 }
