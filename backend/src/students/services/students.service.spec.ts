@@ -334,6 +334,15 @@ describe('StudentsService application reapplication', () => {
 
 const assignmentRow = (status: string, id = 88) => ({
   internship_assignment_id: id,
+  student_full_name: 'Joshua Enzo Carpio',
+  student_contact_email: 'carpioenzo17@gmail.com',
+  student_contact_number: '09695183554',
+  student_address: '84, Batasan Hills, Quezon City',
+  student_photo_file_path: '/uploads/profile_pictures/joshua.png',
+  student_profile_updated_at: '2026-08-01T08:00:00.000Z',
+  strand_program: 'Bachelor of Science in Computer Science',
+  year_level: '4th Year',
+  school_name: 'Polytechnic University of the Philippines',
   company_id: 3,
   company_name: 'Acme Corporation',
   company_logo_file_path: null,
@@ -344,6 +353,7 @@ const assignmentRow = (status: string, id = 88) => ({
   total_rendered_minutes: 1935,
   start_date: '2026-08-01',
   expected_end_date: '2026-12-01',
+  end_date: ['pending', 'ongoing'].includes(status) ? null : '2026-09-01',
   ended_at: ['pending', 'ongoing'].includes(status)
     ? null
     : '2026-09-01T08:00:00.000Z',
@@ -396,6 +406,10 @@ describe('StudentsService Student internship queries', () => {
 
       await expect(service.getCurrentInternship(7)).resolves.toMatchObject({
         internshipAssignmentId: 88,
+        studentFullName: 'Joshua Enzo Carpio',
+        strandProgram: 'Bachelor of Science in Computer Science',
+        yearLevel: '4th Year',
+        schoolName: 'Polytechnic University of the Philippines',
         assignmentStatus: status,
         workingDays: [1, 3, 4, 6],
         requiredMinutes: 12000,

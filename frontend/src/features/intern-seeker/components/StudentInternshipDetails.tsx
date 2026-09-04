@@ -1,9 +1,12 @@
 import { useState, type ReactNode } from 'react'
+import { Building2, CalendarDays, ChartNoAxesColumnIncreasing, Mail, MapPin, Phone, User } from 'lucide-react'
 import type { StudentInternshipDto } from '../../../types/api'
+import { publicUploadUrl } from '../../../utils/public-upload-url'
 import { assignmentHasEnded, formatAssignmentDate, formatMinutes, formatShift, formatWorkingDays, studentAssignmentStatus } from '../utils/internship-display'
 import styles from './StudentInternshipDetails.module.css'
 
-type WorkflowModal = 'remark' | 'review' | 'withdraw' | null
+type WorkflowModal = 'review' | 'withdraw' | null
+type DetailField = readonly [label: string, value: string]
 
 interface StudentInternshipDetailsProps {
   assignment: StudentInternshipDto
@@ -17,11 +20,13 @@ export function StudentInternshipDetails({ assignment, interactive = false, onWi
   const [remark, setRemark] = useState('')
   const [rating, setRating] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const statusLabel = studentAssignmentStatus(assignment.assignmentStatus)
+  const statusLabel = resolveStudentFacingStatus(assignment)
+  const statusClass = statusLabel.toLowerCase()
   const hasEnded = assignmentHasEnded(assignment.assignmentStatus)
   const canReview = assignment.assignmentStatus === 'complete_company'
   const canWithdraw = ['pending', 'ongoing'].includes(assignment.assignmentStatus)
-  const workflowRemark = resolveWorkflowRemark(assignment)
+  const outcomeRemark = resolveOutcomeRemark(assignment)
+  const profileImageUrl = publicUploadUrl(assignment.studentPhotoFilePath, assignment.studentProfileUpdatedAt)
 
   const closeModal = () => {
     if (isSubmitting) return
@@ -59,80 +64,101 @@ export function StudentInternshipDetails({ assignment, interactive = false, onWi
     }
   }
 
-  const detailFields = [
-    ['Company', assignment.companyName],
-    ['Job Title', assignment.jobTitle],
-    ['Working Days', formatWorkingDays(assignment.workingDays)],
+  const internFields: DetailField[] = [
+    ['Full Name', displayValue(assignment.studentFullName)],
+    ['Program / Strand', displayValue(assignment.strandProgram)],
+    ['Year Level', displayValue(assignment.yearLevel)],
+    ['School', displayValue(assignment.schoolName)],
+  ]
+
+  const assignmentFields: DetailField[] = [
+    ['Company', displayValue(assignment.companyName)],
+    ['Job Title', displayValue(assignment.jobTitle)],
+    ['Required Hours', formatMinutes(assignment.requiredMinutes)],
+  ]
+
+  const scheduleFields: DetailField[] = [
+    ['Working Days', displayValue(formatWorkingDays(assignment.workingDays))],
     ['Start Date', formatAssignmentDate(assignment.startDate)],
-    [hasEnded ? 'End Date' : 'Expected End Date', formatAssignmentDate(hasEnded ? assignment.endedAt : assignment.expectedEndDate)],
+    [hasEnded ? 'End Date' : 'Expected End Date', formatAssignmentDate(hasEnded ? (assignment.endDate ?? assignment.endedAt) : assignment.expectedEndDate)],
     ['Shift Start', formatShift(assignment.startShift)],
     ['Shift End', formatShift(assignment.endShift)],
   ]
 
-  const statusFields = [
-    ['Required Hours', formatMinutes(assignment.requiredMinutes)],
-    ['Rendered Duration', formatMinutes(assignment.renderedMinutes)],
-    ['Remaining Duration', formatMinutes(assignment.remainingMinutes)],
+  const statusFields: DetailField[] = [
+    ['Status', statusLabel],
+    ['Rendered Hours', formatMinutes(assignment.renderedMinutes)],
+    ['Remaining Hours', formatMinutes(assignment.remainingMinutes)],
   ]
 
   return (
-    <div className={styles.pageContent}>
-      <section className={styles.hero} aria-labelledby="student-internship-title">
+    <section className={styles.detailsShell} aria-labelledby="student-internship-title">
+      <header className={styles.pageHeading}>
         <div>
-          <p>{interactive ? 'Current Internship' : 'Internship Record'}</p>
-          <h1 id="student-internship-title">
-            {assignment.jobTitle} at {assignment.companyName}
-          </h1>
+          <h1 id="student-internship-title">Internship Details</h1>
+          <p>View your internship assignment, approved schedule, and progress.</p>
         </div>
-        <div className={styles.statusArea}>
-          <span className={styles.statusTag}>{statusLabel}</span>
-          {workflowRemark && (
-            <button className={styles.remarkLink} type="button" onClick={() => setModal('remark')}>
-              See Remark
-            </button>
-          )}
-        </div>
-      </section>
+        <span className={`${styles.statusTag} ${styles[statusClass] ?? ''}`}>{statusLabel}</span>
+      </header>
 
-      <section className={styles.card} aria-labelledby="internship-details-heading">
-        <header className={styles.cardHeader}>
-          <h2 id="internship-details-heading">Internship Details</h2>
-          <p>Your internship assignment and approved work schedule.</p>
-        </header>
-        <div className={styles.cardBody}>
-          <DetailGrid fields={detailFields} />
-        </div>
-      </section>
-
-      <section className={styles.card} aria-labelledby="internship-status-heading">
-        <header className={styles.cardHeader}>
-          <h2 id="internship-status-heading">Internship Status</h2>
-          <p>Track progress using the authoritative minute-based duration.</p>
-        </header>
-        <div className={styles.cardBody}>
-          <DetailGrid fields={statusFields} />
-          {interactive && (
-            <div className={styles.workflowActions}>
-              <button className={styles.primaryButton} type="button" disabled={!canReview} onClick={() => setModal('review')}>
-                {assignment.assignmentStatus === 'complete_student' ? 'Review Submitted' : 'Review Company'}
-              </button>
-              <button className={styles.secondaryButton} type="button" disabled={!canWithdraw} onClick={() => setModal('withdraw')}>
-                Withdraw Internship
-              </button>
+      <div className={styles.content}>
+        <aside className={styles.profileSummary} aria-label="Intern profile summary">
+          <div className={styles.profileIdentity}>
+            <div className={styles.avatar}>
+              {profileImageUrl ? <img src={profileImageUrl} alt={`${assignment.studentFullName} profile`} /> : <User size={30} />}
             </div>
+            <div className={styles.profileInfo}>
+              <h2>{displayValue(assignment.studentFullName)}</h2>
+              <div className={styles.contactMeta}>
+                <a href={`mailto:${assignment.studentContactEmail}`}>
+                  <Mail size={14} />
+                  {displayValue(assignment.studentContactEmail)}
+                </a>
+                <a href={`tel:${assignment.studentContactNumber}`}>
+                  <Phone size={14} />
+                  {displayValue(assignment.studentContactNumber)}
+                </a>
+              </div>
+              <p>
+                <MapPin size={14} />
+                {displayValue(assignment.studentAddress)}
+              </p>
+            </div>
+          </div>
+          <div className={styles.profileDivider} />
+          <div className={styles.internAs}>
+            <span>INTERN AS</span>
+            <h3>{displayValue(assignment.jobTitle)}</h3>
+            <p>{displayValue(assignment.companyName)}</p>
+          </div>
+        </aside>
+
+        <div className={styles.sectionStack}>
+          <DetailSection icon={<User size={18} />} title="Intern Information" fields={internFields} />
+          <DetailSection icon={<Building2 size={18} />} title="Assignment Information" fields={assignmentFields} />
+          <DetailSection icon={<CalendarDays size={18} />} title="Schedule Information" fields={scheduleFields} />
+          <DetailSection icon={<ChartNoAxesColumnIncreasing size={18} />} title="Status Information" fields={statusFields} />
+          {outcomeRemark && (
+            <section className={styles.infoCard} aria-labelledby="internship-remark-heading">
+              <h2 className={styles.sectionTitle} id="internship-remark-heading">
+                <span>{outcomeRemark.icon}</span>
+                {outcomeRemark.title}
+              </h2>
+              <p className={styles.outcomeRemark}>{outcomeRemark.remark}</p>
+            </section>
           )}
         </div>
-      </section>
+      </div>
 
-      {modal === 'remark' && workflowRemark && (
-        <WorkflowDialog title={workflowRemark.title} onClose={closeModal}>
-          <p className={styles.readOnlyRemark}>{workflowRemark.remark}</p>
-          <div className={styles.modalActions}>
-            <button className={styles.secondaryButton} type="button" onClick={closeModal}>
-              Close
-            </button>
-          </div>
-        </WorkflowDialog>
+      {interactive && (
+        <footer className={styles.workflowActions}>
+          <button className={styles.primaryButton} type="button" disabled={!canReview} onClick={() => setModal('review')}>
+            {assignment.assignmentStatus === 'complete_student' ? 'Review Submitted' : 'Review Company'}
+          </button>
+          <button className={styles.secondaryButton} type="button" disabled={!canWithdraw} onClick={() => setModal('withdraw')}>
+            Withdraw Internship
+          </button>
+        </footer>
       )}
 
       {modal === 'withdraw' && (
@@ -176,7 +202,12 @@ export function StudentInternshipDetails({ assignment, interactive = false, onWi
             <textarea rows={5} value={remark} onChange={(event) => setRemark(event.target.value)} />
           </label>
           <div className={styles.modalActions}>
-            <button className={styles.primaryButton} type="button" disabled={rating === 0 || !remark.trim() || isSubmitting} onClick={() => void submitReview()}>
+            <button
+              className={styles.primaryButton}
+              type="button"
+              disabled={rating === 0 || !remark.trim() || isSubmitting}
+              onClick={() => void submitReview()}
+            >
               {isSubmitting ? 'Submitting...' : 'Submit Review'}
             </button>
             <button className={styles.secondaryButton} type="button" disabled={isSubmitting} onClick={closeModal}>
@@ -185,45 +216,52 @@ export function StudentInternshipDetails({ assignment, interactive = false, onWi
           </div>
         </WorkflowDialog>
       )}
-    </div>
+    </section>
   )
 }
 
 export function EmptyInternshipState() {
   return (
-    <div className={styles.pageContent}>
-      <section className={styles.hero} aria-labelledby="student-internship-title">
+    <section className={styles.detailsShell} aria-labelledby="student-internship-title">
+      <header className={styles.pageHeading}>
         <div>
-          <p>Current Internship</p>
-          <h1 id="student-internship-title">No active internship</h1>
+          <h1 id="student-internship-title">Internship Details</h1>
+          <p>View your internship assignment, approved schedule, and progress.</p>
         </div>
-        <span className={styles.statusTag}>No Active Internship</span>
-      </section>
-      {['Internship Details', 'Internship Status'].map((heading) => (
-        <section className={styles.card} key={heading}>
-          <header className={styles.cardHeader}>
-            <h2>{heading}</h2>
-          </header>
-          <div className={styles.emptyState}>
-            <h3>No active internship yet</h3>
-            <p>There is currently no active internship to track.</p>
-          </div>
-        </section>
-      ))}
-    </div>
+        <span className={`${styles.statusTag} ${styles.emptyStatus}`}>No Active Internship</span>
+      </header>
+      <div className={styles.emptyContent}>
+        {['Intern Information', 'Assignment Information', 'Schedule Information', 'Status Information'].map((heading) => (
+          <section className={styles.infoCard} key={heading}>
+            <h2 className={styles.sectionTitle}>{heading}</h2>
+            <div className={styles.emptyState}>
+              <h3>No active internship yet</h3>
+              <p>There is currently no active internship to track.</p>
+            </div>
+          </section>
+        ))}
+      </div>
+    </section>
   )
 }
 
-function DetailGrid({ fields }: { fields: string[][] }) {
+function DetailSection({ icon, title, fields }: { icon: ReactNode; title: string; fields: DetailField[] }) {
+  const headingId = `${title.toLowerCase().replaceAll(' ', '-')}-heading`
   return (
-    <dl className={styles.detailGrid}>
-      {fields.map(([label, value]) => (
-        <div className={styles.field} key={label}>
-          <dt>{label}</dt>
-          <dd>{value}</dd>
-        </div>
-      ))}
-    </dl>
+    <section className={styles.infoCard} aria-labelledby={headingId}>
+      <h2 className={styles.sectionTitle} id={headingId}>
+        <span>{icon}</span>
+        {title}
+      </h2>
+      <dl className={styles.infoList}>
+        {fields.map(([label, value]) => (
+          <div className={styles.infoRow} key={label}>
+            <dt>{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   )
 }
 
@@ -238,24 +276,33 @@ function WorkflowDialog({ title, children, onClose }: { title: string; children:
   )
 }
 
-function resolveWorkflowRemark(assignment: StudentInternshipDto) {
-  if (assignment.companyCancellationRemark) {
+function resolveStudentFacingStatus(assignment: StudentInternshipDto): string {
+  if (assignment.assignmentStatus === 'finalized') {
+    if (assignment.companyCancellationRemark) return 'Cancelled'
+    if (assignment.companyCompletionRemark) return 'Completed'
+    if (assignment.studentWithdrawalRemark) return 'Withdrawn'
+  }
+  return studentAssignmentStatus(assignment.assignmentStatus)
+}
+
+function resolveOutcomeRemark(assignment: StudentInternshipDto) {
+  if (assignment.assignmentStatus === 'cancelled' || assignment.companyCancellationRemark) {
     return {
       title: 'Internship Cancellation Remark',
-      remark: assignment.companyCancellationRemark,
+      remark: assignment.companyCancellationRemark || 'No cancellation remark was provided.',
+      icon: <Building2 size={18} />,
     }
   }
-  if (assignment.studentWithdrawalRemark) {
-    return {
-      title: 'Student Withdrawal Remark',
-      remark: assignment.studentWithdrawalRemark,
-    }
-  }
-  if (assignment.companyCompletionRemark) {
+  if (['complete_company', 'complete_student'].includes(assignment.assignmentStatus) || assignment.companyCompletionRemark) {
     return {
       title: 'Internship Completion Remark',
-      remark: assignment.companyCompletionRemark,
+      remark: assignment.companyCompletionRemark || 'No completion remark was provided.',
+      icon: <ChartNoAxesColumnIncreasing size={18} />,
     }
   }
   return null
+}
+
+function displayValue(value?: string | null): string {
+  return value?.trim() || 'Not specified'
 }

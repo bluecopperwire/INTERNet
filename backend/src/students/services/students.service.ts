@@ -42,6 +42,15 @@ type ApplicationWorkflowRow = {
 
 type StudentAssignmentRow = {
   internship_assignment_id: number | string;
+  student_full_name: string;
+  student_contact_email: string;
+  student_contact_number: string;
+  student_address: string;
+  student_photo_file_path: string | null;
+  student_profile_updated_at: Date | string;
+  strand_program: string | null;
+  year_level: string | null;
+  school_name: string | null;
   company_id: number | string;
   company_name: string;
   company_logo_file_path: string | null;
@@ -52,6 +61,7 @@ type StudentAssignmentRow = {
   total_rendered_minutes: number | string;
   start_date: string;
   expected_end_date: string | null;
+  end_date: string | null;
   ended_at: Date | string | null;
   start_shift: string;
   end_shift: string;
@@ -2090,6 +2100,15 @@ export class StudentsService {
     return `
       SELECT
         ia.internship_assignment_id,
+        concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS student_full_name,
+        s.contact_email AS student_contact_email,
+        s.contact_number AS student_contact_number,
+        concat_ws(', ', NULLIF(s.address_line, ''), NULLIF(s.address_barangay, ''), NULLIF(s.address_city, '')) AS student_address,
+        s.photo_file_path AS student_photo_file_path,
+        s.updated_at AS student_profile_updated_at,
+        sai.strand_program,
+        sai.year_level,
+        sai.school_name,
         c.company_id,
         c.company_name,
         c.logo_file_path AS company_logo_file_path,
@@ -2100,6 +2119,7 @@ export class StudentsService {
         COALESCE(ats.total_rendered_minutes, 0::bigint) AS total_rendered_minutes,
         ia.start_date::text AS start_date,
         ia.expected_end_date::text AS expected_end_date,
+        ia.end_date::text AS end_date,
         ia.ended_at,
         ia.start_shift,
         ia.end_shift,
@@ -2116,6 +2136,8 @@ export class StudentsService {
       JOIN public.application a ON a.application_id = r.application_id
       JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
       JOIN public.company c ON c.company_id = o.company_id
+      JOIN public.student s ON s.student_id = a.student_id
+      LEFT JOIN public.student_academic_information sai ON sai.student_id = s.student_id
       LEFT JOIN public.vw_attendance_summary ats
         ON ats.internship_assignment_id = ia.internship_assignment_id
       LEFT JOIN public.internship_feedback f
@@ -2128,6 +2150,15 @@ export class StudentsService {
     const remainingMinutes = Math.max(0, requiredMinutes - renderedMinutes);
     return {
       internshipAssignmentId: Number(row.internship_assignment_id),
+      studentFullName: row.student_full_name,
+      studentContactEmail: row.student_contact_email,
+      studentContactNumber: row.student_contact_number,
+      studentAddress: row.student_address,
+      studentPhotoFilePath: row.student_photo_file_path,
+      studentProfileUpdatedAt: row.student_profile_updated_at,
+      strandProgram: row.strand_program,
+      yearLevel: row.year_level,
+      schoolName: row.school_name,
       companyId: Number(row.company_id),
       companyName: row.company_name,
       companyLogoFilePath: row.company_logo_file_path,
@@ -2142,6 +2173,7 @@ export class StudentsService {
       remainingHours: Number((remainingMinutes / 60).toFixed(2)),
       startDate: row.start_date,
       expectedEndDate: row.expected_end_date,
+      endDate: row.end_date,
       endedAt: row.ended_at,
       startShift: row.start_shift,
       endShift: row.end_shift,

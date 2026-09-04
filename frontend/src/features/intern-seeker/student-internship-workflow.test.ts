@@ -25,10 +25,48 @@ describe('Phase 2 Student internship workflow responsibilities', () => {
     expect(details).toContain('No Active Internship')
     expect(details).toContain('No active internship yet')
     expect(details).toContain('There is currently no active internship to track.')
-    expect(details).toContain('{assignment.jobTitle} at {assignment.companyName}')
+    expect(details).toContain('displayValue(assignment.jobTitle)')
+    expect(details).toContain('displayValue(assignment.companyName)')
     expect(details).toMatch(/hasEnded\s*\?\s*["']End Date["']\s*:\s*["']Expected End Date["']/)
     expect(details).toMatch(/["']Required Hours["']\s*,\s*formatMinutes\(assignment\.requiredMinutes\)/)
     expect(details).not.toContain('Target Hours')
+  })
+
+  it('uses the reference details layout with the requested internship sections', () => {
+    const details = readSource('./components/StudentInternshipDetails.tsx')
+    for (const heading of ['Internship Details', 'Intern Information', 'Assignment Information', 'Schedule Information', 'Status Information']) {
+      expect(details).toContain(heading)
+    }
+    for (const label of [
+      'Full Name',
+      'Program / Strand',
+      'Year Level',
+      'School',
+      'Company',
+      'Job Title',
+      'Required Hours',
+      'Working Days',
+      'Start Date',
+      'Expected End Date',
+      'Shift Start',
+      'Shift End',
+      'Status',
+      'Rendered Hours',
+      'Remaining Hours',
+    ]) {
+      expect(details).toContain(label)
+    }
+    expect(details).toContain('INTERN AS')
+    expect(details).not.toContain('APPLIED FOR')
+    expect(details).not.toContain('Applied on')
+  })
+
+  it('shows only company completion or cancellation remarks as outcome cards', () => {
+    const details = readSource('./components/StudentInternshipDetails.tsx')
+    expect(details).toContain('Internship Completion Remark')
+    expect(details).toContain('Internship Cancellation Remark')
+    expect(details).not.toContain('Student Withdrawal Remark')
+    expect(details).toContain('assignment.endDate ?? assignment.endedAt')
   })
 
   it('keeps workflow actions status-aware with required modal inputs', () => {

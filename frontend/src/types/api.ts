@@ -322,6 +322,15 @@ export interface StudentAttendanceHistoryResponse {
 
 export interface StudentInternshipDto {
   internshipAssignmentId: number;
+  studentFullName: string;
+  studentContactEmail: string;
+  studentContactNumber: string;
+  studentAddress: string;
+  studentPhotoFilePath?: string | null;
+  studentProfileUpdatedAt?: string | null;
+  strandProgram?: string | null;
+  yearLevel?: string | null;
+  schoolName?: string | null;
   companyId: number;
   companyName: string;
   companyLogoFilePath?: string | null;
@@ -336,6 +345,7 @@ export interface StudentInternshipDto {
   remainingHours: number;
   startDate: string;
   expectedEndDate?: string | null;
+  endDate?: string | null;
   endedAt?: string | null;
   startShift: string;
   endShift: string;
