@@ -220,7 +220,7 @@ export const employerService = {
     const records: Applicant[] = [];
     let page = 1;
     do {
-      const result = await employerApiService.getReferrals({ view: 'review', page, limit: 100 });
+      const result = await employerApiService.getReferrals({ view: 'review', page, limit: 15 });
       records.push(...result.data.map(adaptEmployerReferral));
       if (page >= result.meta.totalPages) break;
       page++;
@@ -240,7 +240,7 @@ export const employerService = {
     const records: Applicant[] = [];
     let page = 1;
     do {
-      const result = await employerApiService.getReferrals({ view: 'history', page, limit: 100 });
+      const result = await employerApiService.getReferrals({ view: 'history', page, limit: 15 });
       records.push(...result.data.map(adaptEmployerReferral));
       if (page >= result.meta.totalPages) break;
       page++;
@@ -294,7 +294,7 @@ export const employerService = {
       const result = await employerApiService.getOpportunityReferrals(Number(opportunityId), {
         view: 'history',
         page,
-        limit: 100,
+        limit: 15,
       });
       records.push(...result.data.map(adaptEmployerReferral));
       totalPages = result.meta.totalPages;

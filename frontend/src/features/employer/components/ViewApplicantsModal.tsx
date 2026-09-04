@@ -19,7 +19,7 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
 
   // Pagination & Filtering state
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 3
+  const [itemsPerPage, setItemsPerPage] = useState(5)
   const [searchQuery, setSearchQuery] = useState('')
 
   const [statusFilter, setStatusFilter] = useState('All')
@@ -159,6 +159,17 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
         </div>
 
         <div className={styles.paginationRow}>
+          <div className={styles.leftControls}>
+            <span className={styles.viewLabel}>View</span>
+            <span className={styles.viewSelectBox}>
+              <select className={styles.viewSelect} value={itemsPerPage} onChange={(event) => { setItemsPerPage(Number(event.target.value)); setCurrentPage(1) }} aria-label="Students per page">
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={15}>15</option>
+              </select>
+            </span>
+            <span className={styles.viewLabel}>Students per page</span>
+          </div>
           <div className={styles.pagination}>
             <button
               className={styles.pageBtn}

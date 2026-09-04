@@ -2,10 +2,10 @@ import { Type } from 'class-transformer';
 import {
   IsEnum,
   IsInt,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
-  Max,
   Min,
   ValidateIf,
 } from 'class-validator';
@@ -57,8 +57,8 @@ export class QueryApplicationsDto extends DateFilterDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
-  limit?: number = 20;
+  @IsIn([5, 10, 15])
+  limit?: number = 10;
 }
 
 export class QueryReferralsDto extends DateFilterDto {
@@ -76,8 +76,8 @@ export class QueryReferralsDto extends DateFilterDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
-  limit?: number = 20;
+  @IsIn([5, 10, 15])
+  limit?: number = 10;
 }
 
 export class QueryCompanyEmployersDto extends PaginationDto {
@@ -98,6 +98,79 @@ export class QueryAttendanceDto extends DateFilterDto {
   @IsOptional()
   @IsString()
   search?: string;
+}
+
+export const QC_WORKFLOW_PAGE_SIZES = [5, 10, 15] as const;
+
+export class QcWorkflowPaginationDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @IsIn(QC_WORKFLOW_PAGE_SIZES)
+  limit = 10;
+}
+
+export enum QcAssignmentStatusFilter {
+  PENDING = 'pending',
+  ONGOING = 'ongoing',
+  COMPLETE_COMPANY = 'complete_company',
+  COMPLETE_STUDENT = 'complete_student',
+  WITHDRAWN = 'withdrawn',
+  CANCELLED = 'cancelled',
+  FINALIZED = 'finalized',
+}
+
+export class QcInternshipListQueryDto extends QcWorkflowPaginationDto {
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsEnum(QcAssignmentStatusFilter)
+  status?: QcAssignmentStatusFilter;
+}
+
+export enum QcAttendanceStatusFilter {
+  PENDING = 'pending',
+  PRESENT = 'present',
+  ABSENT = 'absent',
+  INCOMPLETE = 'incomplete',
+}
+
+export class QcAttendanceListQueryDto extends QcWorkflowPaginationDto {
+  @IsOptional()
+  @IsString()
+  date?: string;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsEnum(QcAttendanceStatusFilter)
+  status?: QcAttendanceStatusFilter;
+}
+
+export enum QcAttendanceHistoryStatusFilter {
+  PRESENT = 'present',
+  ABSENT = 'absent',
+  INCOMPLETE = 'incomplete',
+}
+
+export class QcAttendanceHistoryQueryDto extends QcWorkflowPaginationDto {
+  @IsOptional()
+  @IsString()
+  date?: string;
+
+  @IsOptional()
+  @IsEnum(QcAttendanceHistoryStatusFilter)
+  status?: QcAttendanceHistoryStatusFilter;
 }
 
 export class PesoStudentDashboardMetricsDto {

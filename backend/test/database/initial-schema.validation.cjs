@@ -47,6 +47,7 @@ async function main() {
       'OpportunityLifecycleRules1788480000000',
       'AssignmentLifecycleFoundation1788566400000',
       'AttendanceStudentWorkflow1788652800000',
+      'QcAssignmentVisibility1788739200000',
     ];
     const recognizedHistoricalMigrations = new Set([
       'AuthAlignmentV31786125600000',
@@ -79,6 +80,16 @@ async function main() {
       pass('recognized historical migration AuthAlignmentV31786125600000 is present and valid');
     }
     pass('required migrations are recorded');
+
+    const qcAssignmentVisibility = await client.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'internship_assignment_visibility'
+        AND column_name IN ('qc_peso_hidden_at', 'qc_peso_hidden_by_user_account_id')
+    `);
+    assert.equal(qcAssignmentVisibility.rowCount, 2, 'QC PESO assignment soft-hide columns must exist.');
+    pass('QC PESO assignment visibility is present');
 
     const customIndustries = await client.query(`
       SELECT industry_name

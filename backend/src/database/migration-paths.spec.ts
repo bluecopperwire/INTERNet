@@ -79,6 +79,7 @@ describe('Database migration paths and behavioral validation', () => {
       'OpportunityLifecycleRules1788480000000',
       'AssignmentLifecycleFoundation1788566400000',
       'AttendanceStudentWorkflow1788652800000',
+      'QcAssignmentVisibility1788739200000',
     ]);
 
     // Validate redesigned columns
@@ -130,6 +131,15 @@ describe('Database migration paths and behavioral validation', () => {
       `SELECT industry_name FROM public.industry WHERE is_custom_text = true`,
     );
     expect(customIndustries).toEqual([{ industry_name: 'Other' }]);
+
+    await dataSource.undoLastMigration();
+    const qcVisibilityColumns = await dataSource.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'internship_assignment_visibility'
+        AND column_name LIKE 'qc_peso_hidden%'
+    `);
+    expect(qcVisibilityColumns).toEqual([]);
 
     await expect(dataSource.undoLastMigration()).rejects.toThrow(
       /AttendanceStudentWorkflow1788652800000 is irreversible/,

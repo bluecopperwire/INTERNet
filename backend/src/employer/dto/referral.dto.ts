@@ -8,7 +8,7 @@ import {
 } from 'class-validator';
 import {
   DATE_PATTERN,
-  EmployerPaginationDto,
+  EmployerWorkflowPaginationDto,
   NullableTrim,
   TIME_PATTERN,
   Trim,
@@ -37,7 +37,7 @@ export enum ReferralListView {
   HISTORY = 'history',
 }
 
-export class ReferralListQueryDto extends EmployerPaginationDto {
+export class ReferralListQueryDto extends EmployerWorkflowPaginationDto {
   @IsOptional()
   @IsEnum(ReferralListView)
   view?: ReferralListView = ReferralListView.HISTORY;
@@ -87,10 +87,9 @@ export class RejectReferralDto {
   remark!: string;
 }
 
-export class AssignmentCandidateQueryDto extends EmployerPaginationDto {
+export class AssignmentCandidateQueryDto extends EmployerWorkflowPaginationDto {
   @IsOptional()
   @Trim()
   @IsString()
   search?: string;
-
 }

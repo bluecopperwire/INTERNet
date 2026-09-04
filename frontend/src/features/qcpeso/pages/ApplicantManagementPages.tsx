@@ -132,7 +132,7 @@ function Pagination({ itemName, page, totalPages, perPage, onPageChange, onPerPa
         <span className={tableStyles.viewLabel}>View</span>
         <div className={tableStyles.viewSelectBox}>
           <select className={tableStyles.viewSelect} value={perPage} onChange={(event) => onPerPageChange(Number(event.target.value))}>
-            <option value={7}>7</option>
+            <option value={5}>5</option>
             <option value={10}>10</option>
             <option value={15}>15</option>
           </select>
@@ -158,7 +158,7 @@ export function ReviewApplicantsPage() {
   const [records, setRecords] = useState<QCPesoReviewApplicant[]>([])
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
-  const [perPage, setPerPage] = useState(7)
+  const [perPage, setPerPage] = useState(5)
 
   useEffect(() => {
     qcpesoService.getReviewApplicants().then(setRecords)
@@ -252,7 +252,7 @@ export function ApplicationsHistoryPage() {
   const [search, setSearch] = useState('')
   const [response, setResponse] = useState('All')
   const [page, setPage] = useState(1)
-  const [perPage, setPerPage] = useState(7)
+  const [perPage, setPerPage] = useState(5)
   const [deleteTarget, setDeleteTarget] = useState<QCPesoReviewApplicant | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const toast = useToastStore()

@@ -15,7 +15,7 @@ export function CreateInternshipAssignmentPage() {
   const [assignments, setAssignments] = useState<InternshipAssignment[]>([])
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
-  const [perPage, setPerPage] = useState(7)
+  const [perPage, setPerPage] = useState(5)
 
   useEffect(() => {
     employerService.getInternshipAssignments().then(setAssignments)
@@ -68,7 +68,7 @@ export function CreateInternshipAssignmentPage() {
         <div className={styles.assignmentPagination}>
           <div className={styles.assignmentPageSize}>
             <span>View</span>
-            <span className={styles.pageSizeValue}><select value={perPage} onChange={(event) => { setPerPage(Number(event.target.value)); resetPage() }} aria-label="Students per page"><option value={7}>7</option><option value={10}>10</option><option value={15}>15</option></select></span>
+            <span className={styles.pageSizeValue}><select value={perPage} onChange={(event) => { setPerPage(Number(event.target.value)); resetPage() }} aria-label="Students per page"><option value={5}>5</option><option value={10}>10</option><option value={15}>15</option></select></span>
             <span>Students per page</span>
           </div>
           <div className={styles.paginationButtons}>

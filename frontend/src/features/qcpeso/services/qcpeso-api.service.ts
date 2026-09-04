@@ -129,6 +129,50 @@ export const qcpesoApiService = {
     return response.data;
   },
 
+  async getFinalizationSummary(): Promise<any> {
+    return (await api.get('/dashboard/peso/internships/finalization/summary')).data;
+  },
+
+  async getFinalizationQueue(params?: any): Promise<any> {
+    return (await api.get('/dashboard/peso/internships/finalization', { params })).data;
+  },
+
+  async getFinalizationDetail(assignmentId: number): Promise<any> {
+    return (await api.get(`/dashboard/peso/internships/finalization/${assignmentId}`)).data;
+  },
+
+  async finalizeInternship(assignmentId: number): Promise<any> {
+    return (await api.patch(`/dashboard/peso/internships/finalization/${assignmentId}`, {})).data;
+  },
+
+  async getInternshipHistorySummary(): Promise<any> {
+    return (await api.get('/dashboard/peso/internships/history/summary')).data;
+  },
+
+  async getInternshipHistory(params?: any): Promise<any> {
+    return (await api.get('/dashboard/peso/internships/history', { params })).data;
+  },
+
+  async getInternshipHistoryDetail(assignmentId: number): Promise<any> {
+    return (await api.get(`/dashboard/peso/internships/history/${assignmentId}`)).data;
+  },
+
+  async hideFinalizedInternship(assignmentId: number): Promise<void> {
+    await api.delete(`/dashboard/peso/internships/history/${assignmentId}`);
+  },
+
+  async getInternshipAttendanceSummary(date: string): Promise<any> {
+    return (await api.get('/dashboard/peso/internship-attendance/summary', { params: { date } })).data;
+  },
+
+  async getInternshipAttendance(params?: any): Promise<any> {
+    return (await api.get('/dashboard/peso/internship-attendance', { params })).data;
+  },
+
+  async getInternshipAttendanceHistory(assignmentId: number, params?: any): Promise<any> {
+    return (await api.get(`/dashboard/peso/internship-attendance/${assignmentId}`, { params })).data;
+  },
+
   async getStudents(params?: any): Promise<PaginatedResponse<any>> {
     const response = await api.get<PaginatedResponse<any>>(
       "/dashboard/peso/students",

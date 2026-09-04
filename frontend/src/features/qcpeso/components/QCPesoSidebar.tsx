@@ -100,9 +100,10 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
           {matchesSearch('Applications History') && <SubLink to="/qcpeso/manage-applicants/history" label="Applications History" icon={<Route size={18} />} isOpen={isOpen} onClose={onClose} />}
         </NavigationGroup>
 
-        <NavigationGroup icon={<BriefcaseBusiness size={20} aria-hidden="true" />} label="Manage Interns" isOpen={manageInternsOpen} onToggle={() => setManageInternsOpen((current) => !current)} visible={matchesSearch('Manage Interns') || matchesSearch('Monitor Attendance') || matchesSearch('Manage Internship')}>
+        <NavigationGroup icon={<BriefcaseBusiness size={20} aria-hidden="true" />} label="Manage Interns" isOpen={manageInternsOpen} onToggle={() => setManageInternsOpen((current) => !current)} visible={matchesSearch('Manage Interns') || matchesSearch('Monitor Attendance') || matchesSearch('Finalize Internships') || matchesSearch('Internship History')}>
           {matchesSearch('Monitor Attendance') && <SubLink to="/qcpeso/manage-interns/attendance" label="Monitor Attendance" icon={<Clock size={18} />} isOpen={isOpen} onClose={onClose} />}
-          {matchesSearch('Manage Internship') && <SubLink to="/qcpeso/manage-interns/internships" label="Manage Internship" icon={<BriefcaseBusiness size={18} />} isOpen={isOpen} onClose={onClose} />}
+          {matchesSearch('Finalize Internships') && <SubLink to="/qcpeso/manage-interns/internships" label="Finalize Internships" icon={<BriefcaseBusiness size={18} />} isOpen={isOpen} onClose={onClose} />}
+          {matchesSearch('Internship History') && <SubLink to="/qcpeso/manage-interns/history" label="Internship History" icon={<Route size={18} />} isOpen={isOpen} onClose={onClose} />}
         </NavigationGroup>
 
         {matchesSearch('Settings') && <NavLink className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`} to="/qcpeso/settings" onClick={onClose} tabIndex={isOpen ? 0 : -1}><Settings size={20} aria-hidden="true" /><span>Settings</span></NavLink>}

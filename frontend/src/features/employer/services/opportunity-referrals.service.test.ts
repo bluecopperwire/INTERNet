@@ -30,13 +30,13 @@ describe('opportunity referral history', () => {
       studentResponse: 'accepted',
     };
     getOpportunityReferrals
-      .mockResolvedValueOnce({ data: [referral], meta: { page: 1, limit: 100, total: 2, totalPages: 2 } })
-      .mockResolvedValueOnce({ data: [{ ...referral, referralId: 9 }], meta: { page: 2, limit: 100, total: 2, totalPages: 2 } });
+      .mockResolvedValueOnce({ data: [referral], meta: { page: 1, limit: 15, total: 2, totalPages: 2 } })
+      .mockResolvedValueOnce({ data: [{ ...referral, referralId: 9 }], meta: { page: 2, limit: 15, total: 2, totalPages: 2 } });
 
     const result = await employerService.getApplicantsForOpportunity('42');
 
-    expect(getOpportunityReferrals).toHaveBeenNthCalledWith(1, 42, { view: 'history', page: 1, limit: 100 });
-    expect(getOpportunityReferrals).toHaveBeenNthCalledWith(2, 42, { view: 'history', page: 2, limit: 100 });
+    expect(getOpportunityReferrals).toHaveBeenNthCalledWith(1, 42, { view: 'history', page: 1, limit: 15 });
+    expect(getOpportunityReferrals).toHaveBeenNthCalledWith(2, 42, { view: 'history', page: 2, limit: 15 });
     expect(result).toHaveLength(2);
     expect(result[0].historyStatus).toBe('Offer Accepted (Student)');
   });

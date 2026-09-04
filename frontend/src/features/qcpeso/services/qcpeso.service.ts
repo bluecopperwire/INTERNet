@@ -48,7 +48,7 @@ export const qcpesoService = {
     const records: QCPesoReviewApplicant[] = [];
     let page = 1;
     do {
-      const result = await qcpesoApiService.getApplications({ view: 'review', page, limit: 100 });
+      const result = await qcpesoApiService.getApplications({ view: 'review', page, limit: 15 });
       records.push(...result.data.map(adaptPesoApplication));
       if (page >= result.meta.totalPages) break;
       page++;
@@ -60,7 +60,7 @@ export const qcpesoService = {
     const records: QCPesoReviewApplicant[] = [];
     let page = 1;
     do {
-      const result = await qcpesoApiService.getApplications({ view: 'history', page, limit: 100 });
+      const result = await qcpesoApiService.getApplications({ view: 'history', page, limit: 15 });
       records.push(...result.data.map(adaptPesoApplication));
       if (page >= result.meta.totalPages) break;
       page++;
@@ -89,9 +89,15 @@ export const qcpesoService = {
   },
 
   async getReferrals(): Promise<QCPesoReferral[]> {
-    const store = useQCPesoStore.getState();
-    await store.fetchReferrals();
-    return useQCPesoStore.getState().referrals;
+    const records: QCPesoReferral[] = [];
+    let page = 1;
+    do {
+      const result = await qcpesoApiService.getReferrals({ page, limit: 15 });
+      records.push(...result.data.map(adaptPesoReferral));
+      if (page >= result.meta.totalPages) break;
+      page++;
+    } while (true);
+    return records;
   },
 
   async getReferral(id: string): Promise<QCPesoReferral | null> {
