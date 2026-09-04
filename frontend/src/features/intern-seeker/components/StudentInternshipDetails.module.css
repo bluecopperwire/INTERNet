@@ -137,6 +137,7 @@
 }
 
 .profileInfo a,
+.profileInfo .contactMeta span,
 .profileInfo p {
   display: flex;
   min-width: 0;
@@ -146,7 +147,8 @@
   font-size: 13px;
 }
 
-.profileInfo a {
+.profileInfo a,
+.profileInfo .contactMeta span {
   overflow: hidden;
   color: #21167b;
   text-overflow: ellipsis;

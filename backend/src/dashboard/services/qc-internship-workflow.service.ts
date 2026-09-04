@@ -207,6 +207,11 @@ export class QcInternshipWorkflowService {
       header: {
         internshipAssignmentId: id,
         studentFullName: detail.intern.studentFullName,
+        studentContactEmail: detail.intern.studentContactEmail,
+        studentContactNumber: detail.intern.studentContactNumber,
+        studentAddress: detail.intern.studentAddress,
+        studentPhotoFilePath: detail.intern.studentPhotoFilePath,
+        studentProfileUpdatedAt: detail.intern.studentProfileUpdatedAt,
         strandProgram: detail.intern.strandProgram,
         jobTitle: detail.assignment.jobTitle,
         companyName: detail.assignment.companyName,
@@ -282,9 +287,15 @@ export class QcInternshipWorkflowService {
   private async loadRows(search: string | null, statuses?: string[]) {
     const rows: Row[] = await this.dataSource.query(
       `SELECT iad.*, COALESCE(ats.total_rendered_minutes, 0) AS total_rendered_minutes,
+         s.contact_email AS profile_contact_email,
+         s.contact_number AS profile_contact_number,
+         concat_ws(', ', NULLIF(s.address_line, ''), NULLIF(s.address_barangay, ''), NULLIF(s.address_city, '')) AS student_address,
+         s.photo_file_path AS student_photo_file_path,
+         s.updated_at AS student_profile_updated_at,
          previous.previous_assignment_status
        FROM public.vw_internship_assignment_details iad
        JOIN public.internship_assignment ia ON ia.internship_assignment_id = iad.internship_assignment_id
+       JOIN public.student s ON s.student_id = iad.student_id
        LEFT JOIN public.vw_attendance_summary ats ON ats.internship_assignment_id = iad.internship_assignment_id
        LEFT JOIN LATERAL (
          SELECT iash.previous_assignment_status
@@ -318,6 +329,11 @@ export class QcInternshipWorkflowService {
     return {
       intern: {
         studentFullName: row.studentFullName,
+        studentContactEmail: row.studentContactEmail,
+        studentContactNumber: row.studentContactNumber,
+        studentAddress: row.studentAddress,
+        studentPhotoFilePath: row.studentPhotoFilePath,
+        studentProfileUpdatedAt: row.studentProfileUpdatedAt,
         strandProgram: row.strandProgram,
         jobTitle: row.jobTitle,
         renderedMinutes: row.renderedMinutes,
@@ -369,6 +385,11 @@ export class QcInternshipWorkflowService {
     return {
       internshipAssignmentId: asNumber(row.internship_assignment_id),
       studentFullName: row.student_full_name,
+      studentContactEmail: row.profile_contact_email,
+      studentContactNumber: row.profile_contact_number,
+      studentAddress: row.student_address,
+      studentPhotoFilePath: row.student_photo_file_path,
+      studentProfileUpdatedAt: row.student_profile_updated_at,
       companyName: row.company_name,
       jobTitle: row.opportunity_title,
       strandProgram: row.strand_program,

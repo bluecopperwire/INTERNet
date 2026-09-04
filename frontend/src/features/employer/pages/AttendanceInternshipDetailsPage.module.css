@@ -26,10 +26,7 @@
   margin-bottom: 20px;
 }
 
-.compactValue {
-  font-size: 1.35rem !important;
-  line-height: 1.3 !important;
-}
+.detailsToolbar { justify-content: flex-end; }
 
 .backButton {
   display: inline-flex;

@@ -5,6 +5,7 @@ const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf
 
 describe('QC PESO Phase 5 workflow contracts', () => {
   const page = read('./pages/InternManagementPages.tsx')
+  const sharedHistory = read('../../components/AttendanceHistoryView.tsx')
 
   it('has dedicated finalization and all-status history workflows', () => {
     for (const label of ['Awaiting Finalization', 'Completed Internships', 'Withdrawal Internships', 'Cancelled Internships']) expect(page).toContain(label)
@@ -17,7 +18,8 @@ describe('QC PESO Phase 5 workflow contracts', () => {
   it('uses the exact internship and attendance column contracts', () => {
     expect(page).toContain('<th>Student Name</th><th>Company</th><th>Job Title</th><th>Program / Strand</th><th>Status</th><th>Action</th>')
     expect(page).toContain('<th>Student Name</th><th>Company</th><th>Job Title</th><th>Program / Strand</th><th>Status</th><th>Action</th>')
-    expect(page).toContain('<th>Date</th><th>Clock In Time</th><th>Clock Out Time</th><th>Rendered Time</th><th>Attendance Status</th>')
+    expect(page).toContain('AttendanceHistoryView')
+    expect(sharedHistory).toContain('<th>Date</th><th>Clock In Time</th><th>Clock Out Time</th><th>Rendered Time</th><th>Attendance Status</th>')
   })
 
   it('shows status-specific QC review content and minute-based totals', () => {

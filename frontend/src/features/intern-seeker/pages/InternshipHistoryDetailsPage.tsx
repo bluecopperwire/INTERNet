@@ -62,7 +62,7 @@ function InternshipHistoryDetailsPage() {
         Back to Internship History
       </button>
       <StudentInternshipDetails assignment={assignment} />
-      <button className={styles.attendanceButton} type="button" onClick={() => navigate(`/intern-seeker/attendance-history/${assignment.internshipAssignmentId}`)}>
+      <button className={styles.attendanceButton} type="button" onClick={() => navigate(`/intern-seeker/attendance-history/${assignment.internshipAssignmentId}`, { state: { attendanceHistoryBackPath: `/intern-seeker/internship-history/${assignment.internshipAssignmentId}` } })}>
         View Attendance History
       </button>
     </div>

@@ -165,6 +165,11 @@ describe('EmployerAttendanceService Phase 4 history', () => {
           assignment_status: 'finalized',
           student_id: 1,
           student_full_name: 'History Student',
+          student_contact_email: 'history@example.test',
+          student_contact_number: '09123456789',
+          student_address: 'Batasan Hills, Quezon City',
+          student_photo_file_path: 'uploads/history.png',
+          student_profile_updated_at: '2026-09-01T00:00:00.000Z',
           strand_program: 'STEM',
           job_title: 'Developer',
           company_name: 'Test Company',
@@ -211,6 +216,10 @@ describe('EmployerAttendanceService Phase 4 history', () => {
       expect.objectContaining({
         jobTitle: 'Developer',
         companyName: 'Test Company',
+        studentContactEmail: 'history@example.test',
+        studentContactNumber: '09123456789',
+        studentAddress: 'Batasan Hills, Quezon City',
+        studentPhotoFilePath: 'uploads/history.png',
         assignmentStatus: 'finalized',
       }),
     );

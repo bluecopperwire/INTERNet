@@ -34,6 +34,7 @@ describe('Phase 2 Student internship workflow responsibilities', () => {
 
   it('uses the reference details layout with the requested internship sections', () => {
     const details = readSource('./components/StudentInternshipDetails.tsx')
+    const profileSummary = readSource('../../components/AttendanceProfileSummary.tsx')
     for (const heading of ['Internship Details', 'Intern Information', 'Assignment Information', 'Schedule Information', 'Status Information']) {
       expect(details).toContain(heading)
     }
@@ -56,9 +57,10 @@ describe('Phase 2 Student internship workflow responsibilities', () => {
     ]) {
       expect(details).toContain(label)
     }
-    expect(details).toContain('INTERN AS')
-    expect(details).not.toContain('APPLIED FOR')
-    expect(details).not.toContain('Applied on')
+    expect(details).toContain('AttendanceProfileSummary')
+    expect(profileSummary).toContain('INTERN AS')
+    expect(profileSummary).not.toContain('APPLIED FOR')
+    expect(profileSummary).not.toContain('Applied on')
   })
 
   it('shows only company completion or cancellation remarks as outcome cards', () => {

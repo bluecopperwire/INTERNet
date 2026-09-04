@@ -168,6 +168,12 @@ describe('StudentsService assignment Attendance History', () => {
       .mockResolvedValueOnce([
         {
           internship_assignment_id: 4,
+          student_full_name: 'History Student',
+          student_contact_email: 'history@example.test',
+          student_contact_number: '09123456789',
+          student_address: 'Batasan Hills, Quezon City',
+          student_photo_file_path: 'uploads/history.png',
+          student_profile_updated_at: '2026-09-01T00:00:00.000Z',
           assignment_status: 'finalized',
           required_minutes: 480,
           start_date: '2026-09-01',
@@ -208,6 +214,11 @@ describe('StudentsService assignment Attendance History', () => {
 
     expect(result.assignment).toMatchObject({
       internshipAssignmentId: 4,
+      studentFullName: 'History Student',
+      studentContactEmail: 'history@example.test',
+      studentContactNumber: '09123456789',
+      studentAddress: 'Batasan Hills, Quezon City',
+      studentPhotoFilePath: 'uploads/history.png',
       assignmentStatus: 'finalized',
     });
     expect(result.summary).toEqual({

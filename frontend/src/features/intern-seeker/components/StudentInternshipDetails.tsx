@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
-import { Building2, CalendarDays, ChartNoAxesColumnIncreasing, Mail, MapPin, Phone, User } from 'lucide-react'
+import { Building2, CalendarDays, ChartNoAxesColumnIncreasing, User } from 'lucide-react'
 import type { StudentInternshipDto } from '../../../types/api'
-import { publicUploadUrl } from '../../../utils/public-upload-url'
+import { AttendanceProfileSummary } from '../../../components/AttendanceProfileSummary'
 import { assignmentHasEnded, formatAssignmentDate, formatMinutes, formatShift, formatWorkingDays, studentAssignmentStatus } from '../utils/internship-display'
 import styles from './StudentInternshipDetails.module.css'
 
@@ -26,7 +26,6 @@ export function StudentInternshipDetails({ assignment, interactive = false, onWi
   const canReview = assignment.assignmentStatus === 'complete_company'
   const canWithdraw = ['pending', 'ongoing'].includes(assignment.assignmentStatus)
   const outcomeRemark = resolveOutcomeRemark(assignment)
-  const profileImageUrl = publicUploadUrl(assignment.studentPhotoFilePath, assignment.studentProfileUpdatedAt)
 
   const closeModal = () => {
     if (isSubmitting) return
@@ -102,36 +101,7 @@ export function StudentInternshipDetails({ assignment, interactive = false, onWi
       </header>
 
       <div className={styles.content}>
-        <aside className={styles.profileSummary} aria-label="Intern profile summary">
-          <div className={styles.profileIdentity}>
-            <div className={styles.avatar}>
-              {profileImageUrl ? <img src={profileImageUrl} alt={`${assignment.studentFullName} profile`} /> : <User size={30} />}
-            </div>
-            <div className={styles.profileInfo}>
-              <h2>{displayValue(assignment.studentFullName)}</h2>
-              <div className={styles.contactMeta}>
-                <a href={`mailto:${assignment.studentContactEmail}`}>
-                  <Mail size={14} />
-                  {displayValue(assignment.studentContactEmail)}
-                </a>
-                <a href={`tel:${assignment.studentContactNumber}`}>
-                  <Phone size={14} />
-                  {displayValue(assignment.studentContactNumber)}
-                </a>
-              </div>
-              <p>
-                <MapPin size={14} />
-                {displayValue(assignment.studentAddress)}
-              </p>
-            </div>
-          </div>
-          <div className={styles.profileDivider} />
-          <div className={styles.internAs}>
-            <span>INTERN AS</span>
-            <h3>{displayValue(assignment.jobTitle)}</h3>
-            <p>{displayValue(assignment.companyName)}</p>
-          </div>
-        </aside>
+        <AttendanceProfileSummary profile={assignment} />
 
         <div className={styles.sectionStack}>
           <DetailSection icon={<User size={18} />} title="Intern Information" fields={internFields} />

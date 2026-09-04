@@ -1,19 +1,21 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowLeft } from 'lucide-react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import type { AttendanceStatus, StudentAttendanceHistoryResponse } from '../../../types/api'
+import { AttendanceHistoryView } from '../../../components/AttendanceHistoryView'
 import { useAuthStore } from '../../../stores/useAuthStore'
 import { getErrorMessage } from '../../../utils/error-message'
 import { studentApiService } from '../services/student-api.service'
-import { formatMinutes, formatManilaDate } from '../utils/internship-display'
 import styles from './AttendanceHistoryPage.module.css'
+
+const PAGE_SIZES = [5, 10, 15] as const
 
 function AttendanceHistoryPage() {
   const { assignmentId } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const studentId = useAuthStore((state) => state.user?.studentId)
   const numericAssignmentId = Number(assignmentId)
-  const [status, setStatus] = useState<'all' | AttendanceStatus>('all')
+  const [status, setStatus] = useState<'' | AttendanceStatus>('')
   const [date, setDate] = useState('')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(5)
@@ -25,7 +27,7 @@ function AttendanceHistoryPage() {
   const load = useCallback(async () => {
     if (!studentId || !valid) return
     setIsLoading(true); setError(null)
-    try { setData(await studentApiService.getAttendanceHistory(studentId, numericAssignmentId, { status: status === 'all' ? undefined : status, date: date || undefined, page, limit })) }
+    try { setData(await studentApiService.getAttendanceHistory(studentId, numericAssignmentId, { status: status || undefined, date: date || undefined, page, limit })) }
     catch (requestError) { setError(getErrorMessage(requestError, 'Unable to load Attendance History.')) }
     finally { setIsLoading(false) }
   }, [date, limit, numericAssignmentId, page, status, studentId, valid])
@@ -40,8 +42,33 @@ function AttendanceHistoryPage() {
   if (error && !data) return <p className={styles.feedback} role="alert">{error}</p>
   if (!data) return null
 
-  const summary = data.summary
-  return <div className={styles.page}><button className={styles.backButton} type="button" onClick={() => navigate(-1)}><ArrowLeft size={18} />Back</button><section className={styles.card}><header className={styles.header}><h1>{data.assignment.jobTitle} at {data.assignment.companyName}</h1></header><div className={styles.summaryGrid}>{[['Days Present', String(summary.daysPresent)], ['Days Absent', String(summary.daysAbsent)], ['Rendered Hours', formatMinutes(summary.renderedMinutes)], ['Remaining Hours', formatMinutes(summary.remainingMinutes)]].map(([label, value]) => <article className={styles.summaryCard} key={label}><strong>{label}</strong><span>{value}</span></article>)}</div><div className={styles.filters}><label>Status filter<select value={status} onChange={(event) => { setStatus(event.target.value as 'all' | AttendanceStatus); setPage(1) }}><option value="all">All</option><option value="present">Present</option><option value="absent">Absent</option><option value="incomplete">Incomplete</option></select></label><label>Date filter<input type="date" value={date} onChange={(event) => { setDate(event.target.value); setPage(1) }} /></label></div>{error && <p className={styles.inlineError} role="alert">{error}</p>}<div className={styles.tableScroller}><table><thead><tr><th>Date</th><th>Clock In Time</th><th>Clock Out Time</th><th>Rendered Time</th><th>Attendance Status</th></tr></thead><tbody>{data.records.map((record) => <tr key={record.attendanceRecordId}><td>{formatManilaDate(record.date)}</td><td>{record.timeIn ? record.timeIn.slice(0, 5) : '-'}</td><td>{record.timeOut ? record.timeOut.slice(0, 5) : '-'}</td><td>{formatMinutes(record.renderedMinutes)}</td><td><span className={`${styles.status} ${styles[record.status]}`}>{record.status[0].toUpperCase() + record.status.slice(1)}</span></td></tr>)}</tbody></table></div>{data.records.length === 0 && <div className={styles.empty}><h2>No attendance records found</h2><p>Try another status or date filter.</p></div>}<footer className={styles.pagination}><label>Rows per page<select value={limit} onChange={(event) => { setLimit(Number(event.target.value)); setPage(1) }}>{[5, 10, 15].map((size) => <option key={size} value={size}>{size}</option>)}</select></label><span>Page {data.meta.page} of {Math.max(data.meta.totalPages, 1)}</span><div><button type="button" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>Previous</button><button type="button" disabled={page >= data.meta.totalPages} onClick={() => setPage((value) => value + 1)}>Next</button></div></footer></section></div>
+  const historyDetailsPath = `/intern-seeker/internship-history/${numericAssignmentId}`
+  const backRoutes: Record<string, string> = {
+    '/intern-seeker/attendance': 'Back to Attendance',
+    [historyDetailsPath]: 'Back to Internship Details',
+  }
+  const requestedBackPath = (location.state as { attendanceHistoryBackPath?: string } | null)?.attendanceHistoryBackPath
+  const backPath = requestedBackPath && backRoutes[requestedBackPath] ? requestedBackPath : '/intern-seeker/attendance'
+
+  return <AttendanceHistoryView
+    backLabel={backRoutes[backPath]}
+    onBack={() => navigate(backPath)}
+    profile={data.assignment}
+    summary={data.summary}
+    records={data.records.map((record) => ({ id: record.attendanceRecordId, date: record.date, timeIn: record.timeIn, timeOut: record.timeOut, renderedMinutes: record.renderedMinutes, status: record.status }))}
+    date={date}
+    status={status}
+    onDateChange={(value) => { setDate(value); setPage(1) }}
+    onStatusChange={(value) => { setStatus(value as '' | AttendanceStatus); setPage(1) }}
+    page={page}
+    limit={limit}
+    totalPages={data.meta.totalPages}
+    pageSizes={PAGE_SIZES}
+    onPageChange={setPage}
+    onLimitChange={(value) => { setLimit(value); setPage(1) }}
+    loading={isLoading}
+    error={error}
+  />
 }
 
 export default AttendanceHistoryPage

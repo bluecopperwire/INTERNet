@@ -292,6 +292,12 @@ export type AttendanceStatus = 'present' | 'absent' | 'incomplete';
 export interface StudentAttendanceHistoryResponse {
   assignment: {
     internshipAssignmentId: number;
+    studentFullName: string;
+    studentContactEmail?: string | null;
+    studentContactNumber?: string | null;
+    studentAddress?: string | null;
+    studentPhotoFilePath?: string | null;
+    studentProfileUpdatedAt?: string | null;
     companyName: string;
     jobTitle: string;
     assignmentStatus: AssignmentStatus;
@@ -618,6 +624,11 @@ export interface EmployerAttendanceHistoryDto {
   header: {
     internshipAssignmentId: number;
     studentFullName: string;
+    studentContactEmail?: string | null;
+    studentContactNumber?: string | null;
+    studentAddress?: string | null;
+    studentPhotoFilePath?: string | null;
+    studentProfileUpdatedAt?: string | null;
     strandProgram: string | null;
     jobTitle: string;
     companyName: string;

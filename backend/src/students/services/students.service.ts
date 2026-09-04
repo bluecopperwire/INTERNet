@@ -1987,6 +1987,12 @@ export class StudentsService {
               ia.required_minutes, ia.start_date::text AS start_date,
               ia.expected_end_date::text AS expected_end_date, ia.ended_at,
               ia.working_days, ia.start_shift, ia.end_shift,
+              concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS student_full_name,
+              s.contact_email AS student_contact_email,
+              s.contact_number AS student_contact_number,
+              concat_ws(', ', NULLIF(s.address_line, ''), NULLIF(s.address_barangay, ''), NULLIF(s.address_city, '')) AS student_address,
+              s.photo_file_path AS student_photo_file_path,
+              s.updated_at AS student_profile_updated_at,
               o.title AS job_title, c.company_name,
               COALESCE(ats.total_rendered_minutes, 0::bigint) AS rendered_minutes,
               COALESCE(ats.present_count, 0::bigint) AS days_present,
@@ -1994,6 +2000,7 @@ export class StudentsService {
        FROM public.internship_assignment ia
        JOIN public.referral r ON r.referral_id = ia.referral_id
        JOIN public.application a ON a.application_id = r.application_id
+       JOIN public.student s ON s.student_id = a.student_id
        JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
        JOIN public.company c ON c.company_id = o.company_id
        LEFT JOIN public.vw_attendance_summary ats
@@ -2049,6 +2056,12 @@ export class StudentsService {
     return {
       assignment: {
         internshipAssignmentId: Number(assignment.internship_assignment_id),
+        studentFullName: assignment.student_full_name,
+        studentContactEmail: assignment.student_contact_email,
+        studentContactNumber: assignment.student_contact_number,
+        studentAddress: assignment.student_address,
+        studentPhotoFilePath: assignment.student_photo_file_path,
+        studentProfileUpdatedAt: assignment.student_profile_updated_at,
         companyName: assignment.company_name,
         jobTitle: assignment.job_title,
         assignmentStatus: assignment.assignment_status,

@@ -102,6 +102,11 @@ export class EmployerAttendanceService {
         SELECT ia.internship_assignment_id, ia.required_minutes,
                ia.assignment_status, s.student_id,
                concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS student_full_name,
+               s.contact_email AS student_contact_email,
+               s.contact_number AS student_contact_number,
+               concat_ws(', ', NULLIF(s.address_line, ''), NULLIF(s.address_barangay, ''), NULLIF(s.address_city, '')) AS student_address,
+               s.photo_file_path AS student_photo_file_path,
+               s.updated_at AS student_profile_updated_at,
                sai.strand_program, o.title AS job_title, c.company_name
         FROM public.internship_assignment ia
         JOIN public.referral r ON r.referral_id = ia.referral_id
@@ -169,6 +174,11 @@ export class EmployerAttendanceService {
       header: {
         internshipAssignmentId,
         studentFullName: assignment.student_full_name,
+        studentContactEmail: assignment.student_contact_email,
+        studentContactNumber: assignment.student_contact_number,
+        studentAddress: assignment.student_address,
+        studentPhotoFilePath: assignment.student_photo_file_path,
+        studentProfileUpdatedAt: assignment.student_profile_updated_at,
         strandProgram: assignment.strand_program,
         jobTitle: assignment.job_title,
         companyName: assignment.company_name,

@@ -16,6 +16,8 @@ describe('QcInternshipWorkflowService Phase 5', () => {
     expect(sql).toContain("new_assignment_status = 'finalized'");
     expect(sql).toContain('previous_assignment_status');
     expect(sql).toContain('qc_peso_hidden_at');
+    expect(sql).toContain('student_photo_file_path');
+    expect(sql).toContain('profile_contact_email');
   });
 
   it('uses historical ongoing dates, actual ended_at and exact selected-date attendance without writes', async () => {

@@ -1,4 +1,5 @@
 import type { AssignmentStatus, StudentAttendanceResponse } from '../../../types/api'
+import { formatAttendanceHours } from '../../../utils/attendance-format'
 
 export function buildCalendarDays(data: StudentAttendanceResponse, month: Date) {
   const year = month.getFullYear()
@@ -30,5 +31,5 @@ export function getTodayTag(status: AssignmentStatus, isWorkday: boolean, today:
 }
 
 export function formatSummaryHours(minutes: number): string {
-  return new Intl.NumberFormat('en-PH', { maximumFractionDigits: 2 }).format(Math.max(0, minutes) / 60)
+  return formatAttendanceHours(minutes)
 }
