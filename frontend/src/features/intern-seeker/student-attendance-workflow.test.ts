@@ -70,7 +70,7 @@ describe('Phase 3 Student Attendance workflow', () => {
     expect(page).not.toContain('formatMinutes(summary.renderedMinutes)')
     expect(history).toContain('AttendanceHistoryView')
     for (const column of ['Date', 'Clock In Time', 'Clock Out Time', 'Rendered Time', 'Attendance Status']) expect(sharedHistory).toContain(column)
-    for (const filter of ['All Statuses', 'Present', 'Absent', 'Incomplete']) expect(sharedHistory).toContain(filter)
+    for (const filter of ['>All<', 'Present', 'Absent', 'Incomplete']) expect(sharedHistory).toContain(filter)
     expect(history).toContain('[5, 10, 15]')
     expect(app).toContain('attendance-history/:assignmentId')
     expect(page).not.toContain('View Internship Details')

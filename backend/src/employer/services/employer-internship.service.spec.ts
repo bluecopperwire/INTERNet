@@ -3,7 +3,11 @@ import { ConflictException } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import type { DataSource, QueryRunner } from 'typeorm';
-import { AssignmentRemarkDto, CreateAssignmentDto } from '../dto';
+import {
+  AssignmentRemarkDto,
+  CreateAssignmentDto,
+  InternshipHistoryStatus,
+} from '../dto';
 import { EmployerInternshipService } from './employer-internship.service';
 import type { EmployerCompanyResolver } from './company-resolver.service';
 import { currentManilaDate } from '../utils/time.utils';
@@ -512,6 +516,23 @@ describe('EmployerInternshipService', () => {
     });
     const result = await service.history(50, { page: 1, limit: 10 });
     expect(result.data.map((row) => row.assignmentStatus)).toEqual(statuses);
+    const active = await service.history(50, {
+      page: 1,
+      limit: 10,
+      status: InternshipHistoryStatus.ACTIVE,
+    });
+    expect(active.data.map((row) => row.assignmentStatus)).toEqual([
+      'pending',
+      'ongoing',
+    ]);
+    const closed = await service.history(50, {
+      page: 1,
+      limit: 10,
+      status: InternshipHistoryStatus.CLOSED,
+    });
+    expect(closed.data.map((row) => row.assignmentStatus)).toEqual(
+      statuses.slice(2),
+    );
     const sql = query.mock.calls.map(([value]) => String(value)).join('\n');
     expect(sql).toContain('iav.employer_hidden_at IS NOT NULL');
     expect(sql).not.toContain('internship_feedback');

@@ -60,6 +60,17 @@ describe('Company internship workflow display helpers', () => {
     }
   });
 
+  it('offers grouped history filters and finalized-only row deletion', () => {
+    const source = readSource('../pages/InternshipHistoryPage.tsx');
+    const styles = readSource('../pages/MonitorInternshipPage.module.css');
+    expect(source).toContain('<option value="">All</option><option value="active">Active</option><option value="closed">Closed</option>');
+    expect(source).toContain("row.assignmentStatus === 'finalized'");
+    expect(source).toContain('styles.rowActions');
+    expect(source).toContain('styles.deleteButton');
+    expect(source).toContain('ConfirmDeleteModal');
+    expect(styles).toContain('.deleteButton');
+  });
+
   it('uses the Student details layout with only Company-appropriate controls', () => {
     const details = readSource('../pages/MonitorInternshipDetailsPage.tsx');
     for (const heading of ['Internship Details', 'Intern Information', 'Assignment Information', 'Schedule Information', 'Status Information']) {

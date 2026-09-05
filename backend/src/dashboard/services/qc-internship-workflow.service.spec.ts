@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import type { DataSource, QueryRunner } from 'typeorm';
 import { ConflictException } from '@nestjs/common';
 import { QcInternshipWorkflowService } from './qc-internship-workflow.service';
+import { QcAssignmentStatusFilter } from '../dto/peso-dashboard.dto';
 
 describe('QcInternshipWorkflowService Phase 5', () => {
   it('limits finalization to the three eligible states and reads final history from status history', async () => {
@@ -115,6 +116,49 @@ describe('QcInternshipWorkflowService Phase 5', () => {
       'INSERT INTO public.internship_assignment_visibility',
     );
     expect(String(query.mock.calls[1][0])).not.toMatch(/DELETE\s+FROM/i);
+  });
+
+  it('groups internship history into active and closed lifecycle states', async () => {
+    const assignments = [
+      'pending',
+      'ongoing',
+      'complete_company',
+      'complete_student',
+      'withdrawn',
+      'cancelled',
+      'finalized',
+    ].map((assignment_status, index) => ({
+      internship_assignment_id: index + 1,
+      assignment_status,
+      required_minutes: 600,
+      total_rendered_minutes: 0,
+    }));
+    const service = new QcInternshipWorkflowService({
+      query: jest.fn().mockResolvedValue(assignments),
+    } as unknown as DataSource);
+
+    const active = await service.history({
+      page: 1,
+      limit: 10,
+      status: QcAssignmentStatusFilter.ACTIVE,
+    });
+    expect(active.data.map((row) => row.assignmentStatus)).toEqual([
+      'pending',
+      'ongoing',
+    ]);
+
+    const closed = await service.history({
+      page: 1,
+      limit: 10,
+      status: QcAssignmentStatusFilter.CLOSED,
+    });
+    expect(closed.data.map((row) => row.assignmentStatus)).toEqual([
+      'complete_company',
+      'complete_student',
+      'withdrawn',
+      'cancelled',
+      'finalized',
+    ]);
   });
 
   it('never selects the Student Company review from an Employer workflow query', () => {

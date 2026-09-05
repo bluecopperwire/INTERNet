@@ -117,6 +117,8 @@ export class QcWorkflowPaginationDto {
 }
 
 export enum QcAssignmentStatusFilter {
+  ACTIVE = 'active',
+  CLOSED = 'closed',
   PENDING = 'pending',
   ONGOING = 'ongoing',
   COMPLETE_COMPANY = 'complete_company',

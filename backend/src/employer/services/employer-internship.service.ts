@@ -14,7 +14,7 @@ import type {
   InternshipListQueryDto,
   UpdateAssignmentDto,
 } from '../dto';
-import { InternshipListStatus } from '../dto';
+import { InternshipHistoryStatus, InternshipListStatus } from '../dto';
 import { EmployerCompanyResolver } from './company-resolver.service';
 import {
   remainingMinutes,
@@ -292,9 +292,12 @@ export class EmployerInternshipService {
     );
     let enriched = await this.enrichWithRenderedHours(rows);
     if (query.status) {
-      enriched = enriched.filter(
-        (row) => row.assignmentStatus === String(query.status),
-      );
+      enriched = enriched.filter((row) => {
+        const isActive = ['pending', 'ongoing'].includes(row.assignmentStatus);
+        if (query.status === InternshipHistoryStatus.ACTIVE) return isActive;
+        if (query.status === InternshipHistoryStatus.CLOSED) return !isActive;
+        return row.assignmentStatus === String(query.status);
+      });
     }
     const total = enriched.length;
     const offset = (query.page - 1) * query.limit;

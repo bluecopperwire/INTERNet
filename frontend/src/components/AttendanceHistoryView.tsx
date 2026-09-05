@@ -47,7 +47,7 @@ export function AttendanceHistoryView(props: AttendanceHistoryViewProps) {
         </div>
         <div className={styles.toolbar}>
           <label className={styles.filter}><CalendarDays size={16} /><span className={styles.srOnly}>Attendance date</span><input type="date" value={props.date} onChange={(event) => props.onDateChange(event.target.value)} /></label>
-          <label className={styles.filter}><SlidersHorizontal size={16} /><span className={styles.srOnly}>Attendance status</span><select value={props.status} onChange={(event) => props.onStatusChange(event.target.value)}><option value="">All Statuses</option><option value="present">Present</option><option value="absent">Absent</option><option value="incomplete">Incomplete</option></select></label>
+          <label className={styles.filter}><SlidersHorizontal size={16} /><span className={styles.srOnly}>Attendance status</span><select value={props.status} onChange={(event) => props.onStatusChange(event.target.value)}><option value="">All</option><option value="present">Present</option><option value="absent">Absent</option><option value="incomplete">Incomplete</option></select></label>
         </div>
         <section className={styles.tableCard} aria-label="Attendance history">
           <div className={styles.tableScroller}>
@@ -70,7 +70,7 @@ export function AttendanceHistoryView(props: AttendanceHistoryViewProps) {
 }
 
 function SummaryCard({ label, value }: { label: string; value: number }) {
-  return <article className={styles.summaryCard}><h2>{label}</h2><p>{value}</p></article>
+  return <article className={styles.summaryCard}><h2>{label}</h2><p>{String(value).padStart(2, '0')}</p></article>
 }
 
 function StatusPill({ status }: { status: string }) {

@@ -11,6 +11,7 @@ import type {
   QcAttendanceListQueryDto,
   QcInternshipListQueryDto,
 } from '../dto/peso-dashboard.dto';
+import { QcAssignmentStatusFilter } from '../dto/peso-dashboard.dto';
 import { asNumber, paginate } from '../../employer/utils/response.utils';
 import {
   remainingMinutes,
@@ -84,10 +85,14 @@ export class QcInternshipWorkflowService {
 
   async history(query: QcInternshipListQueryDto) {
     let rows = await this.loadRows(query.search?.trim() || null);
-    if (query.status)
-      rows = rows.filter(
-        (row) => row.assignmentStatus === String(query.status),
-      );
+    if (query.status) {
+      rows = rows.filter((row) => {
+        const isActive = ['pending', 'ongoing'].includes(row.assignmentStatus);
+        if (query.status === QcAssignmentStatusFilter.ACTIVE) return isActive;
+        if (query.status === QcAssignmentStatusFilter.CLOSED) return !isActive;
+        return row.assignmentStatus === String(query.status);
+      });
+    }
     return this.page(rows, query);
   }
 

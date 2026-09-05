@@ -8,6 +8,8 @@ export enum InternshipListStatus {
 }
 
 export enum InternshipHistoryStatus {
+  ACTIVE = 'active',
+  CLOSED = 'closed',
   PENDING = 'pending',
   ONGOING = 'ongoing',
   COMPLETE_COMPANY = 'complete_company',
