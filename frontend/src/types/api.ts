@@ -569,7 +569,14 @@ export interface EmployerInternshipDetailDto {
   intern: {
     studentId: number;
     studentFullName: string;
+    studentContactEmail: string | null;
+    studentContactNumber: string | null;
+    studentAddress: string | null;
+    studentPhotoFilePath: string | null;
+    studentProfileUpdatedAt: string | null;
     strandProgram: string | null;
+    yearLevel: string | null;
+    schoolName: string | null;
     jobTitle: string;
     requiredHours: number;
     requiredMinutes: number;

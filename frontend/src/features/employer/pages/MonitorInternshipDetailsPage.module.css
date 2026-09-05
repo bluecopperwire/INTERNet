@@ -21,6 +21,17 @@
   margin: 0 auto;
 }
 
+.detailsShell {
+  max-width: none;
+}
+
+.headingActions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+}
+
 .backButton {
   display: inline-flex;
   align-items: center;
@@ -174,6 +185,26 @@
   background: #160e6f;
 }
 
+.inlineInput {
+  box-sizing: border-box;
+  width: min(320px, 100%);
+  height: 40px;
+  padding: 0 11px;
+  border: 1px solid #aeb8cf;
+  border-radius: 6px;
+  outline: none;
+  color: #21167b;
+  background: #ffffff;
+  font: inherit;
+  font-weight: 500;
+  text-align: right;
+}
+
+.inlineInput:focus {
+  border-color: #21167b;
+  box-shadow: 0 0 0 3px rgba(33, 22, 123, 0.1);
+}
+
 .statusHeader {
   padding: 20px 24px;
   border-bottom: 2px solid #160e6f;
@@ -252,9 +283,11 @@
 
 .dayOptions {
   display: flex;
+  width: min(520px, 100%);
   min-height: 52px;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px 14px;
   padding: 8px 12px;
   border: 1px solid #cfd5e6;
@@ -270,6 +303,49 @@
 }
 
 .dayOptions input { width: auto; height: auto; }
+
+.editActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 2px;
+}
+
+.editActions button {
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.companyActions button {
+  display: inline-flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 18px;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.companyActions {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.companyActions button:disabled {
+  opacity: .48;
+  cursor: not-allowed;
+}
 
 .footer {
   display: flex;
@@ -433,6 +509,30 @@
     align-items: flex-start;
     flex-wrap: wrap;
     padding: 18px 20px;
+  }
+
+  .headingActions {
+    width: 100%;
+    align-items: flex-start;
+    flex-direction: column-reverse;
+  }
+
+  .inlineInput,
+  .dayOptions {
+    width: 100%;
+  }
+
+  .inlineInput {
+    text-align: left;
+  }
+
+  .dayOptions {
+    justify-content: flex-start;
+  }
+
+  .editActions {
+    align-items: stretch;
+    flex-direction: column-reverse;
   }
 
   .hoursSummary {

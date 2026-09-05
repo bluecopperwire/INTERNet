@@ -12,7 +12,7 @@ import { employerApiService } from '../services/employer-api.service';
 import { COMPANY_PAGE_SIZES, formatMinutes, MANAGE_INTERNSHIP_COLUMNS } from '../utils/internship-workflow';
 import styles from './MonitorInternshipPage.module.css';
 
-const EMPTY_META: PageMeta = { page: 1, limit: 10, total: 0, totalPages: 0 };
+const EMPTY_META: PageMeta = { page: 1, limit: 5, total: 0, totalPages: 0 };
 
 export function MonitorInternshipPage() {
   const navigate = useNavigate();
@@ -27,7 +27,7 @@ export function MonitorInternshipPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(5);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 

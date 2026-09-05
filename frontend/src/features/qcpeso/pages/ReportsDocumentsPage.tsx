@@ -17,7 +17,7 @@ export function ReportsDocumentsPage() {
   const [applications, setApplications] = useState<StudentApplication[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedStatus, setSelectedStatus] = useState('All')
-  const [itemsPerPage, setItemsPerPage] = useState(7)
+  const [itemsPerPage, setItemsPerPage] = useState(5)
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedApplication, setSelectedApplication] = useState<StudentApplication | null>(null)
 
@@ -171,7 +171,7 @@ export function ReportsDocumentsPage() {
           <div className={styles.leftControls}>
             <span>View</span>
             <select className={styles.viewSelect} value={itemsPerPage} onChange={(event) => { setItemsPerPage(Number(event.target.value)); setCurrentPage(1) }}>
-              <option value={7}>7</option><option value={10}>10</option><option value={15}>15</option>
+              <option value={5}>5</option><option value={7}>7</option><option value={10}>10</option><option value={15}>15</option>
             </select>
             <span>Students per page</span>
           </div>

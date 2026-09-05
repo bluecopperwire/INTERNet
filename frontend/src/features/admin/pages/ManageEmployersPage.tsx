@@ -12,7 +12,7 @@ export function ManageEmployersPage() {
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('All Statuses')
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(7)
+  const [pageSize, setPageSize] = useState(5)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -194,6 +194,7 @@ function Pagination({
           value={pageSize}
           onChange={(event) => onPageSize(Number(event.target.value))}
         >
+          <option value={5}>5</option>
           <option value={7}>7</option>
           <option value={14}>14</option>
           <option value={21}>21</option>

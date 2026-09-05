@@ -16,11 +16,11 @@ export function EmployerInternshipHistoryPage() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<EmployerInternshipListItemDto[]>([]);
   const [summary, setSummary] = useState<EmployerInternshipHistorySummaryDto>({ totalInternships: 0, activeInternships: 0, closedInternships: 0 });
-  const [meta, setMeta] = useState<PageMeta>({ page: 1, limit: 10, total: 0, totalPages: 0 });
+  const [meta, setMeta] = useState<PageMeta>({ page: 1, limit: 5, total: 0, totalPages: 0 });
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(5);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 

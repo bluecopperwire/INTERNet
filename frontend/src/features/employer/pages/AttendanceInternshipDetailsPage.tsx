@@ -16,7 +16,7 @@ export function AttendanceInternshipDetailsPage() {
   const [status, setStatus] = useState('')
   const [date, setDate] = useState('')
   const [page, setPage] = useState(1)
-  const [limit, setLimit] = useState(10)
+  const [limit, setLimit] = useState(5)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 

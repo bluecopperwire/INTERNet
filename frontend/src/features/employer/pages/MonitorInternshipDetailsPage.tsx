@@ -1,15 +1,16 @@
-import { ArrowLeft, Pencil } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { ArrowLeft, Building2, CalendarDays, ChartNoAxesColumnIncreasing, Pencil, User } from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import type { EmployerInternshipDetailDto } from '../../../types/api';
+import { AttendanceProfileSummary } from '../../../components/AttendanceProfileSummary';
 import { useToastStore } from '../../../stores/useToastStore';
+import type { EmployerInternshipDetailDto } from '../../../types/api';
 import { isValidDateOnly, todayDateOnly } from '../../../utils/date-only';
 import { getErrorMessage } from '../../../utils/error-message';
+import detailStyles from '../../intern-seeker/components/StudentInternshipDetails.module.css';
 import { employerApiService } from '../services/employer-api.service';
 import {
   assignmentStatusLabel,
   formatClockTime,
-  formatMinutes,
   formatWorkingDays,
 } from '../utils/internship-workflow';
 import styles from './MonitorInternshipDetailsPage.module.css';
@@ -24,6 +25,8 @@ type AssignmentForm = {
   startShift: string;
   endShift: string;
 };
+
+type DetailField = readonly [label: string, value: ReactNode];
 
 function toForm(details: EmployerInternshipDetailDto): AssignmentForm {
   return {
@@ -52,16 +55,23 @@ export function MonitorInternshipDetailsPage() {
   useEffect(() => {
     if (!Number.isInteger(assignmentId)) return;
     employerApiService.getInternship(assignmentId)
-      .then((result) => { setDetails(result); setForm(toForm(result)); })
+      .then((result) => {
+        setDetails(result);
+        setForm(toForm(result));
+      })
       .catch((reason: unknown) => setError(getErrorMessage(reason, 'Unable to load internship details.')))
       .finally(() => setLoading(false));
   }, [assignmentId]);
 
   if (!Number.isInteger(assignmentId)) return <main className={styles.feedback} role="alert">Internship assignment not found.</main>;
   if (loading) return <main className={styles.feedback}>Loading internship details...</main>;
-  if (error || !details || !form) return <main className={styles.feedback} role="alert">{error || 'Internship assignment not found.'}</main>;
+  if (error && (!details || !form)) return <main className={styles.feedback} role="alert">{error}</main>;
+  if (!details || !form) return <main className={styles.feedback} role="alert">Internship assignment not found.</main>;
 
-  const update = <K extends keyof AssignmentForm>(key: K, value: AssignmentForm[K]) => setForm((current) => current ? { ...current, [key]: value } : current);
+  const update = <K extends keyof AssignmentForm>(key: K, value: AssignmentForm[K]) => {
+    setForm((current) => current ? { ...current, [key]: value } : current);
+  };
+
   const save = async () => {
     if (!isValidDateOnly(form.startDate) || (form.expectedEndDate && !isValidDateOnly(form.expectedEndDate))) return setError('Enter valid start and expected end dates.');
     if (form.expectedEndDate && form.expectedEndDate < form.startDate) return setError('Expected end date must be on or after the start date.');
@@ -90,58 +100,182 @@ export function MonitorInternshipDetailsPage() {
     if (!transition) return;
     setSaving(true);
     try {
-      if (transition === 'complete') await employerApiService.completeInternship(assignmentId, remark);
-      else await employerApiService.cancelInternship(assignmentId, remark);
-      toast.success(transition === 'complete' ? 'Internship marked as completed.' : 'Internship cancelled.');
+      if (transition === 'complete') {
+        await employerApiService.completeInternship(assignmentId, remark);
+        toast.success('Internship marked as complete.');
+      } else {
+        await employerApiService.cancelInternship(assignmentId, remark);
+        toast.success('Internship cancelled.');
+      }
       setTransition(null);
       navigate('/employer/manage-internship');
     } catch (reason: unknown) {
-      toast.error(getErrorMessage(reason, `Failed to ${transition} internship.`));
+      toast.error(getErrorMessage(reason, `Failed to ${transition === 'complete' ? 'complete' : 'cancel'} internship.`));
     } finally {
       setSaving(false);
     }
   };
 
-  const active = ['pending', 'ongoing'].includes(details.status.assignmentStatus);
+  const statusLabel = assignmentStatusLabel(details.status.assignmentStatus);
+  const statusClass = ['complete_company', 'complete_student'].includes(details.status.assignmentStatus)
+    ? 'completed'
+    : details.status.assignmentStatus;
+  const hasEnded = !['pending', 'ongoing'].includes(details.status.assignmentStatus);
 
-  return <main className={styles.page}>
-    <div className={styles.wrap}>
-      <button type="button" className={styles.backButton} onClick={() => navigate('/employer/manage-internship')}><ArrowLeft size={19} />Back to Manage Internship</button>
-      <section className={styles.studentSummary}>
-        <div><h1>{details.assignment.jobTitle} at {details.assignment.companyName}</h1><p>{details.intern.studentFullName} · {details.intern.strandProgram || 'Program / Strand not provided'}</p></div>
-        <span className={styles.statusTag}>{assignmentStatusLabel(details.status.assignmentStatus)}</span>
-      </section>
+  const internFields: DetailField[] = [
+    ['Full Name', displayValue(details.intern.studentFullName)],
+    ['Program / Strand', displayValue(details.intern.strandProgram)],
+    ['Year Level', displayValue(details.intern.yearLevel)],
+    ['School', displayValue(details.intern.schoolName)],
+  ];
 
-      <section className={styles.detailCard}>
-        <header className={styles.cardHeader}><div><h2>Internship Details</h2><p>Assignment schedule and required internship duration.</p></div>{details.status.canEdit && !editing && <button type="button" className={styles.editButton} onClick={() => setEditing(true)}><Pencil size={16} />Edit Details</button>}</header>
-        <div className={styles.formGrid}>
-          <ReadField label="Student" value={details.intern.studentFullName} />
-          <ReadField label="Program / Strand" value={details.intern.strandProgram || 'N/A'} />
-          <ReadField label="Job Title" value={details.assignment.jobTitle} />
-          <label className={styles.field}><span>Working Days</span>{editing ? <div className={styles.dayOptions}>{DAY_NAMES.map((name, day) => <label key={name}><input type="checkbox" checked={form.workingDays.includes(day)} onChange={(event) => update('workingDays', event.target.checked ? [...form.workingDays, day].sort() : form.workingDays.filter((value) => value !== day))} />{name.slice(0, 3)}</label>)}</div> : <input value={formatWorkingDays(details.assignment.workingDays)} readOnly />}</label>
-          <label className={styles.field}><span>Start Date</span><input type="date" min={todayDateOnly()} value={form.startDate} readOnly={!editing} onChange={(event) => update('startDate', event.target.value)} /></label>
-          <label className={styles.field}><span>Expected End Date</span><input type="date" min={form.startDate} value={form.expectedEndDate} readOnly={!editing} onChange={(event) => update('expectedEndDate', event.target.value)} /></label>
-          <label className={styles.field}><span>Shift Start</span><input type={editing ? 'time' : 'text'} value={editing ? form.startShift : formatClockTime(details.assignment.startShift)} readOnly={!editing} onChange={(event) => update('startShift', event.target.value)} /></label>
-          <label className={styles.field}><span>Shift End</span><input type={editing ? 'time' : 'text'} value={editing ? form.endShift : formatClockTime(details.assignment.endShift)} readOnly={!editing} onChange={(event) => update('endShift', event.target.value)} /></label>
-          <label className={styles.field}><span>Required Hours</span><input type={editing ? 'number' : 'text'} min={1} step={1} value={editing ? form.requiredHours : formatMinutes(details.assignment.requiredMinutes)} readOnly={!editing} onChange={(event) => update('requiredHours', Number(event.target.value))} /></label>
-          <ReadField label="Rendered Hours" value={formatMinutes(details.status.renderedMinutes)} />
-          <ReadField label="Remaining Hours" value={formatMinutes(details.status.remainingMinutes)} />
-        </div>
-        {error && <p className={styles.validationError} role="alert">{error}</p>}
-        {editing && <footer className={styles.footer}><button type="button" className={styles.cancelButton} onClick={() => { setForm(toForm(details)); setError(''); setEditing(false); }}>Close</button><button type="button" className={styles.saveButton} disabled={saving} onClick={() => void save()}>{saving ? 'Saving...' : 'Save Changes'}</button></footer>}
-      </section>
+  const assignmentFields: DetailField[] = [
+    ['Company', displayValue(details.assignment.companyName)],
+    ['Job Title', displayValue(details.assignment.jobTitle)],
+    ['Required Hours', editing ? (
+      <input
+        aria-label="Required Hours"
+        className={styles.inlineInput}
+        type="number"
+        min={1}
+        step={1}
+        value={form.requiredHours}
+        onChange={(event) => update('requiredHours', Number(event.target.value))}
+      />
+    ) : formatDetailMinutes(details.assignment.requiredMinutes)],
+  ];
 
-      <section className={styles.statusCard}>
-        <header className={styles.statusHeader}><h2>Internship Actions</h2><p>{active ? 'Available actions are enforced by the assignment lifecycle.' : 'This assignment is no longer active. Use Internship History for its read-only record.'}</p></header>
-        {active && <footer className={styles.statusActions}>{details.status.canComplete && <button type="button" className={styles.completeButton} disabled={saving} onClick={() => setTransition('complete')}>Mark Internship as Completed</button>}{details.status.canCancel && <button type="button" className={styles.cancelInternshipButton} disabled={saving} onClick={() => setTransition('cancel')}>Cancel Internship</button>}</footer>}
-      </section>
-      {transition && <TransitionModal kind={transition} saving={saving} onClose={() => setTransition(null)} onSubmit={submitTransition} />}
-    </div>
-  </main>;
+  const scheduleFields: DetailField[] = [
+    ['Working Days', editing ? (
+      <div className={styles.dayOptions} aria-label="Working Days">
+        {DAY_NAMES.map((name, day) => (
+          <label key={name}>
+            <input
+              type="checkbox"
+              checked={form.workingDays.includes(day)}
+              onChange={(event) => update('workingDays', event.target.checked
+                ? [...form.workingDays, day].sort()
+                : form.workingDays.filter((value) => value !== day))}
+            />
+            {name.slice(0, 3)}
+          </label>
+        ))}
+      </div>
+    ) : displayValue(formatWorkingDays(details.assignment.workingDays))],
+    ['Start Date', editing ? (
+      <input aria-label="Start Date" className={styles.inlineInput} type="date" min={todayDateOnly()} value={form.startDate} onChange={(event) => update('startDate', event.target.value)} />
+    ) : formatAssignmentDate(details.assignment.startDate)],
+    [hasEnded ? 'End Date' : 'Expected End Date', editing ? (
+      <input aria-label="Expected End Date" className={styles.inlineInput} type="date" min={form.startDate} value={form.expectedEndDate} onChange={(event) => update('expectedEndDate', event.target.value)} />
+    ) : formatAssignmentDate(hasEnded ? (details.assignment.endDate ?? details.assignment.endedAt) : details.assignment.expectedEndDate)],
+    ['Shift Start', editing ? (
+      <input aria-label="Shift Start" className={styles.inlineInput} type="time" value={form.startShift} onChange={(event) => update('startShift', event.target.value)} />
+    ) : formatClockTime(details.assignment.startShift)],
+    ['Shift End', editing ? (
+      <input aria-label="Shift End" className={styles.inlineInput} type="time" value={form.endShift} onChange={(event) => update('endShift', event.target.value)} />
+    ) : formatClockTime(details.assignment.endShift)],
+  ];
+
+  const statusFields: DetailField[] = [
+    ['Status', statusLabel],
+    ['Rendered Hours', formatDetailMinutes(details.status.renderedMinutes)],
+    ['Remaining Hours', formatDetailMinutes(details.status.remainingMinutes)],
+  ];
+
+  return (
+    <main className={styles.page}>
+      <div className={styles.wrap}>
+        <button type="button" className={styles.backButton} onClick={() => navigate('/employer/manage-internship')}>
+          <ArrowLeft size={19} />Back to Manage Internship
+        </button>
+
+        <section className={`${detailStyles.detailsShell} ${styles.detailsShell}`} aria-labelledby="company-internship-title">
+          <header className={detailStyles.pageHeading}>
+            <div>
+              <h1 id="company-internship-title">Internship Details</h1>
+              <p>View the intern's assignment, approved schedule, and progress.</p>
+            </div>
+            <div className={styles.headingActions}>
+              {details.status.canEdit && !editing && (
+                <button type="button" className={styles.editButton} onClick={() => setEditing(true)}>
+                  <Pencil size={16} />Edit Details
+                </button>
+              )}
+              <span className={`${detailStyles.statusTag} ${detailStyles[statusClass] ?? ''}`}>{statusLabel}</span>
+            </div>
+          </header>
+
+          <div className={detailStyles.content}>
+            <AttendanceProfileSummary profile={{
+              studentFullName: details.intern.studentFullName,
+              studentContactEmail: details.intern.studentContactEmail,
+              studentContactNumber: details.intern.studentContactNumber,
+              studentAddress: details.intern.studentAddress,
+              studentPhotoFilePath: details.intern.studentPhotoFilePath,
+              studentProfileUpdatedAt: details.intern.studentProfileUpdatedAt,
+              jobTitle: details.assignment.jobTitle,
+              companyName: details.assignment.companyName,
+            }} />
+
+            <div className={detailStyles.sectionStack}>
+              <DetailSection icon={<User size={18} />} title="Intern Information" fields={internFields} />
+              <DetailSection icon={<Building2 size={18} />} title="Assignment Information" fields={assignmentFields} />
+              <DetailSection icon={<CalendarDays size={18} />} title="Schedule Information" fields={scheduleFields} />
+              <DetailSection icon={<ChartNoAxesColumnIncreasing size={18} />} title="Status Information" fields={statusFields} />
+            </div>
+
+            {error && <p className={styles.validationError} role="alert">{error}</p>}
+            {editing && (
+              <footer className={styles.editActions}>
+                <button type="button" className={styles.cancelButton} disabled={saving} onClick={() => { setForm(toForm(details)); setError(''); setEditing(false); }}>Close</button>
+                <button type="button" className={styles.saveButton} disabled={saving} onClick={() => void save()}>{saving ? 'Saving...' : 'Save Changes'}</button>
+              </footer>
+            )}
+          </div>
+
+        </section>
+
+        <footer className={styles.companyActions}>
+          <button
+            type="button"
+            className={styles.completeButton}
+            disabled={!details.status.canComplete || saving}
+            title={details.status.canComplete ? undefined : 'The intern must render all required internship hours before completion.'}
+            onClick={() => setTransition('complete')}
+          >
+            Mark Internship as Complete
+          </button>
+          <button type="button" className={styles.cancelInternshipButton} disabled={!details.status.canCancel || saving} onClick={() => setTransition('cancel')}>
+            Cancel Internship
+          </button>
+        </footer>
+      </div>
+
+      {transition && (
+        <TransitionModal kind={transition} saving={saving} onClose={() => setTransition(null)} onSubmit={submitTransition} />
+      )}
+    </main>
+  );
 }
 
-function ReadField({ label, value }: { label: string; value: string }) {
-  return <label className={styles.field}><span>{label}</span><input value={value} readOnly /></label>;
+function DetailSection({ icon, title, fields }: { icon: ReactNode; title: string; fields: DetailField[] }) {
+  const headingId = `company-${title.toLowerCase().replaceAll(' ', '-')}-heading`;
+  return (
+    <section className={detailStyles.infoCard} aria-labelledby={headingId}>
+      <h2 className={detailStyles.sectionTitle} id={headingId}>
+        <span>{icon}</span>
+        {title}
+      </h2>
+      <dl className={detailStyles.infoList}>
+        {fields.map(([label, value]) => (
+          <div className={detailStyles.infoRow} key={label}>
+            <dt>{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
 }
 
 function TransitionModal({ kind, saving, onClose, onSubmit }: { kind: 'complete' | 'cancel'; saving: boolean; onClose: () => void; onSubmit: (remark: string) => Promise<void> }) {
@@ -154,5 +288,46 @@ function TransitionModal({ kind, saving, onClose, onSubmit }: { kind: 'complete'
     setValidation('');
     void onSubmit(normalized);
   };
-  return <div className={styles.modalBackdrop} role="presentation"><section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="transition-title"><h2 id="transition-title">{complete ? 'Mark Internship as Completed' : 'Cancel Internship'}</h2><label className={styles.modalField}><span>{complete ? 'Company Review of the Student' : 'Reason for Cancellation'}</span><textarea value={remark} onChange={(event) => setRemark(event.target.value)} rows={5} autoFocus /></label>{validation && <p className={styles.validationError} role="alert">{validation}</p>}<div className={styles.modalActions}><button type="button" className={styles.cancelButton} disabled={saving} onClick={onClose}>Close</button><button type="button" className={complete ? styles.completeButton : styles.cancelInternshipButton} disabled={saving} onClick={submit}>{saving ? 'Saving...' : complete ? 'Mark Internship as Completed' : 'Cancel Internship'}</button></div></section></div>;
+  return (
+    <div className={styles.modalBackdrop} role="presentation" onMouseDown={onClose}>
+      <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="transition-title" onMouseDown={(event) => event.stopPropagation()}>
+        <h2 id="transition-title">{complete ? 'Mark Internship as Complete' : 'Cancel Internship'}</h2>
+        <label className={styles.modalField}>
+          <span>{complete ? 'Company Review of the Student' : 'Reason for Cancellation'}</span>
+          <textarea value={remark} onChange={(event) => setRemark(event.target.value)} rows={5} autoFocus />
+        </label>
+        {validation && <p className={styles.validationError} role="alert">{validation}</p>}
+        <div className={styles.modalActions}>
+          <button type="button" className={styles.cancelButton} disabled={saving} onClick={onClose}>Close</button>
+          <button type="button" className={complete ? styles.completeButton : styles.cancelInternshipButton} disabled={saving} onClick={submit}>{saving ? 'Saving...' : complete ? 'Mark Internship as Complete' : 'Cancel Internship'}</button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function formatDetailMinutes(minutes: number): string {
+  const safeMinutes = Math.max(0, Math.round(Number(minutes) || 0));
+  const hours = Math.floor(safeMinutes / 60);
+  const remainder = safeMinutes % 60;
+  if (remainder === 0) return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+  if (hours === 0) return `${remainder} ${remainder === 1 ? 'minute' : 'minutes'}`;
+  return `${hours} ${hours === 1 ? 'hour' : 'hours'}, ${remainder} ${remainder === 1 ? 'minute' : 'minutes'}`;
+}
+
+function formatAssignmentDate(value?: string | null): string {
+  if (!value) return 'Not specified';
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
+  const parsed = new Date(dateOnly ? `${value}T00:00:00+08:00` : value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return new Intl.DateTimeFormat('en-PH', {
+    timeZone: 'Asia/Manila',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(parsed);
+}
+
+function displayValue(value?: string | null): string {
+  return value?.trim() || 'Not specified';
 }

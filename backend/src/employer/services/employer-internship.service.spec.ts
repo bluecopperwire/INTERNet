@@ -221,6 +221,52 @@ describe('EmployerInternshipService', () => {
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
+  it('returns the intern profile and academic fields needed by Company details', async () => {
+    const { dataSource, query } = makeTransactionDataSource({
+      internship_assignment_id: 8,
+      assignment_status: 'ongoing',
+      start_date: '2026-09-01',
+      expected_end_date: '2026-09-30',
+      end_date: null,
+      ended_at: null,
+      start_shift: '08:00:00',
+      end_shift: '17:00:00',
+      working_days: [1, 2, 3, 4, 5],
+      required_minutes: 24_000,
+      student_id: 1,
+      student_full_name: 'Intern Example',
+      student_contact_email: 'intern@example.com',
+      student_contact_number: '09171234567',
+      student_address: 'Batasan Hills, Quezon City',
+      student_photo_file_path: 'uploads/students/intern.png',
+      student_profile_updated_at: '2026-08-20T00:00:00.000Z',
+      school_name: 'Quezon City University',
+      year_level: 'fourth_year_college',
+      strand_program: 'BS Information Technology',
+      job_title: 'Developer Intern',
+      company_name: 'Test Company',
+    });
+    const service = new EmployerInternshipService(dataSource, resolver);
+
+    const result = await service.getById(50, 8);
+
+    expect(result.intern).toMatchObject({
+      studentFullName: 'Intern Example',
+      studentContactEmail: 'intern@example.com',
+      studentContactNumber: '09171234567',
+      studentAddress: 'Batasan Hills, Quezon City',
+      studentPhotoFilePath: 'uploads/students/intern.png',
+      schoolName: 'Quezon City University',
+      yearLevel: 'fourth_year_college',
+      strandProgram: 'BS Information Technology',
+    });
+    const sql = query.mock.calls.map(([value]) => String(value)).join('\n');
+    expect(sql).toContain('s.contact_email AS student_contact_email');
+    expect(sql).toContain(
+      'sai.school_name, sai.year_level, sai.strand_program',
+    );
+  });
+
   it('merges native PostgreSQL Date values during a pending partial edit', async () => {
     const { dataSource, query } = makeTransactionDataSource({
       internship_assignment_id: 8,

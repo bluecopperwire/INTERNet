@@ -13,11 +13,11 @@ export function AttendanceMonitoringPage() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<EmployerAttendanceItemDto[]>([]);
   const [summary, setSummary] = useState<EmployerAttendanceSummaryDto>({ ongoingInterns: 0, presentInterns: 0, absentInterns: 0 });
-  const [meta, setMeta] = useState<PageMeta>({ page: 1, limit: 10, total: 0, totalPages: 0 });
+  const [meta, setMeta] = useState<PageMeta>({ page: 1, limit: 5, total: 0, totalPages: 0 });
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [date, setDate] = useState(todayDateOnly);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(5);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

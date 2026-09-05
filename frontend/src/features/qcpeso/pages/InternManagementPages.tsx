@@ -14,7 +14,7 @@ const PAGE_SIZES = [5, 10, 15]
 const ALL_STATUSES = ['pending', 'ongoing', 'complete_company', 'complete_student', 'withdrawn', 'cancelled', 'finalized']
 const LABELS: Record<string, string> = { pending: 'Pending', ongoing: 'Ongoing', complete_company: 'Complete (Company)', complete_student: 'Complete (Student)', withdrawn: 'Withdrawn', cancelled: 'Cancelled', finalized: 'Finalized', present: 'Present', absent: 'Absent', incomplete: 'Incomplete' }
 type Meta = { page: number; limit: number; total: number; totalPages: number }
-const EMPTY_META: Meta = { page: 1, limit: 10, total: 0, totalPages: 0 }
+const EMPTY_META: Meta = { page: 1, limit: 5, total: 0, totalPages: 0 }
 const duration = (value: unknown) => `${(Number(value || 0) / 60).toFixed(2)} hours (${Number(value || 0).toLocaleString()} minutes)`
 const dateValue = (value: unknown) => value ? String(value).slice(0, 10) : '—'
 const statusLabel = (value: unknown) => LABELS[String(value)] || String(value || '—')
@@ -39,7 +39,7 @@ function InternshipToolbar({ search, setSearch, status, setStatus, statuses, res
 
 export function QCPesoManageInternshipPage() {
   const navigate = useNavigate(); const [summary, setSummary] = useState<any>({}); const [rows, setRows] = useState<any[]>([]); const [meta, setMeta] = useState<Meta>(EMPTY_META)
-  const [search, setSearch] = useState(''); const [status, setStatus] = useState(''); const [page, setPage] = useState(1); const [limit, setLimit] = useState(10)
+  const [search, setSearch] = useState(''); const [status, setStatus] = useState(''); const [page, setPage] = useState(1); const [limit, setLimit] = useState(5)
   useEffect(() => { void qcpesoApiService.getFinalizationSummary().then(setSummary) }, [])
   useEffect(() => { void qcpesoApiService.getFinalizationQueue({ search: search || undefined, status: status || undefined, page, limit }).then((r) => { setRows(r.data); setMeta(r.meta) }) }, [search, status, page, limit])
   return <main className={internshipStyles.page}><QCPesoHero title="Finalize Internships" subtitle="Review ended internships and complete QC PESO finalization." /><section className={internshipStyles.content}><div className={internshipStyles.summaryGrid}><SummaryCard styles={internshipStyles} label="Awaiting Finalization" value={summary.awaitingFinalization || 0} /><SummaryCard styles={internshipStyles} label="Completed Internships" value={summary.completedInternships || 0} /><SummaryCard styles={internshipStyles} label="Withdrawal Internships" value={summary.withdrawalInternships || 0} /><SummaryCard styles={internshipStyles} label="Cancelled Internships" value={summary.cancelledInternships || 0} /></div><InternshipToolbar search={search} setSearch={setSearch} status={status} setStatus={setStatus} statuses={['complete_student', 'withdrawn', 'cancelled']} reset={() => setPage(1)} /><InternshipTable rows={rows} onView={(id) => navigate(`/qcpeso/manage-interns/internships/${id}`)} /><Pager meta={meta} limit={limit} setLimit={setLimit} setPage={setPage} styles={internshipStyles} /></section></main>
@@ -47,7 +47,7 @@ export function QCPesoManageInternshipPage() {
 
 export function QCPesoInternshipHistoryPage() {
   const navigate = useNavigate(); const [summary, setSummary] = useState<any>({}); const [rows, setRows] = useState<any[]>([]); const [meta, setMeta] = useState<Meta>(EMPTY_META)
-  const [search, setSearch] = useState(''); const [status, setStatus] = useState(''); const [page, setPage] = useState(1); const [limit, setLimit] = useState(10)
+  const [search, setSearch] = useState(''); const [status, setStatus] = useState(''); const [page, setPage] = useState(1); const [limit, setLimit] = useState(5)
   const load = () => qcpesoApiService.getInternshipHistory({ search: search || undefined, status: status || undefined, page, limit }).then((r) => { setRows(r.data); setMeta(r.meta) })
   useEffect(() => { void qcpesoApiService.getInternshipHistorySummary().then(setSummary) }, [])
   useEffect(() => { void load() }, [search, status, page, limit])
@@ -77,14 +77,14 @@ function ReadonlyField({ label, value }: { label: string; value: string }) { ret
 
 export function QCPesoAttendancePage() {
   const navigate = useNavigate(); const [summary, setSummary] = useState<any>({}); const [rows, setRows] = useState<any[]>([]); const [meta, setMeta] = useState<Meta>(EMPTY_META)
-  const [search, setSearch] = useState(''); const [status, setStatus] = useState(''); const [date, setDate] = useState(todayDateOnly()); const [page, setPage] = useState(1); const [limit, setLimit] = useState(10)
+  const [search, setSearch] = useState(''); const [status, setStatus] = useState(''); const [date, setDate] = useState(todayDateOnly()); const [page, setPage] = useState(1); const [limit, setLimit] = useState(5)
   useEffect(() => { void qcpesoApiService.getInternshipAttendanceSummary(date).then(setSummary) }, [date])
   useEffect(() => { void qcpesoApiService.getInternshipAttendance({ date, search: search || undefined, status: status || undefined, page, limit }).then((r) => { setRows(r.data); setMeta(r.meta) }) }, [date, search, status, page, limit])
   return <main className={attendanceStyles.pageContainer}><QCPesoHero title="Monitor Attendance" subtitle="Monitor daily attendance using each assignment's historical lifecycle." /><section className={attendanceStyles.mainContent}><div className={attendanceStyles.summaryGrid}><SummaryCard styles={attendanceStyles} label="Ongoing Interns" value={summary.ongoingInterns || 0} /><SummaryCard styles={attendanceStyles} label="Present Interns" value={summary.presentInterns || 0} /><SummaryCard styles={attendanceStyles} label="Absent Interns" value={summary.absentInterns || 0} /></div><div className={attendanceStyles.toolbar}><label className={attendanceStyles.searchBox}><Search size={16} /><input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} placeholder="Search student, company, or job..." /></label><label className={attendanceStyles.statusFilter}><SlidersHorizontal size={16} /><select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1) }}><option value="">All Statuses</option><option value="pending">Pending</option><option value="present">Present</option><option value="absent">Absent</option><option value="incomplete">Incomplete</option></select></label><label className={attendanceStyles.dateFilter}><CalendarDays size={16} /><input type="date" max={todayDateOnly()} value={date} onChange={(e) => { setDate(e.target.value); setPage(1) }} /></label></div><div className={attendanceStyles.tableCard}><div className={attendanceStyles.tableScroller}><table className={attendanceStyles.table}><thead><tr><th>Student Name</th><th>Company</th><th>Job Title</th><th>Program / Strand</th><th>Status</th><th>Action</th></tr></thead><tbody>{rows.map((row) => <tr key={row.internshipAssignmentId}><td><strong>{row.studentFullName}</strong></td><td>{row.companyName}</td><td>{row.jobTitle}</td><td>{row.strandProgram || '—'}</td><td><StatusPill value={row.status} styles={attendanceStyles} /></td><td><button className={attendanceStyles.actionBtn} onClick={() => navigate(`/qcpeso/manage-interns/attendance/${row.internshipAssignmentId}`, { state: { attendanceHistoryBackPath: '/qcpeso/manage-interns/attendance' } })}><Eye size={14} />View</button></td></tr>)}</tbody></table></div>{rows.length === 0 && <p className={attendanceStyles.noData}>No scheduled interns match the selected date and filters.</p>}</div><Pager meta={meta} limit={limit} setLimit={setLimit} setPage={setPage} styles={attendanceStyles} /></section></main>
 }
 
 export function QCPesoAttendanceDetailsPage() {
-  const { id } = useParams(); const location = useLocation(); const navigate = useNavigate(); const [data, setData] = useState<any>(null); const [status, setStatus] = useState(''); const [date, setDate] = useState(''); const [page, setPage] = useState(1); const [limit, setLimit] = useState(10)
+  const { id } = useParams(); const location = useLocation(); const navigate = useNavigate(); const [data, setData] = useState<any>(null); const [status, setStatus] = useState(''); const [date, setDate] = useState(''); const [page, setPage] = useState(1); const [limit, setLimit] = useState(5)
   useEffect(() => { if (id) void qcpesoApiService.getInternshipAttendanceHistory(Number(id), { status: status || undefined, date: date || undefined, page, limit }).then(setData) }, [id, status, date, page, limit])
   if (!data) return <main className={attendanceDetailStyles.feedback}>Loading attendance history...</main>
   const historyDetailsPath = `/qcpeso/manage-interns/history/${id}`

@@ -337,7 +337,14 @@ export class EmployerInternshipService {
       intern: {
         studentId: enriched.studentId,
         studentFullName: enriched.studentFullName,
+        studentContactEmail: row.student_contact_email,
+        studentContactNumber: row.student_contact_number,
+        studentAddress: row.student_address,
+        studentPhotoFilePath: row.student_photo_file_path,
+        studentProfileUpdatedAt: row.student_profile_updated_at,
         strandProgram: enriched.strandProgram,
+        yearLevel: row.year_level,
+        schoolName: row.school_name,
         jobTitle: enriched.jobTitle,
         requiredHours: enriched.requiredHours,
         requiredMinutes: enriched.requiredMinutes,
@@ -611,7 +618,12 @@ export class EmployerInternshipService {
                ia.ended_at,
                r.referral_id, a.application_id, s.student_id,
                concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS student_full_name,
-               sai.strand_program,
+               s.contact_email AS student_contact_email,
+               s.contact_number AS student_contact_number,
+               concat_ws(', ', NULLIF(s.address_line, ''), NULLIF(s.address_barangay, ''), NULLIF(s.address_city, '')) AS student_address,
+               s.photo_file_path AS student_photo_file_path,
+               s.updated_at AS student_profile_updated_at,
+               sai.school_name, sai.year_level, sai.strand_program,
                o.opportunity_id, o.title AS job_title,
                c.company_name
         FROM public.internship_assignment ia
