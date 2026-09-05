@@ -141,6 +141,18 @@ export class StudentsController {
     return this.studentsService.createStudentApplication(id, dto, currentUser);
   }
 
+  // Returns the authoritative cross-opportunity application lock state.
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/applications/eligibility')
+  @HttpCode(HttpStatus.OK)
+  async getStudentApplicationEligibility(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() currentUser: any,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    return this.studentsService.getApplicationEligibility(id);
+  }
+
   // Lists all internship applications for the student with enriched opportunity and company data.
   @UseGuards(JwtAuthGuard)
   @Get(':id/applications')

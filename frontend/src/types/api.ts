@@ -209,6 +209,12 @@ export interface StudentApplicationDto {
   } | null;
 }
 
+export interface StudentApplicationEligibilityDto {
+  canApply: boolean;
+  blocker: 'accepted_offer' | 'active_assignment' | null;
+  message: string | null;
+}
+
 export interface StudentApplicationStatusDto extends StudentApplicationDto {
   remark?: string | null;
   interview?: {

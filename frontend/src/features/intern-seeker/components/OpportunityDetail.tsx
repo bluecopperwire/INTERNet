@@ -6,7 +6,11 @@ import { useStudentTrackingStore } from '../stores/useStudentTrackingStore'
 import { ApplyOpportunityModal } from './ApplyOpportunityModal'
 import { studentApiService } from '../services/student-api.service'
 import { useAuthStore } from '../../../stores/useAuthStore'
+import { useToastStore } from '../../../stores/useToastStore'
 import styles from './OpportunityDetail.module.css'
+
+const ELIGIBILITY_CHECK_FAILED = 'Application eligibility could not be verified. Please refresh the page.'
+const APPLICATION_BLOCKED_FALLBACK = 'You cannot apply for another internship until QC PESO finalizes your current placement.'
 
 function OpportunityDetail({ opportunity }: { opportunity: InternshipOpportunity }) {
   const { details } = opportunity
@@ -15,8 +19,10 @@ function OpportunityDetail({ opportunity }: { opportunity: InternshipOpportunity
   const { profile, fetchProfile } = useStudentStore()
   const { requirements, fetchRequirements } = useStudentTrackingStore()
   const studentId = useAuthStore((state) => state.user?.studentId)
-  const [hasCurrentInternship, setHasCurrentInternship] = useState(false)
-  const [isCheckingInternship, setIsCheckingInternship] = useState(Boolean(studentId))
+  const showErrorToast = useToastStore((state) => state.error)
+  const [isApplicationBlocked, setIsApplicationBlocked] = useState(false)
+  const [applicationBlockMessage, setApplicationBlockMessage] = useState<string | null>(null)
+  const [isCheckingEligibility, setIsCheckingEligibility] = useState(Boolean(studentId))
 
   useEffect(() => {
     if (!profile) {
@@ -33,17 +39,23 @@ function OpportunityDetail({ opportunity }: { opportunity: InternshipOpportunity
     }
     let active = true
     const timeoutId = window.setTimeout(() => {
-      setIsCheckingInternship(true)
+      setIsCheckingEligibility(true)
       studentApiService
-        .getCurrentInternship(studentId)
-        .then((assignment) => {
-          if (active) setHasCurrentInternship(Boolean(assignment))
+        .getApplicationEligibility(studentId)
+        .then((eligibility) => {
+          if (active) {
+            setIsApplicationBlocked(!eligibility.canApply)
+            setApplicationBlockMessage(eligibility.canApply ? null : eligibility.message)
+          }
         })
         .catch(() => {
-          if (active) setHasCurrentInternship(false)
+          if (active) {
+            setIsApplicationBlocked(true)
+            setApplicationBlockMessage(ELIGIBILITY_CHECK_FAILED)
+          }
         })
         .finally(() => {
-          if (active) setIsCheckingInternship(false)
+          if (active) setIsCheckingEligibility(false)
         })
     }, 0)
     return () => {
@@ -72,6 +84,14 @@ function OpportunityDetail({ opportunity }: { opportunity: InternshipOpportunity
 
   const tabContent = activeTab === 'description' ? [details.description] : [details.qualifications]
 
+  const handleApply = () => {
+    if (isApplicationBlocked) {
+      showErrorToast(applicationBlockMessage ?? APPLICATION_BLOCKED_FALLBACK)
+      return
+    }
+    setIsApplyModalOpen(true)
+  }
+
   return (
     <>
       <article className={styles.detailPanel}>
@@ -91,11 +111,10 @@ function OpportunityDetail({ opportunity }: { opportunity: InternshipOpportunity
                 <Check size={18} /> Applied
               </button>
             ) : (
-              <button className={styles.applyButton} type="button" disabled={isCheckingInternship || hasCurrentInternship} onClick={() => setIsApplyModalOpen(true)}>
-                {isCheckingInternship ? 'Checking...' : 'Apply'}
+              <button className={styles.applyButton} type="button" disabled={isCheckingEligibility} onClick={handleApply}>
+                {isCheckingEligibility ? 'Checking...' : 'Apply'}
               </button>
             )}
-            {hasCurrentInternship && !opportunity.isApplied && <p className={styles.applyBlockedMessage}>You may apply again after QC PESO finalizes your current internship.</p>}
           </div>
         </header>
 
@@ -130,7 +149,7 @@ function OpportunityDetail({ opportunity }: { opportunity: InternshipOpportunity
         </section>
       </article>
 
-      {isApplyModalOpen && !hasCurrentInternship && <ApplyOpportunityModal opportunity={opportunity} profile={profile} requirements={requirements || []} onClose={() => setIsApplyModalOpen(false)} />}
+      {isApplyModalOpen && !isApplicationBlocked && <ApplyOpportunityModal opportunity={opportunity} profile={profile} requirements={requirements || []} onClose={() => setIsApplyModalOpen(false)} />}
     </>
   )
 }

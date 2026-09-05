@@ -28,20 +28,21 @@ describe('Phase 3 Student Attendance workflow', () => {
     expect(getTodayTag('complete_company', true, null)).toBe('Not Available')
   })
 
-  it('marks exact workdays, lets Present/Absent override, and leaves Incomplete gray', () => {
+  it('marks exact workdays and lets Present, Absent, and Incomplete override them', () => {
     const days = buildCalendarDays(attendance(), new Date(2026, 8, 1))
     const byDate = new Map(days.map((day) => [day.date, day.status]))
     expect(byDate.get('2026-09-01')).toBeUndefined()
     expect(byDate.get('2026-09-04')).toBe('present')
     expect(byDate.get('2026-09-07')).toBe('absent')
-    expect(byDate.get('2026-09-09')).toBe('workday')
+    expect(byDate.get('2026-09-09')).toBe('incomplete')
     expect(byDate.get('2026-09-11')).toBe('workday')
   })
 
   it('stops future gray workdays at the actual operational end', () => {
     const days = buildCalendarDays(attendance({ endDate: '2026-09-10', assignmentStatus: 'cancelled' }), new Date(2026, 8, 1))
     const byDate = new Map(days.map((day) => [day.date, day.status]))
-    expect(byDate.get('2026-09-09')).toBe('workday')
+    expect(byDate.get('2026-09-02')).toBe('workday')
+    expect(byDate.get('2026-09-09')).toBe('incomplete')
     expect(byDate.get('2026-09-11')).toBeUndefined()
   })
 
@@ -61,6 +62,7 @@ describe('Phase 3 Student Attendance workflow', () => {
     const page = readFileSync('src/features/intern-seeker/pages/AttendancePage.tsx', 'utf8')
     const history = readFileSync('src/features/intern-seeker/pages/AttendanceHistoryPage.tsx', 'utf8')
     const sharedHistory = readFileSync('src/components/AttendanceHistoryView.tsx', 'utf8')
+    const styles = readFileSync('src/features/intern-seeker/pages/AttendancePage.module.css', 'utf8')
     const app = readFileSync('src/App.tsx', 'utf8')
     for (const label of ['Days Present', 'Days Absent', 'Rendered Hours', 'Remaining Hours', 'View Attendance History']) expect(page).toContain(label)
     expect(page.indexOf('Assignment Status')).toBeLessThan(page.indexOf('Attendance Status'))
@@ -73,5 +75,12 @@ describe('Phase 3 Student Attendance workflow', () => {
     expect(app).toContain('attendance-history/:assignmentId')
     expect(page).not.toContain('View Internship Details')
     expect(page).not.toContain('Late')
+    expect(styles).toMatch(/\.checkOutButton:hover:not\(:disabled\)\s*\{\s*color:\s*#ffffff;/)
+    expect(page).toContain('<i className={styles.incompleteDot} />Incomplete')
+    expect(styles).toMatch(/\.calendarDay\s*\{[^}]*color:\s*var\(--tracking-purple\);/)
+    expect(styles).toMatch(/\.present\s*\{[^}]*background:\s*#22c55e;/)
+    expect(styles).toMatch(/\.incomplete\s*\{[^}]*background:\s*var\(--tracking-yellow\);/)
+    expect(styles).toMatch(/\.absent\s*\{[^}]*background:\s*#df1c22;/)
+    expect(styles).toMatch(/\.present,\s*\.incomplete,\s*\.absent\s*\{\s*color:\s*#ffffff;/)
   })
 })

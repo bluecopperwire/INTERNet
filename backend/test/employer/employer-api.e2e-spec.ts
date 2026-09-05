@@ -877,9 +877,7 @@ describe('referral APIs', () => {
     expect(Number(history[0].changed_by_user_account_id)).toBe(
       companyA.accountId,
     );
-    const accepted = await fixtures.referral(companyA.companyId, {
-      response: 'accepted',
-    });
+    const accepted = await fixtures.referral(companyA.companyId, { response: 'accepted' });
     await request(env.app.getHttpServer())
       .patch(`/employer/referrals/${accepted.referralId}/reject`)
       .set(auth(companyA.token))
@@ -1127,7 +1125,9 @@ describe('assignment workflow APIs', () => {
   });
 
   test('E2E-ASG-019 obsolete acceptance-withdrawal endpoint is removed', async () => {
-    const accepted = await fixtures.referral(companyA.companyId, { response: 'accepted' });
+    const accepted = await fixtures.referral(companyA.companyId, {
+      response: 'accepted',
+    });
     await request(env.app.getHttpServer())
       .patch(`/employer/referrals/${accepted.referralId}/withdraw-acceptance`)
       .set(auth(companyA.token))
@@ -2131,6 +2131,32 @@ describe('student application workflow integration', () => {
       .set(auth(selected.student.token))
       .send({ response: 'accepted' })
       .expect(200);
+
+    await request(env.app.getHttpServer())
+      .get(`/students/${selected.student.studentId}/applications/eligibility`)
+      .set(auth(selected.student.token))
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          canApply: false,
+          blocker: 'accepted_offer',
+        });
+      });
+
+    const blockedOpportunityId = await fixtures.opportunity(
+      companyB.companyId,
+      { title: `Blocked after acceptance ${Date.now()}` },
+    );
+    await request(env.app.getHttpServer())
+      .post(`/students/${selected.student.studentId}/applications`)
+      .set(auth(selected.student.token))
+      .send({ opportunityId: blockedOpportunityId })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.message).toContain(
+          'You cannot apply for another internship after accepting an offer.',
+        );
+      });
 
     const rows = await db.query(
       `SELECT a.application_id, a.application_status, a.student_response,

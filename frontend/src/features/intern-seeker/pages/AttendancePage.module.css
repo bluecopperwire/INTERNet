@@ -149,6 +149,10 @@
   transform: translateY(-1px);
 }
 
+.checkOutButton:hover:not(:disabled) {
+  color: #ffffff;
+}
+
 .checkInButton:disabled,
 .checkOutButton:disabled {
   cursor: default;
@@ -293,17 +297,28 @@
 
 .calendarDay {
   border-radius: 50%;
+  color: var(--tracking-purple);
 }
 
 .workday {
   background: #d9dce5;
 }
+
+.present,
+.incomplete,
+.absent {
+  color: #ffffff;
+}
+
 .present {
+  background: #22c55e;
+}
+
+.incomplete {
   background: var(--tracking-yellow);
 }
 
 .absent {
-  color: #ffffff;
   background: #df1c22;
 }
 
@@ -331,6 +346,10 @@
   background: #d9dce5;
 }
 .presentDot {
+  background: #22c55e;
+}
+
+.incompleteDot {
   background: var(--tracking-yellow);
 }
 

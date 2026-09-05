@@ -104,10 +104,11 @@ describe('Phase 2 Student internship workflow responsibilities', () => {
     expect(attendance).toContain('There is currently no active internship to track.')
   })
 
-  it('disables Apply with a finalization explanation while backend remains authoritative', () => {
+  it('keeps Apply clickable and shows blocked eligibility as an error toast', () => {
     const opportunity = readSource('./components/OpportunityDetail.tsx')
-    expect(opportunity).toContain('getCurrentInternship(studentId)')
-    expect(opportunity).toContain('disabled={isCheckingInternship || hasCurrentInternship}')
-    expect(opportunity.replace(/\s+/g, ' ')).toContain('You may apply again after QC PESO finalizes your current internship.')
+    expect(opportunity).toContain('getApplicationEligibility(studentId)')
+    expect(opportunity).toContain('disabled={isCheckingEligibility}')
+    expect(opportunity).toContain('showErrorToast(applicationBlockMessage ?? APPLICATION_BLOCKED_FALLBACK)')
+    expect(opportunity).not.toContain('styles.applyBlockedMessage')
   })
 })

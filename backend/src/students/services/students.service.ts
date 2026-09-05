@@ -34,6 +34,14 @@ import type {
 
 type StatusActor = { userAccountId?: number };
 
+type QueryExecutor = {
+  query(query: string, parameters?: unknown[]): Promise<unknown>;
+};
+
+type ApplicationBlocker = 'accepted_offer' | 'active_assignment';
+
+const STUDENT_APPLICATION_LOCK_NAMESPACE = 77321;
+
 type ApplicationWorkflowRow = {
   application_id: number;
   application_status: string;
@@ -90,6 +98,65 @@ export class StudentsService {
 
   async findById(id: number): Promise<Student | null> {
     return this.studentRepo.findOne({ where: { studentId: id } });
+  }
+
+  private async findApplicationBlocker(
+    executor: QueryExecutor,
+    studentId: number,
+  ): Promise<ApplicationBlocker | null> {
+    const [result] = (await executor.query(
+      `/* student_application_blocker */
+       SELECT CASE
+         WHEN EXISTS (
+           SELECT 1
+           FROM public.internship_assignment active_assignment
+           JOIN public.referral assignment_referral
+             ON assignment_referral.referral_id = active_assignment.referral_id
+           JOIN public.application assignment_application
+             ON assignment_application.application_id = assignment_referral.application_id
+           WHERE assignment_application.student_id = $1
+             AND active_assignment.assignment_status <> 'finalized'
+             AND active_assignment.deleted_at IS NULL
+         ) THEN 'active_assignment'
+         WHEN EXISTS (
+           SELECT 1
+           FROM public.application accepted_application
+           JOIN public.referral accepted_referral
+             ON accepted_referral.application_id = accepted_application.application_id
+           WHERE accepted_application.student_id = $1
+             AND accepted_application.student_response = 'accepted'
+             AND accepted_referral.company_response = 'accepted'
+             AND NOT EXISTS (
+               SELECT 1
+               FROM public.internship_assignment finalized_assignment
+               WHERE finalized_assignment.referral_id = accepted_referral.referral_id
+                 AND finalized_assignment.assignment_status = 'finalized'
+             )
+         ) THEN 'accepted_offer'
+         ELSE NULL
+       END AS blocker`,
+      [studentId],
+    )) as Array<{ blocker: ApplicationBlocker | null }>;
+
+    return result?.blocker ?? null;
+  }
+
+  private applicationBlockedMessage(blocker: ApplicationBlocker): string {
+    return blocker === 'accepted_offer'
+      ? 'You cannot apply for another internship after accepting an offer. You may apply again after QC PESO finalizes the resulting internship assignment.'
+      : 'You cannot apply for another internship while your current internship has not yet been finalized by QC PESO.';
+  }
+
+  async getApplicationEligibility(studentId: number) {
+    const blocker = await this.findApplicationBlocker(
+      this.dataSource,
+      studentId,
+    );
+    return {
+      canApply: blocker === null,
+      blocker,
+      message: blocker ? this.applicationBlockedMessage(blocker) : null,
+    };
   }
 
   // Reads the student plus the joined academic, preference, and preferred-industry records.
@@ -504,22 +571,13 @@ export class StudentsService {
       throw new NotFoundException('Student not found');
     }
 
-    const currentAssignments = await this.dataSource.query<
-      Array<{ internship_assignment_id: number }>
-    >(
-      `SELECT ia.internship_assignment_id
-       FROM public.internship_assignment ia
-       JOIN public.referral r ON r.referral_id = ia.referral_id
-       JOIN public.application a ON a.application_id = r.application_id
-       WHERE a.student_id = $1
-         AND ia.assignment_status <> 'finalized'
-         AND ia.deleted_at IS NULL
-       LIMIT 1`,
-      [studentId],
+    const applicationBlocker = await this.findApplicationBlocker(
+      this.dataSource,
+      studentId,
     );
-    if (currentAssignments.length > 0) {
+    if (applicationBlocker) {
       throw new ConflictException(
-        'You cannot apply for another internship while your current internship has not yet been finalized.',
+        this.applicationBlockedMessage(applicationBlocker),
       );
     }
 
@@ -648,24 +706,17 @@ export class StudentsService {
           // Serialize all application submissions for this Student, including
           // simultaneous submissions to different opportunities.
           await runner.query('SELECT pg_advisory_xact_lock($1, $2)', [
-            77321,
+            STUDENT_APPLICATION_LOCK_NAMESPACE,
             studentId,
           ]);
 
-          const lockedCurrentAssignments = await runner.query(
-            `SELECT ia.internship_assignment_id
-             FROM public.internship_assignment ia
-             JOIN public.referral r ON r.referral_id = ia.referral_id
-             JOIN public.application a ON a.application_id = r.application_id
-             WHERE a.student_id = $1
-               AND ia.assignment_status <> 'finalized'
-               AND ia.deleted_at IS NULL
-             FOR SHARE OF ia`,
-            [studentId],
+          const lockedApplicationBlocker = await this.findApplicationBlocker(
+            runner,
+            studentId,
           );
-          if (lockedCurrentAssignments.length > 0) {
+          if (lockedApplicationBlocker) {
             throw new ConflictException(
-              'You cannot apply for another internship while your current internship has not yet been finalized.',
+              this.applicationBlockedMessage(lockedApplicationBlocker),
             );
           }
 
@@ -1037,6 +1088,14 @@ export class StudentsService {
       this.dataSource,
       currentUser?.userAccountId ?? null,
       async (runner) => {
+        // Share the same per-student transaction lock used by application
+        // submission. This closes the race between accepting an offer and
+        // submitting a new application in another request.
+        await runner.query('SELECT pg_advisory_xact_lock($1, $2)', [
+          STUDENT_APPLICATION_LOCK_NAMESPACE,
+          studentId,
+        ]);
+
         const rows = (await runner.query(
           `
             SELECT a.application_id, a.application_status, a.student_response,

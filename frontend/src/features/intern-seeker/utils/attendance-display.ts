@@ -16,7 +16,7 @@ export function buildCalendarDays(data: StudentAttendanceResponse, month: Date) 
       const date = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
       const isWorkday = date >= assignment.startDate && (!terminalDate || date <= terminalDate) && assignment.workingDays.includes(new Date(`${date}T00:00:00Z`).getUTCDay())
       const persisted = records.get(date)
-      const status = persisted === 'present' ? 'present' : persisted === 'absent' ? 'absent' : isWorkday ? 'workday' : undefined
+      const status = persisted === 'present' ? 'present' : persisted === 'absent' ? 'absent' : persisted === 'incomplete' ? 'incomplete' : isWorkday ? 'workday' : undefined
       return { key: date, day, date, status }
     }),
   ]

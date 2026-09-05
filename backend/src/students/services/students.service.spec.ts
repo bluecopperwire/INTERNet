@@ -3,6 +3,7 @@ import { BadRequestException, ConflictException } from '@nestjs/common';
 import type { DataSource, QueryRunner, Repository } from 'typeorm';
 import type { Student } from '../entities/student.entity';
 import type { ProfilePictureStorageService } from '../../storage/profile-picture-storage.service';
+import { StudentResponse } from '../../common/enums/student-response.enum';
 import { StudentsService } from './students.service';
 
 type Attempt = {
@@ -32,10 +33,20 @@ function applicationService(
     deadline?: string;
     insertError?: unknown;
     currentAssignmentStatus?: string;
+    applicationBlocker?: 'accepted_offer' | 'active_assignment';
   } = {},
 ) {
   const attempts = options.attempts ?? [];
   const topLevelQuery = jest.fn(async (sql: string) => {
+    if (sql.includes('student_application_blocker')) {
+      const blocker =
+        options.applicationBlocker ??
+        (options.currentAssignmentStatus &&
+        options.currentAssignmentStatus !== 'finalized'
+          ? 'active_assignment'
+          : null);
+      return [{ blocker }];
+    }
     if (sql.includes('FROM public.internship_assignment')) {
       return options.currentAssignmentStatus &&
         options.currentAssignmentStatus !== 'finalized'
@@ -76,6 +87,15 @@ function applicationService(
   const transactionQuery = jest.fn(async (sql: string) => {
     if (sql.includes('set_config') || sql.includes('pg_advisory_xact_lock'))
       return [];
+    if (sql.includes('student_application_blocker')) {
+      const blocker =
+        options.applicationBlocker ??
+        (options.currentAssignmentStatus &&
+        options.currentAssignmentStatus !== 'finalized'
+          ? 'active_assignment'
+          : null);
+      return [{ blocker }];
+    }
     if (sql.includes('FROM public.internship_assignment')) {
       return options.currentAssignmentStatus &&
         options.currentAssignmentStatus !== 'finalized'
@@ -311,7 +331,7 @@ describe('StudentsService application reapplication', () => {
           { userAccountId: 70 },
         ),
       ).rejects.toThrow(
-        'You cannot apply for another internship while your current internship has not yet been finalized.',
+        'You cannot apply for another internship while your current internship has not yet been finalized by QC PESO.',
       );
       expect(
         transactionQuery.mock.calls.some(([sql]) =>
@@ -333,6 +353,112 @@ describe('StudentsService application reapplication', () => {
         { userAccountId: 70 },
       ),
     ).resolves.toMatchObject({ applicationStatus: 'submitted' });
+  });
+
+  it('blocks applications across opportunities as soon as an offer is accepted', async () => {
+    const { service, transactionQuery } = applicationService({
+      applicationBlocker: 'accepted_offer',
+    });
+
+    await expect(
+      service.createStudentApplication(
+        7,
+        { opportunityId: 99 },
+        { userAccountId: 70 },
+      ),
+    ).rejects.toThrow(
+      'You cannot apply for another internship after accepting an offer.',
+    );
+    expect(
+      transactionQuery.mock.calls.some(([sql]) =>
+        String(sql).includes('INSERT INTO public.application'),
+      ),
+    ).toBe(false);
+  });
+
+  it('reports an accepted offer awaiting assignment as an application blocker', async () => {
+    const { service } = applicationService({
+      applicationBlocker: 'accepted_offer',
+    });
+
+    await expect(service.getApplicationEligibility(7)).resolves.toEqual({
+      canApply: false,
+      blocker: 'accepted_offer',
+      message:
+        'You cannot apply for another internship after accepting an offer. You may apply again after QC PESO finalizes the resulting internship assignment.',
+    });
+  });
+
+  it('reports application eligibility after the mapped assignment is finalized', async () => {
+    const { service } = applicationService({
+      currentAssignmentStatus: 'finalized',
+    });
+
+    await expect(service.getApplicationEligibility(7)).resolves.toEqual({
+      canApply: true,
+      blocker: null,
+      message: null,
+    });
+  });
+});
+
+describe('StudentsService offer response serialization', () => {
+  it('takes the per-student application lock before accepting an offer', async () => {
+    const transactionQuery = jest.fn(async (sql: string) => {
+      if (sql.includes('set_config') || sql.includes('pg_advisory_xact_lock')) {
+        return [];
+      }
+      if (sql.includes('SELECT a.application_id')) {
+        return [
+          {
+            application_id: 41,
+            application_status: 'approved_for_referral',
+            student_response: 'pending',
+            referral_id: 51,
+            referral_status: 'under_review',
+            company_response: 'accepted',
+          },
+        ];
+      }
+      if (
+        sql.includes('UPDATE public.application') &&
+        sql.includes('RETURNING *')
+      ) {
+        return [{ application_id: 41, student_response: 'accepted' }];
+      }
+      return [];
+    });
+    const runner = {
+      isTransactionActive: true,
+      query: transactionQuery,
+      connect: jest.fn(),
+      startTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      rollbackTransaction: jest.fn(),
+      release: jest.fn(),
+    } as unknown as QueryRunner;
+    const dataSource = {
+      createQueryRunner: jest.fn(() => runner),
+    } as unknown as DataSource;
+    const service = new StudentsService(
+      {} as Repository<Student>,
+      dataSource,
+      {} as ProfilePictureStorageService,
+    );
+
+    await service.respondToApplicationOffer(
+      7,
+      41,
+      { response: StudentResponse.ACCEPTED },
+      { userAccountId: 70 },
+    );
+
+    const statements = transactionQuery.mock.calls.map(([sql]) => String(sql));
+    expect(
+      statements.findIndex((sql) => sql.includes('pg_advisory_xact_lock')),
+    ).toBeLessThan(
+      statements.findIndex((sql) => sql.includes('SELECT a.application_id')),
+    );
   });
 });
 

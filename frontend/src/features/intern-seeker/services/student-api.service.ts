@@ -5,6 +5,7 @@ import type {
   StudentProfileResponse,
   StudentRequirementsResponse,
   StudentApplicationDto,
+  StudentApplicationEligibilityDto,
   StudentApplicationStatusDto,
   StudentAttendanceResponse,
   StudentAttendanceHistoryResponse,
@@ -113,6 +114,15 @@ export const studentApiService = {
     const response = await api.post(`/students/${studentId}/applications`, {
       opportunityId,
     });
+    return response.data;
+  },
+
+  async getApplicationEligibility(
+    studentId: number,
+  ): Promise<StudentApplicationEligibilityDto> {
+    const response = await api.get<StudentApplicationEligibilityDto>(
+      `/students/${studentId}/applications/eligibility`,
+    );
     return response.data;
   },
 
