@@ -1,4 +1,4 @@
-import { ArrowLeft, Building2, CalendarDays, ChartNoAxesColumnIncreasing, Trash2, User } from 'lucide-react';
+import { ArrowLeft, Building2, CalendarDays, ChartNoAxesColumnIncreasing, User } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AttendanceProfileSummary } from '../../../components/AttendanceProfileSummary';
@@ -136,7 +136,7 @@ export function EmployerInternshipHistoryDetailsPage() {
         {details.status.canDelete && (
           <footer className={styles.companyActions}>
             <button type="button" className={styles.deleteRecordButton} onClick={() => setShowDelete(true)}>
-              <Trash2 size={16} />Delete
+              Delete
             </button>
           </footer>
         )}

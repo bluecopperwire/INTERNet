@@ -1,7 +1,8 @@
-import { ArrowLeft, CalendarDays, ChevronLeft, ChevronRight, Eye, Search, SlidersHorizontal, Trash2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { ArrowLeft, Building2, CalendarDays, ChartNoAxesColumnIncreasing, ChevronLeft, ChevronRight, Eye, Search, SlidersHorizontal, Star, Trash2, User } from 'lucide-react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { AttendanceHistoryView } from '../../../components/AttendanceHistoryView'
+import { AttendanceProfileSummary } from '../../../components/AttendanceProfileSummary'
 import { ConfirmDeleteModal } from '../../../components/feedback/ConfirmDeleteModal'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
@@ -12,14 +13,13 @@ import attendanceStyles from '../../employer/pages/AttendanceMonitoringPage.modu
 import attendanceDetailStyles from '../../employer/pages/AttendanceInternshipDetailsPage.module.css'
 import internshipStyles from '../../employer/pages/MonitorInternshipPage.module.css'
 import detailStyles from '../../employer/pages/MonitorInternshipDetailsPage.module.css'
+import studentDetailStyles from '../../intern-seeker/components/StudentInternshipDetails.module.css'
 
 const PAGE_SIZES = [5, 10, 15]
 const ALL_STATUSES = ['pending', 'ongoing', 'complete_company', 'complete_student', 'withdrawn', 'cancelled', 'finalized']
 const LABELS: Record<string, string> = { active: 'Active', closed: 'Closed', pending: 'Pending', ongoing: 'Ongoing', complete_company: 'Complete (Company)', complete_student: 'Complete (Student)', withdrawn: 'Withdrawn', cancelled: 'Cancelled', finalized: 'Finalized', present: 'Present', absent: 'Absent', incomplete: 'Incomplete' }
 type Meta = { page: number; limit: number; total: number; totalPages: number }
 const EMPTY_META: Meta = { page: 1, limit: 5, total: 0, totalPages: 0 }
-const duration = (value: unknown) => `${(Number(value || 0) / 60).toFixed(2)} hours (${Number(value || 0).toLocaleString()} minutes)`
-const dateValue = (value: unknown) => value ? String(value).slice(0, 10) : '—'
 const statusLabel = (value: unknown) => LABELS[String(value)] || String(value || '—')
 const daysLabel = (days: unknown) => Array.isArray(days) ? days.map((d) => ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][Number(d)]).join(', ') : '—'
 
@@ -59,25 +59,307 @@ export function QCPesoInternshipHistoryPage() {
   return <><main className={internshipStyles.page}><QCPesoHero title="Internship History" subtitle="Review all internship assignment states and finalized records." /><section className={internshipStyles.content}><div className={`${internshipStyles.summaryGrid} ${internshipStyles.historySummaryGrid}`}><SummaryCard styles={internshipStyles} label="Total Internships" value={summary.totalInternships || 0} /><SummaryCard styles={internshipStyles} label="Active Internships" value={summary.activeInternships || 0} /><SummaryCard styles={internshipStyles} label="Closed Internships" value={summary.closedInternships || 0} /></div><InternshipToolbar search={search} setSearch={setSearch} status={status} setStatus={setStatus} statuses={['active', 'closed', ...ALL_STATUSES]} reset={() => setPage(1)} /><InternshipTable rows={rows} onView={(id) => navigate(`/qcpeso/manage-interns/history/${id}`)} onDelete={setDeleteTarget} /><Pager meta={meta} limit={limit} setLimit={setLimit} setPage={setPage} styles={internshipStyles} /></section></main>{deleteTarget && <ConfirmDeleteModal subject={`${deleteTarget.studentFullName}'s finalized internship record`} isDeleting={deleting} onClose={() => { if (!deleting) setDeleteTarget(null) }} onConfirm={remove} />}</>
 }
 
+type QcInternshipDetail = {
+  intern: {
+    studentFullName: string
+    studentContactEmail?: string | null
+    studentContactNumber?: string | null
+    studentAddress?: string | null
+    studentPhotoFilePath?: string | null
+    studentProfileUpdatedAt?: string | null
+    strandProgram?: string | null
+    yearLevel?: string | null
+    schoolName?: string | null
+    renderedMinutes: number
+    remainingMinutes: number
+  }
+  assignment: {
+    internshipAssignmentId: number
+    companyName: string
+    jobTitle: string
+    workingDays: number[]
+    requiredMinutes: number
+    startDate: string
+    expectedEndDate?: string | null
+    endDate?: string | null
+    endedAt?: string | null
+    startShift?: string | null
+    endShift?: string | null
+  }
+  status: {
+    assignmentStatus: string
+    effectiveStatus?: string | null
+    canFinalize: boolean
+    canDelete: boolean
+  }
+  remarks: {
+    studentWithdrawalRemark?: string | null
+    companyCancellationRemark?: string | null
+    companyReviewOfStudent?: string | null
+    studentReviewOfCompany?: { rating: number; remark?: string | null } | null
+  }
+}
+
+type QcDetailField = readonly [label: string, value: ReactNode]
+
 export function QCPesoInternshipDetailsPage({ history = false }: { history?: boolean }) {
-  const { id } = useParams(); const navigate = useNavigate(); const [data, setData] = useState<any>(null); const [modal, setModal] = useState(false); const [busy, setBusy] = useState(false)
-  useEffect(() => { if (id) void (history ? qcpesoApiService.getInternshipHistoryDetail(Number(id)) : qcpesoApiService.getFinalizationDetail(Number(id))).then(setData) }, [id, history])
-  if (!data) return <main className={detailStyles.feedback}>Loading internship details...</main>
-  const a = data.assignment; const i = data.intern; const effective = data.status.effectiveStatus
-  const fields: Array<[string, string]> = [['Student Name', i.studentFullName], ['Company', a.companyName], ['Job Title', a.jobTitle], ['Program / Strand', i.strandProgram || '—'], ['Working Days', daysLabel(a.workingDays)], ['Start Date', dateValue(a.startDate)], [a.endDate || a.endedAt ? 'Actual End Date' : 'Expected End Date', dateValue(a.endDate || a.endedAt || a.expectedEndDate)], ['Shift Start', String(a.startShift || '—').slice(0, 5)], ['Shift End', String(a.endShift || '—').slice(0, 5)], ['Required Hours', duration(a.requiredMinutes)], ['Rendered Hours', duration(i.renderedMinutes)], ['Remaining Hours', duration(i.remainingMinutes)], ['Assignment Status', statusLabel(data.status.assignmentStatus)]]
-  const finalize = async () => { setBusy(true); await qcpesoApiService.finalizeInternship(Number(id)); navigate('/qcpeso/manage-interns/internships') }
-  return <main className={detailStyles.page}><div className={detailStyles.wrap}><button className={detailStyles.backButton} onClick={() => navigate(history ? '/qcpeso/manage-interns/history' : '/qcpeso/manage-interns/internships')}><ArrowLeft size={19} />Back</button><section className={detailStyles.studentSummary}><div><h1>{a.jobTitle} at {a.companyName}</h1><p>{i.studentFullName}</p></div></section><section className={detailStyles.detailCard}><header className={detailStyles.cardHeader}><div><h2>Internship Details</h2><p>Read-only assignment and lifecycle information.</p></div></header><div className={detailStyles.formGrid}>{fields.map(([label, value]) => <ReadonlyField key={label} label={label} value={value} />)}</div></section><RemarkSections data={data} effective={effective} />{history && <div className={detailStyles.footer}><button type="button" className={detailStyles.completeButton} onClick={() => navigate(`/qcpeso/manage-interns/attendance/${id}`, { state: { attendanceHistoryBackPath: `/qcpeso/manage-interns/history/${id}` } })}>View Attendance History</button></div>}{!history && data.status.canFinalize && <div className={detailStyles.footer}><button type="button" className={detailStyles.completeButton} onClick={() => setModal(true)}>Finalize Internship</button></div>}</div>{modal && <div className={detailStyles.modalBackdrop}><div className={detailStyles.modal} role="dialog" aria-modal="true"><h2>Finalize Internship</h2><p>This moves the internship to finalized history while preserving all attendance, remarks, and reviews.</p><div className={detailStyles.modalActions}><button type="button" className={detailStyles.cancelButton} disabled={busy} onClick={() => setModal(false)}>Close</button><button type="button" className={detailStyles.completeButton} disabled={busy} onClick={finalize}>Finalize Internship</button></div></div></div>}</main>
+  const { id } = useParams()
+  const assignmentId = Number(id)
+  const navigate = useNavigate()
+  const toast = useToastStore()
+  const [data, setData] = useState<QcInternshipDetail | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [modal, setModal] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [deleteModal, setDeleteModal] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  useEffect(() => {
+    if (!Number.isInteger(assignmentId)) return
+    const request = history
+      ? qcpesoApiService.getInternshipHistoryDetail(assignmentId)
+      : qcpesoApiService.getFinalizationDetail(assignmentId)
+    void request
+      .then(setData)
+      .catch((requestError: unknown) => setError(getErrorMessage(requestError, 'Unable to load internship details.')))
+      .finally(() => setLoading(false))
+  }, [assignmentId, history])
+
+  if (!Number.isInteger(assignmentId)) return <main className={detailStyles.feedback} role="alert">Internship assignment not found.</main>
+  if (loading) return <main className={detailStyles.feedback}>Loading internship details...</main>
+  if (error || !data) return <main className={detailStyles.feedback} role="alert">{error || 'Internship assignment not found.'}</main>
+
+  const assignment = data.assignment
+  const intern = data.intern
+  const assignmentStatus = data.status.assignmentStatus
+  const effectiveStatus = data.status.effectiveStatus || assignmentStatus
+  const displayStatus = statusLabel(assignmentStatus)
+  const statusClass = ['complete_company', 'complete_student'].includes(assignmentStatus) ? 'completed' : assignmentStatus
+  const hasEnded = !['pending', 'ongoing'].includes(assignmentStatus)
+
+  const internFields: QcDetailField[] = [
+    ['Full Name', displayValue(intern.studentFullName)],
+    ['Program / Strand', displayValue(intern.strandProgram)],
+    ['Year Level', displayValue(intern.yearLevel)],
+    ['School', displayValue(intern.schoolName)],
+  ]
+  const assignmentFields: QcDetailField[] = [
+    ['Company', displayValue(assignment.companyName)],
+    ['Job Title', displayValue(assignment.jobTitle)],
+    ['Required Hours', formatDetailMinutes(assignment.requiredMinutes)],
+  ]
+  const scheduleFields: QcDetailField[] = [
+    ['Working Days', displayValue(daysLabel(assignment.workingDays))],
+    ['Start Date', formatAssignmentDate(assignment.startDate)],
+    [hasEnded ? 'End Date' : 'Expected End Date', formatAssignmentDate(hasEnded ? (assignment.endDate || assignment.endedAt || assignment.expectedEndDate) : assignment.expectedEndDate)],
+    ['Shift Start', formatClockTime(assignment.startShift)],
+    ['Shift End', formatClockTime(assignment.endShift)],
+  ]
+  const statusFields: QcDetailField[] = [
+    ['Status', displayStatus],
+    ['Rendered Hours', formatDetailMinutes(intern.renderedMinutes)],
+    ['Remaining Hours', formatDetailMinutes(intern.remainingMinutes)],
+  ]
+
+  const finalize = async () => {
+    if (busy || !data.status.canFinalize) return
+    setBusy(true)
+    try {
+      await qcpesoApiService.finalizeInternship(assignmentId)
+      toast.success('Internship finalized successfully.')
+      navigate('/qcpeso/manage-interns/internships')
+    } catch (requestError: unknown) {
+      toast.error(getErrorMessage(requestError, 'Failed to finalize internship.'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const deleteRecord = async () => {
+    if (deleting || !data.status.canDelete) return
+    setDeleting(true)
+    try {
+      await qcpesoApiService.hideFinalizedInternship(assignmentId)
+      toast.success('Internship record hidden from QC PESO history.')
+      navigate('/qcpeso/manage-interns/history')
+    } catch (requestError: unknown) {
+      toast.error(getErrorMessage(requestError, 'Failed to hide internship record.'))
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  return (
+    <main className={detailStyles.page}>
+      <div className={detailStyles.wrap}>
+        <button type="button" className={detailStyles.backButton} onClick={() => navigate(history ? '/qcpeso/manage-interns/history' : '/qcpeso/manage-interns/internships')}>
+          <ArrowLeft size={19} />{history ? 'Back to Internship History' : 'Back to Finalize Internships'}
+        </button>
+
+        <section className={`${studentDetailStyles.detailsShell} ${detailStyles.detailsShell}`} aria-labelledby="qcpeso-internship-title">
+          <header className={studentDetailStyles.pageHeading}>
+            <div>
+              <h1 id="qcpeso-internship-title">Internship Details</h1>
+              <p>Review the intern's assignment, approved schedule, progress, and outcome.</p>
+            </div>
+            <span className={`${studentDetailStyles.statusTag} ${studentDetailStyles[statusClass] ?? ''}`}>{displayStatus}</span>
+          </header>
+
+          <div className={studentDetailStyles.content}>
+            <AttendanceProfileSummary profile={{
+              studentFullName: intern.studentFullName,
+              studentContactEmail: intern.studentContactEmail,
+              studentContactNumber: intern.studentContactNumber,
+              studentAddress: intern.studentAddress,
+              studentPhotoFilePath: intern.studentPhotoFilePath,
+              studentProfileUpdatedAt: intern.studentProfileUpdatedAt,
+              jobTitle: assignment.jobTitle,
+              companyName: assignment.companyName,
+            }} />
+
+            <div className={studentDetailStyles.sectionStack}>
+              <QcDetailSection icon={<User size={18} />} title="Intern Information" fields={internFields} />
+              <QcDetailSection icon={<Building2 size={18} />} title="Assignment Information" fields={assignmentFields} />
+              <QcDetailSection icon={<CalendarDays size={18} />} title="Schedule Information" fields={scheduleFields} />
+              <QcDetailSection icon={<ChartNoAxesColumnIncreasing size={18} />} title="Status Information" fields={statusFields} />
+              <QcOutcomeSections data={data} effectiveStatus={effectiveStatus} />
+            </div>
+          </div>
+        </section>
+
+        {history && (
+          <footer className={detailStyles.companyActions}>
+            <button type="button" className={detailStyles.completeButton} onClick={() => navigate(`/qcpeso/manage-interns/attendance/${assignmentId}`, { state: { attendanceHistoryBackPath: `/qcpeso/manage-interns/history/${assignmentId}` } })}>
+              View Attendance History
+            </button>
+          </footer>
+        )}
+        {history && data.status.canDelete && (
+          <footer className={detailStyles.companyActions}>
+            <button type="button" className={detailStyles.deleteRecordButton} onClick={() => setDeleteModal(true)}>
+              Delete
+            </button>
+          </footer>
+        )}
+        {!history && (
+          <footer className={detailStyles.companyActions}>
+            <button type="button" className={detailStyles.completeButton} disabled={!data.status.canFinalize || busy} onClick={() => setModal(true)}>
+              Finalize Internship
+            </button>
+          </footer>
+        )}
+      </div>
+
+      {modal && (
+        <div className={detailStyles.modalBackdrop} role="presentation" onMouseDown={() => { if (!busy) setModal(false) }}>
+          <section className={detailStyles.modal} role="dialog" aria-modal="true" aria-labelledby="qcpeso-finalize-title" onMouseDown={(event) => event.stopPropagation()}>
+            <h2 id="qcpeso-finalize-title">Finalize Internship</h2>
+            <p>This moves the internship to finalized history while preserving all attendance, remarks, and reviews.</p>
+            <div className={detailStyles.modalActions}>
+              <button type="button" className={detailStyles.cancelButton} disabled={busy} onClick={() => setModal(false)}>Close</button>
+              <button type="button" className={detailStyles.completeButton} disabled={busy} onClick={() => void finalize()}>{busy ? 'Finalizing...' : 'Finalize Internship'}</button>
+            </div>
+          </section>
+        </div>
+      )}
+      {deleteModal && (
+        <ConfirmDeleteModal
+          subject={`${intern.studentFullName}'s finalized internship record`}
+          isDeleting={deleting}
+          onClose={() => { if (!deleting) setDeleteModal(false) }}
+          onConfirm={() => void deleteRecord()}
+        />
+      )}
+    </main>
+  )
 }
-function RemarkSections({ data, effective }: any) {
-  const sections: Array<[string, string]> = []
-  if (effective === 'withdrawn') sections.push(['Student Withdrawal Remark', data.remarks.studentWithdrawalRemark || '—'])
-  if (effective === 'cancelled') sections.push(['Company Cancellation Remark', data.remarks.companyCancellationRemark || '—'])
-  if (effective === 'complete_company' || effective === 'complete_student') sections.push(['Company Review of the Student', data.remarks.companyReviewOfStudent || '—'])
-  if (effective === 'complete_student') { const review = data.remarks.studentReviewOfCompany; sections.push(['Student Review of the Company', review ? `${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)} — ${review.remark} (${dateValue(review.reviewedAt)})` : '—']) }
-  if (!sections.length) return null
-  return <section className={detailStyles.statusCard}><header className={detailStyles.statusHeader}><h2>Remarks and Reviews</h2></header><div className={detailStyles.statusGrid}>{sections.map(([label, value]) => <ReadonlyField key={label} label={label} value={value} />)}</div></section>
+
+function QcDetailSection({ icon, title, fields }: { icon: ReactNode; title: string; fields: QcDetailField[] }) {
+  const headingId = `qcpeso-${title.toLowerCase().replaceAll(' ', '-')}-heading`
+  return (
+    <section className={studentDetailStyles.infoCard} aria-labelledby={headingId}>
+      <h2 className={studentDetailStyles.sectionTitle} id={headingId}><span>{icon}</span>{title}</h2>
+      <dl className={studentDetailStyles.infoList}>
+        {fields.map(([label, value]) => <div className={studentDetailStyles.infoRow} key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
+      </dl>
+    </section>
+  )
 }
-function ReadonlyField({ label, value }: { label: string; value: string }) { return <label className={detailStyles.field}><span>{label}</span><input readOnly value={value} /></label> }
+
+function QcOutcomeSections({ data, effectiveStatus }: { data: QcInternshipDetail; effectiveStatus: string }) {
+  if (effectiveStatus === 'withdrawn') {
+    return <QcRemarkCard icon={<User size={18} />} title="Internship Withdrawal Remark" remark={data.remarks.studentWithdrawalRemark} />
+  }
+  if (effectiveStatus === 'cancelled') {
+    return <QcRemarkCard icon={<Building2 size={18} />} title="Internship Cancellation Remark" remark={data.remarks.companyCancellationRemark} />
+  }
+  if (effectiveStatus === 'complete_company') {
+    return <QcRemarkCard icon={<ChartNoAxesColumnIncreasing size={18} />} title="Company Review about the Student" remark={data.remarks.companyReviewOfStudent} />
+  }
+  if (effectiveStatus === 'complete_student') {
+    return <>
+      <QcRemarkCard icon={<ChartNoAxesColumnIncreasing size={18} />} title="Company Review about the Student" remark={data.remarks.companyReviewOfStudent} />
+      <QcStudentReviewCard review={data.remarks.studentReviewOfCompany} />
+    </>
+  }
+  return null
+}
+
+function QcRemarkCard({ icon, title, remark }: { icon: ReactNode; title: string; remark?: string | null }) {
+  const headingId = `qcpeso-${title.toLowerCase().replaceAll(' ', '-')}-heading`
+  return <section className={studentDetailStyles.infoCard} aria-labelledby={headingId}>
+    <h2 className={studentDetailStyles.sectionTitle} id={headingId}><span>{icon}</span>{title}</h2>
+    <p className={studentDetailStyles.outcomeRemark}>{remark?.trim() || 'No remark was provided.'}</p>
+  </section>
+}
+
+function QcStudentReviewCard({ review }: { review?: { rating: number; remark?: string | null } | null }) {
+  const rating = Math.min(5, Math.max(0, Math.round(Number(review?.rating) || 0)))
+  return <section className={studentDetailStyles.infoCard} aria-labelledby="qcpeso-student-review-heading">
+    <h2 className={studentDetailStyles.sectionTitle} id="qcpeso-student-review-heading"><span><Star size={18} /></span>Student Review about the Company</h2>
+    <div className={detailStyles.reviewContent}>
+      <div className={detailStyles.reviewLine}>
+        <strong className={detailStyles.reviewLabel}>Star Rating:</strong>
+        <div className={detailStyles.reviewStars} aria-label={`${rating} out of 5 stars`}>
+          {[1, 2, 3, 4, 5].map((star) => <span className={star <= rating ? detailStyles.selectedReviewStar : ''} key={star} aria-hidden="true">★</span>)}
+        </div>
+      </div>
+      <p className={detailStyles.reviewRemark}><strong className={detailStyles.reviewLabel}>Remark:</strong> {review?.remark?.trim() || 'No review remark was provided.'}</p>
+    </div>
+  </section>
+}
+
+function formatDetailMinutes(value: unknown): string {
+  const minutes = Math.max(0, Math.round(Number(value) || 0))
+  const hours = Math.floor(minutes / 60)
+  const remainder = minutes % 60
+  if (remainder === 0) return `${hours} ${hours === 1 ? 'hour' : 'hours'}`
+  if (hours === 0) return `${remainder} ${remainder === 1 ? 'minute' : 'minutes'}`
+  return `${hours} ${hours === 1 ? 'hour' : 'hours'}, ${remainder} ${remainder === 1 ? 'minute' : 'minutes'}`
+}
+
+function formatAssignmentDate(value?: string | null): string {
+  if (!value) return 'Not specified'
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value)
+  const parsed = new Date(dateOnly ? `${value}T00:00:00+08:00` : value)
+  if (Number.isNaN(parsed.getTime())) return value
+  return new Intl.DateTimeFormat('en-PH', { timeZone: 'Asia/Manila', month: 'long', day: 'numeric', year: 'numeric' }).format(parsed)
+}
+
+function formatClockTime(value?: string | null): string {
+  if (!value) return 'Not specified'
+  const [hourValue, minuteValue] = value.split(':')
+  const hour = Number(hourValue)
+  if (!Number.isInteger(hour) || minuteValue === undefined) return value
+  const period = hour >= 12 ? 'PM' : 'AM'
+  const displayHour = hour % 12 || 12
+  return `${displayHour}:${minuteValue} ${period}`
+}
+
+function displayValue(value?: string | null): string {
+  return value?.trim() || 'Not specified'
+}
 
 export function QCPesoAttendancePage() {
   const navigate = useNavigate(); const [summary, setSummary] = useState<any>({}); const [rows, setRows] = useState<any[]>([]); const [meta, setMeta] = useState<Meta>(EMPTY_META)

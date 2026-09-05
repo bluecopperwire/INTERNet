@@ -297,10 +297,13 @@ export class QcInternshipWorkflowService {
          concat_ws(', ', NULLIF(s.address_line, ''), NULLIF(s.address_barangay, ''), NULLIF(s.address_city, '')) AS student_address,
          s.photo_file_path AS student_photo_file_path,
          s.updated_at AS student_profile_updated_at,
+         sai.school_name,
+         sai.year_level,
          previous.previous_assignment_status
        FROM public.vw_internship_assignment_details iad
        JOIN public.internship_assignment ia ON ia.internship_assignment_id = iad.internship_assignment_id
        JOIN public.student s ON s.student_id = iad.student_id
+       LEFT JOIN public.student_academic_information sai ON sai.student_id = s.student_id
        LEFT JOIN public.vw_attendance_summary ats ON ats.internship_assignment_id = iad.internship_assignment_id
        LEFT JOIN LATERAL (
          SELECT iash.previous_assignment_status
@@ -340,6 +343,8 @@ export class QcInternshipWorkflowService {
         studentPhotoFilePath: row.studentPhotoFilePath,
         studentProfileUpdatedAt: row.studentProfileUpdatedAt,
         strandProgram: row.strandProgram,
+        yearLevel: row.yearLevel,
+        schoolName: row.schoolName,
         jobTitle: row.jobTitle,
         renderedMinutes: row.renderedMinutes,
         remainingMinutes: row.remainingMinutes,
@@ -398,6 +403,8 @@ export class QcInternshipWorkflowService {
       companyName: row.company_name,
       jobTitle: row.opportunity_title,
       strandProgram: row.strand_program,
+      yearLevel: row.year_level,
+      schoolName: row.school_name,
       assignmentStatus: String(row.assignment_status),
       previousAssignmentStatus:
         typeof row.previous_assignment_status === 'string'

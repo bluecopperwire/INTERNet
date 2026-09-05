@@ -19,6 +19,8 @@ describe('QcInternshipWorkflowService Phase 5', () => {
     expect(sql).toContain('qc_peso_hidden_at');
     expect(sql).toContain('student_photo_file_path');
     expect(sql).toContain('profile_contact_email');
+    expect(sql).toContain('sai.school_name');
+    expect(sql).toContain('sai.year_level');
   });
 
   it('uses historical ongoing dates, actual ended_at and exact selected-date attendance without writes', async () => {
@@ -159,6 +161,42 @@ describe('QcInternshipWorkflowService Phase 5', () => {
       'cancelled',
       'finalized',
     ]);
+  });
+
+  it('returns the academic profile and both completion reviews for finalization details', async () => {
+    const service = new QcInternshipWorkflowService({
+      query: jest.fn().mockResolvedValue([
+        {
+          internship_assignment_id: 8,
+          assignment_status: 'complete_student',
+          student_full_name: 'Jay Park',
+          strand_program: 'Computer Science',
+          school_name: 'Quezon City University',
+          year_level: 'fourth_year_college',
+          required_minutes: 600,
+          total_rendered_minutes: 600,
+          company_completion_remark: 'Excellent performance.',
+          student_company_review_rating: 5,
+          student_company_review_remark: 'Excellent training experience.',
+          reviewed_at: '2026-09-05T10:00:00+08:00',
+        },
+      ]),
+    } as unknown as DataSource);
+
+    await expect(service.finalizationDetail(8)).resolves.toMatchObject({
+      intern: {
+        schoolName: 'Quezon City University',
+        yearLevel: 'fourth_year_college',
+        strandProgram: 'Computer Science',
+      },
+      remarks: {
+        companyReviewOfStudent: 'Excellent performance.',
+        studentReviewOfCompany: {
+          rating: 5,
+          remark: 'Excellent training experience.',
+        },
+      },
+    });
   });
 
   it('never selects the Student Company review from an Employer workflow query', () => {

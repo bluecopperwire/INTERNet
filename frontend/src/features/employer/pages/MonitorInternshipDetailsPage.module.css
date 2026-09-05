@@ -342,6 +342,46 @@
   margin-top: 18px;
 }
 
+.reviewContent {
+  display: grid;
+}
+
+.reviewLine {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 20px;
+}
+
+.reviewLabel {
+  color: #21167b;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.reviewStars {
+  display: flex;
+  gap: 4px;
+  color: #a7adbc;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.reviewStars .selectedReviewStar {
+  color: #e2ad00;
+}
+
+.reviewRemark {
+  margin: 0;
+  padding: 18px 20px 20px;
+  border-top: 1px solid #e2e8f0;
+  color: #35415b;
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
 .companyActions button:disabled {
   opacity: .48;
   cursor: not-allowed;
@@ -429,10 +469,11 @@
   background: #fff1f1;
 }
 
-.deleteRecordButton {
+.companyActions .deleteRecordButton {
   border: 1px solid #e25555;
   color: #cf3939;
   background: #fff1f1;
+  font-size: inherit;
 }
 
 .validationError {

@@ -108,6 +108,9 @@ describe('Company internship workflow display helpers', () => {
     expect(details).toContain('studentPageStyles.attendanceButton');
     expect(details).not.toContain('Clock3');
     expect(details).toContain('details.status.canDelete');
+    expect(details).toContain('className={styles.deleteRecordButton}');
+    expect(details).not.toContain('<Trash2');
+    expect(readSource('../pages/MonitorInternshipDetailsPage.module.css')).toMatch(/\.companyActions \.deleteRecordButton\s*\{[^}]*font-size:\s*inherit/s);
     expect(details).not.toContain('Mark Internship as Complete');
     expect(details).not.toContain('Cancel Internship');
     expect(details).not.toContain('Edit Details');

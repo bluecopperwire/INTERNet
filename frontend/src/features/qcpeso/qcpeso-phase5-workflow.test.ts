@@ -16,7 +16,7 @@ describe('QC PESO Phase 5 workflow contracts', () => {
     expect(page).toContain('Finalize Internship')
     expect(page).toMatch(/>Close<\/button>/)
     const finalizeActions = page.slice(page.indexOf('detailStyles.modalActions'))
-    expect(finalizeActions.indexOf('>Close</button>')).toBeLessThan(finalizeActions.indexOf('>Finalize Internship</button>'))
+    expect(finalizeActions.indexOf('>Close</button>')).toBeLessThan(finalizeActions.indexOf("'Finalize Internship'"))
   })
 
   it('uses two-digit minimum formatting for all QC PESO summary cards', () => {
@@ -53,8 +53,26 @@ describe('QC PESO Phase 5 workflow contracts', () => {
     expect(internshipStyles).toContain('.wideStudentNameTable')
   })
 
-  it('shows status-specific QC review content and minute-based totals', () => {
-    for (const text of ['Student Withdrawal Remark', 'Company Cancellation Remark', 'Company Review of the Student', 'Student Review of the Company']) expect(page).toContain(text)
-    expect(page).toContain("${Number(value || 0).toLocaleString()} minutes")
+  it('uses the shared internship details layout with QC-only actions and outcome sections', () => {
+    for (const text of ['Internship Details', 'Intern Information', 'Assignment Information', 'Schedule Information', 'Status Information']) expect(page).toContain(text)
+    for (const text of ['Internship Withdrawal Remark', 'Internship Cancellation Remark', 'Company Review about the Student', 'Student Review about the Company']) expect(page).toContain(text)
+    for (const field of ['Full Name', 'Program / Strand', 'Year Level', 'School', 'Company', 'Job Title', 'Required Hours', 'Working Days', 'Start Date', 'End Date', 'Shift Start', 'Shift End', 'Status', 'Rendered Hours', 'Remaining Hours']) expect(page).toContain(field)
+    expect(page).toContain('AttendanceProfileSummary')
+    expect(page).toContain('studentDetailStyles.detailsShell')
+    expect(page).toContain('studentDetailStyles.sectionStack')
+    expect(page).toContain('detailStyles.reviewStars')
+    expect(page).toContain('Star Rating:')
+    expect(page).toContain('Remark:')
+    expect(page).toContain("if (effectiveStatus === 'complete_company')")
+    expect(page).toContain("if (effectiveStatus === 'complete_student')")
+    expect(page).not.toContain("['complete_company', 'complete_student'].includes(effectiveStatus)")
+    expect(read('../employer/pages/MonitorInternshipDetailsPage.module.css')).toMatch(/\.reviewRemark\s*\{[^}]*border-top:\s*1px solid #e2e8f0/s)
+    expect(page).toContain('Back to Finalize Internships')
+    expect(page).toContain('disabled={!data.status.canFinalize || busy}')
+    expect(page).toContain('history && data.status.canDelete')
+    expect(page).toContain('qcpesoApiService.hideFinalizedInternship(assignmentId)')
+    expect(page).toContain('className={detailStyles.deleteRecordButton}')
+    expect(page).not.toContain('Mark Internship as Complete')
+    expect(page).not.toContain('Cancel Internship')
   })
 })
