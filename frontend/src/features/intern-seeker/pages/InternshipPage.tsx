@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { CircleAlert } from 'lucide-react'
 import type { StudentInternshipDto } from '../../../types/api'
 import { useAuthStore } from '../../../stores/useAuthStore'
 import { useToastStore } from '../../../stores/useToastStore'
@@ -6,6 +7,11 @@ import { getErrorMessage } from '../../../utils/error-message'
 import { studentApiService } from '../services/student-api.service'
 import { EmptyInternshipState, StudentInternshipDetails } from '../components/StudentInternshipDetails'
 import styles from './StudentInternshipPages.module.css'
+
+const COMPLETION_NOTICE_BY_STATUS: Partial<Record<StudentInternshipDto['assignmentStatus'], string>> = {
+  complete_company: 'Internship marked as complete. Review the training establishment (company) to proceed with internship finalization.',
+  complete_student: 'Training establishment already reviewed. Please wait for QC PESO to finalize your internship.',
+}
 
 function InternshipPage() {
   const studentId = useAuthStore((state) => state.user?.studentId)
@@ -70,7 +76,22 @@ function InternshipPage() {
     )
   if (!assignment) return <EmptyInternshipState />
 
-  return <StudentInternshipDetails assignment={assignment} interactive onWithdraw={withdraw} onReview={review} />
+  const completionNotice = COMPLETION_NOTICE_BY_STATUS[assignment.assignmentStatus]
+
+  return (
+    <>
+      {completionNotice && (
+        <section className={styles.completionNotice} aria-labelledby="internship-completion-notice-title">
+          <header className={styles.completionNoticeHeader}>
+            <span className={styles.completionNoticeIcon} aria-hidden="true"><CircleAlert size={19} /></span>
+            <h2 id="internship-completion-notice-title">Notice</h2>
+          </header>
+          <p>{completionNotice}</p>
+        </section>
+      )}
+      <StudentInternshipDetails assignment={assignment} interactive onWithdraw={withdraw} onReview={review} />
+    </>
+  )
 }
 
 export default InternshipPage

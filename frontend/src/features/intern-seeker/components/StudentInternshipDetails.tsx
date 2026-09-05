@@ -20,7 +20,7 @@ export function StudentInternshipDetails({ assignment, interactive = false, onWi
   const [remark, setRemark] = useState('')
   const [rating, setRating] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const statusLabel = resolveStudentFacingStatus(assignment)
+  const statusLabel = studentAssignmentStatus(assignment.assignmentStatus)
   const statusClass = statusLabel.toLowerCase()
   const hasEnded = assignmentHasEnded(assignment.assignmentStatus)
   const canReview = assignment.assignmentStatus === 'complete_company'
@@ -138,11 +138,11 @@ export function StudentInternshipDetails({ assignment, interactive = false, onWi
             <textarea rows={5} value={remark} onChange={(event) => setRemark(event.target.value)} />
           </label>
           <div className={styles.modalActions}>
-            <button className={styles.dangerButton} type="button" disabled={!remark.trim() || isSubmitting} onClick={() => void submitWithdrawal()}>
-              {isSubmitting ? 'Withdrawing...' : 'Withdraw Internship'}
-            </button>
             <button className={styles.secondaryButton} type="button" disabled={isSubmitting} onClick={closeModal}>
               Close
+            </button>
+            <button className={styles.dangerButton} type="button" disabled={!remark.trim() || isSubmitting} onClick={() => void submitWithdrawal()}>
+              {isSubmitting ? 'Withdrawing...' : 'Withdraw Internship'}
             </button>
           </div>
         </WorkflowDialog>
@@ -172,6 +172,9 @@ export function StudentInternshipDetails({ assignment, interactive = false, onWi
             <textarea rows={5} value={remark} onChange={(event) => setRemark(event.target.value)} />
           </label>
           <div className={styles.modalActions}>
+            <button className={styles.secondaryButton} type="button" disabled={isSubmitting} onClick={closeModal}>
+              Close
+            </button>
             <button
               className={styles.primaryButton}
               type="button"
@@ -179,9 +182,6 @@ export function StudentInternshipDetails({ assignment, interactive = false, onWi
               onClick={() => void submitReview()}
             >
               {isSubmitting ? 'Submitting...' : 'Submit Review'}
-            </button>
-            <button className={styles.secondaryButton} type="button" disabled={isSubmitting} onClick={closeModal}>
-              Close
             </button>
           </div>
         </WorkflowDialog>
@@ -244,15 +244,6 @@ function WorkflowDialog({ title, children, onClose }: { title: string; children:
       </section>
     </div>
   )
-}
-
-function resolveStudentFacingStatus(assignment: StudentInternshipDto): string {
-  if (assignment.assignmentStatus === 'finalized') {
-    if (assignment.companyCancellationRemark) return 'Cancelled'
-    if (assignment.companyCompletionRemark) return 'Completed'
-    if (assignment.studentWithdrawalRemark) return 'Withdrawn'
-  }
-  return studentAssignmentStatus(assignment.assignmentStatus)
 }
 
 function resolveOutcomeRemark(assignment: StudentInternshipDto) {

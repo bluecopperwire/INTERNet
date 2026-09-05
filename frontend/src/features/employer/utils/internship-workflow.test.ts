@@ -44,6 +44,22 @@ describe('Company internship workflow display helpers', () => {
     expect(ATTENDANCE_HISTORY_COLUMNS).toEqual(['Date', 'Clock In Time', 'Clock Out Time', 'Rendered Time', 'Attendance Status']);
   });
 
+  it('renders student names like the other values in Company tables', () => {
+    for (const page of ['AttendanceMonitoringPage.tsx', 'MonitorInternshipPage.tsx', 'InternshipHistoryPage.tsx']) {
+      const source = readSource(`../pages/${page}`);
+      expect(source).not.toMatch(/<strong>\{(?:row|internship)\.studentFullName\}<\/strong>/);
+    }
+  });
+
+  it('renders Company internship-history statuses as state-colored tags', () => {
+    const source = readSource('../pages/InternshipHistoryPage.tsx');
+    const styles = readSource('../pages/MonitorInternshipPage.module.css');
+    expect(source).toContain("styles[row.assignmentStatus.replaceAll('_', '')]");
+    for (const statusClass of ['pending', 'ongoing', 'completecompany', 'completestudent', 'withdrawn', 'cancelled', 'finalized']) {
+      expect(styles).toContain(`.${statusClass}`);
+    }
+  });
+
   it('uses the Student details layout with only Company-appropriate controls', () => {
     const details = readSource('../pages/MonitorInternshipDetailsPage.tsx');
     for (const heading of ['Internship Details', 'Intern Information', 'Assignment Information', 'Schedule Information', 'Status Information']) {

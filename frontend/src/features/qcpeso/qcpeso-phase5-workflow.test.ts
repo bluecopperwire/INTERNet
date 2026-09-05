@@ -13,6 +13,8 @@ describe('QC PESO Phase 5 workflow contracts', () => {
     expect(page).toContain("['pending', 'ongoing', 'complete_company', 'complete_student', 'withdrawn', 'cancelled', 'finalized']")
     expect(page).toContain('Finalize Internship')
     expect(page).toMatch(/>Close<\/button>/)
+    const finalizeActions = page.slice(page.indexOf('detailStyles.modalActions'))
+    expect(finalizeActions.indexOf('>Close</button>')).toBeLessThan(finalizeActions.indexOf('>Finalize Internship</button>'))
   })
 
   it('uses the exact internship and attendance column contracts', () => {

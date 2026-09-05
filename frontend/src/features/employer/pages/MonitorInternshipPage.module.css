@@ -168,6 +168,8 @@
   display: inline-flex;
   padding: 6px 11px;
   border-radius: 999px;
+  color: #6557a8;
+  background: #f0eef9;
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
@@ -183,12 +185,17 @@
   background: #f0eef9;
 }
 
-.awaitingcompletion {
+.pending,
+.awaitingcompletion,
+.completecompany,
+.completestudent {
   color: #a56600;
   background: #fff4e6;
 }
 
-.withdrawnbystudent {
+.withdrawnbystudent,
+.withdrawn,
+.finalized {
   color: #6557a8;
   background: #f0eef9;
 }

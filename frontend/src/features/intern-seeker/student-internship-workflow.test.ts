@@ -72,6 +72,20 @@ describe('Phase 2 Student internship workflow responsibilities', () => {
     expect(details).toContain('assignment.endDate ?? assignment.endedAt')
   })
 
+  it('keeps a finalized assignment labeled Finalized even when an earlier outcome remark exists', () => {
+    const details = readSource('./components/StudentInternshipDetails.tsx')
+    expect(details).toContain('const statusLabel = studentAssignmentStatus(assignment.assignmentStatus)')
+    expect(details).not.toContain('resolveStudentFacingStatus')
+  })
+
+  it('guides the Student through Company completion review and QC PESO finalization', () => {
+    const page = readSource('./pages/InternshipPage.tsx')
+    expect(page).toContain("complete_company: 'Internship marked as complete. Review the training establishment (company) to proceed with internship finalization.'")
+    expect(page).toContain("complete_student: 'Training establishment already reviewed. Please wait for QC PESO to finalize your internship.'")
+    expect(page).toContain('CircleAlert')
+    expect(page.indexOf('styles.completionNotice')).toBeLessThan(page.indexOf('<StudentInternshipDetails assignment={assignment}'))
+  })
+
   it('keeps workflow actions status-aware with required modal inputs', () => {
     const details = readSource('./components/StudentInternshipDetails.tsx')
     expect(details).toMatch(/assignment\.assignmentStatus === ["']complete_company["']/)
@@ -81,6 +95,10 @@ describe('Phase 2 Student internship workflow responsibilities', () => {
     expect(details).toContain('Submit Review')
     expect(details).toContain('Withdraw Internship')
     expect(details).toMatch(/>\s*Close\s*<\/button>/)
+    const withdrawalDialog = details.slice(details.indexOf("modal === 'withdraw'"), details.indexOf("modal === 'review'"))
+    expect(withdrawalDialog.indexOf('Close')).toBeLessThan(withdrawalDialog.lastIndexOf('Withdraw Internship'))
+    const reviewDialog = details.slice(details.indexOf("modal === 'review'"))
+    expect(reviewDialog.indexOf('Close')).toBeLessThan(reviewDialog.indexOf('Submit Review'))
   })
 
   it('uses exact history columns, server pagination, and no Delete action', () => {
