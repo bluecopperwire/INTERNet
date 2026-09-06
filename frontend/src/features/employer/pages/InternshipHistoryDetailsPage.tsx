@@ -7,7 +7,6 @@ import { useToastStore } from '../../../stores/useToastStore';
 import type { EmployerInternshipDetailDto } from '../../../types/api';
 import { getErrorMessage } from '../../../utils/error-message';
 import detailStyles from '../../intern-seeker/components/StudentInternshipDetails.module.css';
-import studentPageStyles from '../../intern-seeker/pages/StudentInternshipPages.module.css';
 import { employerApiService } from '../services/employer-api.service';
 import { assignmentStatusLabel, formatClockTime, formatWorkingDays } from '../utils/internship-workflow';
 import styles from './MonitorInternshipDetailsPage.module.css';
@@ -129,17 +128,16 @@ export function EmployerInternshipHistoryDetailsPage() {
           </div>
         </section>
 
-        <button type="button" className={studentPageStyles.attendanceButton} onClick={() => navigate(`/employer/attendance/${assignmentId}`, { state: { attendanceHistoryBackPath: `/employer/internship-history/${assignmentId}` } })}>
-          View Attendance History
-        </button>
-
-        {details.status.canDelete && (
-          <footer className={styles.companyActions}>
+        <footer className={styles.companyActions}>
+          <button type="button" className={styles.completeButton} onClick={() => navigate(`/employer/attendance/${assignmentId}`, { state: { attendanceHistoryBackPath: `/employer/internship-history/${assignmentId}` } })}>
+            View Attendance History
+          </button>
+          {details.status.canDelete && (
             <button type="button" className={styles.deleteRecordButton} onClick={() => setShowDelete(true)}>
               Delete
             </button>
-          </footer>
-        )}
+          )}
+        </footer>
 
         {showDelete && (
           <ConfirmDeleteModal

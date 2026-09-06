@@ -7,7 +7,7 @@ describe('Phase 2 Student internship workflow responsibilities', () => {
   it('orders My Tracking and installs independent current/history routes', () => {
     const tabs = readSource('./components/TrackingTabs.tsx')
     const app = readSource('../../App.tsx')
-    const labels = ['Requirements', 'Application Status', 'Internship', 'Attendance', 'Internship History']
+    const labels = ['My Requirements', 'My Applications', 'My Internship', 'My Attendance', 'My Internship History']
     const compactTabs = tabs.replace(/\s+/g, '')
     const positions = labels.map((label) => compactTabs.indexOf(`>${label.replaceAll(' ', '')}<`))
     expect(positions.every((position) => position >= 0)).toBe(true)

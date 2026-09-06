@@ -279,15 +279,19 @@
   cursor: pointer;
 }
 .attendanceButton {
-  display: block;
+  display: inline-flex;
   width: min(100%, 1280px);
   min-height: 44px;
+  align-items: center;
+  justify-content: center;
   margin: 18px auto 0;
+  padding: 10px 18px;
   border: 1px solid #21167b;
-  border-radius: 8px;
+  border-radius: 7px;
   color: #fff;
   background: #21167b;
   font: inherit;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
 }

@@ -255,10 +255,17 @@
 
 .workflowActions {
   display: grid;
+  width: 100%;
+  max-width: var(--tracking-content-width);
   gap: 10px;
-  padding: 16px 24px;
-  border-top: 1px solid #e2e8f0;
-  background: #f8fafc;
+  margin: 18px auto 0;
+}
+
+.workflowActions button {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
 }
 
 .primaryButton,
@@ -432,9 +439,6 @@
   }
   .infoRow dd {
     text-align: left;
-  }
-  .workflowActions {
-    padding: 16px 20px;
   }
   .modalActions {
     align-items: stretch;

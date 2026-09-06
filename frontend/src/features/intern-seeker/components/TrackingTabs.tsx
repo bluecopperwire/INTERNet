@@ -5,19 +5,19 @@ function TrackingTabs() {
   return (
     <nav className={styles.tabs} aria-label="Tracking sections">
       <NavLink className={({ isActive }) => (isActive ? styles.activeTab : '')} end to="/intern-seeker/requirements">
-        Requirements
+        My Requirements
       </NavLink>
       <NavLink className={({ isActive }) => (isActive ? styles.activeTab : '')} to="/intern-seeker/application-status">
-        Application Status
+        My Applications
       </NavLink>
       <NavLink className={({ isActive }) => (isActive ? styles.activeTab : '')} to="/intern-seeker/internship">
-        Internship
+        My Internship
       </NavLink>
       <NavLink className={({ isActive }) => (isActive ? styles.activeTab : '')} to="/intern-seeker/attendance">
-        Attendance
+        My Attendance
       </NavLink>
       <NavLink className={({ isActive }) => (isActive ? styles.activeTab : '')} to="/intern-seeker/internship-history">
-        Internship History
+        My Internship History
       </NavLink>
     </nav>
   )

@@ -65,6 +65,8 @@ describe('Phase 3 Student Attendance workflow', () => {
     const styles = readFileSync('src/features/intern-seeker/pages/AttendancePage.module.css', 'utf8')
     const app = readFileSync('src/App.tsx', 'utf8')
     for (const label of ['Days Present', 'Days Absent', 'Rendered Hours', 'Remaining Hours', 'View Attendance History']) expect(page).toContain(label)
+    const summarySource = page.slice(page.indexOf('function Summary('), page.indexOf('function AttendanceCalendar('))
+    expect(summarySource.match(/\.padStart\(2, '0'\)/g)).toHaveLength(4)
     expect(page.indexOf('Assignment Status')).toBeLessThan(page.indexOf('Attendance Status'))
     expect(page).toContain('styles.statusGroup')
     expect(page).not.toContain('formatMinutes(summary.renderedMinutes)')

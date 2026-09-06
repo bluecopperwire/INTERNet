@@ -105,7 +105,8 @@ describe('Company internship workflow display helpers', () => {
     expect(details).toContain('Internship Cancellation Remark');
     expect(details).toContain('Internship Completion Remark');
     expect(details).toContain('View Attendance History');
-    expect(details).toContain('studentPageStyles.attendanceButton');
+    expect(details).toContain('className={styles.companyActions}');
+    expect(details).toContain('className={styles.completeButton}');
     expect(details).not.toContain('Clock3');
     expect(details).toContain('details.status.canDelete');
     expect(details).toContain('className={styles.deleteRecordButton}');

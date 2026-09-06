@@ -233,13 +233,11 @@ export function QCPesoInternshipDetailsPage({ history = false }: { history?: boo
             <button type="button" className={detailStyles.completeButton} onClick={() => navigate(`/qcpeso/manage-interns/attendance/${assignmentId}`, { state: { attendanceHistoryBackPath: `/qcpeso/manage-interns/history/${assignmentId}` } })}>
               View Attendance History
             </button>
-          </footer>
-        )}
-        {history && data.status.canDelete && (
-          <footer className={detailStyles.companyActions}>
-            <button type="button" className={detailStyles.deleteRecordButton} onClick={() => setDeleteModal(true)}>
-              Delete
-            </button>
+            {data.status.canDelete && (
+              <button type="button" className={detailStyles.deleteRecordButton} onClick={() => setDeleteModal(true)}>
+                Delete
+              </button>
+            )}
           </footer>
         )}
         {!history && (

@@ -641,9 +641,45 @@ export function ReviewApplicantDetailsPage({ readOnly = false }: { readOnly?: bo
             <DocumentList studentName={record.studentName} documents={record.documents} />
           </div>
         </div>
-        <footer className={detailStyles.actionBar}>
+        {!readOnly && (
+          <footer className={detailStyles.actionBar}>
+            <button
+              className={detailStyles.actionBlue}
+              onClick={() =>
+                navigate(
+                  record.opportunityId
+                    ? `/qcpeso/manage-applicants/opportunities/${record.opportunityId}`
+                    : '/qcpeso/manage-applicants/review',
+                )
+              }
+            >
+              <Eye size={17} />
+              View Opportunity
+            </button>
+            {['submitted', 'under_review'].includes(record.applicationStatus || '') && (
+              <>
+                <button className={`${detailStyles.actionRed} ${detailStyles.workflowAction}`} disabled={isUpdating} onClick={() => setShowRejectModal(true)}>
+                  <X size={17} />
+                  Reject Applicant
+                </button>
+                <button
+                  className={detailStyles.actionGreen}
+                  disabled={isUpdating}
+                  onClick={() => updateStatus('Accepted')}
+                >
+                  <Check size={17} />
+                  {isUpdating ? 'Referring...' : 'Refer Applicant'}
+                </button>
+              </>
+            )}
+          </footer>
+        )}
+      </section>
+
+      {readOnly && (
+        <div className={detailStyles.historyActions}>
           <button
-            className={detailStyles.actionBlue}
+            className={`${detailStyles.historyActionButton} ${detailStyles.historyPrimaryAction}`}
             onClick={() =>
               navigate(
                 record.opportunityId
@@ -652,28 +688,19 @@ export function ReviewApplicantDetailsPage({ readOnly = false }: { readOnly?: bo
               )
             }
           >
-            <Eye size={17} />
             View Opportunity
           </button>
-          {!readOnly && ['submitted', 'under_review'].includes(record.applicationStatus || '') && (
-            <>
-              <button
-                className={detailStyles.actionGreen}
-                disabled={isUpdating}
-                onClick={() => updateStatus('Accepted')}
-              >
-                <Check size={17} />
-                {isUpdating ? 'Referring...' : 'Refer Applicant'}
-              </button>
-              <button className={`${detailStyles.actionRed} ${detailStyles.workflowAction}`} disabled={isUpdating} onClick={() => setShowRejectModal(true)}>
-                <X size={17} />
-                Reject Applicant
-              </button>
-            </>
+          {isTerminalApplication(record.applicationStatus) && (
+            <button
+              className={`${detailStyles.historyActionButton} ${detailStyles.historyDeleteAction}`}
+              disabled={isUpdating}
+              onClick={() => setShowDeleteModal(true)}
+            >
+              Delete
+            </button>
           )}
-          {readOnly && isTerminalApplication(record.applicationStatus) && <button className={detailStyles.actionRed} disabled={isUpdating} onClick={() => setShowDeleteModal(true)}><Trash2 size={17} />Delete</button>}
-        </footer>
-      </section>
+        </div>
+      )}
 
       {showRejectModal && (
         <RejectApplicantModal

@@ -91,34 +91,36 @@ export function StudentInternshipDetails({ assignment, interactive = false, onWi
   ]
 
   return (
-    <section className={styles.detailsShell} aria-labelledby="student-internship-title">
-      <header className={styles.pageHeading}>
-        <div>
-          <h1 id="student-internship-title">Internship Details</h1>
-          <p>View your internship assignment, approved schedule, and progress.</p>
-        </div>
-        <span className={`${styles.statusTag} ${styles[statusClass] ?? ''}`}>{statusLabel}</span>
-      </header>
+    <>
+      <section className={styles.detailsShell} aria-labelledby="student-internship-title">
+        <header className={styles.pageHeading}>
+          <div>
+            <h1 id="student-internship-title">Internship Details</h1>
+            <p>View your internship assignment, approved schedule, and progress.</p>
+          </div>
+          <span className={`${styles.statusTag} ${styles[statusClass] ?? ''}`}>{statusLabel}</span>
+        </header>
 
-      <div className={styles.content}>
-        <AttendanceProfileSummary profile={assignment} />
+        <div className={styles.content}>
+          <AttendanceProfileSummary profile={assignment} />
 
-        <div className={styles.sectionStack}>
-          <DetailSection icon={<User size={18} />} title="Intern Information" fields={internFields} />
-          <DetailSection icon={<Building2 size={18} />} title="Assignment Information" fields={assignmentFields} />
-          <DetailSection icon={<CalendarDays size={18} />} title="Schedule Information" fields={scheduleFields} />
-          <DetailSection icon={<ChartNoAxesColumnIncreasing size={18} />} title="Status Information" fields={statusFields} />
-          {outcomeRemark && (
-            <section className={styles.infoCard} aria-labelledby="internship-remark-heading">
-              <h2 className={styles.sectionTitle} id="internship-remark-heading">
-                <span>{outcomeRemark.icon}</span>
-                {outcomeRemark.title}
-              </h2>
-              <p className={styles.outcomeRemark}>{outcomeRemark.remark}</p>
-            </section>
-          )}
+          <div className={styles.sectionStack}>
+            <DetailSection icon={<User size={18} />} title="Intern Information" fields={internFields} />
+            <DetailSection icon={<Building2 size={18} />} title="Assignment Information" fields={assignmentFields} />
+            <DetailSection icon={<CalendarDays size={18} />} title="Schedule Information" fields={scheduleFields} />
+            <DetailSection icon={<ChartNoAxesColumnIncreasing size={18} />} title="Status Information" fields={statusFields} />
+            {outcomeRemark && (
+              <section className={styles.infoCard} aria-labelledby="internship-remark-heading">
+                <h2 className={styles.sectionTitle} id="internship-remark-heading">
+                  <span>{outcomeRemark.icon}</span>
+                  {outcomeRemark.title}
+                </h2>
+                <p className={styles.outcomeRemark}>{outcomeRemark.remark}</p>
+              </section>
+            )}
+          </div>
         </div>
-      </div>
+      </section>
 
       {interactive && (
         <footer className={styles.workflowActions}>
@@ -186,7 +188,7 @@ export function StudentInternshipDetails({ assignment, interactive = false, onWi
           </div>
         </WorkflowDialog>
       )}
-    </section>
+    </>
   )
 }
 

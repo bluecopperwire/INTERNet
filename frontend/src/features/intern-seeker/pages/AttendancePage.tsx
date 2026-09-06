@@ -72,7 +72,7 @@ function AttendancePage() {
 function TimeField({ title, value, empty }: { title: string; value?: string | null; empty: string }) { return <div className={styles.detailRow}><Clock3 aria-hidden="true" /><div><h3>{title}</h3><p>{value ? String(value).slice(0, 5) : empty}</p></div></div> }
 
 function Summary({ summary, onHistory }: { summary: StudentAttendanceResponse['summary']; onHistory: () => void }) {
-  const items = [['Days Present', String(summary.daysPresent), styles.presentCard], ['Days Absent', String(summary.daysAbsent), styles.absentCard], ['Rendered Hours', formatSummaryHours(summary.renderedMinutes), styles.renderedCard], ['Remaining Hours', formatSummaryHours(summary.remainingMinutes), styles.remainingCard]] as const
+  const items = [['Days Present', String(summary.daysPresent).padStart(2, '0'), styles.presentCard], ['Days Absent', String(summary.daysAbsent).padStart(2, '0'), styles.absentCard], ['Rendered Hours', formatSummaryHours(summary.renderedMinutes).padStart(2, '0'), styles.renderedCard], ['Remaining Hours', formatSummaryHours(summary.remainingMinutes).padStart(2, '0'), styles.remainingCard]] as const
   return <section className={styles.summaryPanel}><h2>Attendance Summary</h2><div className={styles.summaryGrid}>{items.map(([label, value, className]) => <article className={`${styles.summaryCard} ${className}`} key={label}><strong>{label}</strong><span>{value}</span></article>)}</div><button className={styles.historyButton} type="button" onClick={onHistory}>View Attendance History</button></section>
 }
 
