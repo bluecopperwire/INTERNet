@@ -11,14 +11,6 @@ if (!existsSync(UPLOADS_DESTINATION)) {
   mkdirSync(UPLOADS_DESTINATION, { recursive: true });
 }
 
-const ALLOWED_MIME_TYPES = new Set([
-  'application/pdf',
-  'image/jpeg',
-  'image/png',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-]);
-
 export const requirementUploadOptions = {
   storage: diskStorage({
     destination: (_req: Request, _file: Express.Multer.File, cb) => {
@@ -44,10 +36,13 @@ export const requirementUploadOptions = {
     file: Express.Multer.File,
     cb: (error: Error | null, acceptFile: boolean) => void,
   ) => {
-    if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
+    const isPdf =
+      file.mimetype === 'application/pdf' &&
+      extname(file.originalname).toLowerCase() === '.pdf';
+    if (!isPdf) {
       return cb(
         new UnsupportedMediaTypeException(
-          `Unsupported file type: ${file.mimetype}. Allowed types: PDF, JPEG, PNG, DOC, DOCX.`,
+          'Unsupported file type. Only PDF files are allowed.',
         ),
         false,
       );
