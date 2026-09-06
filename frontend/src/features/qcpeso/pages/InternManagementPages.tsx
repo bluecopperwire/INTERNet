@@ -9,6 +9,7 @@ import { getErrorMessage } from '../../../utils/error-message'
 import QCPesoHero from '../components/QCPesoHero'
 import { qcpesoApiService } from '../services/qcpeso-api.service'
 import { todayDateOnly } from '../../../utils/date-only'
+import { formatYearLevel } from '../../../utils/year-level'
 import attendanceStyles from '../../employer/pages/AttendanceMonitoringPage.module.css'
 import attendanceDetailStyles from '../../employer/pages/AttendanceInternshipDetailsPage.module.css'
 import internshipStyles from '../../employer/pages/MonitorInternshipPage.module.css'
@@ -141,7 +142,7 @@ export function QCPesoInternshipDetailsPage({ history = false }: { history?: boo
   const internFields: QcDetailField[] = [
     ['Full Name', displayValue(intern.studentFullName)],
     ['Program / Strand', displayValue(intern.strandProgram)],
-    ['Year Level', displayValue(intern.yearLevel)],
+    ['Year Level', formatYearLevel(intern.yearLevel)],
     ['School', displayValue(intern.schoolName)],
   ]
   const assignmentFields: QcDetailField[] = [

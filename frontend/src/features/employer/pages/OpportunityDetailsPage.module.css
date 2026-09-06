@@ -93,6 +93,11 @@
   font-weight: 600;
 }
 
+.requiredMark {
+  color: #d13a42;
+  font-style: normal;
+}
+
 .field input,
 .field textarea {
   box-sizing: border-box;

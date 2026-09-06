@@ -184,10 +184,10 @@ export const ProfileEditorPage: React.FC = () => {
                 <Field label="School" required><input required name="academic.schoolName" placeholder="Enter school name" value={formData.academic?.schoolName ?? ''} onChange={handleChange} /></Field>
                 <Field label="Year Level" required>
                   <select required name="academic.yearLevel" value={formData.academic?.yearLevel ?? ''} onChange={handleChange}>
-                    <option value="">Select year level</option><option value="Grade 11">Grade 11</option><option value="Grade 12">Grade 12</option><option value="1st Year">1st Year</option><option value="2nd Year">2nd Year</option><option value="3rd Year">3rd Year</option><option value="4th Year">4th Year</option>
+                    <option value="">Select year level</option><option value="Grade 11">Grade 11</option><option value="Grade 12">Grade 12</option><option value="First Year College">First Year College</option><option value="Second Year College">Second Year College</option><option value="Third Year College">Third Year College</option><option value="Fourth Year College">Fourth Year College</option>
                   </select>
                 </Field>
-                <Field label="Program" required><input required name="academic.program" placeholder="Enter program" value={formData.academic?.program ?? ''} onChange={handleChange} /></Field>
+                <Field label="Program / Strand" required><input required name="academic.program" placeholder="Enter program / strand" value={formData.academic?.program ?? ''} onChange={handleChange} /></Field>
               </div>
             </div>
           </section>

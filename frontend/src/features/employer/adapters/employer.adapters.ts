@@ -1,6 +1,7 @@
 import { publicUploadUrl } from '../../../utils/public-upload-url';
 import { formatTableDate, toDateOnly } from '../../../utils/date-only';
 import { formatAvailabilityDays } from '../../../utils/availability-days';
+import { formatYearLevel } from '../../../utils/year-level';
 import type {
   EmployerDashboardMetricsDto,
   EmployerOpportunityDto,
@@ -84,7 +85,7 @@ export function adaptEmployerReferral(
   const oppId = opportunity.opportunityId || r.opportunityId || '';
   const oppTitle = opportunity.title || r.opportunityTitle || 'Opportunity';
   const strandProg = student.strandProgram || r.strandProgram || 'N/A';
-  const yLevel = student.yearLevel || r.yearLevel || 'N/A';
+  const yLevel = formatYearLevel(student.yearLevel || r.yearLevel);
   const compResponse =
     referral.companyResponse || r.companyResponse || 'pending';
   const referralStatus = referral.referralStatus || r.referralStatus;

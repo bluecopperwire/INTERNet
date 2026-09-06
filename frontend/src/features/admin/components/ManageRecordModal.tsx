@@ -10,6 +10,7 @@ import type {
 import { adminService } from '../services/admin.service'
 import styles from './ManageRecordModal.module.css'
 import { AVAILABILITY_DAYS, formatAvailabilityDays } from '../../../utils/availability-days'
+import { formatYearLevel } from '../../../utils/year-level'
 
 interface ManageRecordModalProps {
   recordId: string
@@ -144,7 +145,7 @@ export function ManageRecordModal({ recordId, recordRole, onClose }: ManageRecor
         {renderEditableText('Inquiry via', 'inquiryVia', data.inquiryVia)}
         {renderEditableText('School Name', 'schoolName', data.schoolName)}
         {renderEditableText('Program / Strand', 'programStrand', data.programStrand)}
-        {renderEditableText('Year Level', 'yearLevel', data.yearLevel)}
+        {renderEditableText('Year Level', 'yearLevel', formatYearLevel(data.yearLevel))}
         {renderEditableText('Required Hours', 'requiredHours', data.requiredHours)}
         
         <div className={styles.infoGroup}>

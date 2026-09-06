@@ -13,6 +13,7 @@ import type {
 import { publicUploadUrl } from '../../../utils/public-upload-url';
 import { toDateOnly } from '../../../utils/date-only';
 import { normalizeAvailabilityDays } from '../../../utils/availability-days';
+import { formatYearLevel } from '../../../utils/year-level';
 
 export function adaptAdminDashboardSummary(
   studentMetrics: AdminMetricsDto,
@@ -77,7 +78,7 @@ export function adaptAdminStudentItem(dto: AdminStudentListItemDto): StudentReco
     inquiryVia: 'online',
     schoolName: data.schoolName || 'N/A',
     programStrand: data.strandProgram || 'N/A',
-    yearLevel: yearLevelToUi(data.yearLevel),
+    yearLevel: formatYearLevel(data.yearLevel),
     requiredHours: String(data.requiredHours || 0),
     flexibleAssignment: Boolean(data.allowsOutsidePreferredField),
     preferredIndustries: preferred.map((item: any) => item.customIndustryName ? 'Other' : item.industryName),
@@ -175,18 +176,6 @@ export function adaptAdminPesoItem(dto: AdminPesoListItemDto): QCPesoRecord {
 function remainingDays(value?: string | null): number | undefined {
   if (!value) return undefined;
   return Math.max(0, Math.ceil((new Date(value).getTime() - Date.now()) / 86_400_000));
-}
-
-function yearLevelToUi(value?: string): string {
-  const labels: Record<string, string> = {
-    grade_11: 'Grade 11',
-    grade_12: 'Grade 12',
-    first_year_college: '1st Year',
-    second_year_college: '2nd Year',
-    third_year_college: '3rd Year',
-    fourth_year_college: '4th Year',
-  };
-  return value ? labels[value] || value : 'N/A';
 }
 
 import { formatTableDate } from '../../../utils/date-only'

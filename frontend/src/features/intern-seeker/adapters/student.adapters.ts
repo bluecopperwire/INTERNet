@@ -24,6 +24,7 @@ import type {
 import { formatTableDate, todayDateOnly, toDateOnly } from '../../../utils/date-only';
 import { formatWorkingDays, studentAssignmentStatus } from '../utils/internship-display';
 import { normalizeAvailabilityDays } from '../../../utils/availability-days';
+import { formatYearLevel } from '../../../utils/year-level';
 
 export function adaptOpportunity(dto: OpportunitySummaryDto): InternshipOpportunity {
   const workSetupMap: Record<string, 'On-site' | 'Remote' | 'Hybrid'> = {
@@ -64,21 +65,6 @@ export function adaptOpportunity(dto: OpportunitySummaryDto): InternshipOpportun
   };
 }
 
-const YEAR_LEVEL_MAP_TO_UI: Record<string, string> = {
-  grade_11: 'Grade 11',
-  grade_12: 'Grade 12',
-  first_year_college: '1st Year',
-  second_year_college: '2nd Year',
-  third_year_college: '3rd Year',
-  fourth_year_college: '4th Year',
-  'Grade 11': 'Grade 11',
-  'Grade 12': 'Grade 12',
-  '1st Year': '1st Year',
-  '2nd Year': '2nd Year',
-  '3rd Year': '3rd Year',
-  '4th Year': '4th Year',
-};
-
 const YEAR_LEVEL_MAP_TO_DTO: Record<string, string> = {
   'Grade 11': 'grade_11',
   'Grade 12': 'grade_12',
@@ -86,6 +72,10 @@ const YEAR_LEVEL_MAP_TO_DTO: Record<string, string> = {
   '2nd Year': 'second_year_college',
   '3rd Year': 'third_year_college',
   '4th Year': 'fourth_year_college',
+  'First Year College': 'first_year_college',
+  'Second Year College': 'second_year_college',
+  'Third Year College': 'third_year_college',
+  'Fourth Year College': 'fourth_year_college',
   grade_11: 'grade_11',
   grade_12: 'grade_12',
   first_year_college: 'first_year_college',
@@ -129,7 +119,7 @@ export function adaptStudentProfile(dto: StudentProfileResponse): UserProfile {
   const pi = dto.preferredIndustries || [];
 
   const rawYear = ac?.year_level || '';
-  const uiYear = YEAR_LEVEL_MAP_TO_UI[rawYear] || rawYear;
+  const uiYear = formatYearLevel(rawYear, '');
 
   const rawHostOrg = ip?.preferred_company_type || '';
   const uiHostOrg = rawHostOrg ? HOST_ORG_MAP_TO_UI[rawHostOrg] || rawHostOrg : '';

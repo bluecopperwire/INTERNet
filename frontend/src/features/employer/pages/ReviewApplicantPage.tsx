@@ -11,6 +11,7 @@ import { getErrorMessage } from '../../../utils/error-message'
 import { ConfirmDeleteModal } from '../../../components/feedback/ConfirmDeleteModal'
 import { getEmployerReferralDetail } from '../services/employer-review-flow'
 import { isTerminalReferral } from '../../workflow/status-mappings'
+import { formatYearLevel } from '../../../utils/year-level'
 
 export function ReviewApplicantPage({ readOnly = false }: { readOnly?: boolean }) {
   const { id } = useParams<{ id: string }>()
@@ -173,7 +174,7 @@ export function ReviewApplicantPage({ readOnly = false }: { readOnly?: boolean }
               <h2 className={styles.sectionTitle}><span><User size={18} /></span>Application Information</h2>
               <div className={styles.infoList}>
                 {[
-                  ['Full Name', applicant.name], ['Strand / Program', applicant.course], ['Year Level', applicant.yearLevel],
+                  ['Full Name', applicant.name], ['Strand / Program', applicant.course], ['Year Level', formatYearLevel(applicant.yearLevel)],
                   ['School', applicant.school],
                 ].map(([label, value]) => <div className={styles.infoRow} key={label}><span>{label}</span><strong>{value}</strong></div>)}
               </div>

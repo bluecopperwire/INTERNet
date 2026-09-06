@@ -117,7 +117,7 @@ export const employerService = {
     const store = useEmployerStore.getState();
     await store.fetchDashboard();
     return (
-      store.summary || {
+      useEmployerStore.getState().summary || {
         companyName: 'Company',
         activeOpportunities: 0,
         totalApplicants: 0,

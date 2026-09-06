@@ -11,12 +11,13 @@ interface FieldProps {
   label: string
   children: ReactNode
   className?: string
+  required?: boolean
 }
 
-function Field({ label, children, className }: FieldProps) {
+function Field({ label, children, className, required = false }: FieldProps) {
   return (
     <label className={`${styles.field} ${className ?? ''}`}>
-      <span>{label}</span>
+      <span>{label}{required && <> <em className={styles.requiredMark}>*</em></>}</span>
       {children}
     </label>
   )
@@ -106,25 +107,25 @@ export function OpportunityDetailsPage() {
         </header>
 
         <div className={styles.formGrid}>
-          <Field label="Position Title *">
+          <Field label="Position Title" required>
             <input value={opportunity.title} readOnly />
           </Field>
-          <Field label="Department *">
+          <Field label="Department" required>
             <input value={opportunity.department} readOnly />
           </Field>
-          <Field label="Work Arrangement *">
+          <Field label="Work Arrangement" required>
             <input value={opportunity.workArrangement} readOnly />
           </Field>
-          <Field label="Internship Duration *">
+          <Field label="Internship Duration" required>
             <input value={`${opportunity.duration} hours`} readOnly />
           </Field>
-          <Field label="Number of Slots *">
+          <Field label="Number of Slots" required>
             <input value={opportunity.slots} readOnly />
           </Field>
           <Field label="Allowance">
             <input value={opportunity.allowance || 'N/A'} readOnly />
           </Field>
-          <Field label="Job Description *" className={styles.fullWidth}>
+          <Field label="Job Description" required className={styles.fullWidth}>
             <textarea value={opportunity.jobDescription} rows={6} readOnly />
           </Field>
           <Field label="Qualifications" className={styles.fullWidth}>

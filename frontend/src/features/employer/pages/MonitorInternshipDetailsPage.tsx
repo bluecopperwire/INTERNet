@@ -6,6 +6,7 @@ import { useToastStore } from '../../../stores/useToastStore';
 import type { EmployerInternshipDetailDto } from '../../../types/api';
 import { isValidDateOnly, todayDateOnly } from '../../../utils/date-only';
 import { getErrorMessage } from '../../../utils/error-message';
+import { formatYearLevel } from '../../../utils/year-level';
 import detailStyles from '../../intern-seeker/components/StudentInternshipDetails.module.css';
 import { employerApiService } from '../services/employer-api.service';
 import {
@@ -125,7 +126,7 @@ export function MonitorInternshipDetailsPage() {
   const internFields: DetailField[] = [
     ['Full Name', displayValue(details.intern.studentFullName)],
     ['Program / Strand', displayValue(details.intern.strandProgram)],
-    ['Year Level', displayValue(details.intern.yearLevel)],
+    ['Year Level', formatYearLevel(details.intern.yearLevel)],
     ['School', displayValue(details.intern.schoolName)],
   ];
 

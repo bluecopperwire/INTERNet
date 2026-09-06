@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Building2, CalendarDays, ChartNoAxesColumnIncreasing, User } from 'lucide-react'
 import type { StudentInternshipDto } from '../../../types/api'
 import { AttendanceProfileSummary } from '../../../components/AttendanceProfileSummary'
+import { formatYearLevel } from '../../../utils/year-level'
 import { assignmentHasEnded, formatAssignmentDate, formatMinutes, formatShift, formatWorkingDays, studentAssignmentStatus } from '../utils/internship-display'
 import styles from './StudentInternshipDetails.module.css'
 
@@ -66,7 +67,7 @@ export function StudentInternshipDetails({ assignment, interactive = false, onWi
   const internFields: DetailField[] = [
     ['Full Name', displayValue(assignment.studentFullName)],
     ['Program / Strand', displayValue(assignment.strandProgram)],
-    ['Year Level', displayValue(assignment.yearLevel)],
+    ['Year Level', formatYearLevel(assignment.yearLevel)],
     ['School', displayValue(assignment.schoolName)],
   ]
 

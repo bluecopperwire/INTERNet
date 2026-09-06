@@ -84,6 +84,10 @@
   font-weight: 600;
 }
 
+.requiredMark {
+  color: #d13a42;
+}
+
 .field input,
 .field select,
 .field textarea {

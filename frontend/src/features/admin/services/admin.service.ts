@@ -309,6 +309,10 @@ function mapYearLevel(value?: string): string | undefined {
     '2nd Year': 'second_year_college',
     '3rd Year': 'third_year_college',
     '4th Year': 'fourth_year_college',
+    'First Year College': 'first_year_college',
+    'Second Year College': 'second_year_college',
+    'Third Year College': 'third_year_college',
+    'Fourth Year College': 'fourth_year_college',
   };
   return levels[value] || value;
 }

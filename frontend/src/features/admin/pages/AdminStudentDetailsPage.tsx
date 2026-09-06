@@ -8,6 +8,7 @@ import { formatPreferredIndustries } from '../../../utils/preferred-industry-dis
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
 import { formatAvailabilityDays } from '../../../utils/availability-days'
+import { formatYearLevel } from '../../../utils/year-level'
 
 export function AdminStudentDetailsPage() {
   const { id } = useParams<{ id: string }>()
@@ -98,7 +99,7 @@ export function AdminStudentDetailsPage() {
             </InfoCard>
             <InfoCard icon={<GraduationCap size={21} />} title="Current Academic Information">
               <Row label="School" value={student.schoolName} />
-              <Row label="Year Level" value={student.yearLevel} />
+              <Row label="Year Level" value={formatYearLevel(student.yearLevel)} />
               <Row label="Program / Strand" value={student.programStrand} />
             </InfoCard>
             <InfoCard icon={<Building2 size={21} />} title="Internship Preferences">

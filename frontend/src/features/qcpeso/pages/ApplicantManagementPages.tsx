@@ -20,6 +20,7 @@ import { qcpesoService } from '../services/qcpeso.service'
 import { qcpesoApiService } from '../services/qcpeso-api.service'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
+import { formatYearLevel } from '../../../utils/year-level'
 import type { QCPesoReviewApplicant } from '../types/qcpeso.types'
 import QCPesoHero from '../components/QCPesoHero'
 import { RejectApplicantModal } from '../../employer/components/RejectApplicantModal'
@@ -618,7 +619,7 @@ export function ReviewApplicantDetailsPage({ readOnly = false }: { readOnly?: bo
                   ['Company', record.company || 'N/A'],
                   ['Job Title', record.jobTitle || 'N/A'],
                   ['Program / Strand', record.program || 'N/A'],
-                  ['Year Level', record.yearLevel || 'N/A'],
+                  ['Year Level', formatYearLevel(record.yearLevel)],
                   ['School', record.school || 'N/A'],
                 ]}
               />
