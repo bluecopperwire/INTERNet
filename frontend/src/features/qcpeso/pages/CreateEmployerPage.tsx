@@ -6,6 +6,11 @@ import { referenceService } from '../../../services/reference.service'
 import { useToastStore } from '../../../stores/useToastStore'
 import type { CreateEmployerPayload } from '../types/qcpeso.types'
 import styles from '../../intern-seeker/pages/ProfileEditorPage.module.css'
+import {
+  getContactNumberError,
+  getPasswordError,
+  sanitizeContactNumberInput,
+} from '../../../utils/input-validation'
 
 const DEFAULT_INDUSTRIES = [
   'Office Administration',
@@ -79,6 +84,13 @@ export function CreateEmployerPage() {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    const validationError =
+      getContactNumberError(form.contactNumber) ||
+      getPasswordError(form.password, 'Temporary password')
+    if (validationError) {
+      toast.error(validationError)
+      return
+    }
     setIsSubmitting(true)
     try {
       await qcpesoService.createEmployer(form)
@@ -132,7 +144,7 @@ export function CreateEmployerPage() {
             </div>
             <div className={styles.fieldGrid}>
               <Field label="Contact Email" required><input required name="contactEmail" type="email" placeholder="Enter company contact email" value={form.contactEmail} onChange={update} /></Field>
-              <Field label="Contact Number" required><input required name="contactNumber" type="tel" placeholder="Enter contact number" value={form.contactNumber} onChange={update} /></Field>
+              <Field label="Contact Number" required><input required name="contactNumber" type="tel" placeholder="e.g. +63 912 345 6789" value={form.contactNumber} onChange={(event) => setForm((current) => ({ ...current, contactNumber: sanitizeContactNumberInput(event.target.value) }))} /></Field>
             </div>
           </div>
         </section>

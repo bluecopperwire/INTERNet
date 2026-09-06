@@ -6,6 +6,7 @@ import type { CompanyProfile } from '../types/employer.types'
 import styles from '../../intern-seeker/pages/ProfileEditorPage.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
+import { getContactNumberError, sanitizeContactNumberInput } from '../../../utils/input-validation'
 
 const INDUSTRIES = [
   'Office Administration',
@@ -56,6 +57,11 @@ export function CompanyProfileEditorPage() {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     if (!formData) return
+    const contactNumberError = getContactNumberError(formData.contact_number)
+    if (contactNumberError) {
+      toast.error(contactNumberError)
+      return
+    }
     setIsSaving(true)
     try {
       await employerService.updateCompanyProfile(formData)
@@ -116,7 +122,7 @@ export function CompanyProfileEditorPage() {
               </div>
               <div className={styles.fieldGrid}>
                 <Field label="Contact Email" required><input required name="contact_email" type="email" placeholder="Enter company email" value={formData.contact_email} onChange={handleChange} /></Field>
-                <Field label="Contact Number" required><input required name="contact_number" type="tel" placeholder="Enter contact number" value={formData.contact_number} onChange={handleChange} /></Field>
+                <Field label="Contact Number" required><input required name="contact_number" type="tel" placeholder="e.g. +63 912 345 6789" value={formData.contact_number} onChange={(event) => setFormData((current) => current ? { ...current, contact_number: sanitizeContactNumberInput(event.target.value) } : current)} /></Field>
               </div>
             </div>
           </section>

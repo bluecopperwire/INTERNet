@@ -37,4 +37,34 @@ describe('SignupDto', () => {
       expect.arrayContaining(['sex', 'inquiryMethod']),
     );
   });
+
+  it.each(['password1!', 'PASSWORD1!', 'Password!', 'Password1', 'Pass1!'])(
+    'rejects a password that does not meet every strength rule: %s',
+    async (password) => {
+      const errors = await validate(
+        plainToInstance(SignupDto, { ...validSignup, password }),
+      );
+      expect(errors.some((error) => error.property === 'password')).toBe(true);
+    },
+  );
+
+  it.each(['12345', '099999999999', '0912-ABC-7890', '++639123456789'])(
+    'rejects an invalid contact number: %s',
+    async (contactNumber) => {
+      const errors = await validate(
+        plainToInstance(SignupDto, { ...validSignup, contactNumber }),
+      );
+      expect(errors.some((error) => error.property === 'contactNumber')).toBe(
+        true,
+      );
+    },
+  );
+
+  it('accepts a formatted international contact number', async () => {
+    const dto = plainToInstance(SignupDto, {
+      ...validSignup,
+      contactNumber: '+63 912 345 6789',
+    });
+    await expect(validate(dto)).resolves.toHaveLength(0);
+  });
 });

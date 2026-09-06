@@ -7,6 +7,10 @@ import {
   IsString,
   MinLength,
 } from 'class-validator';
+import {
+  IsStrongPassword,
+  IsValidContactNumber,
+} from '../../common/validation/input-validation';
 
 export class StudentProfileDto {
   @IsString() @IsNotEmpty() firstName: string;
@@ -15,7 +19,7 @@ export class StudentProfileDto {
   @IsOptional() @IsString() extensionName?: string;
   @IsIn(['male', 'female']) sex: 'male' | 'female';
   @IsDateString() birthDate: string;
-  @IsString() @IsNotEmpty() contactNumber: string;
+  @IsString() @IsNotEmpty() @IsValidContactNumber() contactNumber: string;
   @IsOptional() @IsString() linkedinUrl?: string;
   @IsString() @IsNotEmpty() addressLine: string;
   @IsString() @IsNotEmpty() addressBarangay: string;
@@ -28,13 +32,13 @@ export class StudentProfileDto {
 
 export class SignupDto extends StudentProfileDto {
   @IsEmail() email: string;
-  @IsString() @MinLength(8) password: string;
+  @IsString() @IsStrongPassword() password: string;
 }
 
 export class GoogleStudentCompletionDto extends StudentProfileDto {}
 
 export class PasswordDto {
-  @IsString() @MinLength(8) password: string;
+  @IsString() @IsStrongPassword() password: string;
 }
 
 export class ChangePasswordDto extends PasswordDto {

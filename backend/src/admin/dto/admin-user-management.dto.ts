@@ -14,13 +14,16 @@ import {
   IsUrl,
   Max,
   Min,
-  MinLength,
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { AccountStatus } from '../../users/entities/account.entities';
 import { CompanyType } from '../../common/enums/company-type.enum';
 import { NullableTrim, Trim } from '../../employer/dto/common.dto';
+import {
+  IsStrongPassword,
+  IsValidContactNumber,
+} from '../../common/validation/input-validation';
 
 export enum AdminStudentYearLevel {
   GRADE_11 = 'grade_11',
@@ -81,7 +84,12 @@ export class UpdateAdminStudentDto {
   @IsOptional() @Trim() @IsString() @IsNotEmpty() addressCity?: string;
 
   @IsOptional() @Trim() @IsEmail() contactEmail?: string;
-  @IsOptional() @Trim() @IsString() @IsNotEmpty() contactNumber?: string;
+  @IsOptional()
+  @Trim()
+  @IsString()
+  @IsNotEmpty()
+  @IsValidContactNumber()
+  contactNumber?: string;
   @IsOptional()
   @NullableTrim()
   @IsUrl({ require_protocol: true })
@@ -115,7 +123,7 @@ export class UpdateAdminStudentDto {
 
 export class CreateAdminEmployerDto {
   @Trim() @IsEmail() accountEmail: string;
-  @IsString() @MinLength(8) initialPassword: string;
+  @IsString() @IsStrongPassword() initialPassword: string;
   @Trim() @IsString() @IsNotEmpty() companyName: string;
   @IsEnum(CompanyType) companyType: CompanyType;
   @Type(() => Number) @IsInt() @Min(1) industryId: number;
@@ -143,7 +151,11 @@ export class CreateAdminEmployerDto {
   @IsOptional() @NullableTrim() @IsString() contactPersonExtensionName?:
     string | null;
   @Trim() @IsEmail() contactEmail: string;
-  @Trim() @IsString() @IsNotEmpty() contactNumber: string;
+  @Trim()
+  @IsString()
+  @IsNotEmpty()
+  @IsValidContactNumber()
+  contactNumber: string;
 }
 
 export class UpdateAdminEmployerDto {
@@ -182,12 +194,17 @@ export class UpdateAdminEmployerDto {
   @IsOptional() @NullableTrim() @IsString() contactPersonExtensionName?:
     string | null;
   @IsOptional() @Trim() @IsEmail() contactEmail?: string;
-  @IsOptional() @Trim() @IsString() @IsNotEmpty() contactNumber?: string;
+  @IsOptional()
+  @Trim()
+  @IsString()
+  @IsNotEmpty()
+  @IsValidContactNumber()
+  contactNumber?: string;
 }
 
 export class CreateAdminPesoPersonnelDto {
   @Trim() @IsEmail() accountEmail: string;
-  @IsString() @MinLength(8) initialPassword: string;
+  @IsString() @IsStrongPassword() initialPassword: string;
   @Trim() @IsString() @IsNotEmpty() firstName: string;
   @IsOptional() @NullableTrim() @IsString() middleName?: string | null;
   @Trim() @IsString() @IsNotEmpty() lastName: string;
@@ -199,7 +216,11 @@ export class CreateAdminPesoPersonnelDto {
   @IsDateString({ strict: true }) birthDate: string;
   @Trim() @IsString() @IsNotEmpty() sex: string;
   @Trim() @IsEmail() contactEmail: string;
-  @Trim() @IsString() @IsNotEmpty() contactNumber: string;
+  @Trim()
+  @IsString()
+  @IsNotEmpty()
+  @IsValidContactNumber()
+  contactNumber: string;
   @Trim() @IsString() @IsNotEmpty() employeeId: string;
   @Trim() @IsString() @IsNotEmpty() department: string;
   @Trim() @IsString() @IsNotEmpty() position: string;
@@ -217,7 +238,12 @@ export class UpdateAdminPesoPersonnelDto {
   @IsOptional() @Trim() @IsString() @IsNotEmpty() addressDistrict?: string;
   @IsOptional() @Trim() @IsString() @IsNotEmpty() addressCity?: string;
   @IsOptional() @Trim() @IsEmail() contactEmail?: string;
-  @IsOptional() @Trim() @IsString() @IsNotEmpty() contactNumber?: string;
+  @IsOptional()
+  @Trim()
+  @IsString()
+  @IsNotEmpty()
+  @IsValidContactNumber()
+  contactNumber?: string;
   @IsOptional() @Trim() @IsString() @IsNotEmpty() employeeId?: string;
   @IsOptional() @Trim() @IsString() @IsNotEmpty() department?: string;
   @IsOptional() @Trim() @IsString() @IsNotEmpty() position?: string;

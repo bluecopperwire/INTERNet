@@ -7,6 +7,7 @@ import type { QCPesoProfile } from '../types/qcpeso.types'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
 import { birthdateMaximum } from '../../../utils/date-only'
+import { getContactNumberError, sanitizeContactNumberInput } from '../../../utils/input-validation'
 
 export function QCPesoProfileEditorPage() {
   const navigate = useNavigate()
@@ -29,6 +30,11 @@ export function QCPesoProfileEditorPage() {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     if (!formData) return
+    const contactNumberError = getContactNumberError(formData.mobileNumber)
+    if (contactNumberError) {
+      toast.error(contactNumberError)
+      return
+    }
     setIsSaving(true)
     try {
       await qcpesoService.updateProfile(formData)
@@ -80,7 +86,7 @@ export function QCPesoProfileEditorPage() {
             <header className={styles.sectionHeader}><span className={styles.sectionIcon}><Mail size={21} /></span><h2>Contact Information</h2></header>
             <div className={styles.sectionBody}><div className={styles.fieldGrid}>
               <Field label="Email" required><input required type="email" name="email" placeholder="Enter official email" value={formData.email} onChange={handleChange} /></Field>
-              <Field label="Mobile Number" required><input required type="tel" name="mobileNumber" placeholder="Enter mobile number" value={formData.mobileNumber} onChange={handleChange} /></Field>
+              <Field label="Mobile Number" required><input required type="tel" name="mobileNumber" placeholder="e.g. 09123456789" value={formData.mobileNumber} onChange={(event) => setFormData((current) => current ? { ...current, mobileNumber: sanitizeContactNumberInput(event.target.value) } : current)} /></Field>
             </div></div>
           </section>
 

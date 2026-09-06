@@ -7,6 +7,7 @@ import detailStyles from './AdminStudentDetailsPage.module.css'
 import formStyles from '../../intern-seeker/pages/ProfileEditorPage.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
+import { getContactNumberError, sanitizeContactNumberInput } from '../../../utils/input-validation'
 
 const INDUSTRIES = [
   'Office Administration',
@@ -230,6 +231,11 @@ export function AdminEmployerEditorPage() {
   const save = async (event: React.FormEvent) => {
     event.preventDefault()
     if (!id || !form) return
+    const contactNumberError = getContactNumberError(form.contactNumber)
+    if (contactNumberError) {
+      toast.error(contactNumberError)
+      return
+    }
     setSaving(true)
     try {
       const location = addressOf(form)
@@ -431,10 +437,10 @@ export function AdminEmployerEditorPage() {
                 <input
                   required
                   type="tel"
-                  placeholder="Enter contact number"
+                  placeholder="e.g. +63 912 345 6789"
                   value={form.contactNumber || ''}
                   onChange={(e) =>
-                    change('contactNumber', e.target.value.replace(/[^0-9()+ -]/g, ''))
+                    change('contactNumber', sanitizeContactNumberInput(e.target.value))
                   }
                 />
               </Field>

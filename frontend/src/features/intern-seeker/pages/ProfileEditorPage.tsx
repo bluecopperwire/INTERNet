@@ -6,6 +6,7 @@ import { useInternshipPortal } from '../hooks/useInternshipPortal'
 import type { UserProfile } from '../types/internship.types'
 import { birthdateMaximum, todayDateOnly } from '../../../utils/date-only'
 import { AVAILABILITY_DAYS } from '../../../utils/availability-days'
+import { getContactNumberError, sanitizeContactNumberInput } from '../../../utils/input-validation'
 
 const INDUSTRIES = [
   'Office Administration',
@@ -86,6 +87,11 @@ export const ProfileEditorPage: React.FC = () => {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
+    const contactNumberError = getContactNumberError(formData.contactNumber ?? '')
+    if (contactNumberError) {
+      toast.error(contactNumberError)
+      return
+    }
     if (!formData.preferences?.schedule.length) {
       toast.error('Select at least one internship availability day.')
       return
@@ -168,7 +174,7 @@ export const ProfileEditorPage: React.FC = () => {
             <div className={styles.sectionBody}>
               <div className={styles.fieldGrid}>
                 <Field label="Email" required><input required type="email" name="email" placeholder="Enter email address" value={formData.email ?? ''} onChange={handleChange} /></Field>
-                <Field label="Mobile Number" required><input required type="tel" name="contactNumber" placeholder="Enter mobile number" value={formData.contactNumber ?? ''} onChange={handleChange} /></Field>
+                <Field label="Mobile Number" required><input required type="tel" name="contactNumber" placeholder="e.g. 09123456789" value={formData.contactNumber ?? ''} onChange={(event) => setFormData((current) => ({ ...current, contactNumber: sanitizeContactNumberInput(event.target.value) }))} /></Field>
                 <Field label="LinkedIn"><input type="url" name="linkedinUrl" placeholder="Enter LinkedIn profile address" value={formData.linkedinUrl ?? ''} onChange={handleChange} /></Field>
               </div>
             </div>

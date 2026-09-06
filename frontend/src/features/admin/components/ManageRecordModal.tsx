@@ -11,6 +11,8 @@ import { adminService } from '../services/admin.service'
 import styles from './ManageRecordModal.module.css'
 import { AVAILABILITY_DAYS, formatAvailabilityDays } from '../../../utils/availability-days'
 import { formatYearLevel } from '../../../utils/year-level'
+import { getContactNumberError, sanitizeContactNumberInput } from '../../../utils/input-validation'
+import { useToastStore } from '../../../stores/useToastStore'
 
 interface ManageRecordModalProps {
   recordId: string
@@ -19,6 +21,7 @@ interface ManageRecordModalProps {
 }
 
 export function ManageRecordModal({ recordId, recordRole, onClose }: ManageRecordModalProps) {
+  const toast = useToastStore()
   const [record, setRecord] = useState<AdminRecord | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
@@ -65,7 +68,10 @@ export function ManageRecordModal({ recordId, recordRole, onClose }: ManageRecor
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
-    setEditForm((prev) => ({ ...prev, [name]: value }))
+    setEditForm((prev) => ({
+      ...prev,
+      [name]: name === 'contactNumber' ? sanitizeContactNumberInput(value) : value,
+    }))
   }
 
   const handleArrayChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
@@ -87,6 +93,13 @@ export function ManageRecordModal({ recordId, recordRole, onClose }: ManageRecor
   }
 
   const handleSave = async () => {
+    const contactNumberError = getContactNumberError(
+      String((editForm as Partial<StudentRecord>).contactNumber ?? ''),
+    )
+    if (contactNumberError) {
+      toast.error(contactNumberError)
+      return
+    }
     setIsSaving(true)
     const updated = await adminService.updateRecord(recordId, recordRole, editForm)
     setRecord(updated)

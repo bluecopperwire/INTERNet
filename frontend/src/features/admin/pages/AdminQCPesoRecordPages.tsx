@@ -8,6 +8,7 @@ import formStyles from '../../intern-seeker/pages/ProfileEditorPage.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
 import { birthdateMaximum } from '../../../utils/date-only'
+import { getContactNumberError, sanitizeContactNumberInput } from '../../../utils/input-validation'
 
 const fullNameOf = (record: QCPesoRecord) =>
   [record.firstName, record.middleName, record.lastName, record.suffix].filter(Boolean).join(' ') ||
@@ -218,6 +219,11 @@ export function AdminQCPesoEditorPage() {
   const save = async (event: React.FormEvent) => {
     event.preventDefault()
     if (!id || !form) return
+    const contactNumberError = getContactNumberError(form.contactNumber)
+    if (contactNumberError) {
+      toast.error(contactNumberError)
+      return
+    }
     setSaving(true)
     try {
       const fullName = fullNameOf(form)
@@ -385,10 +391,10 @@ export function AdminQCPesoEditorPage() {
                 <input
                   required
                   type="tel"
-                  placeholder="Enter contact number"
+                  placeholder="e.g. 09123456789"
                   value={form.contactNumber}
                   onChange={(e) =>
-                    change('contactNumber', e.target.value.replace(/\D/g, ''))
+                    change('contactNumber', sanitizeContactNumberInput(e.target.value))
                   }
                 />
               </Field>

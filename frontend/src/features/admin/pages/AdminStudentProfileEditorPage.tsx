@@ -8,6 +8,7 @@ import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
 import { birthdateMaximum, todayDateOnly } from '../../../utils/date-only'
 import { AVAILABILITY_DAYS } from '../../../utils/availability-days'
+import { getContactNumberError, sanitizeContactNumberInput } from '../../../utils/input-validation'
 
 const INDUSTRIES = [
   'Office Administration',
@@ -67,6 +68,12 @@ export function AdminStudentProfileEditorPage() {
   const save = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!id || !formData) return
+
+    const contactNumberError = getContactNumberError(formData.contactNumber)
+    if (contactNumberError) {
+      toast.error(contactNumberError)
+      return
+    }
 
     const hasOtherField = formData.preferredIndustries.includes('Other')
     if (!formData.scheduleAvailability.length || !formData.preferredIndustries.length) {
@@ -148,7 +155,7 @@ export function AdminStudentProfileEditorPage() {
             <div className={styles.sectionHeader}><span className={styles.sectionIcon}><Mail size={21} /></span><h2>Contact Information</h2></div>
             <div className={styles.sectionBody}><div className={styles.fieldGrid}>
               <Field label="Email" required><input required type="email" value={formData.email} placeholder="Enter email address" onChange={(event) => updateField('email', event.target.value)} /></Field>
-              <Field label="Mobile Number" required><input required type="tel" inputMode="numeric" pattern="09[0-9]{9}" value={formData.contactNumber} placeholder="09XXXXXXXXX" onChange={(event) => updateField('contactNumber', event.target.value.replace(/\D/g, '').slice(0, 11))} /></Field>
+              <Field label="Mobile Number" required><input required type="tel" value={formData.contactNumber} placeholder="e.g. 09123456789" onChange={(event) => updateField('contactNumber', sanitizeContactNumberInput(event.target.value))} /></Field>
               <Field label="LinkedIn"><input type="url" value={formData.linkedinUrl ?? ''} placeholder="Enter LinkedIn profile address" onChange={(event) => updateField('linkedinUrl', event.target.value)} /></Field>
             </div></div>
           </section>

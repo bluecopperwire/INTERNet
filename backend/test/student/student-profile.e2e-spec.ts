@@ -12,7 +12,7 @@ describe('Student signup and internship preference profile flow (e2e)', () => {
   const auth = () => ({ Authorization: `Bearer ${token}` });
   const signupPayload = {
     email: 'student-profile-e2e@example.test',
-    password: 'StudentPassword123',
+    password: 'StudentPassword123!',
     firstName: 'Ana',
     lastName: 'Student',
     sex: 'female',

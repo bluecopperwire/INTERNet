@@ -186,6 +186,12 @@
   outline: none;
 }
 
+.fieldHint {
+  color: #667085;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .field select {
   padding-right: 44px;
   appearance: none;
