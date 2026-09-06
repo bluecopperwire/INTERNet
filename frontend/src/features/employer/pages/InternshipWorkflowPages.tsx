@@ -15,7 +15,7 @@ export function CreateInternshipAssignmentPage() {
   const [assignments, setAssignments] = useState<InternshipAssignment[]>([])
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
-  const [perPage, setPerPage] = useState(7)
+  const [perPage, setPerPage] = useState(5)
 
   useEffect(() => {
     employerService.getInternshipAssignments().then(setAssignments)
@@ -68,7 +68,7 @@ export function CreateInternshipAssignmentPage() {
         <div className={styles.assignmentPagination}>
           <div className={styles.assignmentPageSize}>
             <span>View</span>
-            <span className={styles.pageSizeValue}><select value={perPage} onChange={(event) => { setPerPage(Number(event.target.value)); resetPage() }} aria-label="Students per page"><option value={7}>7</option><option value={10}>10</option><option value={15}>15</option></select></span>
+            <span className={styles.pageSizeValue}><select value={perPage} onChange={(event) => { setPerPage(Number(event.target.value)); resetPage() }} aria-label="Students per page"><option value={5}>5</option><option value={10}>10</option><option value={15}>15</option></select></span>
             <span>Students per page</span>
           </div>
           <div className={styles.paginationButtons}>
@@ -105,7 +105,7 @@ export function ReviewInternshipAssignmentPage() {
           company: data.company,
           jobTitle: data.jobTitle,
           requiredHours: String(data.requiredHours || ''),
-          workingDays: data.workingDays.toLowerCase() === 'weekends' ? 'weekends' : 'weekdays',
+          workingDays: [1, 2, 3, 4, 5],
         }))
       }
     }).finally(() => setLoading(false))
@@ -117,7 +117,7 @@ export function ReviewInternshipAssignmentPage() {
   const isAssignmentLocked = assignment.studentResponse !== 'Accepted' || assignment.internshipAssignmentId !== null
   const handleCreateAssignment = async () => {
     if (isAssignmentLocked || isCreating) return
-    if (!formData.workingDays || !formData.requiredHours || !isValidDateOnly(formData.startDate) || (formData.expectedEndDate && !isValidDateOnly(formData.expectedEndDate)) || !formData.shiftStartTime || !formData.shiftEndTime) {
+    if (formData.workingDays.length === 0 || !formData.requiredHours || !isValidDateOnly(formData.startDate) || (formData.expectedEndDate && !isValidDateOnly(formData.expectedEndDate)) || !formData.shiftStartTime || !formData.shiftEndTime) {
       toast.error('Complete all required assignment fields with valid dates and times.')
       return
     }
@@ -156,7 +156,7 @@ export function ReviewInternshipAssignmentPage() {
             <div className={styles.assignmentDetailGrid}>
               <AssignmentField label="Company" name="company" value={formData.company} placeholder="Company" disabled onChange={setFormData} />
               <AssignmentField label="Job Title" name="jobTitle" value={formData.jobTitle} placeholder="Job title" disabled onChange={setFormData} />
-              <AssignmentField label="Working Days" name="workingDays" value={formData.workingDays} disabled={isAssignmentLocked} onChange={setFormData} />
+              <WorkingDaysField value={formData.workingDays} disabled={isAssignmentLocked} onChange={setFormData} />
               <AssignmentField label="Required Hours" name="requiredHours" value={formData.requiredHours} placeholder="Enter required hours" inputMode="numeric" disabled={isAssignmentLocked} onChange={setFormData} />
               <AssignmentField label="Start Date" name="startDate" value={formData.startDate} type="date" min={todayDateOnly()} disabled={isAssignmentLocked} onChange={setFormData} />
               <AssignmentField label="Expected End Date" name="expectedEndDate" value={formData.expectedEndDate} type="date" min={formData.startDate || todayDateOnly()} disabled={isAssignmentLocked} onChange={setFormData} />
@@ -177,7 +177,7 @@ export function ReviewInternshipAssignmentPage() {
 type AssignmentFormData = {
   company: string
   jobTitle: string
-  workingDays: string
+  workingDays: number[]
   requiredHours: string
   startDate: string
   expectedEndDate: string
@@ -185,10 +185,10 @@ type AssignmentFormData = {
   shiftEndTime: string
 }
 
-type AssignmentFieldName = keyof AssignmentFormData
+type AssignmentFieldName = Exclude<keyof AssignmentFormData, 'workingDays'>
 
 function createEmptyAssignmentForm(): AssignmentFormData {
-  return { company: '', jobTitle: '', workingDays: '', requiredHours: '', startDate: '', expectedEndDate: '', shiftStartTime: '', shiftEndTime: '' }
+  return { company: '', jobTitle: '', workingDays: [1, 2, 3, 4, 5], requiredHours: '', startDate: '', expectedEndDate: '', shiftStartTime: '', shiftEndTime: '' }
 }
 
 interface AssignmentFieldProps {
@@ -208,12 +208,29 @@ function AssignmentField({ label, name, value, placeholder, type = 'text', input
 
   return <label className={styles.assignmentField}>
     <span>{label}</span>
-    {name === 'workingDays' ? (
-      <select name={name} value={value} disabled={disabled} onChange={(event) => updateValue(event.target.value)}>
-        <option value="" disabled>Select working days</option>
-        <option value="weekdays">Weekdays</option>
-        <option value="weekends">Weekends</option>
-      </select>
-    ) : <input name={name} value={value} type={type} inputMode={inputMode} min={min} placeholder={placeholder} disabled={disabled} onChange={(event) => updateValue(event.target.value)} />}
+    <input name={name} value={value} type={type} inputMode={inputMode} min={min} placeholder={placeholder} disabled={disabled} onChange={(event) => updateValue(event.target.value)} />
   </label>
+}
+
+function WorkingDaysField({ value, disabled, onChange }: { value: number[]; disabled: boolean; onChange: Dispatch<SetStateAction<AssignmentFormData>> }) {
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  return <fieldset className={`${styles.assignmentField} ${styles.assignmentWorkingDays}`} disabled={disabled}>
+    <legend>Working Days</legend>
+    <div className={styles.dayOptions}>
+      {days.map((day, index) => <label key={day}>
+        <input
+          type="checkbox"
+          aria-label={day}
+          checked={value.includes(index)}
+          onChange={(event) => onChange((current) => ({
+            ...current,
+            workingDays: event.target.checked
+              ? [...current.workingDays, index].sort((a, b) => a - b)
+              : current.workingDays.filter((item) => item !== index),
+          }))}
+        />
+        {day.slice(0, 3)}
+      </label>)}
+    </div>
+  </fieldset>
 }

@@ -1,83 +1,97 @@
-import { ChevronLeft, ChevronRight, Eye, Search, SlidersHorizontal, Trash2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { EmployerHero } from '../components/EmployerHero'
-import { employerService } from '../services/employer.service'
-import type { EmployerInternshipDetails } from '../types/employer.types'
-import styles from './MonitorInternshipPage.module.css'
-import { ConfirmDeleteModal } from '../../../components/feedback/ConfirmDeleteModal'
-import { useToastStore } from '../../../stores/useToastStore'
-import { getErrorMessage } from '../../../utils/error-message'
+import { ChevronLeft, ChevronRight, Eye, Search, SlidersHorizontal } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import type {
+  EmployerInternshipListItemDto,
+  EmployerManageInternshipSummaryDto,
+  PageMeta,
+} from '../../../types/api';
+import { getErrorMessage } from '../../../utils/error-message';
+import { EmployerHero } from '../components/EmployerHero';
+import { employerApiService } from '../services/employer-api.service';
+import { COMPANY_PAGE_SIZES, formatMinutes, MANAGE_INTERNSHIP_COLUMNS } from '../utils/internship-workflow';
+import styles from './MonitorInternshipPage.module.css';
+
+const EMPTY_META: PageMeta = { page: 1, limit: 5, total: 0, totalPages: 0 };
 
 export function MonitorInternshipPage() {
-  const navigate = useNavigate()
-  const [internships, setInternships] = useState<EmployerInternshipDetails[]>([])
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState('All')
-  const [page, setPage] = useState(1)
-  const [perPage, setPerPage] = useState(7)
-  const [deleteTarget, setDeleteTarget] = useState<EmployerInternshipDetails | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const toast = useToastStore()
+  const navigate = useNavigate();
+  const [rows, setRows] = useState<EmployerInternshipListItemDto[]>([]);
+  const [summary, setSummary] = useState<EmployerManageInternshipSummaryDto>({
+    activeInternships: 0,
+    pendingInternships: 0,
+    ongoingInternships: 0,
+    awaitingCompletion: 0,
+  });
+  const [meta, setMeta] = useState<PageMeta>(EMPTY_META);
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(5);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  useEffect(() => { employerService.getAllInternshipDetails().then(setInternships) }, [])
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      employerApiService.getInternshipSummary(),
+      employerApiService.getInternships({
+        page,
+        limit,
+        search: search.trim() || undefined,
+        status: status || undefined,
+      }),
+    ])
+      .then(([nextSummary, result]) => {
+        if (!active) return;
+        setSummary(nextSummary);
+        setRows(result.data);
+        setMeta(result.meta);
+      })
+      .catch((reason: unknown) => {
+        if (active) setError(getErrorMessage(reason, 'Unable to load active internships.'));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
+  }, [limit, page, search, status]);
 
-  const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase()
-    return internships.filter((internship) => (
-      (!query || `${internship.studentName} ${internship.jobTitle}`.toLowerCase().includes(query))
-      && (status === 'All' || internship.status === status)
-    ))
-  }, [internships, search, status])
-  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
-  const displayed = filtered.slice((page - 1) * perPage, page * perPage)
-  const resetPage = () => setPage(1)
-  const deleteInternship = async () => {
-    if (!deleteTarget) return
-    setIsDeleting(true)
-    try {
-      await employerService.deleteInternshipDetails(deleteTarget.applicantId)
-      setInternships((current) => current.filter((item) => item.applicantId !== deleteTarget.applicantId))
-      setDeleteTarget(null)
-      toast.success('Internship record deleted.')
-    } catch (error: unknown) {
-      toast.error(getErrorMessage(error, 'Failed to delete internship record.'))
-    } finally {
-      setIsDeleting(false)
-    }
-  }
+  const resetPage = () => setPage(1);
+  const beginReload = () => { setLoading(true); setError(''); };
 
   return <main className={styles.page}>
-    <EmployerHero title="Manage Internship" subtitle="Manage and monitor your active interns" comfortableSpacing />
+    <EmployerHero title="Manage Internship" subtitle="Manage operationally active internship assignments" comfortableSpacing />
     <section className={styles.content}>
       <div className={styles.summaryGrid}>
-        <SummaryCard label="Total Interns" value={internships.length} />
-        <SummaryCard label="On Going Interns" value={internships.filter((item) => item.status === 'On Going').length} />
-        <SummaryCard label="Completed Interns" value={internships.filter((item) => item.status === 'Completed').length} />
-        <SummaryCard label="Awaiting Completion" value={internships.filter((item) => item.status === 'Awaiting Completion').length} />
+        <SummaryCard label="Active Internships" value={summary.activeInternships} />
+        <SummaryCard label="Pending Internships" value={summary.pendingInternships} />
+        <SummaryCard label="Ongoing Internships" value={summary.ongoingInternships} />
+        <SummaryCard label="Awaiting Completion" value={summary.awaitingCompletion} />
       </div>
 
       <div className={styles.toolbar}>
-        <label className={styles.searchBox}><Search size={17} /><span className={styles.srOnly}>Search interns</span><input value={search} onChange={(event) => { setSearch(event.target.value); resetPage() }} placeholder="Search interns..." /></label>
-        <label className={styles.statusFilter}><SlidersHorizontal size={16} /><span className={styles.srOnly}>Filter internship status</span><select value={status} onChange={(event) => { setStatus(event.target.value); resetPage() }}><option value="All">All Statuses</option><option value="On Going">On Going</option><option value="Completed">Completed</option><option value="Awaiting Completion">Awaiting Completion</option><option value="Withdrawn by Student">Withdrawn by Student</option><option value="Cancelled">Cancelled</option></select></label>
+        <label className={styles.searchBox}><Search size={17} /><span className={styles.srOnly}>Search internships</span><input value={search} onChange={(event) => { beginReload(); setSearch(event.target.value); resetPage(); }} placeholder="Search student or job title..." /></label>
+        <label className={styles.statusFilter}><SlidersHorizontal size={16} /><span className={styles.srOnly}>Filter internship status</span><select value={status} onChange={(event) => { beginReload(); setStatus(event.target.value); resetPage(); }}><option value="">All</option><option value="pending">Pending</option><option value="ongoing">Ongoing</option><option value="awaiting_completion">Awaiting Completion</option></select></label>
       </div>
 
       <div className={styles.tableCard}>
         <div className={styles.tableScroller}>
-          <table className={styles.table}><thead><tr><th>Student Name</th><th>Job Title</th><th>Remaining Hours</th><th>Status</th><th>Action</th></tr></thead><tbody>{displayed.map((internship) => <tr key={internship.applicantId}><td><strong>{internship.studentName}</strong></td><td>{internship.jobTitle}</td><td>{Math.max(internship.requiredHours - internship.renderedHours, 0)} hrs</td><td><span className={`${styles.statusPill} ${styles[internship.status.replaceAll(' ', '').toLowerCase()]}`}>{internship.status}</span></td><td><div className={styles.rowActions}><button type="button" className={styles.viewButton} onClick={() => navigate(`/employer/manage-internship/${internship.applicantId}`)}><Eye size={16} />View</button>{['Completed', 'Cancelled', 'Withdrawn by Student'].includes(internship.status) && <button type="button" className={styles.viewButton} onClick={() => setDeleteTarget(internship)}><Trash2 size={16} />Delete</button>}</div></td></tr>)}</tbody></table>
+          <table className={styles.table}><thead><tr>{MANAGE_INTERNSHIP_COLUMNS.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{rows.map((internship) => <tr key={internship.internshipAssignmentId}><td>{internship.studentFullName}</td><td>{internship.jobTitle}</td><td>{internship.strandProgram || 'N/A'}</td><td>{formatMinutes(internship.remainingMinutes)}</td><td><span className={`${styles.statusPill} ${styles[internship.displayStatus.replaceAll(' ', '').toLowerCase()] ?? ''}`}>{internship.displayStatus}</span></td><td><button type="button" className={styles.viewButton} onClick={() => navigate(`/employer/manage-internship/${internship.internshipAssignmentId}`)}><Eye size={16} />View</button></td></tr>)}</tbody></table>
         </div>
-        {displayed.length === 0 && <p className={styles.emptyState}>No interns match the selected filters.</p>}
+        {!loading && !error && rows.length === 0 && <div className={styles.emptyState}><strong>No active internships</strong><br />There are currently no internships to manage.</div>}
+        {loading && <p className={styles.emptyState}>Loading active internships...</p>}
+        {error && <p className={styles.emptyState} role="alert">{error}</p>}
       </div>
 
       <div className={styles.paginationRow}>
-        <div className={styles.perPage}><span>View</span><span className={styles.selectWrap}><select value={perPage} onChange={(event) => { setPerPage(Number(event.target.value)); resetPage() }}><option value={7}>7</option><option value={10}>10</option><option value={15}>15</option></select></span><span>Students per page</span></div>
-        <div className={styles.pagination}><button type="button" disabled={page === 1} onClick={() => setPage((current) => current - 1)}><ChevronLeft size={18} /></button><button type="button" className={styles.currentPage}>{page}</button><button type="button" disabled={page === totalPages} onClick={() => setPage((current) => current + 1)}><ChevronRight size={18} /></button></div>
+        <div className={styles.perPage}><span>View</span><span className={styles.selectWrap}><select value={limit} onChange={(event) => { beginReload(); setLimit(Number(event.target.value)); resetPage(); }}>{COMPANY_PAGE_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</select></span><span>Students per page</span></div>
+        <div className={styles.pagination}><button type="button" aria-label="Previous page" disabled={page <= 1} onClick={() => { beginReload(); setPage((current) => current - 1); }}><ChevronLeft size={18} /></button><button type="button" className={styles.currentPage} aria-current="page">{page}</button><button type="button" aria-label="Next page" disabled={page >= Math.max(meta.totalPages, 1)} onClick={() => { beginReload(); setPage((current) => current + 1); }}><ChevronRight size={18} /></button></div>
       </div>
     </section>
-    {deleteTarget && <ConfirmDeleteModal subject={`${deleteTarget.studentName}'s internship record`} isDeleting={isDeleting} onClose={() => setDeleteTarget(null)} onConfirm={() => void deleteInternship()} />}
-  </main>
+  </main>;
 }
 
 function SummaryCard({ label, value }: { label: string; value: number }) {
-  return <article className={styles.summaryCard}><h2>{label}</h2><p>{String(value).padStart(2, '0')}</p></article>
+  return <article className={styles.summaryCard}><h2>{label}</h2><p>{String(value).padStart(2, '0')}</p></article>;
 }

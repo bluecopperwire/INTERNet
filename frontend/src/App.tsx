@@ -15,7 +15,10 @@ import { DashboardPage } from './features/intern-seeker/pages/DashboardPage'
 import { ProfileEditorPage } from './features/intern-seeker/pages/ProfileEditorPage'
 import ApplicationStatusPage from './features/intern-seeker/pages/ApplicationStatusPage'
 import AttendancePage from './features/intern-seeker/pages/AttendancePage'
-import { InternshipDetailsPage } from './features/intern-seeker/pages/InternshipDetailsPage'
+import InternshipPage from './features/intern-seeker/pages/InternshipPage'
+import InternshipHistoryPage from './features/intern-seeker/pages/InternshipHistoryPage'
+import InternshipHistoryDetailsPage from './features/intern-seeker/pages/InternshipHistoryDetailsPage'
+import AttendanceHistoryPage from './features/intern-seeker/pages/AttendanceHistoryPage'
 import TrackingLayout from './features/intern-seeker/components/TrackingLayout'
 
 // QCPESO
@@ -30,7 +33,7 @@ import { MonitorUserDetailsPage } from './features/qcpeso/pages/MonitorUserDetai
 import { CreateEmployerPage } from './features/qcpeso/pages/CreateEmployerPage'
 import { ApplicationHistoryDetailsPage, ApplicationsHistoryPage, ReviewApplicantDetailsPage, ReviewApplicantsPage } from './features/qcpeso/pages/ApplicantManagementPages'
 import { QCPesoOpportunityViewPage } from './features/qcpeso/pages/QCPesoOpportunityViewPage'
-import { QCPesoAttendanceDetailsPage, QCPesoAttendancePage, QCPesoInternshipDetailsPage, QCPesoManageInternshipPage } from './features/qcpeso/pages/InternManagementPages'
+import { QCPesoAttendanceDetailsPage, QCPesoAttendancePage, QCPesoInternshipDetailsPage, QCPesoInternshipHistoryPage, QCPesoManageInternshipPage } from './features/qcpeso/pages/InternManagementPages'
 
 // Employer
 import EmployerLayout from './features/employer/components/EmployerLayout'
@@ -49,6 +52,8 @@ import { EmployerSettingsPage } from './features/employer/pages/EmployerSettings
 import { CreateInternshipAssignmentPage, ReviewInternshipAssignmentPage } from './features/employer/pages/InternshipWorkflowPages'
 import { MonitorInternshipPage } from './features/employer/pages/MonitorInternshipPage'
 import { MonitorInternshipDetailsPage } from './features/employer/pages/MonitorInternshipDetailsPage'
+import { EmployerInternshipHistoryPage } from './features/employer/pages/InternshipHistoryPage'
+import { EmployerInternshipHistoryDetailsPage } from './features/employer/pages/InternshipHistoryDetailsPage'
 
 // Admin
 import AdminLayout from './features/admin/components/AdminLayout'
@@ -90,11 +95,15 @@ function App() {
           <Route path="profile" element={<DashboardPage />} />
           <Route path="profile/edit" element={<ProfileEditorPage />} />
           <Route path="digicv" element={<DigiCVPage />} />
-          <Route path="internship-details" element={<InternshipDetailsPage />} />
+          <Route path="internship-details" element={<Navigate to="/intern-seeker/internship" replace />} />
+          <Route path="attendance-history/:assignmentId" element={<AttendanceHistoryPage />} />
+          <Route path="internship-history/:assignmentId" element={<InternshipHistoryDetailsPage />} />
           <Route element={<TrackingLayout />}>
             <Route path="requirements" element={<RequirementsPage />} />
             <Route path="application-status" element={<ApplicationStatusPage />} />
+            <Route path="internship" element={<InternshipPage />} />
             <Route path="attendance" element={<AttendancePage />} />
+            <Route path="internship-history" element={<InternshipHistoryPage />} />
           </Route>
         </Route>
 
@@ -132,6 +141,8 @@ function App() {
           <Route path="manage-interns/attendance/:id" element={<QCPesoAttendanceDetailsPage />} />
           <Route path="manage-interns/internships" element={<QCPesoManageInternshipPage />} />
           <Route path="manage-interns/internships/:id" element={<QCPesoInternshipDetailsPage />} />
+          <Route path="manage-interns/history" element={<QCPesoInternshipHistoryPage />} />
+          <Route path="manage-interns/history/:id" element={<QCPesoInternshipDetailsPage history />} />
           <Route path="reports-documents" element={<ReportsDocumentsPage />} />
           <Route path="settings" element={<QCPesoSettingsPage />} />
           <Route path="*" element={<Navigate to="/qcpeso/dashboard" replace />} />
@@ -166,6 +177,8 @@ function App() {
           <Route path="attendance/:applicantId" element={<AttendanceInternshipDetailsPage />} />
           <Route path="manage-internship" element={<MonitorInternshipPage />} />
           <Route path="manage-internship/:applicantId" element={<MonitorInternshipDetailsPage />} />
+          <Route path="internship-history" element={<EmployerInternshipHistoryPage />} />
+          <Route path="internship-history/:assignmentId" element={<EmployerInternshipHistoryDetailsPage />} />
           <Route path="reports" element={<ReportsPage />} />
           <Route path="settings" element={<EmployerSettingsPage />} />
           <Route path="*" element={<Navigate to="/employer/dashboard" replace />} />

@@ -1,5 +1,5 @@
 import { Transform, Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
 
 export const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 export const TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
@@ -29,4 +29,12 @@ export class EmployerPaginationDto {
   @Min(1)
   @Max(100)
   limit = 10;
+}
+
+export class EmployerWorkflowPaginationDto extends EmployerPaginationDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @IsIn([5, 10, 15])
+  override limit = 10;
 }

@@ -19,7 +19,7 @@ export function MonitorUsersPage({ kind }: MonitorUsersPageProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedStatus, setSelectedStatus] = useState<'All' | MonitorUserStatus>('All')
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(7)
+  const [itemsPerPage, setItemsPerPage] = useState(5)
   const isStudents = kind === 'students'
   const routeSegment = isStudents ? 'students' : 'employers'
   const title = isStudents ? 'Monitor Students' : 'Monitor Employers'
@@ -96,7 +96,7 @@ export function MonitorUsersPage({ kind }: MonitorUsersPageProps) {
         <div className={styles.pagination}>
           <div className={styles.pageSize}>
             <span>View</span>
-            <span className={styles.pageSizeValue}><select value={itemsPerPage} onChange={(event) => setItemsPerPage(Number(event.target.value))} aria-label={`${isStudents ? 'Students' : 'Companies'} per page`}><option value={7}>7</option><option value={10}>10</option><option value={15}>15</option></select></span>
+            <span className={styles.pageSizeValue}><select value={itemsPerPage} onChange={(event) => setItemsPerPage(Number(event.target.value))} aria-label={`${isStudents ? 'Students' : 'Companies'} per page`}><option value={5}>5</option><option value={7}>7</option><option value={10}>10</option><option value={15}>15</option></select></span>
             <span>{isStudents ? 'Students' : 'Companies'} per page</span>
           </div>
           <div className={styles.paginationButtons}>

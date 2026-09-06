@@ -4,6 +4,7 @@ import QCPesoHero from "../components/QCPesoHero";
 import { authService } from "../../../services/auth.service";
 import { useToastStore } from "../../../stores/useToastStore";
 import styles from "./QCPesoSettingsPage.module.css";
+import { getPasswordError, PASSWORD_REQUIREMENTS } from "../../../utils/input-validation";
 
 export function QCPesoSettingsPage() {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -18,9 +19,8 @@ export function QCPesoSettingsPage() {
     if (!currentPassword) {
       return setMessage("Please enter your current password.");
     }
-    if (newPassword.length < 8) {
-      return setMessage("New password must contain at least 8 characters.");
-    }
+    const passwordError = getPasswordError(newPassword, "New password");
+    if (passwordError) return setMessage(passwordError);
     if (newPassword !== confirmPassword) {
       return setMessage("The passwords do not match.");
     }
@@ -118,7 +118,7 @@ export function QCPesoSettingsPage() {
             <div className={styles.passwordHint}>
               <ShieldCheck size={17} aria-hidden="true" />
               <span>
-                Use at least 8 characters and avoid reusing an old password.
+                {PASSWORD_REQUIREMENTS}
               </span>
             </div>
             <footer className={styles.sectionFooter}>

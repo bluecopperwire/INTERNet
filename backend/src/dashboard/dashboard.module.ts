@@ -10,6 +10,7 @@ import { AdminDashboardService } from './services/admin-dashboard.service';
 import { ApplicationQueryService } from './services/shared/application-query.service';
 import { AttendanceQueryService } from './services/shared/attendance-query.service';
 import { CompanyResolverService } from './services/shared/company-resolver.service';
+import { QcInternshipWorkflowService } from './services/qc-internship-workflow.service';
 
 import { AdminModule } from '../admin/admin.module';
 import { EmailModule } from '../email/email.module';
@@ -33,6 +34,7 @@ import { ReferralPdfService } from '../storage/referral-pdf.service';
     ApplicationQueryService,
     AttendanceQueryService,
     CompanyResolverService,
+    QcInternshipWorkflowService,
     ReferralPdfService,
   ],
   exports: [

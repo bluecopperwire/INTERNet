@@ -96,7 +96,7 @@ export const MOCK_STUDENT_RECORD: StudentRecord = {
   flexibleAssignment: true,
   preferredIndustries: ['Information Technology', 'Other'],
   otherPreferredField: 'Software Development',
-  scheduleAvailability: ['Weekdays'],
+  scheduleAvailability: [1, 2, 3, 4, 5],
   startDate: '2026-09-01',
   hostOrgType: 'Private',
 }

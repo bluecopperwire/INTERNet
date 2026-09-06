@@ -7,6 +7,11 @@ import type {
   EmployerReferralListItemDto,
   EmployerAttendanceItemDto,
   EmployerInternshipListItemDto,
+  EmployerManageInternshipSummaryDto,
+  EmployerInternshipHistorySummaryDto,
+  EmployerInternshipDetailDto,
+  EmployerAttendanceSummaryDto,
+  EmployerAttendanceHistoryDto,
   EmployerAssignmentCandidateDto,
   PaginatedResponse,
 } from '../../../types/api';
@@ -169,8 +174,37 @@ export const employerApiService = {
     return response.data;
   },
 
-  async getInternship(assignmentId: number): Promise<any> {
-    const response = await api.get(`/employer/internships/${assignmentId}`);
+  async getInternshipSummary(): Promise<EmployerManageInternshipSummaryDto> {
+    const response = await api.get<EmployerManageInternshipSummaryDto>(
+      '/employer/internships/summary',
+    );
+    return response.data;
+  },
+
+  async getInternshipHistory(params?: any): Promise<PaginatedResponse<EmployerInternshipListItemDto>> {
+    const response = await api.get<PaginatedResponse<EmployerInternshipListItemDto>>(
+      '/employer/internships/history',
+      { params },
+    );
+    return response.data;
+  },
+
+  async getInternshipHistorySummary(): Promise<EmployerInternshipHistorySummaryDto> {
+    const response = await api.get<EmployerInternshipHistorySummaryDto>(
+      '/employer/internships/history/summary',
+    );
+    return response.data;
+  },
+
+  async getInternshipHistoryDetail(assignmentId: number): Promise<EmployerInternshipDetailDto> {
+    const response = await api.get<EmployerInternshipDetailDto>(
+      `/employer/internships/history/${assignmentId}`,
+    );
+    return response.data;
+  },
+
+  async getInternship(assignmentId: number): Promise<EmployerInternshipDetailDto> {
+    const response = await api.get<EmployerInternshipDetailDto>(`/employer/internships/${assignmentId}`);
     return response.data;
   },
 
@@ -182,18 +216,18 @@ export const employerApiService = {
     return response.data;
   },
 
-  async cancelInternship(assignmentId: number): Promise<any> {
+  async cancelInternship(assignmentId: number, remark: string): Promise<any> {
     const response = await api.patch(
       `/employer/internships/${assignmentId}/cancel`,
-      {},
+      { remark },
     );
     return response.data;
   },
 
-  async completeInternship(assignmentId: number): Promise<any> {
+  async completeInternship(assignmentId: number, remark: string): Promise<any> {
     const response = await api.patch(
       `/employer/internships/${assignmentId}/complete`,
-      {},
+      { remark },
     );
     return response.data;
   },
@@ -216,13 +250,13 @@ export const employerApiService = {
     return response.data;
   },
 
-  async getAttendanceSummary(params?: any): Promise<any> {
-    const response = await api.get('/employer/attendance/summary', { params });
+  async getAttendanceSummary(params?: any): Promise<EmployerAttendanceSummaryDto> {
+    const response = await api.get<EmployerAttendanceSummaryDto>('/employer/attendance/summary', { params });
     return response.data;
   },
 
-  async getAssignmentAttendanceHistory(assignmentId: number, params?: any): Promise<any> {
-    const response = await api.get(
+  async getAssignmentAttendanceHistory(assignmentId: number, params?: any): Promise<EmployerAttendanceHistoryDto> {
+    const response = await api.get<EmployerAttendanceHistoryDto>(
       `/employer/internships/${assignmentId}/attendance`,
       { params },
     );

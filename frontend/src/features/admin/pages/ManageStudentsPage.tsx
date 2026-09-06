@@ -12,7 +12,7 @@ export function ManageStudentsPage() {
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('All Statuses')
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(7)
+  const [pageSize, setPageSize] = useState(5)
   const navigate = useNavigate()
 
   useEffect(() => { adminService.getStudentRecords().then(setStudents) }, [])
@@ -58,7 +58,7 @@ export function ManageStudentsPage() {
           {!currentStudents.length && <tr><td className={styles.empty} colSpan={5}>No students match the selected filters.</td></tr>}
         </tbody></table></div>
       </section>
-      <nav className={styles.pagination} aria-label="Student pages"><label className={styles.pageSizeControl}><span>View</span><select value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); setPage(1) }}><option value={7}>7</option><option value={14}>14</option><option value={21}>21</option></select><span>Students per page</span></label><div><button type="button" aria-label="Previous page" disabled={page === 1} onClick={() => setPage((current) => Math.max(1, current - 1))}><ChevronLeft size={18} /></button><span className={styles.currentPage}>{page}</span><button type="button" aria-label="Next page" disabled={page === totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))}><ChevronRight size={18} /></button></div></nav>
+      <nav className={styles.pagination} aria-label="Student pages"><label className={styles.pageSizeControl}><span>View</span><select value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); setPage(1) }}><option value={5}>5</option><option value={7}>7</option><option value={14}>14</option><option value={21}>21</option></select><span>Students per page</span></label><div><button type="button" aria-label="Previous page" disabled={page === 1} onClick={() => setPage((current) => Math.max(1, current - 1))}><ChevronLeft size={18} /></button><span className={styles.currentPage}>{page}</span><button type="button" aria-label="Next page" disabled={page === totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))}><ChevronRight size={18} /></button></div></nav>
     </section>
   </main>
 }

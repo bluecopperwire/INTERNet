@@ -8,14 +8,16 @@ import type { DataSource, QueryRunner } from 'typeorm';
 import { withStatusActor } from '../../database/status-actor.transaction';
 import type {
   AssignmentCandidateQueryDto,
+  AssignmentRemarkDto,
   CreateAssignmentDto,
+  InternshipHistoryQueryDto,
   InternshipListQueryDto,
   UpdateAssignmentDto,
 } from '../dto';
-import { InternshipListStatus } from '../dto';
+import { InternshipHistoryStatus, InternshipListStatus } from '../dto';
 import { EmployerCompanyResolver } from './company-resolver.service';
 import {
-  rawRenderedHours,
+  remainingMinutes,
   remainingHours,
   roundHours,
 } from '../utils/attendance.utils';
@@ -30,8 +32,7 @@ import {
 type AssignmentRow = Record<string, unknown>;
 type AttendanceRow = {
   internship_assignment_id: number;
-  time_in: string;
-  time_out: string | null;
+  rendered_minutes: number | null;
 };
 
 @Injectable()
@@ -179,14 +180,14 @@ export class EmployerInternshipService {
         const inserted: AssignmentRow[] = await runner.query(
           `
             INSERT INTO public.internship_assignment (
-              referral_id, required_hours, start_date, expected_end_date,
+              referral_id, required_minutes, start_date, expected_end_date,
               working_days, start_shift, end_shift, assignment_status
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
             RETURNING internship_assignment_id
           `,
           [
             referralId,
-            dto.requiredHours,
+            dto.requiredHours * 60,
             dto.startDate,
             dto.expectedEndDate ?? null,
             dto.workingDays,
@@ -194,7 +195,17 @@ export class EmployerInternshipService {
             dto.endShift,
           ],
         );
-        return asNumber(inserted[0].internship_assignment_id);
+        const insertedId = asNumber(inserted[0].internship_assignment_id);
+        if (dto.startDate === currentManilaDate()) {
+          await runner.query(
+            `UPDATE public.internship_assignment
+             SET assignment_status = 'ongoing'
+             WHERE internship_assignment_id = $1
+               AND assignment_status = 'pending'`,
+            [insertedId],
+          );
+        }
+        return insertedId;
       },
     );
     return this.getById(userAccountId, assignmentId);
@@ -202,23 +213,26 @@ export class EmployerInternshipService {
 
   async summary(userAccountId: number) {
     const company = await this.companyResolver.resolve(userAccountId);
-    const rows = await this.loadAssignmentRows(company.companyId);
+    const rows = await this.loadAssignmentRows(company.companyId, null, true);
     const enriched = await this.enrichWithRenderedHours(rows);
+    const pendingInternships = enriched.filter(
+      (row) => row.assignmentStatus === 'pending',
+    ).length;
+    const ongoingInternships = enriched.filter(
+      (row) =>
+        row.assignmentStatus === 'ongoing' &&
+        row.renderedMinutes < row.requiredMinutes,
+    ).length;
+    const awaitingCompletion = enriched.filter(
+      (row) =>
+        row.assignmentStatus === 'ongoing' &&
+        row.renderedMinutes >= row.requiredMinutes,
+    ).length;
     return {
-      totalInterns: enriched.length,
-      ongoingInterns: enriched.filter(
-        (row) =>
-          row.assignmentStatus === 'ongoing' &&
-          row.renderedHours < row.requiredHours,
-      ).length,
-      completedInterns: enriched.filter(
-        (row) => row.assignmentStatus === 'completed',
-      ).length,
-      awaitingCompletionInterns: enriched.filter(
-        (row) =>
-          row.assignmentStatus === 'ongoing' &&
-          row.renderedHours >= row.requiredHours,
-      ).length,
+      activeInternships: enriched.length,
+      pendingInternships,
+      ongoingInternships,
+      awaitingCompletion,
     };
   }
 
@@ -227,6 +241,7 @@ export class EmployerInternshipService {
     const rows = await this.loadAssignmentRows(
       company.companyId,
       query.search?.trim() || null,
+      true,
     );
     let enriched = await this.enrichWithRenderedHours(rows);
     if (query.status) {
@@ -234,13 +249,13 @@ export class EmployerInternshipService {
         if (query.status === InternshipListStatus.AWAITING_COMPLETION) {
           return (
             row.assignmentStatus === 'ongoing' &&
-            row.renderedHours >= row.requiredHours
+            row.renderedMinutes >= row.requiredMinutes
           );
         }
         if (query.status === InternshipListStatus.ONGOING) {
           return (
             row.assignmentStatus === 'ongoing' &&
-            row.renderedHours < row.requiredHours
+            row.renderedMinutes < row.requiredMinutes
           );
         }
         return row.assignmentStatus === String(query.status);
@@ -256,7 +271,57 @@ export class EmployerInternshipService {
     );
   }
 
+  async historySummary(userAccountId: number) {
+    const company = await this.companyResolver.resolve(userAccountId);
+    const rows = await this.loadAssignmentRows(company.companyId);
+    const activeInternships = rows.filter((row) =>
+      ['pending', 'ongoing'].includes(String(row.assignment_status)),
+    ).length;
+    return {
+      totalInternships: rows.length,
+      activeInternships,
+      closedInternships: rows.length - activeInternships,
+    };
+  }
+
+  async history(userAccountId: number, query: InternshipHistoryQueryDto) {
+    const company = await this.companyResolver.resolve(userAccountId);
+    const rows = await this.loadAssignmentRows(
+      company.companyId,
+      query.search?.trim() || null,
+    );
+    let enriched = await this.enrichWithRenderedHours(rows);
+    if (query.status) {
+      enriched = enriched.filter((row) => {
+        const isActive = ['pending', 'ongoing'].includes(row.assignmentStatus);
+        if (query.status === InternshipHistoryStatus.ACTIVE) return isActive;
+        if (query.status === InternshipHistoryStatus.CLOSED) return !isActive;
+        return row.assignmentStatus === String(query.status);
+      });
+    }
+    const total = enriched.length;
+    const offset = (query.page - 1) * query.limit;
+    return paginate(
+      enriched.slice(offset, offset + query.limit),
+      query.page,
+      query.limit,
+      total,
+    );
+  }
+
   async getById(userAccountId: number, internshipAssignmentId: number) {
+    return this.getDetail(userAccountId, internshipAssignmentId, false);
+  }
+
+  async getHistoryById(userAccountId: number, internshipAssignmentId: number) {
+    return this.getDetail(userAccountId, internshipAssignmentId, true);
+  }
+
+  private async getDetail(
+    userAccountId: number,
+    internshipAssignmentId: number,
+    readOnly: boolean,
+  ) {
     const company = await this.companyResolver.resolve(userAccountId);
     const row = await this.findAssignmentScoped(
       this.dataSource,
@@ -267,20 +332,29 @@ export class EmployerInternshipService {
     const canCancel = ['pending', 'ongoing'].includes(
       enriched.assignmentStatus,
     );
-    const canDelete = ['completed', 'cancelled', 'withdrawn'].includes(
-      enriched.assignmentStatus,
-    );
+    const canDelete = enriched.assignmentStatus === 'finalized';
     const canComplete =
       enriched.assignmentStatus === 'ongoing' &&
-      enriched.renderedHours >= enriched.requiredHours;
+      enriched.renderedMinutes >= enriched.requiredMinutes;
     return {
       intern: {
         studentId: enriched.studentId,
         studentFullName: enriched.studentFullName,
+        studentContactEmail: row.student_contact_email,
+        studentContactNumber: row.student_contact_number,
+        studentAddress: row.student_address,
+        studentPhotoFilePath: row.student_photo_file_path,
+        studentProfileUpdatedAt: row.student_profile_updated_at,
+        strandProgram: enriched.strandProgram,
+        yearLevel: row.year_level,
+        schoolName: row.school_name,
         jobTitle: enriched.jobTitle,
         requiredHours: enriched.requiredHours,
+        requiredMinutes: enriched.requiredMinutes,
         renderedHours: enriched.renderedHours,
+        renderedMinutes: enriched.renderedMinutes,
         remainingHours: enriched.remainingHours,
+        remainingMinutes: enriched.remainingMinutes,
       },
       assignment: {
         internshipAssignmentId: enriched.internshipAssignmentId,
@@ -288,9 +362,11 @@ export class EmployerInternshipService {
         jobTitle: enriched.jobTitle,
         workingDays: row.working_days,
         requiredHours: enriched.requiredHours,
+        requiredMinutes: enriched.requiredMinutes,
         startDate: row.start_date,
         expectedEndDate: row.expected_end_date,
         endDate: row.end_date,
+        endedAt: row.ended_at,
         startShift: row.start_shift,
         endShift: row.end_shift,
       },
@@ -298,13 +374,22 @@ export class EmployerInternshipService {
         assignmentStatus: enriched.assignmentStatus,
         displayStatus: enriched.displayStatus,
         targetHours: enriched.requiredHours,
+        targetMinutes: enriched.requiredMinutes,
         renderedHours: enriched.renderedHours,
+        renderedMinutes: enriched.renderedMinutes,
         remainingHours: enriched.remainingHours,
-        canEdit: enriched.assignmentStatus === 'pending',
-        canComplete,
-        canCancel,
-        canDelete,
+        remainingMinutes: enriched.remainingMinutes,
+        canEdit: !readOnly && enriched.assignmentStatus === 'pending',
+        canComplete: !readOnly && canComplete,
+        canCancel: !readOnly && canCancel,
+        canDelete: readOnly && canDelete,
       },
+      remarks: {
+        studentWithdrawalRemark: row.student_withdrawal_remark,
+        companyCancellationRemark: row.company_cancellation_remark,
+        companyCompletionRemark: row.company_completion_remark,
+      },
+      readOnly,
     };
   }
 
@@ -325,8 +410,8 @@ export class EmployerInternshipService {
         throw new ConflictException('Only pending assignments can be edited.');
       }
       const values = {
-        workingDays: dto.workingDays ?? String(row.working_days),
-        requiredHours: dto.requiredHours ?? asNumber(row.required_hours),
+        workingDays: dto.workingDays ?? (row.working_days as number[]),
+        requiredHours: dto.requiredHours ?? asNumber(row.required_minutes) / 60,
         startDate:
           dto.startDate ?? normalizeDateOnly(row.start_date, 'startDate'),
         expectedEndDate:
@@ -345,14 +430,14 @@ export class EmployerInternshipService {
       await runner.query(
         `
           UPDATE public.internship_assignment
-          SET working_days = $2, required_hours = $3, start_date = $4,
+          SET working_days = $2, required_minutes = $3, start_date = $4,
               expected_end_date = $5, start_shift = $6, end_shift = $7
           WHERE internship_assignment_id = $1
         `,
         [
           internshipAssignmentId,
           values.workingDays,
-          values.requiredHours,
+          values.requiredHours * 60,
           values.startDate,
           values.expectedEndDate,
           values.startShift,
@@ -363,7 +448,11 @@ export class EmployerInternshipService {
     return this.getById(userAccountId, internshipAssignmentId);
   }
 
-  async cancel(userAccountId: number, internshipAssignmentId: number) {
+  async cancel(
+    userAccountId: number,
+    internshipAssignmentId: number,
+    dto: AssignmentRemarkDto,
+  ) {
     const company = await this.companyResolver.resolve(userAccountId);
     await withStatusActor(this.dataSource, userAccountId, async (runner) => {
       const row = await this.findAssignmentScoped(
@@ -378,14 +467,23 @@ export class EmployerInternshipService {
         );
       }
       await runner.query(
-        `UPDATE public.internship_assignment SET assignment_status = 'cancelled' WHERE internship_assignment_id = $1`,
-        [internshipAssignmentId],
+        `UPDATE public.internship_assignment
+         SET assignment_status = 'cancelled',
+             company_cancellation_remark = $2,
+             ended_at = CURRENT_TIMESTAMP,
+             end_date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date
+         WHERE internship_assignment_id = $1`,
+        [internshipAssignmentId, dto.remark.trim()],
       );
     });
     return this.getById(userAccountId, internshipAssignmentId);
   }
 
-  async complete(userAccountId: number, internshipAssignmentId: number) {
+  async complete(
+    userAccountId: number,
+    internshipAssignmentId: number,
+    dto: AssignmentRemarkDto,
+  ) {
     const company = await this.companyResolver.resolve(userAccountId);
     await withStatusActor(this.dataSource, userAccountId, async (runner) => {
       const row = await this.findAssignmentScoped(
@@ -401,7 +499,7 @@ export class EmployerInternshipService {
       }
       const attendance: AttendanceRow[] = await runner.query(
         `
-          SELECT internship_assignment_id, time_in, time_out
+          SELECT internship_assignment_id, rendered_minutes
           FROM public.attendance_record
           WHERE internship_assignment_id = $1
           ORDER BY attendance_date, attendance_record_id
@@ -409,18 +507,21 @@ export class EmployerInternshipService {
         [internshipAssignmentId],
       );
       const rendered = this.calculateTotal(attendance);
-      if (rendered < asNumber(row.required_hours)) {
+      if (rendered < asNumber(row.required_minutes)) {
         throw new ConflictException(
-          'Required rendered hours have not yet been completed.',
+          'Required rendered minutes have not yet been completed.',
         );
       }
       await runner.query(
         `
           UPDATE public.internship_assignment
-          SET assignment_status = 'completed', end_date = $2
+          SET assignment_status = 'complete_company',
+              company_completion_remark = $2,
+              ended_at = CURRENT_TIMESTAMP,
+              end_date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date
           WHERE internship_assignment_id = $1
         `,
-        [internshipAssignmentId, currentManilaDate()],
+        [internshipAssignmentId, dto.remark.trim()],
       );
     });
     return this.getById(userAccountId, internshipAssignmentId);
@@ -436,13 +537,9 @@ export class EmployerInternshipService {
         true,
         true,
       );
-      if (
-        !['completed', 'cancelled', 'withdrawn'].includes(
-          String(row.assignment_status),
-        )
-      ) {
+      if (row.assignment_status !== 'finalized') {
         throw new ConflictException(
-          'Only completed, cancelled, or withdrawn assignments can be deleted.',
+          'Only finalized assignments can be hidden.',
         );
       }
       await runner.query(
@@ -472,6 +569,7 @@ export class EmployerInternshipService {
   private async loadAssignmentRows(
     companyId: number,
     search: string | null = null,
+    activeOnly = false,
   ): Promise<AssignmentRow[]> {
     return this.dataSource.query(
       `
@@ -479,8 +577,10 @@ export class EmployerInternshipService {
                ia.start_date::text AS start_date,
                ia.expected_end_date::text AS expected_end_date,
                ia.end_date::text AS end_date,
+               ia.ended_at,
                r.referral_id, a.application_id, s.student_id,
                concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS student_full_name,
+               sai.strand_program,
                o.opportunity_id, o.title AS job_title,
                c.company_name
         FROM public.internship_assignment ia
@@ -489,8 +589,10 @@ export class EmployerInternshipService {
         JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
         JOIN public.company c ON c.company_id = o.company_id
         JOIN public.student s ON s.student_id = a.student_id
+        LEFT JOIN public.student_academic_information sai ON sai.student_id = s.student_id
         WHERE c.company_id = $1
           AND ia.deleted_at IS NULL
+          ${activeOnly ? "AND ia.assignment_status IN ('pending', 'ongoing')" : ''}
           AND NOT EXISTS (
             SELECT 1 FROM public.internship_assignment_visibility iav
             WHERE iav.internship_assignment_id = ia.internship_assignment_id
@@ -516,8 +618,15 @@ export class EmployerInternshipService {
                ia.start_date::text AS start_date,
                ia.expected_end_date::text AS expected_end_date,
                ia.end_date::text AS end_date,
+               ia.ended_at,
                r.referral_id, a.application_id, s.student_id,
                concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS student_full_name,
+               s.contact_email AS student_contact_email,
+               s.contact_number AS student_contact_number,
+               concat_ws(', ', NULLIF(s.address_line, ''), NULLIF(s.address_barangay, ''), NULLIF(s.address_city, '')) AS student_address,
+               s.photo_file_path AS student_photo_file_path,
+               s.updated_at AS student_profile_updated_at,
+               sai.school_name, sai.year_level, sai.strand_program,
                o.opportunity_id, o.title AS job_title,
                c.company_name
         FROM public.internship_assignment ia
@@ -526,6 +635,7 @@ export class EmployerInternshipService {
         JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
         JOIN public.company c ON c.company_id = o.company_id
         JOIN public.student s ON s.student_id = a.student_id
+        LEFT JOIN public.student_academic_information sai ON sai.student_id = s.student_id
         WHERE ia.internship_assignment_id = $1 AND c.company_id = $2
           AND ia.deleted_at IS NULL
           ${
@@ -551,7 +661,7 @@ export class EmployerInternshipService {
     const attendance: AttendanceRow[] = ids.length
       ? await this.dataSource.query(
           `
-            SELECT internship_assignment_id, time_in, time_out
+            SELECT internship_assignment_id, rendered_minutes
             FROM public.attendance_record
             WHERE internship_assignment_id = ANY($1::integer[])
             ORDER BY attendance_date, attendance_record_id
@@ -566,58 +676,59 @@ export class EmployerInternshipService {
     }
     return rows.map((row) => {
       const internshipAssignmentId = asNumber(row.internship_assignment_id);
-      const requiredHours = asNumber(row.required_hours);
-      const renderedHours = this.calculateTotal(
+      const requiredMinutes = asNumber(row.required_minutes);
+      const renderedMinutes = this.calculateTotal(
         byAssignment.get(internshipAssignmentId) ?? [],
       );
+      const requiredHours = requiredMinutes / 60;
+      const renderedHours = roundHours(renderedMinutes / 60);
       const assignmentStatus = String(row.assignment_status);
       return {
         internshipAssignmentId,
         studentId: asNumber(row.student_id),
         studentFullName: row.student_full_name,
+        strandProgram: row.strand_program ?? null,
         jobTitle: row.job_title,
         requiredHours,
+        requiredMinutes,
         renderedHours,
+        renderedMinutes,
         remainingHours: remainingHours(requiredHours, renderedHours),
+        remainingMinutes: remainingMinutes(requiredMinutes, renderedMinutes),
         assignmentStatus,
         displayStatus: this.displayStatus(
           assignmentStatus,
-          renderedHours,
-          requiredHours,
+          renderedMinutes,
+          requiredMinutes,
         ),
       };
     });
   }
 
   private calculateTotal(attendance: AttendanceRow[]): number {
-    return roundHours(
-      attendance.reduce((sum, record) => {
-        return (
-          sum +
-          rawRenderedHours(
-            String(record.time_in),
-            record.time_out === null ? null : String(record.time_out),
-          )
-        );
-      }, 0),
+    return attendance.reduce(
+      (sum, record) => sum + asNumber(record.rendered_minutes),
+      0,
     );
   }
 
   private displayStatus(
     assignmentStatus: string,
-    renderedHours: number,
-    requiredHours: number,
+    renderedMinutes: number,
+    requiredMinutes: number,
   ): string {
-    if (assignmentStatus === 'ongoing' && renderedHours >= requiredHours) {
+    if (assignmentStatus === 'ongoing' && renderedMinutes >= requiredMinutes) {
       return 'Awaiting Completion';
     }
     return (
       {
         pending: 'Pending',
-        ongoing: 'On Going',
-        completed: 'Completed',
-        withdrawn: 'Withdrawn by Student',
+        ongoing: 'Ongoing',
+        complete_company: 'Complete (Company)',
+        complete_student: 'Complete (Student)',
+        withdrawn: 'Withdrawn',
         cancelled: 'Cancelled',
+        finalized: 'Finalized',
       }[assignmentStatus] ?? assignmentStatus
     );
   }

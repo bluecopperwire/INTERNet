@@ -50,4 +50,22 @@ describe('manual QA UI regressions', () => {
     expect(page).toContain('<td>{assignment.studentName}</td>')
     expect(page).not.toContain('<td><strong>{assignment.studentName}</strong></td>')
   })
+
+  it('renders assignment working days as a compact checkbox row', () => {
+    const page = readSource('../employer/pages/InternshipWorkflowPages.tsx')
+    const css = readSource('../employer/pages/InternshipWorkflowPages.module.css')
+    expect(page).toContain('<div className={styles.dayOptions}>')
+    expect(page).toContain('{day.slice(0, 3)}')
+    expect(css).toMatch(/\.dayOptions input\s*\{[^}]*width: 16px;[^}]*height: 16px;/s)
+  })
+
+  it('uses exact day checkboxes for student availability editing', () => {
+    const studentEditor = readSource('../intern-seeker/pages/ProfileEditorPage.tsx')
+    const adminEditor = readSource('../admin/pages/AdminStudentProfileEditorPage.tsx')
+    for (const editor of [studentEditor, adminEditor]) {
+      expect(editor).toContain('AVAILABILITY_DAYS.map')
+      expect(editor).toContain('type="checkbox"')
+      expect(editor).not.toContain("['Weekdays', 'Weekends', 'Flexible']")
+    }
+  })
 })

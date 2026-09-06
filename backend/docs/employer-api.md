@@ -246,7 +246,7 @@ Returns the aggregated review model:
   },
   "internshipPreference": {
     "requiredHours": 400,
-    "availableDays": "weekdays",
+    "availableDays": [1, 2, 3, 4, 5],
     "startDate": "2026-09-01"
   },
   "opportunity": { "opportunityId": 44, "title": "Software Developer Intern" },

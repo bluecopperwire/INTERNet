@@ -6,6 +6,8 @@ import type {
   PesoDtrEntryDto,
 } from "../../../types/api";
 import { publicUploadUrl } from "../../../utils/public-upload-url";
+import { formatAvailabilityDays } from "../../../utils/availability-days";
+import { formatYearLevel } from "../../../utils/year-level";
 import type {
   QCPesoDashboardSummary,
   QCPesoReviewApplicant,
@@ -41,50 +43,10 @@ export function adaptPesoDashboardMetrics(
   };
 }
 
-export function formatYearLevel(value?: string | null): string {
-  if (!value) return "N/A";
-  const labels: Record<string, string> = {
-    grade_11: "Grade 11",
-    grade_12: "Grade 12",
-    first_year_college: "1st Year",
-    second_year_college: "2nd Year",
-    third_year_college: "3rd Year",
-    fourth_year_college: "4th Year",
-    fifth_year_college: "5th Year",
-    "1st_year": "1st Year",
-    "2nd_year": "2nd Year",
-    "3rd_year": "3rd Year",
-    "4th_year": "4th Year",
-    "5th_year": "5th Year",
-    first_year: "1st Year",
-    second_year: "2nd Year",
-    third_year: "3rd Year",
-    fourth_year: "4th Year",
-    fifth_year: "5th Year",
-  };
-  const key = value.toLowerCase().trim();
-  if (labels[key]) return labels[key];
+export { formatYearLevel } from "../../../utils/year-level";
 
-  return value
-    .split("_")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(" ");
-}
-
-export function formatScheduleDays(value?: string | null): string {
-  if (!value) return "Weekdays";
-  const labels: Record<string, string> = {
-    weekdays: "Weekdays",
-    weekends: "Weekends",
-    flexible: "Flexible",
-  };
-  const key = value.toLowerCase().trim();
-  if (labels[key]) return labels[key];
-
-  return value
-    .split("_")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(" ");
+export function formatScheduleDays(value?: unknown): string {
+  return formatAvailabilityDays(value);
 }
 
 export function adaptPesoApplication(
@@ -310,15 +272,15 @@ export function adaptPesoDtr(d: PesoDtrEntryDto | any): QCPesoAttendanceRecord {
   if (!d) return {} as any;
   const statusMap: Record<string, any> = {
     on_time: "Present",
-    late: "Late",
     present: "Present",
     absent: "Absent",
+    incomplete: "Incomplete",
   };
 
   const rawDate = d.date || d.dtrDate || "";
   const formattedDate = formatTableDate(rawDate);
 
-  const rawStatus = d.timeInStatus || d.status || "Present";
+  const rawStatus = d.attendanceStatus || d.status || "Present";
   const status = statusMap[rawStatus.toLowerCase()] || "Present";
 
   return {

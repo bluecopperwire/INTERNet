@@ -14,10 +14,20 @@ describe('notification migration safeguards', () => {
 
   it('preserves the internship prerequisite decision modal', () => {
     const applyModal = readSource('../../features/intern-seeker/components/ApplyOpportunityModal.tsx')
+    const applyModalStyles = readSource('../../features/intern-seeker/components/ApplyOpportunityModal.module.css')
 
     expect(applyModal).toContain('Application Prerequisites Required')
     expect(applyModal).toContain('missingItems.map')
     expect(applyModal).toContain('role="dialog"')
+    expect(applyModal).not.toContain('{opportunity.workSetup}')
+    expect(applyModal).not.toContain('PESO Exclusive')
+    expect(applyModal).not.toContain('isExclusive')
+    expect(applyModal).not.toContain('Cover Note / Remarks')
+    expect(applyModal).not.toContain('remark.trim()')
+    expect(applyModalStyles).not.toContain('.badgeRow')
+    expect(applyModalStyles).not.toContain('.tag {')
+    expect(applyModalStyles).not.toContain('.exclusiveTag')
+    expect(applyModalStyles).not.toContain('.field textarea')
   })
 
   it('keeps invalid requirement-file validation inline', () => {

@@ -66,27 +66,41 @@
   justify-content: center;
   border: 0;
   color: #ffffff;
-  background: rgba(33, 22, 123, 0.85);
+  background-color: rgba(33, 22, 123, 0.85);
   text-decoration: none;
   cursor: pointer;
-  transition: background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+  transition: background-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
 .uploadCard {
-  border: 2px dashed rgba(255, 255, 255, 0.95);
+  --upload-dash-color: rgba(255, 255, 255, 0.95);
+  border: 0;
+  background-image:
+    repeating-linear-gradient(90deg, var(--upload-dash-color) 0 22px, transparent 22px 34px),
+    repeating-linear-gradient(180deg, var(--upload-dash-color) 0 22px, transparent 22px 34px),
+    repeating-linear-gradient(90deg, var(--upload-dash-color) 0 22px, transparent 22px 34px),
+    repeating-linear-gradient(180deg, var(--upload-dash-color) 0 22px, transparent 22px 34px);
+  background-position: top left, top right, bottom left, top left;
+  background-repeat: repeat-x, repeat-y, repeat-x, repeat-y;
+  background-size: 100% 2px, 2px 100%, 100% 2px, 2px 100%;
   font-family: inherit;
 }
 
 .actionCard:hover,
 .actionCard:focus-visible,
 .uploadCard.dragging {
-  background: rgba(39, 26, 146, 0.94);
+  background-color: rgba(39, 26, 146, 0.94);
   box-shadow: 0 14px 32px rgba(10, 7, 47, 0.25);
   transform: translateY(-3px);
 }
 
 .uploadCard.dragging {
-  border-color: #ffd514;
+  --upload-dash-color: #ffd514;
+}
+
+.uploadCard:disabled {
+  cursor: wait;
+  opacity: 0.82;
 }
 
 .actionCard:focus-visible {
@@ -144,21 +158,6 @@
   font-size: 12px;
 }
 
-.steps {
-  display: flex;
-  width: min(100%, 730px);
-  min-height: 50px;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  margin: 49px auto 0;
-  padding: 10px 26px;
-  border-radius: 999px;
-  background: #21167b;
-  font-size: 18px;
-  font-weight: 500;
-}
-
 @media (max-width: 760px) {
   .page {
     padding: 120px 22px 96px;
@@ -182,11 +181,6 @@
   }
   .actionCard {
     min-height: 240px;
-  }
-  .steps {
-    flex-wrap: wrap;
-    border-radius: 18px;
-    font-size: 14px;
   }
 }
 

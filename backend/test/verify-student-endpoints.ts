@@ -47,7 +47,7 @@ async function runVerification() {
   try {
     const res = await request(server).post('/auth/login').send({
       email: 'student.manual@internet.local',
-      password: 'password123',
+      password: 'Password123!',
     });
     studentToken =
       res.body?.accessToken || res.body?.access_token || res.body?.token;
@@ -138,7 +138,7 @@ async function runVerification() {
       },
       internshipPreference: {
         requiredHours: 486,
-        availableDays: 'weekdays',
+        availableDays: [1, 2, 3, 4, 5],
         preferredCompanyType: 'private',
         startDate: '2026-09-15',
         allowsOutsidePreferredField: true,
@@ -260,7 +260,10 @@ async function runVerification() {
   console.log('Status:', tc8.status);
   console.log('Applications count:', tc8.body?.length);
   if (tc8.body?.length > 0) {
-    console.log('First App Opportunity Title:', tc8.body[0]?.opportunity?.title);
+    console.log(
+      'First App Opportunity Title:',
+      tc8.body[0]?.opportunity?.title,
+    );
     console.log('First App Company Name:', tc8.body[0]?.company?.companyName);
   }
 
@@ -291,7 +294,6 @@ async function runVerification() {
     .set('Authorization', `Bearer ${studentToken}`)
     .send({
       opportunityId: 2,
-      remark: 'Applying for QA verification',
     });
   console.log('Status (Expect 201 or 400 if already exists):', tc9c.status);
   if (tc9c.status === 201) {
@@ -307,7 +309,6 @@ async function runVerification() {
     .set('Authorization', `Bearer ${studentToken}`)
     .send({
       opportunityId: 1, // Student 1 already has active application for Opportunity 1
-      remark: 'Duplicate attempt',
     });
   console.log('Status (Expect 400):', tc9d.status);
 
@@ -321,7 +322,6 @@ async function runVerification() {
       response: 'accepted',
     });
   console.log('Status (Expect 400):', tc9e.status);
-
 
   console.log(
     '\n--- Test Case 10: Attendance Clock In (POST /students/1/dtr/time-in) ---',

@@ -26,11 +26,17 @@ import { ApplicationsService } from '../../applications/applications.service';
 import {
   CreateStudentApplicationDto,
   StudentApplicationResponseDto,
+  StudentAssignmentRemarkDto,
   StudentAttendanceClockDto,
+  StudentCompanyReviewDto,
   StudentProfileUpdateDto,
   StudentRequirementUploadDto,
 } from '../dto/students.dto';
-import { StudentAttendanceQueryDto } from '../dto/student-attendance-query.dto';
+import {
+  StudentAttendanceHistoryQueryDto,
+  StudentAttendanceQueryDto,
+  StudentInternshipHistoryQueryDto,
+} from '../dto/student-attendance-query.dto';
 import { requirementUploadOptions } from '../../storage/requirement-upload.config';
 import { profilePictureUploadOptions } from '../../storage/profile-picture-upload.config';
 
@@ -135,6 +141,18 @@ export class StudentsController {
     return this.studentsService.createStudentApplication(id, dto, currentUser);
   }
 
+  // Returns the authoritative cross-opportunity application lock state.
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/applications/eligibility')
+  @HttpCode(HttpStatus.OK)
+  async getStudentApplicationEligibility(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() currentUser: any,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    return this.studentsService.getApplicationEligibility(id);
+  }
+
   // Lists all internship applications for the student with enriched opportunity and company data.
   @UseGuards(JwtAuthGuard)
   @Get(':id/applications')
@@ -219,10 +237,77 @@ export class StudentsController {
     @CurrentUser() currentUser: any,
   ) {
     await this.ensureStudentAccess(id, currentUser);
-    return this.studentsService.hideAssignment(
+    return this.studentsService.hideAssignment(id, assignmentId, currentUser);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/internship/current')
+  @HttpCode(HttpStatus.OK)
+  async getCurrentStudentInternship(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() currentUser: any,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    return this.studentsService.getCurrentInternship(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/internship/history')
+  @HttpCode(HttpStatus.OK)
+  async getStudentInternshipHistory(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() currentUser: any,
+    @Query() pagination: StudentInternshipHistoryQueryDto,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    return this.studentsService.getInternshipHistory(id, pagination);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/internship/history/:assignmentId')
+  @HttpCode(HttpStatus.OK)
+  async getStudentInternshipHistoryDetail(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('assignmentId', ParseIntPipe) assignmentId: number,
+    @CurrentUser() currentUser: any,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    return this.studentsService.getInternshipHistoryDetail(id, assignmentId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/assignments/:assignmentId/withdraw')
+  @HttpCode(HttpStatus.OK)
+  async withdrawStudentAssignment(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('assignmentId', ParseIntPipe) assignmentId: number,
+    @CurrentUser() currentUser: any,
+    @Body() dto: StudentAssignmentRemarkDto,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    return this.studentsService.withdrawAssignment(
       id,
       assignmentId,
       currentUser,
+      dto,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/assignments/:assignmentId/company-review')
+  @HttpCode(HttpStatus.CREATED)
+  async submitStudentCompanyReview(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('assignmentId', ParseIntPipe) assignmentId: number,
+    @CurrentUser() currentUser: any,
+    @Body() dto: StudentCompanyReviewDto,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    return this.studentsService.submitCompanyReview(
+      id,
+      assignmentId,
+      currentUser,
+      dto,
     );
   }
 
@@ -263,6 +348,23 @@ export class StudentsController {
   ) {
     await this.ensureStudentAccess(id, currentUser);
     return this.studentsService.getStudentAttendance(id, query);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/assignments/:assignmentId/attendance-history')
+  @HttpCode(HttpStatus.OK)
+  async getStudentAttendanceHistory(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('assignmentId', ParseIntPipe) assignmentId: number,
+    @CurrentUser() currentUser: any,
+    @Query() query: StudentAttendanceHistoryQueryDto,
+  ) {
+    await this.ensureStudentAccess(id, currentUser);
+    return this.studentsService.getStudentAttendanceHistory(
+      id,
+      assignmentId,
+      query,
+    );
   }
 
   @UseGuards(JwtAuthGuard)

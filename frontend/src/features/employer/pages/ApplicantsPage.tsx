@@ -23,7 +23,7 @@ export function ApplicantsPage() {
 
   // Pagination & Filtering state
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(7)
+  const [itemsPerPage, setItemsPerPage] = useState(5)
   const [searchQuery, setSearchQuery] = useState('')
   
   const [statusFilter, setStatusFilter] = useState('All')
@@ -180,7 +180,7 @@ export function ApplicantsPage() {
                   setCurrentPage(1)
                 }}
               >
-                <option value={7}>7</option>
+                <option value={5}>5</option>
                 <option value={10}>10</option>
                 <option value={15}>15</option>
               </select>
@@ -220,7 +220,7 @@ export function ReferralsHistoryPage() {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('All')
   const [page, setPage] = useState(1)
-  const [perPage, setPerPage] = useState(7)
+  const [perPage, setPerPage] = useState(5)
   const [deleteTarget, setDeleteTarget] = useState<Applicant | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -279,7 +279,7 @@ export function ReferralsHistoryPage() {
           <td><div className={styles.actionButtons}><button className={styles.reviewBtn} onClick={() => navigate(`/employer/referrals-history/${referral.id}`)}><Eye size={16} />View</button>{referral.canHide && <button className={styles.deleteBtn} onClick={() => setDeleteTarget(referral)}><Trash2 size={16} />Delete</button>}</div></td>
         </tr>)}</tbody>
       </table></div></div>
-      <div className={styles.paginationRow}><div className={styles.leftControls}><span className={styles.viewLabel}>View</span><div className={styles.viewSelectBox}><select className={styles.viewSelect} value={perPage} onChange={(event) => { setPerPage(Number(event.target.value)); setPage(1) }}><option value={7}>7</option><option value={10}>10</option><option value={15}>15</option></select></div><span className={styles.perPageLabel}>Students per page</span></div><div className={styles.pagination}><button className={styles.pageBtn} disabled={page === 1} onClick={() => setPage((current) => current - 1)}><ChevronLeft size={16} /></button><button className={`${styles.pageBtn} ${styles.active}`}>{page}</button><button className={styles.pageBtn} disabled={page === totalPages} onClick={() => setPage((current) => current + 1)}><ChevronRight size={16} /></button></div></div>
+      <div className={styles.paginationRow}><div className={styles.leftControls}><span className={styles.viewLabel}>View</span><div className={styles.viewSelectBox}><select className={styles.viewSelect} value={perPage} onChange={(event) => { setPerPage(Number(event.target.value)); setPage(1) }}><option value={5}>5</option><option value={10}>10</option><option value={15}>15</option></select></div><span className={styles.perPageLabel}>Students per page</span></div><div className={styles.pagination}><button className={styles.pageBtn} disabled={page === 1} onClick={() => setPage((current) => current - 1)}><ChevronLeft size={16} /></button><button className={`${styles.pageBtn} ${styles.active}`}>{page}</button><button className={styles.pageBtn} disabled={page === totalPages} onClick={() => setPage((current) => current + 1)}><ChevronRight size={16} /></button></div></div>
     </section>
     {deleteTarget && <ConfirmDeleteModal subject={`${deleteTarget.name}'s referral`} isDeleting={isDeleting} onClose={() => setDeleteTarget(null)} onConfirm={() => void deleteReferral()} />}
   </main>

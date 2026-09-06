@@ -13,6 +13,8 @@ import { useInternshipPortal } from '../hooks/useInternshipPortal'
 import styles from './DashboardPage.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
 import { formatPreferredIndustries } from '../../../utils/preferred-industry-display'
+import { formatAvailabilityDays } from '../../../utils/availability-days'
+import { formatYearLevel } from '../../../utils/year-level'
 
 const displayValue = (value: string | number | null | undefined) =>
   value || 'Not provided'
@@ -162,8 +164,8 @@ export const DashboardPage: React.FC = () => {
           title="Current Academic Information"
           items={[
             ['School', profile.academic.schoolName],
-            ['Program', profile.academic.program],
-            ['Year Level', profile.academic.yearLevel],
+            ['Program / Strand', profile.academic.program],
+            ['Year Level', formatYearLevel(profile.academic.yearLevel, 'Not provided')],
           ]}
         />
         <ProfileCard
@@ -182,7 +184,7 @@ export const DashboardPage: React.FC = () => {
             ],
             [
               'Internship Days Availability',
-              profile.preferences.schedule.join(', '),
+              formatAvailabilityDays(profile.preferences.schedule),
             ],
             [
               'Internship Start Date Availability',

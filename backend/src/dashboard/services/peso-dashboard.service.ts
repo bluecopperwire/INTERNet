@@ -376,15 +376,8 @@ export class PesoDashboardService {
 
   // D2. GET DTR dashboard details/metrics
   async getDtrDashboardMetrics(): Promise<PesoDtrDashboardMetricsDto> {
-    const overtimeSql = `
-      SELECT COUNT(DISTINCT ia.internship_assignment_id) AS count
-      FROM public.attendance_record ar
-      JOIN public.internship_assignment ia ON ia.internship_assignment_id = ar.internship_assignment_id
-      WHERE ar.rendered_hours_status = 'overtime'
-        AND ia.deleted_at IS NULL
-    `;
-    const overtimeRes = await this.dataSource.query(overtimeSql);
-    const applicantsOvertime = Number(overtimeRes[0]?.count || 0);
+    // Overtime is no longer an Attendance status in the finalized model.
+    const applicantsOvertime = 0;
 
     const pendingSql = `
       SELECT COUNT(*) AS count 
@@ -684,7 +677,7 @@ export class PesoDashboardService {
           UPDATE public.application
           SET 
             application_status = $1::application_status_enum,
-            remark = COALESCE($2, remark),
+            remark = $2,
             updated_at = CURRENT_TIMESTAMP
           WHERE application_id = $3
         `,
@@ -906,6 +899,44 @@ export class PesoDashboardService {
       throw new Error('Internship assignment not found');
     }
     return rows[0];
+  }
+
+  async finalizeAssignment(
+    userAccountId: number,
+    internshipAssignmentId: number,
+  ) {
+    return withStatusActor(this.dataSource, userAccountId, async (runner) => {
+      const rows = (await runner.query(
+        `SELECT internship_assignment_id, assignment_status, ended_at
+         FROM public.internship_assignment
+         WHERE internship_assignment_id = $1 AND deleted_at IS NULL
+         FOR UPDATE`,
+        [internshipAssignmentId],
+      )) as Array<{ assignment_status: string }>;
+      if (!rows[0]) {
+        throw new NotFoundException('Internship assignment not found');
+      }
+      if (
+        !['complete_student', 'withdrawn', 'cancelled'].includes(
+          rows[0].assignment_status,
+        )
+      ) {
+        throw new ConflictException(
+          'Only Student-complete, withdrawn, or cancelled assignments may be finalized.',
+        );
+      }
+      const [updated] = await runner.query(
+        `UPDATE public.internship_assignment
+         SET assignment_status = 'finalized',
+             finalized_at = CURRENT_TIMESTAMP,
+             finalized_by_user_account_id = $2
+         WHERE internship_assignment_id = $1
+         RETURNING internship_assignment_id, assignment_status, ended_at,
+                   finalized_at, finalized_by_user_account_id`,
+        [internshipAssignmentId, userAccountId],
+      );
+      return updated;
+    });
   }
 
   async getStudents(query: { search?: string; page?: number; limit?: number }) {

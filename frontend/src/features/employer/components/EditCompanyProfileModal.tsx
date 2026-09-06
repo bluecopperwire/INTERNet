@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react'
 import { X, Upload, Building2 } from 'lucide-react'
 import type { CompanyProfile } from '../types/employer.types'
 import styles from './EditCompanyProfileModal.module.css'
+import { getContactNumberError, sanitizeContactNumberInput } from '../../../utils/input-validation'
+import { useToastStore } from '../../../stores/useToastStore'
 
 interface EditCompanyProfileModalProps {
   profile: CompanyProfile
@@ -35,13 +37,15 @@ export function EditCompanyProfileModal({
   onSave,
 }: EditCompanyProfileModalProps) {
   const [formData, setFormData] = useState<CompanyProfile>({ ...profile })
+  const toast = useToastStore()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target
-    const normalizedValue = NULLABLE_FIELDS.has(name) && !value.trim() ? null : value
+    const cleanedValue = name === 'contact_number' ? sanitizeContactNumberInput(value) : value
+    const normalizedValue = NULLABLE_FIELDS.has(name) && !cleanedValue.trim() ? null : cleanedValue
     setFormData((prev) => ({ ...prev, [name]: normalizedValue } as CompanyProfile))
   }
 
@@ -61,6 +65,11 @@ export function EditCompanyProfileModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    const contactNumberError = getContactNumberError(formData.contact_number)
+    if (contactNumberError) {
+      toast.error(contactNumberError)
+      return
+    }
     onSave(formData)
   }
 
@@ -279,7 +288,7 @@ export function EditCompanyProfileModal({
 
             <div className={styles.field}>
               <label htmlFor="contact_number">Contact Number</label>
-              <input id="contact_number" name="contact_number" type="text" value={formData.contact_number} onChange={handleChange} required />
+              <input id="contact_number" name="contact_number" type="tel" placeholder="e.g. +63 912 345 6789" value={formData.contact_number} onChange={handleChange} required />
             </div>
 
             <div className={styles.field}>

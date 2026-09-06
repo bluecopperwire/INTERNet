@@ -7,6 +7,7 @@ export interface OpportunityCatalogItem {
   companyId: number;
   companyName: string;
   companyType: string;
+  companyDescription: string;
   industryId: number;
   industryName: string;
   companyLogoFilePath: string | null;
@@ -132,6 +133,7 @@ export class OpportunityCatalogService {
         o.industry_name,
         o.company_logo_file_path,
         c.updated_at AS company_profile_updated_at,
+        c.description AS company_description,
         o.company_address_city,
         o.title,
         o.department,
@@ -165,6 +167,7 @@ export class OpportunityCatalogService {
       companyId: Number(row.company_id),
       companyName: row.company_name,
       companyType: row.company_type,
+      companyDescription: row.company_description,
       industryId: Number(row.industry_id),
       industryName: row.industry_name,
       companyLogoFilePath: row.company_logo_file_path,
@@ -243,6 +246,7 @@ export class OpportunityCatalogService {
         o.industry_name,
         o.company_logo_file_path,
         c.updated_at AS company_profile_updated_at,
+        c.description AS company_description,
         o.company_address_city,
         o.title,
         o.department,
@@ -276,6 +280,7 @@ export class OpportunityCatalogService {
       companyId: Number(row.company_id),
       companyName: row.company_name,
       companyType: row.company_type,
+      companyDescription: row.company_description,
       industryId: Number(row.industry_id),
       industryName: row.industry_name,
       companyLogoFilePath: row.company_logo_file_path,

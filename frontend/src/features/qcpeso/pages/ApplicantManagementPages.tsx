@@ -20,6 +20,7 @@ import { qcpesoService } from '../services/qcpeso.service'
 import { qcpesoApiService } from '../services/qcpeso-api.service'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
+import { formatYearLevel } from '../../../utils/year-level'
 import type { QCPesoReviewApplicant } from '../types/qcpeso.types'
 import QCPesoHero from '../components/QCPesoHero'
 import { RejectApplicantModal } from '../../employer/components/RejectApplicantModal'
@@ -132,7 +133,7 @@ function Pagination({ itemName, page, totalPages, perPage, onPageChange, onPerPa
         <span className={tableStyles.viewLabel}>View</span>
         <div className={tableStyles.viewSelectBox}>
           <select className={tableStyles.viewSelect} value={perPage} onChange={(event) => onPerPageChange(Number(event.target.value))}>
-            <option value={7}>7</option>
+            <option value={5}>5</option>
             <option value={10}>10</option>
             <option value={15}>15</option>
           </select>
@@ -158,7 +159,7 @@ export function ReviewApplicantsPage() {
   const [records, setRecords] = useState<QCPesoReviewApplicant[]>([])
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
-  const [perPage, setPerPage] = useState(7)
+  const [perPage, setPerPage] = useState(5)
 
   useEffect(() => {
     qcpesoService.getReviewApplicants().then(setRecords)
@@ -252,7 +253,7 @@ export function ApplicationsHistoryPage() {
   const [search, setSearch] = useState('')
   const [response, setResponse] = useState('All')
   const [page, setPage] = useState(1)
-  const [perPage, setPerPage] = useState(7)
+  const [perPage, setPerPage] = useState(5)
   const [deleteTarget, setDeleteTarget] = useState<QCPesoReviewApplicant | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const toast = useToastStore()
@@ -618,7 +619,7 @@ export function ReviewApplicantDetailsPage({ readOnly = false }: { readOnly?: bo
                   ['Company', record.company || 'N/A'],
                   ['Job Title', record.jobTitle || 'N/A'],
                   ['Program / Strand', record.program || 'N/A'],
-                  ['Year Level', record.yearLevel || 'N/A'],
+                  ['Year Level', formatYearLevel(record.yearLevel)],
                   ['School', record.school || 'N/A'],
                 ]}
               />
@@ -641,9 +642,45 @@ export function ReviewApplicantDetailsPage({ readOnly = false }: { readOnly?: bo
             <DocumentList studentName={record.studentName} documents={record.documents} />
           </div>
         </div>
-        <footer className={detailStyles.actionBar}>
+        {!readOnly && (
+          <footer className={detailStyles.actionBar}>
+            <button
+              className={detailStyles.actionBlue}
+              onClick={() =>
+                navigate(
+                  record.opportunityId
+                    ? `/qcpeso/manage-applicants/opportunities/${record.opportunityId}`
+                    : '/qcpeso/manage-applicants/review',
+                )
+              }
+            >
+              <Eye size={17} />
+              View Opportunity
+            </button>
+            {['submitted', 'under_review'].includes(record.applicationStatus || '') && (
+              <>
+                <button className={`${detailStyles.actionRed} ${detailStyles.workflowAction}`} disabled={isUpdating} onClick={() => setShowRejectModal(true)}>
+                  <X size={17} />
+                  Reject Applicant
+                </button>
+                <button
+                  className={detailStyles.actionGreen}
+                  disabled={isUpdating}
+                  onClick={() => updateStatus('Accepted')}
+                >
+                  <Check size={17} />
+                  {isUpdating ? 'Referring...' : 'Refer Applicant'}
+                </button>
+              </>
+            )}
+          </footer>
+        )}
+      </section>
+
+      {readOnly && (
+        <div className={detailStyles.historyActions}>
           <button
-            className={detailStyles.actionBlue}
+            className={`${detailStyles.historyActionButton} ${detailStyles.historyPrimaryAction}`}
             onClick={() =>
               navigate(
                 record.opportunityId
@@ -652,28 +689,19 @@ export function ReviewApplicantDetailsPage({ readOnly = false }: { readOnly?: bo
               )
             }
           >
-            <Eye size={17} />
             View Opportunity
           </button>
-          {!readOnly && ['submitted', 'under_review'].includes(record.applicationStatus || '') && (
-            <>
-              <button
-                className={detailStyles.actionGreen}
-                disabled={isUpdating}
-                onClick={() => updateStatus('Accepted')}
-              >
-                <Check size={17} />
-                {isUpdating ? 'Referring...' : 'Refer Applicant'}
-              </button>
-              <button className={`${detailStyles.actionRed} ${detailStyles.workflowAction}`} disabled={isUpdating} onClick={() => setShowRejectModal(true)}>
-                <X size={17} />
-                Reject Applicant
-              </button>
-            </>
+          {isTerminalApplication(record.applicationStatus) && (
+            <button
+              className={`${detailStyles.historyActionButton} ${detailStyles.historyDeleteAction}`}
+              disabled={isUpdating}
+              onClick={() => setShowDeleteModal(true)}
+            >
+              Delete
+            </button>
           )}
-          {readOnly && isTerminalApplication(record.applicationStatus) && <button className={detailStyles.actionRed} disabled={isUpdating} onClick={() => setShowDeleteModal(true)}><Trash2 size={17} />Delete</button>}
-        </footer>
-      </section>
+        </div>
+      )}
 
       {showRejectModal && (
         <RejectApplicantModal

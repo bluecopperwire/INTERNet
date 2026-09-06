@@ -13,6 +13,12 @@ import {
 } from '../signup-options'
 import styles from './SignUpPage.module.css'
 import { birthdateMaximum } from '../../../utils/date-only'
+import {
+  getContactNumberError,
+  getPasswordError,
+  PASSWORD_REQUIREMENTS,
+  sanitizeContactNumberInput,
+} from '../../../utils/input-validation'
 
 const INITIAL_DATA: SignUpData = {
   role: 'intern-seeker',
@@ -71,6 +77,12 @@ function SignUpPage() {
       return
     }
 
+    const passwordError = getPasswordError(data.password)
+    if (passwordError) {
+      setError(passwordError)
+      return
+    }
+
     if (data.password !== data.confirmPassword) {
       setError('Passwords do not match.')
       return
@@ -116,6 +128,12 @@ function SignUpPage() {
 
     if (requiredLocationFields.some((field) => !field.trim())) {
       setError('Please complete all location and contact fields.')
+      return
+    }
+
+    const contactNumberError = getContactNumberError(data.contactNumber)
+    if (contactNumberError) {
+      setError(contactNumberError)
       return
     }
 
@@ -263,6 +281,7 @@ function AccountStep({ data, error, onChange, onSubmit }: StepProps) {
           type="password"
           autoComplete="new-password"
           placeholder="Enter password"
+          hint={PASSWORD_REQUIREMENTS}
           value={data.password}
           onChange={(value) => onChange('password', value)}
         />
@@ -315,7 +334,7 @@ function LocationStep({ data, error, onChange, onSubmit, onBack }: StepProps) {
         <p>See jobs near you</p>
       </header>
       <form className={styles.form} onSubmit={onSubmit} noValidate>
-        <TextField id="contact-number" label="Contact Number" required type="tel" autoComplete="tel" placeholder="Enter your contact number" value={data.contactNumber} onChange={(value) => onChange('contactNumber', value)} />
+        <TextField id="contact-number" label="Contact Number" required type="tel" autoComplete="tel" placeholder="e.g. 09123456789" value={data.contactNumber} onChange={(value) => onChange('contactNumber', sanitizeContactNumberInput(value))} />
         <TextField id="street-address" label="House/Block No./Street" required autoComplete="street-address" placeholder="Enter your street address" value={data.streetAddress} onChange={(value) => onChange('streetAddress', value)} />
         <TextField id="barangay" label="Barangay" required autoComplete="address-level3" placeholder="Enter barangay" value={data.barangay} onChange={(value) => onChange('barangay', value)} />
         <TextField id="district" label="District" required placeholder="Enter district" value={data.district} onChange={(value) => onChange('district', value)} />
@@ -349,9 +368,10 @@ interface TextFieldProps {
   autoComplete?: string
   min?: string
   max?: string
+  hint?: string
 }
 
-function TextField({ id, label, value, onChange, required = false, type = 'text', placeholder, autoComplete, min, max }: TextFieldProps) {
+function TextField({ id, label, value, onChange, required = false, type = 'text', placeholder, autoComplete, min, max, hint }: TextFieldProps) {
   return (
     <div className={styles.field}>
       <label htmlFor={id}>{label}{required && <span> *</span>}</label>
@@ -367,6 +387,7 @@ function TextField({ id, label, value, onChange, required = false, type = 'text'
         max={max}
         onChange={(event) => onChange(event.target.value)}
       />
+      {hint && <small className={styles.fieldHint}>{hint}</small>}
     </div>
   )
 }

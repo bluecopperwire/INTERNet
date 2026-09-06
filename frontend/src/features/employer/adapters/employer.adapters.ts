@@ -1,11 +1,14 @@
 import { publicUploadUrl } from '../../../utils/public-upload-url';
 import { formatTableDate, toDateOnly } from '../../../utils/date-only';
+import { formatAvailabilityDays } from '../../../utils/availability-days';
+import { formatYearLevel } from '../../../utils/year-level';
 import type {
   EmployerDashboardMetricsDto,
   EmployerOpportunityDto,
   EmployerReferralListItemDto,
   EmployerAttendanceItemDto,
   EmployerInternshipListItemDto,
+  EmployerInternshipDetailDto,
 } from '../../../types/api';
 import type {
   EmployerDashboardSummary,
@@ -21,29 +24,6 @@ import {
   referralDisplayStatus,
   referralHistoryStatus,
 } from '../../workflow/status-mappings';
-
-type EmployerInternshipDetailDto = {
-  intern: {
-    studentFullName: string;
-    jobTitle: string;
-    requiredHours: number;
-  };
-  assignment: {
-    internshipAssignmentId: number;
-    companyName: string;
-    jobTitle: string;
-    workingDays: string;
-    requiredHours: number;
-    startDate: unknown;
-    expectedEndDate: unknown;
-    startShift: string;
-    endShift: string;
-  };
-  status: {
-    assignmentStatus: string;
-    renderedHours: number;
-  };
-};
 
 export function adaptEmployerDashboardSummary(
   m: EmployerDashboardMetricsDto,
@@ -105,7 +85,7 @@ export function adaptEmployerReferral(
   const oppId = opportunity.opportunityId || r.opportunityId || '';
   const oppTitle = opportunity.title || r.opportunityTitle || 'Opportunity';
   const strandProg = student.strandProgram || r.strandProgram || 'N/A';
-  const yLevel = student.yearLevel || r.yearLevel || 'N/A';
+  const yLevel = formatYearLevel(student.yearLevel || r.yearLevel);
   const compResponse =
     referral.companyResponse || r.companyResponse || 'pending';
   const referralStatus = referral.referralStatus || r.referralStatus;
@@ -149,7 +129,7 @@ export function adaptEmployerReferral(
     school: student.schoolName || 'N/A',
     preferredField: 'N/A',
     requiredHours: Number(internshipPref.requiredHours || 0),
-    availabilityDays: internshipPref.availableDays || 'Weekdays',
+    availabilityDays: formatAvailabilityDays(internshipPref.availableDays),
     availabilityDate: toDateOnly(internshipPref.startDate) || 'N/A',
     profileImageUrl: publicUploadUrl(
       student.photoFilePath || r.photoFilePath,
@@ -162,10 +142,10 @@ export function adaptEmployerReferral(
 export function adaptEmployerAttendance(
   a: EmployerAttendanceItemDto,
 ): EmployerAttendanceRecord {
-  const statusMap: Record<string, 'Present' | 'Absent' | 'Late'> = {
+  const statusMap: Record<string, EmployerAttendanceRecord['status']> = {
     present: 'Present',
-    late: 'Late',
     absent: 'Absent',
+    incomplete: 'Incomplete',
   };
 
   return {
@@ -188,8 +168,10 @@ export function adaptEmployerInternship(
 ): EmployerInternshipDetails {
   const statusMap: Record<string, EmployerInternshipDetails['status']> = {
     ongoing: 'On Going',
-    completed: 'Completed',
-    pending: 'Awaiting Completion',
+    complete_company: 'Complete (Company)',
+    complete_student: 'Complete (Student)',
+    finalized: 'Finalized',
+    pending: 'Pending',
     withdrawn: 'Withdrawn by Student',
     cancelled: 'Cancelled',
   };
@@ -211,7 +193,9 @@ export function adaptEmployerInternship(
     company: assignment?.companyName ?? 'Company',
     jobTitle: assignment?.jobTitle ?? intern?.jobTitle ??
       (isDetail ? '' : i.jobTitle),
-    workingDays: assignment?.workingDays ?? 'weekdays',
+    workingDays: assignment?.workingDays
+      ? assignment.workingDays.map((day) => ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][day]).join(', ')
+      : 'Monday, Tuesday, Wednesday, Thursday, Friday',
     requiredHours: Number(
       assignment?.requiredHours ?? intern?.requiredHours ??
         (isDetail ? 0 : i.requiredHours),
@@ -222,7 +206,7 @@ export function adaptEmployerInternship(
     shiftEndTime: String(assignment?.endShift ?? '17:00').slice(0, 5),
     status: statusMap[assignmentStatus] || 'On Going',
     renderedHours: Number(
-      status?.renderedHours ?? (isDetail ? 0 : i.renderedHours),
+      intern?.renderedHours ?? (isDetail ? 0 : i.renderedHours),
     ),
   };
 }

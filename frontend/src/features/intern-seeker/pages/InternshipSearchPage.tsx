@@ -101,8 +101,8 @@ function InternshipSearchPage() {
             <aside className={styles.resultsList} aria-label={`${results.length} search results`}>
               {results.map((opportunity) => (
                 <button className={`${styles.resultCard} ${selectedOpportunity?.id === opportunity.id ? styles.selectedResult : ''}`} key={opportunity.id} type="button" onClick={() => selectOpportunity(opportunity)}>
-                  <span className={styles.resultCompany}><span className={styles.companyDot}>{opportunity.companyName.split(' ').filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase()}</span>{opportunity.companyName}</span>
-                  <strong>{opportunity.position}</strong>
+                  <span className={styles.resultCompany}><span className={styles.companyDot}>{opportunity.companyName.split(' ').filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase()}</span><span className={styles.resultCompanyName} title={opportunity.companyName}>{opportunity.companyName}</span></span>
+                  <strong title={opportunity.position}>{opportunity.position}</strong>
                   <small>{opportunity.location}</small>
                   <span className={styles.resultFooter}><span>{opportunity.workSetup}</span><time>{opportunity.postedAt}</time></span>
                 </button>

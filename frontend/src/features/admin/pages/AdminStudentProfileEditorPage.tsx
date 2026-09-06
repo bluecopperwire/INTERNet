@@ -7,6 +7,8 @@ import styles from '../../intern-seeker/pages/ProfileEditorPage.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
 import { birthdateMaximum, todayDateOnly } from '../../../utils/date-only'
+import { AVAILABILITY_DAYS } from '../../../utils/availability-days'
+import { getContactNumberError, sanitizeContactNumberInput } from '../../../utils/input-validation'
 
 const INDUSTRIES = [
   'Office Administration',
@@ -18,8 +20,6 @@ const INDUSTRIES = [
   'Human Resources',
   'Healthcare',
 ]
-
-const SCHEDULES = ['Weekdays', 'Weekends', 'Flexible']
 
 export function AdminStudentProfileEditorPage() {
   const { id } = useParams<{ id: string }>()
@@ -54,9 +54,26 @@ export function AdminStudentProfileEditorPage() {
     setPreferenceError('')
   }
 
+  const toggleAvailabilityDay = (day: number) => {
+    setFormData((current) => {
+      if (!current) return current
+      const scheduleAvailability = current.scheduleAvailability.includes(day)
+        ? current.scheduleAvailability.filter((item) => item !== day)
+        : [...current.scheduleAvailability, day].sort((a, b) => a - b)
+      return { ...current, scheduleAvailability }
+    })
+    setPreferenceError('')
+  }
+
   const save = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!id || !formData) return
+
+    const contactNumberError = getContactNumberError(formData.contactNumber)
+    if (contactNumberError) {
+      toast.error(contactNumberError)
+      return
+    }
 
     const hasOtherField = formData.preferredIndustries.includes('Other')
     if (!formData.scheduleAvailability.length || !formData.preferredIndustries.length) {
@@ -138,7 +155,7 @@ export function AdminStudentProfileEditorPage() {
             <div className={styles.sectionHeader}><span className={styles.sectionIcon}><Mail size={21} /></span><h2>Contact Information</h2></div>
             <div className={styles.sectionBody}><div className={styles.fieldGrid}>
               <Field label="Email" required><input required type="email" value={formData.email} placeholder="Enter email address" onChange={(event) => updateField('email', event.target.value)} /></Field>
-              <Field label="Mobile Number" required><input required type="tel" inputMode="numeric" pattern="09[0-9]{9}" value={formData.contactNumber} placeholder="09XXXXXXXXX" onChange={(event) => updateField('contactNumber', event.target.value.replace(/\D/g, '').slice(0, 11))} /></Field>
+              <Field label="Mobile Number" required><input required type="tel" value={formData.contactNumber} placeholder="e.g. 09123456789" onChange={(event) => updateField('contactNumber', sanitizeContactNumberInput(event.target.value))} /></Field>
               <Field label="LinkedIn"><input type="url" value={formData.linkedinUrl ?? ''} placeholder="Enter LinkedIn profile address" onChange={(event) => updateField('linkedinUrl', event.target.value)} /></Field>
             </div></div>
           </section>
@@ -147,7 +164,7 @@ export function AdminStudentProfileEditorPage() {
             <div className={styles.sectionHeader}><span className={styles.sectionIcon}><GraduationCap size={21} /></span><h2>Current Academic Information</h2></div>
             <div className={styles.sectionBody}><div className={`${styles.fieldGrid} ${styles.academicGrid}`}>
               <Field label="School" required><input required value={formData.schoolName} placeholder="Enter school name" onChange={(event) => updateField('schoolName', event.target.value)} /></Field>
-              <Field label="Year Level" required><select required value={formData.yearLevel} onChange={(event) => updateField('yearLevel', event.target.value)}><option value="">Select year level</option><option value="Grade 11">Grade 11</option><option value="Grade 12">Grade 12</option><option value="1st Year">1st Year</option><option value="2nd Year">2nd Year</option><option value="3rd Year">3rd Year</option><option value="4th Year">4th Year</option></select></Field>
+              <Field label="Year Level" required><select required value={formData.yearLevel} onChange={(event) => updateField('yearLevel', event.target.value)}><option value="">Select year level</option><option value="Grade 11">Grade 11</option><option value="Grade 12">Grade 12</option><option value="First Year College">First Year College</option><option value="Second Year College">Second Year College</option><option value="Third Year College">Third Year College</option><option value="Fourth Year College">Fourth Year College</option></select></Field>
               <Field label="Program" required><input required value={formData.programStrand} placeholder="Enter program or strand" onChange={(event) => updateField('programStrand', event.target.value)} /></Field>
             </div></div>
           </section>
@@ -160,7 +177,7 @@ export function AdminStudentProfileEditorPage() {
                 <Field label="Preferred Host Organization Type" required><select required value={formData.hostOrgType} onChange={(event) => updateField('hostOrgType', event.target.value)}><option value="">Select organization type</option><option value="Government">Government</option><option value="Private">Private</option></select></Field>
               </div>
               <div className={`${styles.fieldGrid} ${styles.preferenceTopGrid}`}>
-                <fieldset className={styles.choiceField}><legend>Internship Days Availability <span>*</span></legend><div className={styles.radioGroup}>{SCHEDULES.map((schedule) => <label key={schedule}><input required type="radio" name="schedule" checked={formData.scheduleAvailability[0] === schedule} onChange={() => { updateField('scheduleAvailability', [schedule]); setPreferenceError('') }} />{schedule}</label>)}</div></fieldset>
+                <fieldset className={styles.choiceField}><legend>Internship Days Availability <span>*</span></legend><div className={styles.dayOptions}>{AVAILABILITY_DAYS.map((day, index) => <label key={day}><input type="checkbox" aria-label={day} checked={formData.scheduleAvailability.includes(index)} onChange={() => toggleAvailabilityDay(index)} />{day.slice(0, 3)}</label>)}</div></fieldset>
                 <Field label="Internship Start Date Availability" required><input required type="date" min={todayDateOnly()} title="The preferred internship start date cannot be in the past." value={formData.startDate} onChange={(event) => updateField('startDate', event.target.value)} /></Field>
               </div>
               <fieldset className={styles.choiceField}><legend>Preferred Field of Internship <span>*</span></legend><div className={styles.industriesGrid}>{INDUSTRIES.map((industry) => <label key={industry}><input type="checkbox" checked={formData.preferredIndustries.includes(industry)} onChange={() => toggleIndustry(industry)} />{industry}</label>)}<div className={styles.otherIndustry}><label><input type="checkbox" checked={formData.preferredIndustries.includes('Other')} onChange={() => toggleIndustry('Other')} />Other</label><input type="text" aria-label="Other preferred internship field" disabled={!formData.preferredIndustries.includes('Other')} value={formData.otherPreferredField ?? ''} placeholder="Please specify" onChange={(event) => { updateField('otherPreferredField', event.target.value); setPreferenceError('') }} /></div></div></fieldset>

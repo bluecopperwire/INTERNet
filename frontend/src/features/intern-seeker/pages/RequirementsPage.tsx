@@ -5,11 +5,10 @@ import type { InternshipRequirement } from '../types/requirement.types'
 import styles from './RequirementsPage.module.css'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
-const ACCEPTED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png']
 
 const isAcceptedFile = (file: File) => {
   const name = file.name.toLowerCase()
-  return ACCEPTED_EXTENSIONS.some((extension) => name.endsWith(extension)) && file.size <= MAX_FILE_SIZE
+  return name.endsWith('.pdf') && file.type === 'application/pdf' && file.size <= MAX_FILE_SIZE
 }
 
 import { useToastStore } from '../../../stores/useToastStore'
@@ -32,7 +31,7 @@ function RequirementsPage() {
     event.target.value = ''
     if (!file) return
     if (!isAcceptedFile(file)) {
-      const msg = 'Please select a PDF, DOC, DOCX, JPG, or PNG file no larger than 10 MB.'
+      const msg = 'Please select a PDF file no larger than 10 MB.'
       setError(msg)
       return
     }
@@ -129,7 +128,7 @@ function RequirementRow({ requirement, isUploading, onDelete, onFileSelection }:
         ) : (
           <>
             <label className={styles.uploadButton} htmlFor={inputId}>{isUploading ? 'Uploading...' : 'Upload'}</label>
-            <input id={inputId} type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" disabled={isUploading} onChange={onFileSelection} />
+            <input id={inputId} type="file" accept=".pdf,application/pdf" disabled={isUploading} onChange={onFileSelection} />
           </>
         )}
       </div>

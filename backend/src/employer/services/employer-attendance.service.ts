@@ -1,38 +1,55 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import type { DataSource } from 'typeorm';
-import type { AttendanceDateQueryDto, AttendanceListQueryDto } from '../dto';
+import type {
+  AttendanceDateQueryDto,
+  AttendanceHistoryQueryDto,
+  AttendanceListQueryDto,
+} from '../dto';
 import { EmployerCompanyResolver } from './company-resolver.service';
-import {
-  deriveRenderedHours,
-  rawRenderedHours,
-  remainingHours,
-  roundHours,
-} from '../utils/attendance.utils';
+import { remainingMinutes, roundHours } from '../utils/attendance.utils';
 import { asNumber, paginate } from '../utils/response.utils';
 import {
   assertValidDate,
   currentManilaDate,
-  enumerateDates,
-  hasShiftEnded,
   isScheduledWorkday,
   normalizeDateOnly,
 } from '../utils/time.utils';
 
 type AttendanceContextRow = Record<string, unknown>;
 
+export type MonitoringAttendanceStatus =
+  'pending' | 'present' | 'absent' | 'incomplete';
+
 export interface DailyAttendanceRow {
   internshipAssignmentId: number;
   studentId: number;
   studentFullName: string;
   jobTitle: string;
+  strandProgram: string | null;
   date: string;
-  status: 'present' | 'late' | 'absent';
+  status: MonitoringAttendanceStatus;
   timeIn: string | null;
   timeOut: string | null;
+  renderedMinutes: number;
   renderedHours: number;
-  renderedHoursStatus: 'incomplete' | 'undertime' | 'complete' | 'overtime';
 }
+
+/** Shared with the future QC PESO monitor: lifecycle history is authoritative. */
+export const HISTORICAL_ONGOING_ASSIGNMENT_PREDICATE = `
+  ia.start_date <= $2::date
+  AND EXISTS (
+    SELECT 1
+    FROM public.internship_assignment_status_history iash
+    WHERE iash.internship_assignment_id = ia.internship_assignment_id
+      AND iash.new_assignment_status = 'ongoing'
+      AND (iash.changed_at AT TIME ZONE 'Asia/Manila')::date <= $2::date
+  )
+  AND (
+    ia.ended_at IS NULL
+    OR ia.ended_at >= (($2::date + ia.start_shift) AT TIME ZONE 'Asia/Manila')
+  )
+`;
 
 @Injectable()
 export class EmployerAttendanceService {
@@ -47,14 +64,10 @@ export class EmployerAttendanceService {
       query.date ?? currentManilaDate(),
       null,
     );
-    const present = rows.filter((row) => row.status === 'present').length;
-    const late = rows.filter((row) => row.status === 'late').length;
-    const absent = rows.filter((row) => row.status === 'absent').length;
     return {
-      totalActive: present + late + absent,
-      present,
-      late,
-      absent,
+      ongoingInterns: rows.length,
+      presentInterns: rows.filter((row) => row.status === 'present').length,
+      absentInterns: rows.filter((row) => row.status === 'absent').length,
     };
   }
 
@@ -78,38 +91,37 @@ export class EmployerAttendanceService {
     );
   }
 
-  async history(userAccountId: number, internshipAssignmentId: number) {
+  async history(
+    userAccountId: number,
+    internshipAssignmentId: number,
+    query: AttendanceHistoryQueryDto = { page: 1, limit: 10 },
+  ) {
     const company = await this.companyResolver.resolve(userAccountId);
     const assignments: AttendanceContextRow[] = await this.dataSource.query(
       `
-        SELECT ia.internship_assignment_id, ia.required_hours,
-               ia.start_date::text AS start_date,
-               ia.working_days, ia.start_shift, ia.end_shift,
+        SELECT ia.internship_assignment_id, ia.required_minutes,
                ia.assignment_status, s.student_id,
                concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS student_full_name,
-               o.title AS job_title,
-               CASE
-                 WHEN ia.assignment_status = 'completed' THEN ia.end_date::text
-                 WHEN ia.assignment_status IN ('cancelled', 'withdrawn') THEN terminal_transition.terminal_date::text
-                 ELSE NULL
-               END AS actual_terminal_date
+               s.contact_email AS student_contact_email,
+               s.contact_number AS student_contact_number,
+               concat_ws(', ', NULLIF(s.address_line, ''), NULLIF(s.address_barangay, ''), NULLIF(s.address_city, '')) AS student_address,
+               s.photo_file_path AS student_photo_file_path,
+               s.updated_at AS student_profile_updated_at,
+               sai.strand_program, o.title AS job_title, c.company_name
         FROM public.internship_assignment ia
         JOIN public.referral r ON r.referral_id = ia.referral_id
         JOIN public.application a ON a.application_id = r.application_id
         JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
+        JOIN public.company c ON c.company_id = o.company_id
         JOIN public.student s ON s.student_id = a.student_id
-        LEFT JOIN LATERAL (
-          SELECT (history.changed_at AT TIME ZONE 'Asia/Manila')::date AS terminal_date
-          FROM public.internship_assignment_status_history history
-          WHERE history.internship_assignment_id = ia.internship_assignment_id
-            AND history.new_assignment_status = ia.assignment_status
-            AND history.new_assignment_status IN ('cancelled', 'withdrawn')
-          ORDER BY history.changed_at ASC,
-                   history.internship_assignment_status_history_id ASC
-          LIMIT 1
-        ) terminal_transition ON true
+        LEFT JOIN public.student_academic_information sai ON sai.student_id = s.student_id
         WHERE ia.internship_assignment_id = $1 AND o.company_id = $2
           AND ia.deleted_at IS NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM public.internship_assignment_visibility iav
+            WHERE iav.internship_assignment_id = ia.internship_assignment_id
+              AND iav.employer_hidden_at IS NOT NULL
+          )
       `,
       [internshipAssignmentId, company.companyId],
     );
@@ -117,83 +129,76 @@ export class EmployerAttendanceService {
     if (!assignment) {
       throw new NotFoundException('Internship assignment not found');
     }
+
     const records: AttendanceContextRow[] = await this.dataSource.query(
       `
         SELECT attendance_record_id, attendance_date::text AS attendance_date,
-               time_in, time_in_status, time_out
+               time_in, time_out, rendered_minutes, attendance_status
         FROM public.attendance_record
         WHERE internship_assignment_id = $1
-        ORDER BY attendance_date ASC, attendance_record_id ASC
+        ORDER BY attendance_date DESC, attendance_record_id DESC
       `,
       [internshipAssignmentId],
     );
-
-    const history = new Map<string, Record<string, unknown>>();
-    let renderedHours = 0;
-    for (const record of records) {
-      const attendanceDate = normalizeDateOnly(
-        record.attendance_date,
-        'attendanceDate',
-      );
-      const timeIn = record.time_in as string;
-      const timeOut = record.time_out as string | null;
-      const derived = deriveRenderedHours(
-        timeIn,
-        timeOut,
-        assignment.start_shift as string,
-        assignment.end_shift as string,
-      );
-      renderedHours += rawRenderedHours(timeIn, timeOut);
-      history.set(attendanceDate, {
-        date: attendanceDate,
+    const allHistory = records.map((record) => {
+      const recordRenderedMinutes = asNumber(record.rendered_minutes);
+      return {
+        attendanceRecordId: asNumber(record.attendance_record_id),
+        date: normalizeDateOnly(record.attendance_date, 'attendanceDate'),
         timeIn: record.time_in,
-        timeInStatus: record.time_in_status,
         timeOut: record.time_out,
-        renderedHours: derived.renderedHours,
-        renderedHoursStatus: derived.renderedHoursStatus,
-      });
+        renderedHours: roundHours(recordRenderedMinutes / 60),
+        renderedMinutes: recordRenderedMinutes,
+        attendanceStatus: String(record.attendance_status),
+      };
+    });
+    const renderedMinutes = allHistory.reduce(
+      (total, record) => total + record.renderedMinutes,
+      0,
+    );
+    const requiredMinutes = asNumber(assignment.required_minutes);
+    let filtered = allHistory;
+    if (query.status) {
+      filtered = filtered.filter(
+        (record) => record.attendanceStatus === String(query.status),
+      );
     }
-    renderedHours = roundHours(renderedHours);
-
-    const today = currentManilaDate();
-    const startDate = normalizeDateOnly(assignment.start_date, 'startDate');
-    const limit =
-      assignment.actual_terminal_date === null
-        ? today
-        : normalizeDateOnly(
-            assignment.actual_terminal_date,
-            'actualTerminalDate',
-          );
-    const end = limit < today ? limit : today;
-    if (startDate <= end) {
-      for (const date of enumerateDates(startDate, end)) {
-        if (history.has(date)) continue;
-        if (!isScheduledWorkday(date, String(assignment.working_days)))
-          continue;
-        if (!hasShiftEnded(date, String(assignment.end_shift))) continue;
-        history.set(date, {
-          date,
-          timeIn: null,
-          timeInStatus: null,
-          timeOut: null,
-          renderedHours: 0,
-          renderedHoursStatus: 'incomplete',
-        });
-      }
+    if (query.date) {
+      assertValidDate(query.date);
+      filtered = filtered.filter((record) => record.date === query.date);
     }
+    const total = filtered.length;
+    const offset = (query.page - 1) * query.limit;
 
-    const requiredHours = asNumber(assignment.required_hours);
     return {
       header: {
         internshipAssignmentId,
         studentFullName: assignment.student_full_name,
+        studentContactEmail: assignment.student_contact_email,
+        studentContactNumber: assignment.student_contact_number,
+        studentAddress: assignment.student_address,
+        studentPhotoFilePath: assignment.student_photo_file_path,
+        studentProfileUpdatedAt: assignment.student_profile_updated_at,
+        strandProgram: assignment.strand_program,
         jobTitle: assignment.job_title,
-        requiredHours,
-        renderedHours,
-        remainingHours: remainingHours(requiredHours, renderedHours),
+        companyName: assignment.company_name,
+        assignmentStatus: assignment.assignment_status,
       },
-      history: [...history.values()].sort((a, b) =>
-        String(b.date).localeCompare(String(a.date)),
+      summary: {
+        daysPresent: allHistory.filter(
+          (record) => record.attendanceStatus === 'present',
+        ).length,
+        daysAbsent: allHistory.filter(
+          (record) => record.attendanceStatus === 'absent',
+        ).length,
+        renderedMinutes,
+        remainingMinutes: remainingMinutes(requiredMinutes, renderedMinutes),
+      },
+      history: paginate(
+        filtered.slice(offset, offset + query.limit),
+        query.page,
+        query.limit,
+        total,
       ),
     };
   }
@@ -204,105 +209,64 @@ export class EmployerAttendanceService {
     search: string | null,
   ): Promise<DailyAttendanceRow[]> {
     assertValidDate(date);
-    const today = currentManilaDate();
-    if (date > today) return [];
-    const isToday = date === today;
+    if (date > currentManilaDate()) return [];
     const company = await this.companyResolver.resolve(userAccountId);
     const rows: AttendanceContextRow[] = await this.dataSource.query(
       `
-        SELECT ia.internship_assignment_id,
-               ia.start_date::text AS start_date, ia.assignment_status,
-               ia.working_days, ia.start_shift, ia.end_shift,
+        SELECT ia.internship_assignment_id, ia.working_days,
                s.student_id,
                concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS student_full_name,
-               o.title AS job_title,
-               ar.attendance_record_id, ar.time_in, ar.time_in_status, ar.time_out,
-               CASE
-                 WHEN ia.assignment_status = 'completed' THEN ia.end_date::text
-                 WHEN ia.assignment_status IN ('cancelled', 'withdrawn') THEN terminal_transition.terminal_date::text
-                 ELSE NULL
-               END AS actual_terminal_date
+               sai.strand_program, o.title AS job_title,
+               ar.attendance_record_id, ar.time_in, ar.time_out,
+               ar.attendance_status, ar.rendered_minutes
         FROM public.internship_assignment ia
         JOIN public.referral r ON r.referral_id = ia.referral_id
         JOIN public.application a ON a.application_id = r.application_id
         JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
         JOIN public.student s ON s.student_id = a.student_id
-        LEFT JOIN LATERAL (
-          SELECT (history.changed_at AT TIME ZONE 'Asia/Manila')::date AS terminal_date
-          FROM public.internship_assignment_status_history history
-          WHERE history.internship_assignment_id = ia.internship_assignment_id
-            AND history.new_assignment_status = ia.assignment_status
-            AND history.new_assignment_status IN ('cancelled', 'withdrawn')
-          ORDER BY history.changed_at ASC,
-                   history.internship_assignment_status_history_id ASC
-          LIMIT 1
-        ) terminal_transition ON true
+        LEFT JOIN public.student_academic_information sai ON sai.student_id = s.student_id
         LEFT JOIN public.attendance_record ar
           ON ar.internship_assignment_id = ia.internship_assignment_id
          AND ar.attendance_date = $2::date
         WHERE o.company_id = $1
           AND ia.deleted_at IS NULL
-          AND ia.start_date <= $2::date
-          AND ($4::boolean = false OR ia.assignment_status = 'ongoing')
+          AND ${HISTORICAL_ONGOING_ASSIGNMENT_PREDICATE}
+          AND NOT EXISTS (
+            SELECT 1 FROM public.internship_assignment_visibility iav
+            WHERE iav.internship_assignment_id = ia.internship_assignment_id
+              AND iav.employer_hidden_at IS NOT NULL
+          )
           AND ($3::text IS NULL OR concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) ILIKE '%' || $3 || '%' OR o.title ILIKE '%' || $3 || '%')
         ORDER BY student_full_name ASC, ia.internship_assignment_id ASC
       `,
-      [company.companyId, date, search, isToday],
+      [company.companyId, date, search],
     );
 
-    const result: DailyAttendanceRow[] = [];
-    for (const row of rows) {
-      if (!this.isApplicableOnDate(row, date, isToday)) continue;
-      if (!isScheduledWorkday(date, String(row.working_days))) continue;
-      if (row.attendance_record_id === null) {
-        if (!hasShiftEnded(date, String(row.end_shift))) continue;
-        result.push({
+    return rows
+      .filter((row) => isScheduledWorkday(date, row.working_days as number[]))
+      .map((row) => {
+        const recordRenderedMinutes = asNumber(row.rendered_minutes);
+        const status: MonitoringAttendanceStatus =
+          row.attendance_record_id === null
+            ? 'pending'
+            : (row.attendance_status as Exclude<
+                MonitoringAttendanceStatus,
+                'pending'
+              >);
+        return {
           internshipAssignmentId: asNumber(row.internship_assignment_id),
           studentId: asNumber(row.student_id),
           studentFullName: String(row.student_full_name),
           jobTitle: String(row.job_title),
+          strandProgram:
+            typeof row.strand_program === 'string' ? row.strand_program : null,
           date,
-          status: 'absent',
-          timeIn: null,
-          timeOut: null,
-          renderedHours: 0,
-          renderedHoursStatus: 'incomplete',
-        });
-        continue;
-      }
-      const derived = deriveRenderedHours(
-        row.time_in as string,
-        row.time_out as string | null,
-        row.start_shift as string,
-        row.end_shift as string,
-      );
-      result.push({
-        internshipAssignmentId: asNumber(row.internship_assignment_id),
-        studentId: asNumber(row.student_id),
-        studentFullName: String(row.student_full_name),
-        jobTitle: String(row.job_title),
-        date,
-        status: row.time_in_status === 'late' ? 'late' : 'present',
-        timeIn: row.time_in as string,
-        timeOut: row.time_out as string | null,
-        renderedHours: derived.renderedHours,
-        renderedHoursStatus: derived.renderedHoursStatus,
+          status,
+          timeIn: row.time_in as string | null,
+          timeOut: row.time_out as string | null,
+          renderedMinutes: recordRenderedMinutes,
+          renderedHours: roundHours(recordRenderedMinutes / 60),
+        };
       });
-    }
-    return result;
-  }
-
-  private isApplicableOnDate(
-    row: AttendanceContextRow,
-    date: string,
-    isToday: boolean,
-  ): boolean {
-    if (normalizeDateOnly(row.start_date, 'startDate') > date) return false;
-    if (isToday) return row.assignment_status === 'ongoing';
-    const terminalDate =
-      row.actual_terminal_date === null
-        ? null
-        : normalizeDateOnly(row.actual_terminal_date, 'actualTerminalDate');
-    return terminalDate === null || terminalDate >= date;
   }
 }

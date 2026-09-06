@@ -21,6 +21,10 @@
   gap: 16px;
 }
 
+.historySummaryGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .summaryCard {
   display: flex;
   min-height: 118px;
@@ -128,6 +132,26 @@
   table-layout: auto;
 }
 
+.qcpesoInternshipTable {
+  min-width: 1080px;
+}
+
+.qcpesoInternshipTable th:first-child,
+.qcpesoInternshipTable td:first-child {
+  width: 190px;
+  min-width: 190px;
+}
+
+.wideStudentNameTable {
+  min-width: 1140px;
+}
+
+.wideStudentNameTable th:first-child,
+.wideStudentNameTable td:first-child {
+  width: 230px;
+  min-width: 230px;
+}
+
 .table th {
   padding: 16px 20px;
   border-bottom: 2px solid #160e6f;
@@ -164,6 +188,8 @@
   display: inline-flex;
   padding: 6px 11px;
   border-radius: 999px;
+  color: #6557a8;
+  background: #f0eef9;
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
@@ -179,12 +205,17 @@
   background: #f0eef9;
 }
 
-.awaitingcompletion {
+.pending,
+.awaitingcompletion,
+.completecompany,
+.completestudent {
   color: #a56600;
   background: #fff4e6;
 }
 
-.withdrawnbystudent {
+.withdrawnbystudent,
+.withdrawn,
+.finalized {
   color: #6557a8;
   background: #f0eef9;
 }
@@ -217,7 +248,41 @@
   transition: background-color 150ms ease, color 150ms ease;
 }
 
-.rowActions { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; }
+.rowActions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.deleteButton {
+  display: inline-flex;
+  box-sizing: border-box;
+  width: 120px;
+  min-width: 120px;
+  min-height: 36px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid #d92d20;
+  border-radius: 6px;
+  color: #b42318;
+  background: #ffffff;
+  font-family: 'Poppins', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.deleteButton:hover {
+  color: #ffffff;
+  background: #d92d20;
+}
 
 .viewButton:hover {
   color: #ffffff;

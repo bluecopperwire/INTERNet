@@ -327,9 +327,19 @@
 .cardCompanyRow {
   display: flex;
   align-items: center;
+  width: 100%;
+  min-width: 0;
   gap: 9px;
   font-size: 13px;
   font-weight: 500;
+}
+
+.cardCompanyName {
+  min-width: 0;
+  overflow: hidden;
+  flex: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .companyMark {
@@ -356,9 +366,13 @@
 }
 
 .opportunityCard h3 {
+  width: 100%;
   margin: 13px 0 0;
+  overflow: hidden;
   font-size: 18px;
   line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cardLocation {
@@ -456,8 +470,25 @@
 }
 
 .companyCard h3 {
+  display: -webkit-box;
+  height: 44px;
   margin: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   font-size: 17px;
+  line-height: 1.3;
+  text-align: center;
+  text-overflow: ellipsis;
+}
+
+.companyCard h3.longCompanyName {
+  font-size: 15px;
+}
+
+.companyCard h3.veryLongCompanyName {
+  font-size: 13px;
 }
 
 .companyCard p {
@@ -465,16 +496,24 @@
   line-height: 1.45;
 }
 
-.companySummary {
+.companyIndustry {
   margin-top: 8px !important;
   color: #5e6f89;
   font-size: 12px;
   font-weight: 500;
+  text-align: center;
 }
 
 .companyDescription {
+  display: -webkit-box;
+  max-height: 4.35em;
   margin-top: 18px !important;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
   font-size: 12px;
+  text-align: justify;
+  text-overflow: ellipsis;
 }
 
 .srOnly {

@@ -1,10 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import {
-  AlertCircle,
-  Building2,
-  CheckCircle2,
-  X,
-} from 'lucide-react';
+import { AlertCircle, Building2, CheckCircle2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { InternshipOpportunity, UserProfile } from '../types/internship.types';
 import type { InternshipRequirement } from '../types/requirement.types';
@@ -28,7 +23,6 @@ export const ApplyOpportunityModal: React.FC<ApplyOpportunityModalProps> = ({
   onSuccess,
 }) => {
   const navigate = useNavigate();
-  const [remark, setRemark] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { submitApplication } = useStudentStore();
   const toast = useToastStore();
@@ -112,7 +106,7 @@ export const ApplyOpportunityModal: React.FC<ApplyOpportunityModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      await submitApplication(Number(opportunity.id), remark.trim() || undefined);
+      await submitApplication(Number(opportunity.id));
       toast.success(
         `Application submitted for ${opportunity.position} at ${opportunity.companyName}!`,
       );
@@ -144,10 +138,6 @@ export const ApplyOpportunityModal: React.FC<ApplyOpportunityModalProps> = ({
         </button>
 
         <header className={styles.header}>
-          <div className={styles.badgeRow}>
-            <span className={styles.tag}>{opportunity.workSetup}</span>
-            {opportunity.isExclusive && <span className={styles.exclusiveTag}>PESO Exclusive</span>}
-          </div>
           <h2 id="apply-modal-title">{opportunity.position}</h2>
           <p className={styles.companyName}>
             <Building2 size={16} />
@@ -163,8 +153,8 @@ export const ApplyOpportunityModal: React.FC<ApplyOpportunityModalProps> = ({
                 <div>
                   <h3>Application Prerequisites Required</h3>
                   <p>
-                    QC PESO requires that your profile details and all 4 pre-referral documents
-                    are submitted before applying to partner companies.
+                    QC PESO requires that your profile details and all 4 pre-referral documents are
+                    submitted before applying to partner companies.
                   </p>
                 </div>
               </div>
@@ -191,11 +181,7 @@ export const ApplyOpportunityModal: React.FC<ApplyOpportunityModalProps> = ({
               </div>
 
               <div className={styles.modalActions}>
-                <button
-                  type="button"
-                  className={styles.secondaryButton}
-                  onClick={onClose}
-                >
+                <button type="button" className={styles.secondaryButton} onClick={onClose}>
                   Close
                 </button>
                 <button
@@ -223,11 +209,15 @@ export const ApplyOpportunityModal: React.FC<ApplyOpportunityModalProps> = ({
               <div className={styles.summaryBox}>
                 <div className={styles.summaryItem}>
                   <span>Applicant</span>
-                  <strong>{profile?.firstName} {profile?.lastName}</strong>
+                  <strong>
+                    {profile?.firstName} {profile?.lastName}
+                  </strong>
                 </div>
                 <div className={styles.summaryItem}>
                   <span>School & Program</span>
-                  <strong>{profile?.academic.schoolName} ({profile?.academic.program})</strong>
+                  <strong>
+                    {profile?.academic.schoolName} ({profile?.academic.program})
+                  </strong>
                 </div>
                 <div className={styles.summaryItem}>
                   <span>Required Hours</span>
@@ -239,16 +229,6 @@ export const ApplyOpportunityModal: React.FC<ApplyOpportunityModalProps> = ({
                 </div>
               </div>
 
-              <label className={styles.field}>
-                <span>Cover Note / Remarks (Optional)</span>
-                <textarea
-                  rows={3}
-                  placeholder="Introduce yourself or highlight specific qualifications for this role..."
-                  value={remark}
-                  onChange={(e) => setRemark(e.target.value)}
-                />
-              </label>
-
               <div className={styles.modalActions}>
                 <button
                   type="button"
@@ -256,13 +236,9 @@ export const ApplyOpportunityModal: React.FC<ApplyOpportunityModalProps> = ({
                   onClick={onClose}
                   disabled={isSubmitting}
                 >
-                  Cancel
+                  Close
                 </button>
-                <button
-                  type="submit"
-                  className={styles.primaryButton}
-                  disabled={isSubmitting}
-                >
+                <button type="submit" className={styles.primaryButton} disabled={isSubmitting}>
                   {isSubmitting ? 'Submitting Application...' : 'Confirm & Apply'}
                 </button>
               </div>

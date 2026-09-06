@@ -25,6 +25,8 @@
   gap: 16px;
 }
 
+.threeCards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
 .summaryCard {
   display: flex;
   min-height: 118px;
@@ -137,6 +139,10 @@
   table-layout: auto;
 }
 
+.qcpesoAttendanceTable {
+  min-width: 1040px;
+}
+
 .table th {
   padding: 16px 20px;
   border-bottom: 2px solid #160e6f;
@@ -172,6 +178,7 @@
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .present {
@@ -182,6 +189,16 @@
 .absent {
   color: #e25555;
   background: #fff0ef;
+}
+
+.pending {
+  color: #a56600;
+  background: #fff4e6;
+}
+
+.incomplete {
+  color: #6557a8;
+  background: #f0eef9;
 }
 
 .late {

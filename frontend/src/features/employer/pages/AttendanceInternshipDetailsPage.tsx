@@ -1,76 +1,65 @@
-import { ArrowLeft, Clock3, UserRound } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { employerService } from '../services/employer.service'
-import type { EmployerAttendanceRecord, EmployerInternshipDetails } from '../types/employer.types'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { AttendanceHistoryView } from '../../../components/AttendanceHistoryView'
+import type { EmployerAttendanceHistoryDto } from '../../../types/api'
+import { getErrorMessage } from '../../../utils/error-message'
+import { employerApiService } from '../services/employer-api.service'
+import { COMPANY_PAGE_SIZES } from '../utils/internship-workflow'
 import styles from './AttendanceInternshipDetailsPage.module.css'
 
 export function AttendanceInternshipDetailsPage() {
   const { applicantId } = useParams<{ applicantId: string }>()
+  const assignmentId = Number(applicantId)
+  const location = useLocation()
   const navigate = useNavigate()
-  const [details, setDetails] = useState<EmployerInternshipDetails | null>(null)
-  const [records, setRecords] = useState<EmployerAttendanceRecord[]>([])
+  const [result, setResult] = useState<EmployerAttendanceHistoryDto | null>(null)
+  const [status, setStatus] = useState('')
+  const [date, setDate] = useState('')
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(5)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!applicantId) {
-      setLoading(false)
-      return
-    }
-    Promise.all([employerService.getInternshipDetails(applicantId), employerService.getAttendanceRecords()])
-      .then(([internshipDetails, attendanceRecords]) => {
-        setDetails(internshipDetails ?? null)
-        setRecords(attendanceRecords.filter((record) => record.applicantId === applicantId))
-      })
-      .finally(() => setLoading(false))
-  }, [applicantId])
+    if (!Number.isInteger(assignmentId)) return
+    let active = true
+    employerApiService.getAssignmentAttendanceHistory(assignmentId, { page, limit, status: status || undefined, date: date || undefined })
+      .then((data) => { if (active) setResult(data) })
+      .catch((reason: unknown) => { if (active) setError(getErrorMessage(reason, 'Unable to load attendance history.')) })
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [assignmentId, date, limit, page, status])
 
-  if (loading) return <main className={styles.feedback}>Loading internship details...</main>
-  if (!details) return <main className={styles.feedback}>Internship details not found.</main>
+  if (!Number.isInteger(assignmentId)) return <main className={styles.feedback} role="alert">Internship assignment not found.</main>
+  if (!result && loading) return <main className={styles.feedback}>Loading attendance history...</main>
+  if (!result) return <main className={styles.feedback} role="alert">{error || 'Attendance history not found.'}</main>
 
-  const remainingHours = Math.max(details.requiredHours - details.renderedHours, 0)
+  const { header, summary, history } = result
+  const internshipDetailsPath = `/employer/internship-history/${assignmentId}`
+  const backRoutes: Record<string, string> = {
+    '/employer/attendance': 'Back to Monitor Attendance',
+    [internshipDetailsPath]: 'Back to Internship Details',
+  }
+  const requestedBackPath = (location.state as { attendanceHistoryBackPath?: string } | null)?.attendanceHistoryBackPath
+  const backPath = requestedBackPath && backRoutes[requestedBackPath] ? requestedBackPath : '/employer/attendance'
 
-  return <main className={styles.page}>
-    <div className={styles.wrap}>
-      <button type="button" className={styles.backButton} onClick={() => navigate('/employer/attendance')}><ArrowLeft size={19} />Back to Monitor Attendance</button>
-
-      <section className={styles.studentSummary}>
-        <span className={styles.studentIcon}><UserRound size={28} /></span>
-        <div><h1>{details.studentName}</h1><p>{details.jobTitle}</p></div>
-        <div className={styles.hoursSummary}><Clock3 size={19} /><div><strong>{details.renderedHours} / {details.requiredHours} hours</strong><span>{remainingHours} hours remaining</span></div></div>
-      </section>
-
-      <section className={styles.detailCard}>
-        <header className={styles.cardHeader}>
-          <div><h2>Attendance</h2><p>Daily time records for this internship assignment.</p></div>
-        </header>
-        <div className={styles.tableScroller}>
-          <table className={styles.attendanceTable}>
-            <thead><tr><th>Date</th><th>Time In</th><th>Time In Status</th><th>Time Out</th><th>Rendered Hours</th><th>Rendered Hours Status</th></tr></thead>
-            <tbody>{records.map((record) => <tr key={record.id}>
-              <td>{record.date}</td>
-              <td>{record.timeIn}</td>
-              <td><StatusPill value={record.status === 'Present' ? 'On Time' : record.status} /></td>
-              <td>{record.timeOut}</td>
-              <td>{record.hoursRendered} hrs</td>
-              <td><StatusPill value={getRenderedHoursStatus(record)} /></td>
-            </tr>)}</tbody>
-          </table>
-        </div>
-        {records.length === 0 && <p className={styles.noRecords}>No attendance records are available for this intern.</p>}
-      </section>
-    </div>
-  </main>
-}
-
-function StatusPill({ value }: { value: string }) {
-  const styleName = value.replaceAll(' ', '').toLowerCase()
-  return <span className={`${styles.statusPill} ${styles[styleName] ?? ''}`}>{value}</span>
-}
-
-function getRenderedHoursStatus(record: EmployerAttendanceRecord) {
-  if (record.status === 'Absent' || record.hoursRendered === 0) return 'Incomplete'
-  if (record.hoursRendered < 8) return 'Undertime'
-  if (record.hoursRendered > 8) return 'Overtime'
-  return 'Complete'
+  return <AttendanceHistoryView
+    backLabel={backRoutes[backPath]}
+    onBack={() => navigate(backPath)}
+    profile={header}
+    summary={summary}
+    records={history.data.map((record) => ({ id: record.attendanceRecordId, date: record.date, timeIn: record.timeIn, timeOut: record.timeOut, renderedMinutes: record.renderedMinutes, status: record.attendanceStatus }))}
+    date={date}
+    status={status}
+    onDateChange={(value) => { setLoading(true); setError(''); setDate(value); setPage(1) }}
+    onStatusChange={(value) => { setLoading(true); setError(''); setStatus(value); setPage(1) }}
+    page={page}
+    limit={limit}
+    totalPages={history.meta.totalPages}
+    pageSizes={COMPANY_PAGE_SIZES}
+    onPageChange={(value) => { setLoading(true); setError(''); setPage(value) }}
+    onLimitChange={(value) => { setLoading(true); setError(''); setLimit(value); setPage(1) }}
+    loading={loading}
+    error={error}
+  />
 }

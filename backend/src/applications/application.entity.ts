@@ -38,8 +38,9 @@ export class Application {
   @Column({
     name: 'remark',
     type: 'text',
+    nullable: true,
   })
-  remark!: string;
+  remark!: string | null;
 
   @Column({
     name: 'student_response',

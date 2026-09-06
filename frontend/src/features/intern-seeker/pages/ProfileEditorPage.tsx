@@ -5,6 +5,8 @@ import styles from './ProfileEditorPage.module.css'
 import { useInternshipPortal } from '../hooks/useInternshipPortal'
 import type { UserProfile } from '../types/internship.types'
 import { birthdateMaximum, todayDateOnly } from '../../../utils/date-only'
+import { AVAILABILITY_DAYS } from '../../../utils/availability-days'
+import { getContactNumberError, sanitizeContactNumberInput } from '../../../utils/input-validation'
 
 const INDUSTRIES = [
   'Office Administration',
@@ -16,8 +18,6 @@ const INDUSTRIES = [
   'Human Resources',
   'Healthcare',
 ]
-
-const SCHEDULES = ['Weekdays', 'Weekends', 'Flexible']
 
 import { useToastStore } from '../../../stores/useToastStore'
 
@@ -53,9 +53,9 @@ export const ProfileEditorPage: React.FC = () => {
     setFormData(previous => ({ ...previous, [name]: parsedValue }))
   }
 
-  const togglePreference = (field: 'preferredIndustries' | 'schedule', value: string) => {
+  const togglePreference = (value: string) => {
     setFormData(previous => {
-      const currentValues = previous.preferences?.[field] ?? []
+      const currentValues = previous.preferences?.preferredIndustries ?? []
       const nextValues = currentValues.includes(value)
         ? currentValues.filter(item => item !== value)
         : [...currentValues, value]
@@ -64,10 +64,8 @@ export const ProfileEditorPage: React.FC = () => {
         ...previous,
         preferences: {
           ...(previous.preferences as UserProfile['preferences']),
-          [field]: nextValues,
-          ...(field === 'preferredIndustries' &&
-          value === 'Other' &&
-          currentValues.includes(value)
+          preferredIndustries: nextValues,
+          ...(value === 'Other' && currentValues.includes(value)
             ? { otherPreferredField: '' }
             : {}),
         },
@@ -75,18 +73,29 @@ export const ProfileEditorPage: React.FC = () => {
     })
   }
 
-  const selectSchedule = (value: string) => {
+  const toggleSchedule = (day: number) => {
     setFormData(previous => ({
       ...previous,
       preferences: {
         ...(previous.preferences as UserProfile['preferences']),
-        schedule: [value],
+        schedule: previous.preferences?.schedule.includes(day)
+          ? previous.preferences.schedule.filter((item) => item !== day)
+          : [...(previous.preferences?.schedule ?? []), day].sort((a, b) => a - b),
       },
     }))
   }
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
+    const contactNumberError = getContactNumberError(formData.contactNumber ?? '')
+    if (contactNumberError) {
+      toast.error(contactNumberError)
+      return
+    }
+    if (!formData.preferences?.schedule.length) {
+      toast.error('Select at least one internship availability day.')
+      return
+    }
     setIsSubmitting(true)
     try {
       const success = await saveProfile(formData)
@@ -165,7 +174,7 @@ export const ProfileEditorPage: React.FC = () => {
             <div className={styles.sectionBody}>
               <div className={styles.fieldGrid}>
                 <Field label="Email" required><input required type="email" name="email" placeholder="Enter email address" value={formData.email ?? ''} onChange={handleChange} /></Field>
-                <Field label="Mobile Number" required><input required type="tel" name="contactNumber" placeholder="Enter mobile number" value={formData.contactNumber ?? ''} onChange={handleChange} /></Field>
+                <Field label="Mobile Number" required><input required type="tel" name="contactNumber" placeholder="e.g. 09123456789" value={formData.contactNumber ?? ''} onChange={(event) => setFormData((current) => ({ ...current, contactNumber: sanitizeContactNumberInput(event.target.value) }))} /></Field>
                 <Field label="LinkedIn"><input type="url" name="linkedinUrl" placeholder="Enter LinkedIn profile address" value={formData.linkedinUrl ?? ''} onChange={handleChange} /></Field>
               </div>
             </div>
@@ -181,10 +190,10 @@ export const ProfileEditorPage: React.FC = () => {
                 <Field label="School" required><input required name="academic.schoolName" placeholder="Enter school name" value={formData.academic?.schoolName ?? ''} onChange={handleChange} /></Field>
                 <Field label="Year Level" required>
                   <select required name="academic.yearLevel" value={formData.academic?.yearLevel ?? ''} onChange={handleChange}>
-                    <option value="">Select year level</option><option value="Grade 11">Grade 11</option><option value="Grade 12">Grade 12</option><option value="1st Year">1st Year</option><option value="2nd Year">2nd Year</option><option value="3rd Year">3rd Year</option><option value="4th Year">4th Year</option>
+                    <option value="">Select year level</option><option value="Grade 11">Grade 11</option><option value="Grade 12">Grade 12</option><option value="First Year College">First Year College</option><option value="Second Year College">Second Year College</option><option value="Third Year College">Third Year College</option><option value="Fourth Year College">Fourth Year College</option>
                   </select>
                 </Field>
-                <Field label="Program" required><input required name="academic.program" placeholder="Enter program" value={formData.academic?.program ?? ''} onChange={handleChange} /></Field>
+                <Field label="Program / Strand" required><input required name="academic.program" placeholder="Enter program / strand" value={formData.academic?.program ?? ''} onChange={handleChange} /></Field>
               </div>
             </div>
           </section>
@@ -207,8 +216,8 @@ export const ProfileEditorPage: React.FC = () => {
               <div className={`${styles.fieldGrid} ${styles.preferenceTopGrid}`}>
                 <fieldset className={styles.choiceField}>
                   <legend>Internship Days Availability <span>*</span></legend>
-                  <div className={styles.radioGroup}>
-                    {SCHEDULES.map(item => <label key={item}><input required type="radio" name="internshipSchedule" checked={formData.preferences?.schedule?.[0] === item} onChange={() => selectSchedule(item)} />{item}</label>)}
+                  <div className={styles.dayOptions}>
+                    {AVAILABILITY_DAYS.map((day, index) => <label key={day}><input type="checkbox" aria-label={day} checked={formData.preferences?.schedule.includes(index) ?? false} onChange={() => toggleSchedule(index)} />{day.slice(0, 3)}</label>)}
                   </div>
                 </fieldset>
                 <Field label="Internship Start Date Availability" required><input required type="date" name="preferences.startDate" min={todayDateOnly()} title="The preferred internship start date cannot be in the past." value={formData.preferences?.startDate ?? ''} onChange={handleChange} /></Field>
@@ -217,10 +226,10 @@ export const ProfileEditorPage: React.FC = () => {
               <fieldset className={styles.choiceField}>
                 <legend>Preferred Field of Internship <span>*</span></legend>
                 <div className={styles.industriesGrid}>
-                  {INDUSTRIES.map(item => <label key={item}><input type="checkbox" checked={formData.preferences?.preferredIndustries?.includes(item) ?? false} onChange={() => togglePreference('preferredIndustries', item)} />{item}</label>)}
+                  {INDUSTRIES.map(item => <label key={item}><input type="checkbox" checked={formData.preferences?.preferredIndustries?.includes(item) ?? false} onChange={() => togglePreference(item)} />{item}</label>)}
                   <div className={styles.otherIndustry}>
                     <label>
-                      <input type="checkbox" checked={formData.preferences?.preferredIndustries?.includes('Other') ?? false} onChange={() => togglePreference('preferredIndustries', 'Other')} />
+                      <input type="checkbox" checked={formData.preferences?.preferredIndustries?.includes('Other') ?? false} onChange={() => togglePreference('Other')} />
                       Other
                     </label>
                     <input type="text" aria-label="Other preferred internship field" required={formData.preferences?.preferredIndustries?.includes('Other') ?? false} disabled={!(formData.preferences?.preferredIndustries?.includes('Other') ?? false)} name="preferences.otherPreferredField" placeholder="Please specify" value={formData.preferences?.otherPreferredField ?? ''} onChange={handleChange} />

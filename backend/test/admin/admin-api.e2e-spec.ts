@@ -174,7 +174,7 @@ describe('Admin Student APIs', () => {
         schoolName: 'Updated University',
         yearLevel: 'grade_12',
         requiredHours: 500,
-        availableDays: 'flexible',
+        availableDays: [1, 3, 5],
         preferredIndustries: [{ industryId: Number(industry[0].industry_id) }],
       })
       .expect(200);
@@ -183,6 +183,7 @@ describe('Admin Student APIs', () => {
       contactEmail: 'profile-updated@test.invalid',
       yearLevel: 'grade_12',
       requiredHours: 500,
+      availableDays: [1, 3, 5],
       accountEmail: student.email,
     });
     const account = await db.query(

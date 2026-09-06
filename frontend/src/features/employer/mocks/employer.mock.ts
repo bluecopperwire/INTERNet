@@ -41,7 +41,7 @@ export const MOCK_RECENT_APPLICANTS: Applicant[] = [
     school: 'Polytechnic University of the Philippines',
     preferredField: 'Information Technology',
     requiredHours: 200,
-    availabilityDays: 'Weekdays',
+    availabilityDays: 'Monday, Tuesday, Wednesday, Thursday, Friday',
     availabilityDate: 'August 20, 2026',
   },
   {
@@ -61,7 +61,7 @@ export const MOCK_RECENT_APPLICANTS: Applicant[] = [
     school: 'Quezon City University',
     preferredField: 'Human Resources',
     requiredHours: 150,
-    availabilityDays: 'Weekdays',
+    availabilityDays: 'Monday, Tuesday, Wednesday, Thursday, Friday',
     availabilityDate: 'August 18, 2026',
   },
   {
@@ -81,7 +81,7 @@ export const MOCK_RECENT_APPLICANTS: Applicant[] = [
     school: 'Polytechnic University of the Philippines',
     preferredField: 'UI/UX Design',
     requiredHours: 200,
-    availabilityDays: 'Flexible',
+    availabilityDays: 'Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday',
     availabilityDate: 'August 15, 2026',
   },
   {
@@ -101,7 +101,7 @@ export const MOCK_RECENT_APPLICANTS: Applicant[] = [
     school: 'Far Eastern University',
     preferredField: 'Quality Assurance',
     requiredHours: 200,
-    availabilityDays: 'Weekdays',
+    availabilityDays: 'Monday, Tuesday, Wednesday, Thursday, Friday',
     availabilityDate: 'August 16, 2026',
     rejectionRemark: 'The current opening requires experience with automated testing tools.',
   },

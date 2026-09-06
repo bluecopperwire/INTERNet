@@ -117,7 +117,7 @@ export const employerService = {
     const store = useEmployerStore.getState();
     await store.fetchDashboard();
     return (
-      store.summary || {
+      useEmployerStore.getState().summary || {
         companyName: 'Company',
         activeOpportunities: 0,
         totalApplicants: 0,
@@ -220,7 +220,7 @@ export const employerService = {
     const records: Applicant[] = [];
     let page = 1;
     do {
-      const result = await employerApiService.getReferrals({ view: 'review', page, limit: 100 });
+      const result = await employerApiService.getReferrals({ view: 'review', page, limit: 15 });
       records.push(...result.data.map(adaptEmployerReferral));
       if (page >= result.meta.totalPages) break;
       page++;
@@ -240,7 +240,7 @@ export const employerService = {
     const records: Applicant[] = [];
     let page = 1;
     do {
-      const result = await employerApiService.getReferrals({ view: 'history', page, limit: 100 });
+      const result = await employerApiService.getReferrals({ view: 'history', page, limit: 15 });
       records.push(...result.data.map(adaptEmployerReferral));
       if (page >= result.meta.totalPages) break;
       page++;
@@ -294,7 +294,7 @@ export const employerService = {
       const result = await employerApiService.getOpportunityReferrals(Number(opportunityId), {
         view: 'history',
         page,
-        limit: 100,
+        limit: 15,
       });
       records.push(...result.data.map(adaptEmployerReferral));
       totalPages = result.meta.totalPages;
@@ -332,12 +332,21 @@ export const employerService = {
     const assignmentId = Number(applicantId);
     let updated;
     if (updates.status === 'Completed') {
-      updated = await employerApiService.completeInternship(assignmentId);
+      updated = await employerApiService.completeInternship(
+        assignmentId,
+        updates.transitionRemark || '',
+      );
     } else if (updates.status === 'Cancelled') {
-      updated = await employerApiService.cancelInternship(assignmentId);
+      updated = await employerApiService.cancelInternship(
+        assignmentId,
+        updates.transitionRemark || '',
+      );
     } else {
       updated = await employerApiService.updateInternship(assignmentId, {
-        workingDays: updates.workingDays,
+        workingDays: updates.workingDays
+          ?.split(',')
+          .map((day) => ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(day.trim()))
+          .filter((day) => day >= 0),
         requiredHours: updates.requiredHours,
         startDate: updates.startDate,
         expectedEndDate: updates.expectedEndDate || null,
@@ -360,7 +369,7 @@ export const employerService = {
   },
 
   async createInternshipAssignment(referralId: number, payload: {
-    workingDays: string
+    workingDays: number[]
     requiredHours: number
     startDate: string
     expectedEndDate?: string | null

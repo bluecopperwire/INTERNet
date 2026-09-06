@@ -24,7 +24,7 @@ export function AuditLogsPage() {
   const [showFilters, setShowFilters] = useState(false)
 
   // Pagination State
-  const [itemsPerPage, setItemsPerPage] = useState(7)
+  const [itemsPerPage, setItemsPerPage] = useState(5)
   const [currentPage, setCurrentPage] = useState(1)
 
   useEffect(() => {
@@ -283,6 +283,7 @@ export function AuditLogsPage() {
                 setCurrentPage(1)
               }}
             >
+              <option value={5}>5</option>
               <option value={7}>7</option>
               <option value={10}>10</option>
               <option value={20}>20</option>

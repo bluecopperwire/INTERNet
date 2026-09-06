@@ -323,7 +323,7 @@ export class EmployerOpportunityService {
           );
           await runner.query(
             `UPDATE public.application
-             SET application_status = 'expired', updated_at = CURRENT_TIMESTAMP
+             SET application_status = 'expired', remark = NULL, updated_at = CURRENT_TIMESTAMP
              WHERE application_id = ANY($1::integer[])`,
             [activeReferralApplicationIds],
           );
@@ -332,7 +332,7 @@ export class EmployerOpportunityService {
           await runner.query(
             `UPDATE public.application
              SET application_status = 'expired',
-                 remark = 'The internship opportunity is no longer available.',
+                 remark = NULL,
                  updated_at = CURRENT_TIMESTAMP
              WHERE application_id = ANY($1::integer[])`,
             [noReferralIds],

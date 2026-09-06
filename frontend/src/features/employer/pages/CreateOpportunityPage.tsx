@@ -96,15 +96,15 @@ export function CreateOpportunityPage() {
 
         <div className={styles.formGrid}>
           <div className={styles.field}>
-            <label>Position Title *</label>
+            <label>Position Title <span className={styles.requiredMark}>*</span></label>
             <input type="text" name="title" value={formData.title || ''} onChange={handleChange} placeholder="e.g. IT Intern" />
           </div>
           <div className={styles.field}>
-            <label>Department *</label>
+            <label>Department <span className={styles.requiredMark}>*</span></label>
             <input type="text" name="department" value={formData.department || ''} onChange={handleChange} placeholder="e.g. IT Department" />
           </div>
           <div className={styles.field}>
-            <label>Work Arrangement *</label>
+            <label>Work Arrangement <span className={styles.requiredMark}>*</span></label>
             <select name="workArrangement" value={formData.workArrangement || 'On-site'} onChange={handleChange}>
               <option value="On-site">On-site</option>
               <option value="Remote">Remote</option>
@@ -112,7 +112,7 @@ export function CreateOpportunityPage() {
             </select>
           </div>
           <div className={styles.field}>
-            <label>Internship Duration *</label>
+            <label>Internship Duration <span className={styles.requiredMark}>*</span></label>
             <input
               type="text"
               name="duration"
@@ -127,7 +127,7 @@ export function CreateOpportunityPage() {
             />
           </div>
           <div className={styles.field}>
-            <label>Number of Slots *</label>
+            <label>Number of Slots <span className={styles.requiredMark}>*</span></label>
             <input type="number" name="slots" value={formData.slots || ''} onChange={handleChange} placeholder="Enter number of slots" />
           </div>
           <div className={styles.field}>
@@ -135,7 +135,7 @@ export function CreateOpportunityPage() {
             <input type="text" name="allowance" value={formData.allowance || ''} onChange={handleChange} placeholder="e.g. PHP 500 per day or N/A" />
           </div>
           <div className={`${styles.field} ${styles.fullWidth}`}>
-            <label>Job Description *</label>
+            <label>Job Description <span className={styles.requiredMark}>*</span></label>
             <textarea name="jobDescription" value={formData.jobDescription || ''} onChange={handleChange} placeholder="Describe the role and responsibilities..." rows={6} />
           </div>
           <div className={`${styles.field} ${styles.fullWidth}`}>

@@ -21,6 +21,13 @@
   margin: 0 auto;
 }
 
+.wrap > div,
+.wrap > section {
+  margin-bottom: 20px;
+}
+
+.detailsToolbar { justify-content: flex-end; }
+
 .backButton {
   display: inline-flex;
   align-items: center;
@@ -147,13 +154,9 @@
   font-weight: 600;
 }
 
-.ontime,
-.complete { color: #16876c; background: #eaf9f5; }
-.late { color: #a56600; background: #fff4e6; }
+.present { color: #16876c; background: #eaf9f5; }
 .absent,
 .incomplete { color: #e25555; background: #fff0ef; }
-.undertime { color: #a56600; background: #fff4e6; }
-.overtime { color: #6557a8; background: #f0eef9; }
 
 .noRecords {
   margin: 0;

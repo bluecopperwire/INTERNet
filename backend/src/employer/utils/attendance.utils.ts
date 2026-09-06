@@ -1,11 +1,8 @@
 import { timeToMinutes } from './time.utils';
 
-export type RenderedHoursStatus =
-  'incomplete' | 'undertime' | 'complete' | 'overtime';
-
 export interface DerivedHours {
+  renderedMinutes: number;
   renderedHours: number;
-  renderedHoursStatus: RenderedHoursStatus;
 }
 
 export function roundHours(value: number): number {
@@ -16,39 +13,36 @@ export function rawRenderedHours(
   timeIn: string,
   timeOut: string | null,
 ): number {
+  return rawRenderedMinutes(timeIn, timeOut) / 60;
+}
+
+export function rawRenderedMinutes(
+  timeIn: string,
+  timeOut: string | null,
+): number {
   if (!timeOut) return 0;
   const grossMinutes = Math.max(
     timeToMinutes(timeOut) - timeToMinutes(timeIn),
     0,
   );
-  return Math.max(grossMinutes - 60, 0) / 60;
+  return Math.max(Math.round(grossMinutes) - 60, 0);
 }
 
 export function deriveRenderedHours(
-  timeIn: string,
+  timeIn: string | null,
   timeOut: string | null,
-  startShift: string,
-  endShift: string,
 ): DerivedHours {
-  if (!timeOut) {
-    return { renderedHours: 0, renderedHoursStatus: 'incomplete' };
+  if (!timeIn || !timeOut) {
+    return {
+      renderedMinutes: 0,
+      renderedHours: 0,
+    };
   }
 
-  const renderedMinutes = rawRenderedHours(timeIn, timeOut) * 60;
-  const expectedMinutes = Math.max(
-    timeToMinutes(endShift) - timeToMinutes(startShift) - 60,
-    0,
-  );
-  const renderedHoursStatus: RenderedHoursStatus =
-    renderedMinutes < expectedMinutes
-      ? 'undertime'
-      : renderedMinutes > expectedMinutes
-        ? 'overtime'
-        : 'complete';
-
+  const renderedMinutes = rawRenderedMinutes(timeIn, timeOut);
   return {
+    renderedMinutes,
     renderedHours: roundHours(renderedMinutes / 60),
-    renderedHoursStatus,
   };
 }
 
@@ -71,6 +65,13 @@ export function totalRenderedHours(
       0,
     ),
   );
+}
+
+export function remainingMinutes(
+  requiredMinutes: number,
+  renderedMinutes: number,
+): number {
+  return Math.max(requiredMinutes - renderedMinutes, 0);
 }
 
 export function remainingHours(

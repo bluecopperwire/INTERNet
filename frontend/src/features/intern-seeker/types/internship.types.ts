@@ -3,13 +3,14 @@ export interface InternshipOpportunity {
   companyId: string
   companyName: string
   companyLogoUrl?: string
+  companyIndustry: string
+  companyDescription: string
   position: string
   location: string
   workSetup: 'On-site' | 'Remote' | 'Hybrid'
   postedAt: string
   tags: string[]
   isApplied: boolean
-  isExclusive: boolean
   details: OpportunityDetails
 }
 
@@ -27,8 +28,8 @@ export interface OpportunityDetails {
 export interface PartnerCompany {
   id: string
   name: string
-  summary: string
-  description: string
+  industry: string
+  about: string
   tags: string[]
   logoUrl?: string
 }
@@ -68,7 +69,7 @@ export interface UserProfile {
     willingToAssignOutside: boolean | null
     preferredIndustries: string[]
     otherPreferredField?: string
-    schedule: string[]
+    schedule: number[]
     startDate: string
     hostOrgType: string
   }

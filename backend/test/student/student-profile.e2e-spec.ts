@@ -12,7 +12,7 @@ describe('Student signup and internship preference profile flow (e2e)', () => {
   const auth = () => ({ Authorization: `Bearer ${token}` });
   const signupPayload = {
     email: 'student-profile-e2e@example.test',
-    password: 'StudentPassword123',
+    password: 'StudentPassword123!',
     firstName: 'Ana',
     lastName: 'Student',
     sex: 'female',
@@ -44,7 +44,7 @@ describe('Student signup and internship preference profile flow (e2e)', () => {
   };
   const completePreference = {
     requiredHours: 400,
-    availableDays: 'weekends',
+    availableDays: [0, 2, 4, 6],
     allowsOutsidePreferredField: false,
     startDate: '2099-01-01',
     preferredCompanyType: 'private',
@@ -117,7 +117,7 @@ describe('Student signup and internship preference profile flow (e2e)', () => {
         ...completeProfile,
         internshipPreference: {
           ...completePreference,
-          availableDays: '',
+          availableDays: [],
           allowsOutsidePreferredField: null,
         },
         preferredIndustries: [{ industryId: standardIndustryId }],
@@ -138,7 +138,7 @@ describe('Student signup and internship preference profile flow (e2e)', () => {
 
     expect(saved.body.internshipPreference).toMatchObject({
       required_hours: 400,
-      available_days: 'weekends',
+      available_days: [0, 2, 4, 6],
       allows_outside_preferred_field: false,
       preferred_company_type: 'private',
     });

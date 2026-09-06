@@ -203,9 +203,11 @@ function OpportunityCard({ opportunity, onSelect }: { opportunity: InternshipOpp
             companyInitials
           )}
         </span>
-        <span>{opportunity.companyName}</span>
+        <span className={styles.cardCompanyName} title={opportunity.companyName}>
+          {opportunity.companyName}
+        </span>
       </div>
-      <h3>{opportunity.position}</h3>
+      <h3 title={opportunity.position}>{opportunity.position}</h3>
       <p className={styles.cardLocation}>{opportunity.location}</p>
       <div className={styles.cardFooter}>
         <div className={styles.tags}><span>{opportunity.workSetup}</span></div>
@@ -223,15 +225,20 @@ function CompanyCard({ company, onSelect }: { company: PartnerCompany; onSelect:
     .map(part => part[0])
     .join('')
     .toUpperCase()
+  const companyNameClass = company.name.length > 42
+    ? styles.veryLongCompanyName
+    : company.name.length > 28
+      ? styles.longCompanyName
+      : ''
 
   return (
     <button className={styles.companyCard} type="button" onClick={() => onSelect(company)}>
       <span className={styles.companyLogoPlaceholder} aria-hidden="true">
         {company.logoUrl ? <img src={company.logoUrl} alt="" /> : companyInitials}
       </span>
-      <h3>{company.name}</h3>
-      <p className={styles.companySummary}>{company.summary}</p>
-      <p className={styles.companyDescription}>{company.description}</p>
+      <h3 className={companyNameClass}>{company.name}</h3>
+      <p className={styles.companyIndustry}>{company.industry}</p>
+      <p className={styles.companyDescription}>{company.about}</p>
     </button>
   )
 }

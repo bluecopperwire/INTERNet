@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Calendar, Check, Download, FileText, Mail, MapPin, Phone, Trash2, User, X } from 'lucide-react'
+import { ArrowLeft, Calendar, Check, Download, FileText, Mail, MapPin, Phone, User, X } from 'lucide-react'
 import { employerService } from '../services/employer.service'
 import type { Applicant } from '../types/employer.types'
 import { RejectApplicantModal } from '../components/RejectApplicantModal'
@@ -11,6 +11,7 @@ import { getErrorMessage } from '../../../utils/error-message'
 import { ConfirmDeleteModal } from '../../../components/feedback/ConfirmDeleteModal'
 import { getEmployerReferralDetail } from '../services/employer-review-flow'
 import { isTerminalReferral } from '../../workflow/status-mappings'
+import { formatYearLevel } from '../../../utils/year-level'
 
 export function ReviewApplicantPage({ readOnly = false }: { readOnly?: boolean }) {
   const { id } = useParams<{ id: string }>()
@@ -123,7 +124,7 @@ export function ReviewApplicantPage({ readOnly = false }: { readOnly?: boolean }
   const canMakeInitialDecision = applicant.referralStatus === 'under_review' && applicant.companyResponse === 'pending'
   const canUpdateInterviewDecision = applicant.referralStatus === 'under_review' && applicant.companyResponse === 'for_interview'
   const canDeleteHistoryReferral = readOnly && isTerminalReferral(applicant.referralStatus)
-  const hasWorkflowActions = (!readOnly && (canMakeInitialDecision || canUpdateInterviewDecision)) || canDeleteHistoryReferral
+  const hasWorkflowActions = !readOnly && (canMakeInitialDecision || canUpdateInterviewDecision)
 
   return (
     <main className={styles.pageContainer}>
@@ -173,7 +174,7 @@ export function ReviewApplicantPage({ readOnly = false }: { readOnly?: boolean }
               <h2 className={styles.sectionTitle}><span><User size={18} /></span>Application Information</h2>
               <div className={styles.infoList}>
                 {[
-                  ['Full Name', applicant.name], ['Strand / Program', applicant.course], ['Year Level', applicant.yearLevel],
+                  ['Full Name', applicant.name], ['Strand / Program', applicant.course], ['Year Level', formatYearLevel(applicant.yearLevel)],
                   ['School', applicant.school],
                 ].map(([label, value]) => <div className={styles.infoRow} key={label}><span>{label}</span><strong>{value}</strong></div>)}
               </div>
@@ -264,13 +265,24 @@ export function ReviewApplicantPage({ readOnly = false }: { readOnly?: boolean }
 
         {hasWorkflowActions && (
           <footer className={styles.actionBar}>
-            {(canMakeInitialDecision || canUpdateInterviewDecision) && <button className={styles.actionGreen} disabled={isSaving} onClick={() => updateStatus('Accepted')}><Check size={17} />Accept Referral</button>}
             {(canMakeInitialDecision || canUpdateInterviewDecision) && <button className={styles.actionBlue} disabled={isSaving} onClick={() => setShowScheduleInterview(true)}><Calendar size={17} />{canUpdateInterviewDecision ? 'Reschedule Interview' : 'Schedule Interview'}</button>}
             {(canMakeInitialDecision || canUpdateInterviewDecision) && <button className={`${styles.actionRed} ${styles.workflowAction}`} disabled={isSaving} onClick={() => setShowRejectModal(true)}><X size={17} />Reject Referral</button>}
-            {canDeleteHistoryReferral && <button className={styles.actionRed} disabled={isSaving} onClick={() => setShowDeleteModal(true)}><Trash2 size={17} />Delete</button>}
+            {(canMakeInitialDecision || canUpdateInterviewDecision) && <button className={styles.actionGreen} disabled={isSaving} onClick={() => updateStatus('Accepted')}><Check size={17} />Accept Referral</button>}
           </footer>
         )}
       </section>
+
+      {canDeleteHistoryReferral && (
+        <div className={styles.historyActions}>
+          <button
+            className={`${styles.historyActionButton} ${styles.historyDeleteAction}`}
+            disabled={isSaving}
+            onClick={() => setShowDeleteModal(true)}
+          >
+            Delete
+          </button>
+        </div>
+      )}
 
       {showScheduleInterview && (
         <ScheduleInterviewModal
