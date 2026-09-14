@@ -1,13 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { LockKeyhole, ShieldCheck } from 'lucide-react'
-import { EmployerHero } from '../components/EmployerHero'
-import styles from './EmployerSettingsPage.module.css'
+import { EmployerHero } from '../../employer/components/EmployerHero'
+import styles from '../../employer/pages/EmployerSettingsPage.module.css'
 import { authService } from '../../../services/auth.service'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
 import { getPasswordError, PASSWORD_REQUIREMENTS } from '../../../utils/input-validation'
 
-export function EmployerSettingsPage() {
+export function StudentSettingsPage() {
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -47,7 +47,7 @@ export function EmployerSettingsPage() {
         <section className={styles.settingsSection}>
           <header className={styles.sectionHeader}>
             <div className={styles.sectionIcon}><LockKeyhole size={21} aria-hidden="true" /></div>
-            <div><h2>Account Security</h2><p>Use a strong password to keep your company account secure.</p></div>
+            <div><h2>Account Security</h2><p>Use a strong password to keep your student account secure.</p></div>
           </header>
           <form className={styles.passwordForm} onSubmit={updatePassword}>
             <div className={styles.passwordFields}>
@@ -68,4 +68,4 @@ export function EmployerSettingsPage() {
   )
 }
 
-export default EmployerSettingsPage
+export default StudentSettingsPage

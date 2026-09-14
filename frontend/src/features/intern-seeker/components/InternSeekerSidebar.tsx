@@ -5,6 +5,7 @@ import {
   Grid2X2,
   LogOut,
   Menu,
+  Settings,
   ShieldCheck,
   UserRound,
 } from 'lucide-react'
@@ -24,6 +25,7 @@ const NAVIGATION = [
   { label: 'User Profile', path: '/intern-seeker/profile', icon: UserRound },
   { label: 'DigiCV', path: '/intern-seeker/digicv', icon: ShieldCheck },
   { label: 'My Tracking', path: '/intern-seeker/requirements', icon: BriefcaseBusiness },
+  { label: 'Settings', path: '/intern-seeker/settings', icon: Settings },
 ]
 
 function InternSeekerSidebar({ isOpen, onClose }: InternSeekerSidebarProps) {

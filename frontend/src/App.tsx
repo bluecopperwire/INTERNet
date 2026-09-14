@@ -20,6 +20,7 @@ import InternshipHistoryPage from './features/intern-seeker/pages/InternshipHist
 import InternshipHistoryDetailsPage from './features/intern-seeker/pages/InternshipHistoryDetailsPage'
 import AttendanceHistoryPage from './features/intern-seeker/pages/AttendanceHistoryPage'
 import TrackingLayout from './features/intern-seeker/components/TrackingLayout'
+import StudentSettingsPage from './features/intern-seeker/pages/StudentSettingsPage'
 
 // QCPESO
 import QCPesoLayout from './features/qcpeso/components/QCPesoLayout'
@@ -95,6 +96,7 @@ function App() {
           <Route path="profile" element={<DashboardPage />} />
           <Route path="profile/edit" element={<ProfileEditorPage />} />
           <Route path="digicv" element={<DigiCVPage />} />
+          <Route path="settings" element={<StudentSettingsPage />} />
           <Route path="internship-details" element={<Navigate to="/intern-seeker/internship" replace />} />
           <Route path="attendance-history/:assignmentId" element={<AttendanceHistoryPage />} />
           <Route path="internship-history/:assignmentId" element={<InternshipHistoryDetailsPage />} />
