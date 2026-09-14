@@ -1,7 +1,8 @@
-import { ArrowLeft, ChevronLeft, ChevronRight, Eye, Search } from 'lucide-react'
+import { ArrowLeft, Eye, Search } from 'lucide-react'
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { EmployerHero } from '../components/EmployerHero'
+import { TablePagination } from '../../../components/TablePagination'
 import { employerService } from '../services/employer.service'
 import type { InternshipAssignment } from '../types/employer.types'
 import styles from './InternshipWorkflowPages.module.css'
@@ -27,7 +28,6 @@ export function CreateInternshipAssignmentPage() {
       !query || `${assignment.studentName} ${assignment.jobTitle}`.toLowerCase().includes(query)
     ))
   }, [assignments, search])
-  const totalPages = Math.max(1, Math.ceil(filteredAssignments.length / perPage))
   const visibleAssignments = filteredAssignments.slice((page - 1) * perPage, page * perPage)
   const resetPage = () => setPage(1)
 
@@ -65,18 +65,7 @@ export function CreateInternshipAssignmentPage() {
           {visibleAssignments.length === 0 && <p className={styles.assignmentEmpty}>No accepted offers match the selected filters.</p>}
         </div>
 
-        <div className={styles.assignmentPagination}>
-          <div className={styles.assignmentPageSize}>
-            <span>View</span>
-            <span className={styles.pageSizeValue}><select value={perPage} onChange={(event) => { setPerPage(Number(event.target.value)); resetPage() }} aria-label="Students per page"><option value={5}>5</option><option value={10}>10</option><option value={15}>15</option></select></span>
-            <span>Students per page</span>
-          </div>
-          <div className={styles.paginationButtons}>
-            <button type="button" disabled={page === 1} onClick={() => setPage(current => current - 1)} aria-label="Previous page"><ChevronLeft size={18} /></button>
-            <button type="button" className={styles.currentPage}>{page}</button>
-            <button type="button" disabled={page === totalPages} onClick={() => setPage(current => current + 1)} aria-label="Next page"><ChevronRight size={18} /></button>
-          </div>
-        </div>
+        <TablePagination page={page} pageSize={perPage} totalRecords={filteredAssignments.length} onPageChange={setPage} onPageSizeChange={(value) => { setPerPage(value); resetPage() }} />
       </section>
     </main>
   )

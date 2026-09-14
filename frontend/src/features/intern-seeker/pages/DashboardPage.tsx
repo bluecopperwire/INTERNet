@@ -15,6 +15,7 @@ import { useToastStore } from '../../../stores/useToastStore'
 import { formatPreferredIndustries } from '../../../utils/preferred-industry-display'
 import { formatAvailabilityDays } from '../../../utils/availability-days'
 import { formatYearLevel } from '../../../utils/year-level'
+import { districtAddressPart } from '../../../utils/district'
 
 const displayValue = (value: string | number | null | undefined) =>
   value || 'Not provided'
@@ -41,7 +42,7 @@ export const DashboardPage: React.FC = () => {
   const fullAddress = [
     profile.address.street,
     profile.address.barangay,
-    profile.address.district && `District ${profile.address.district}`,
+    districtAddressPart(profile.address.district),
     profile.address.city,
   ]
     .filter(Boolean)
@@ -152,7 +153,7 @@ export const DashboardPage: React.FC = () => {
           title="Contact Information"
           items={[
             ['Email Address', profile.email],
-            ['Mobile Number', profile.contactNumber],
+            ['Contact Number', profile.contactNumber],
             ['LinkedIn', profile.linkedinUrl],
           ]}
         />

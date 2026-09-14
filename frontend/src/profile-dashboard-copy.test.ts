@@ -13,7 +13,7 @@ describe('profile and dashboard labels', () => {
 
     expect(profile).toContain("['Program / Strand', profile.academic.program]")
     expect(editor).toContain('label="Program / Strand"')
-    expect(editor).toContain('placeholder="Enter program / strand"')
+    expect(editor).toContain('placeholder="e.g., BS Information Technology"')
   })
 
   it('uses the freshly loaded company name in the dashboard greeting', async () => {

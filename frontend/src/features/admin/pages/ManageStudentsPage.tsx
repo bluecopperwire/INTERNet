@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronLeft, ChevronRight, Eye, Filter, Search } from 'lucide-react'
+import { Eye, Filter, Search } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { PageHero } from '../../../components/PageHero'
+import { TablePagination } from '../../../components/TablePagination'
 import peopleIcon from '../../../assets/people.svg'
 import { adminService } from '../services/admin.service'
 import type { StudentRecord } from '../types/admin.types'
@@ -22,7 +23,6 @@ export function ManageStudentsPage() {
     const matchesQuery = !term || student.fullName.toLowerCase().includes(term) || student.email.toLowerCase().includes(term)
     return matchesQuery && (status === 'All Statuses' || student.status === status)
   }), [students, query, status])
-  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / pageSize))
   const currentStudents = filteredStudents.slice((page - 1) * pageSize, page * pageSize)
 
   const statusClass = (value: StudentRecord['status']) => value === 'Active' ? styles.active : value === 'Deactivated' ? styles.deactivated : styles.inactive
@@ -54,7 +54,7 @@ export function ManageStudentsPage() {
           {!currentStudents.length && <tr><td className={styles.empty} colSpan={5}>No students match the selected filters.</td></tr>}
         </tbody></table></div>
       </section>
-      <nav className={styles.pagination} aria-label="Student pages"><label className={styles.pageSizeControl}><span>View</span><select value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); setPage(1) }}><option value={5}>5</option><option value={7}>7</option><option value={14}>14</option><option value={21}>21</option></select><span>Students per page</span></label><div><button type="button" aria-label="Previous page" disabled={page === 1} onClick={() => setPage((current) => Math.max(1, current - 1))}><ChevronLeft size={18} /></button><span className={styles.currentPage}>{page}</span><button type="button" aria-label="Next page" disabled={page === totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))}><ChevronRight size={18} /></button></div></nav>
+      <TablePagination page={page} pageSize={pageSize} totalRecords={filteredStudents.length} onPageChange={setPage} onPageSizeChange={(value) => { setPageSize(value); setPage(1) }} />
     </section>
   </main>
 }

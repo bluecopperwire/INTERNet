@@ -12,7 +12,7 @@ const validSignup = {
   contactNumber: '09123456789',
   addressLine: '1 Test Street',
   addressBarangay: 'Central',
-  addressDistrict: '1',
+  addressDistrict: 'District 1',
   addressCity: 'Quezon City',
   inquiryMethod: 'online',
 };
@@ -23,6 +23,21 @@ describe('SignupDto', () => {
       const dto = plainToInstance(SignupDto, { ...validSignup, inquiryMethod });
       await expect(validate(dto)).resolves.toHaveLength(0);
     }
+  });
+
+  it.each(['District 1', 'District 6', 'N/A'])(
+    'accepts the supported district value: %s',
+    async (addressDistrict) => {
+      const dto = plainToInstance(SignupDto, { ...validSignup, addressDistrict });
+      await expect(validate(dto)).resolves.toHaveLength(0);
+    },
+  );
+
+  it('rejects a district outside the standardized choices', async () => {
+    const errors = await validate(
+      plainToInstance(SignupDto, { ...validSignup, addressDistrict: 'District 7' }),
+    );
+    expect(errors.some((error) => error.property === 'addressDistrict')).toBe(true);
   });
 
   it('rejects unsupported sex and inquiry values', async () => {

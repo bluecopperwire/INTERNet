@@ -1,5 +1,6 @@
 import { publicUploadUrl } from '../../../utils/public-upload-url';
 import { API_BASE_URL } from '../../../services/api';
+import { normalizeDistrictOption } from '../../../utils/district';
 import type {
   StudentProfileResponse,
   OpportunitySummaryDto,
@@ -145,7 +146,7 @@ export function adaptStudentProfile(dto: StudentProfileResponse): UserProfile {
     address: {
       street: s.address_line || '',
       barangay: s.address_barangay || '',
-      district: s.address_district || 'N/A',
+      district: normalizeDistrictOption(s.address_district),
       city: s.address_city || '',
     },
     inquiryVia: s.inquiry_method || 'online',
@@ -242,7 +243,7 @@ export function adaptStudentProfileToUpdateDto(
     linkedinUrl: profile.linkedinUrl || undefined,
     addressLine: profile.address?.street || '',
     addressBarangay: profile.address?.barangay || '',
-    addressDistrict: profile.address?.district || 'N/A',
+    addressDistrict: normalizeDistrictOption(profile.address?.district) || 'N/A',
     addressCity: profile.address?.city || '',
     inquiryMethod,
     academic: {

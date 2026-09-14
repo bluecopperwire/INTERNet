@@ -4,6 +4,7 @@ import {
   adaptEmployerOpportunity,
   adaptEmployerReferral,
   adaptEmployerInternship,
+  mapCompanyProfileUpdateRequest,
 } from '../adapters/employer.adapters';
 import type {
   Opportunity,
@@ -151,7 +152,7 @@ export const employerService = {
     updated: Partial<CompanyProfile>,
   ): Promise<CompanyProfile> {
     const store = useEmployerStore.getState();
-    await store.updateProfile(updated);
+    await store.updateProfile(mapCompanyProfileUpdateRequest(updated));
     return useEmployerStore.getState().profile!;
   },
 

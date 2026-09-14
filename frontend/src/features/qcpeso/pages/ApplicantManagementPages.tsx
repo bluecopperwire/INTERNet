@@ -29,6 +29,7 @@ import detailStyles from '../../employer/pages/ReviewApplicantPage.module.css'
 import { API_BASE_URL } from '../../../services/api'
 import { getApplicantReviewDetail, openApplicantForReview } from '../services/qcpeso-review-flow'
 import { ConfirmDeleteModal } from '../../../components/feedback/ConfirmDeleteModal'
+import { TablePagination } from '../../../components/TablePagination'
 import {
   APPLICATION_CLOSED_STATUSES,
   APPLICATION_HISTORY_STATUSES,
@@ -119,38 +120,14 @@ function detailStatusClass(status: string) {
   return ''
 }
 
-function Pagination({ itemName, page, totalPages, perPage, onPageChange, onPerPageChange }: {
-  itemName: string
+function Pagination({ page, totalRecords, perPage, onPageChange, onPerPageChange }: {
   page: number
-  totalPages: number
+  totalRecords: number
   perPage: number
   onPageChange: (page: number) => void
   onPerPageChange: (perPage: number) => void
 }) {
-  return (
-    <div className={tableStyles.paginationRow}>
-      <div className={tableStyles.leftControls}>
-        <span className={tableStyles.viewLabel}>View</span>
-        <div className={tableStyles.viewSelectBox}>
-          <select className={tableStyles.viewSelect} value={perPage} onChange={(event) => onPerPageChange(Number(event.target.value))}>
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={15}>15</option>
-          </select>
-        </div>
-        <span className={tableStyles.perPageLabel}>{itemName} per page</span>
-      </div>
-      <div className={tableStyles.pagination}>
-        <button className={tableStyles.pageBtn} disabled={page === 1} onClick={() => onPageChange(page - 1)}>
-          ‹
-        </button>
-        <button className={`${tableStyles.pageBtn} ${tableStyles.active}`}>{page}</button>
-        <button className={tableStyles.pageBtn} disabled={page === totalPages} onClick={() => onPageChange(page + 1)}>
-          ›
-        </button>
-      </div>
-    </div>
-  )
+  return <TablePagination page={page} pageSize={perPage} totalRecords={totalRecords} onPageChange={onPageChange} onPageSizeChange={onPerPageChange} />
 }
 
 export function ReviewApplicantsPage() {
@@ -182,7 +159,6 @@ export function ReviewApplicantsPage() {
       onMutationError: (error) => toast.error(getErrorMessage(error, 'Failed to start applicant review.')),
     })
   }
-  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
   const displayed = filtered.slice((page - 1) * perPage, page * perPage)
 
   return (
@@ -241,7 +217,7 @@ export function ReviewApplicantsPage() {
             </table>
           </div>
         </div>
-        <Pagination itemName="Students" page={page} totalPages={totalPages} perPage={perPage} onPageChange={setPage} onPerPageChange={(value) => { setPerPage(value); setPage(1) }} />
+        <Pagination page={page} totalRecords={filtered.length} perPage={perPage} onPageChange={setPage} onPerPageChange={(value) => { setPerPage(value); setPage(1) }} />
       </section>
     </main>
   )
@@ -262,13 +238,27 @@ export function ApplicationsHistoryPage() {
     qcpesoService.getApplicationHistory().then(setRecords)
   }, [])
 
+  const historySummary = useMemo(() => ({
+    total: records.length,
+    active: records.filter((record) =>
+      APPLICATION_ONGOING_STATUSES.includes(
+        record.historyStatus ?? 'For Review (QC PESO)',
+      ),
+    ).length,
+    closed: records.filter((record) =>
+      APPLICATION_CLOSED_STATUSES.includes(
+        record.historyStatus ?? 'For Review (QC PESO)',
+      ),
+    ).length,
+  }), [records])
+
   const filtered = useMemo(
     () =>
       records.filter(
         (record) =>
           (record.studentName + record.company + record.jobTitle + record.program).toLowerCase().includes(search.toLowerCase()) &&
           (response === 'All' ||
-            (response === 'Ongoing' && APPLICATION_ONGOING_STATUSES.includes(record.historyStatus ?? 'For Review (QC PESO)')) ||
+            (response === 'Active' && APPLICATION_ONGOING_STATUSES.includes(record.historyStatus ?? 'For Review (QC PESO)')) ||
             (response === 'Closed' && APPLICATION_CLOSED_STATUSES.includes(record.historyStatus ?? 'For Review (QC PESO)')) ||
             record.historyStatus === response),
       ),
@@ -289,13 +279,25 @@ export function ApplicationsHistoryPage() {
       setIsDeleting(false)
     }
   }
-  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
   const displayed = filtered.slice((page - 1) * perPage, page * perPage)
 
   return (
     <main className={tableStyles.pageContainer}>
       <QCPesoHero title="Applications History" subtitle="View the complete lifecycle of every student application." />
       <section className={tableStyles.mainContent}>
+        <div className={tableStyles.summaryGrid}>
+          {[
+            ['Total Applications', historySummary.total],
+            ['Active Applications', historySummary.active],
+            ['Closed Applications', historySummary.closed],
+          ].map(([label, value]) => (
+            <article className={tableStyles.summaryCard} key={label}>
+              <h2>{label}</h2>
+              <p>{String(value).padStart(2, '0')}</p>
+            </article>
+          ))}
+        </div>
+
         <div className={tableStyles.toolbar}>
           <label className={tableStyles.searchBox}>
             <Search size={18} />
@@ -309,7 +311,7 @@ export function ApplicationsHistoryPage() {
             <SlidersHorizontal size={18} />
             <select value={response} onChange={(event) => { setResponse(event.target.value); setPage(1) }}>
               <option value="All">All</option>
-              <option>Ongoing</option>
+              <option>Active</option>
               <option>Closed</option>
               {APPLICATION_HISTORY_STATUSES.map((value) => <option key={value}>{value}</option>)}
             </select>
@@ -359,7 +361,7 @@ export function ApplicationsHistoryPage() {
             </table>
           </div>
         </div>
-        <Pagination itemName="Students" page={page} totalPages={totalPages} perPage={perPage} onPageChange={setPage} onPerPageChange={(value) => { setPerPage(value); setPage(1) }} />
+        <Pagination page={page} totalRecords={filtered.length} perPage={perPage} onPageChange={setPage} onPerPageChange={(value) => { setPerPage(value); setPage(1) }} />
       </section>
       {deleteTarget && <ConfirmDeleteModal subject={`${deleteTarget.studentName}'s application`} isDeleting={isDeleting} onClose={() => setDeleteTarget(null)} onConfirm={() => void handleDelete()} />}
     </main>

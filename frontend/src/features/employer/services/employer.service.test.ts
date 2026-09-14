@@ -6,6 +6,7 @@ import {
   isOpportunityDeadlineExpired,
 } from './employer.service';
 import { todayDateOnly } from '../../../utils/date-only';
+import { mapCompanyProfileUpdateRequest } from '../adapters/employer.adapters';
 
 describe('assignment candidate mapping', () => {
   it.each([
@@ -80,5 +81,52 @@ describe('interview schedule payload mapping', () => {
       interviewDate: '2026-09-21', interviewTime: '11:00', interviewMode: 'physical',
       onlineMeetingUrl: null, physicalLocation: 'Room 3', remark: null,
     });
+  });
+});
+
+describe('company profile update payload mapping', () => {
+  it('uses the backend field names and omits display-only profile data', () => {
+    const payload = mapCompanyProfileUpdateRequest({
+      company_name: 'INTERNet Labs',
+      company_type: 'Private',
+      industry: 'Information Technology',
+      description: 'Technology company',
+      website_url: '',
+      year_established: '2020',
+      company_size: '25',
+      address_line: '100 Main Street',
+      address_barangay: 'Central',
+      address_district: 'N/A',
+      address_city: 'Quezon City',
+      contact_email: 'contact@internet.test',
+      contact_number: '09123456789',
+      contact_person_first_name: 'Jane',
+      contact_person_middle_name: '',
+      contact_person_last_name: 'Doe',
+      contact_person_extension_name: '',
+      logoUrl: '/uploads/company-logo.png',
+    });
+
+    expect(payload).toEqual({
+      companyName: 'INTERNet Labs',
+      companyType: 'private',
+      industryName: 'Information Technology',
+      description: 'Technology company',
+      websiteUrl: null,
+      yearEstablished: 2020,
+      companySize: 25,
+      addressLine: '100 Main Street',
+      addressBarangay: 'Central',
+      addressDistrict: 'N/A',
+      addressCity: 'Quezon City',
+      contactEmail: 'contact@internet.test',
+      contactNumber: '09123456789',
+      contactPersonFirstName: 'Jane',
+      contactPersonMiddleName: null,
+      contactPersonLastName: 'Doe',
+      contactPersonExtensionName: null,
+    });
+    expect(payload).not.toHaveProperty('logoUrl');
+    expect(payload).not.toHaveProperty('company_name');
   });
 });

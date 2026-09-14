@@ -2,6 +2,7 @@ import { publicUploadUrl } from '../../../utils/public-upload-url';
 import { formatTableDate, toDateOnly } from '../../../utils/date-only';
 import { formatAvailabilityDays } from '../../../utils/availability-days';
 import { formatYearLevel } from '../../../utils/year-level';
+import { normalizeDistrictOption } from '../../../utils/district';
 import type {
   EmployerDashboardMetricsDto,
   EmployerOpportunityDto,
@@ -9,6 +10,8 @@ import type {
   EmployerAttendanceItemDto,
   EmployerInternshipListItemDto,
   EmployerInternshipDetailDto,
+  EmployerProfileDto,
+  UpdateEmployerProfileRequest,
 } from '../../../types/api';
 import type {
   EmployerDashboardSummary,
@@ -207,20 +210,20 @@ export function adaptEmployerInternship(
   };
 }
 
-export function adaptCompanyProfile(dto: any): CompanyProfile {
+export function adaptCompanyProfile(dto: EmployerProfileDto): CompanyProfile {
   const logoUrl = publicUploadUrl(dto.logoFilePath, dto.updatedAt);
 
   return {
     company_name: dto.companyName || '',
     company_type: dto.companyType === 'government' ? 'Government' : 'Private',
-    industry: String(dto.industryId || ''),
+    industry: dto.industryName || '',
     description: dto.description || '',
     website_url: dto.websiteUrl || null,
     year_established: dto.yearEstablished ? String(dto.yearEstablished) : null,
     company_size: dto.companySize ? String(dto.companySize) : null,
     address_line: dto.addressLine || '',
     address_barangay: dto.addressBarangay || '',
-    address_district: dto.addressDistrict || null,
+    address_district: normalizeDistrictOption(dto.addressDistrict) || null,
     address_city: dto.addressCity || '',
     contact_email: dto.contactEmail || '',
     contact_number: dto.contactNumber || '',
@@ -229,5 +232,35 @@ export function adaptCompanyProfile(dto: any): CompanyProfile {
     contact_person_last_name: dto.contactPersonLastName || '',
     contact_person_extension_name: dto.contactPersonExtensionName || null,
     logoUrl,
+  };
+}
+
+const nullableText = (value: string | null | undefined) =>
+  value === undefined ? undefined : value?.trim() || null;
+
+const nullableNumber = (value: string | null | undefined) =>
+  value === undefined ? undefined : value === null || value === '' ? null : Number(value);
+
+export function mapCompanyProfileUpdateRequest(
+  profile: Partial<CompanyProfile>,
+): UpdateEmployerProfileRequest {
+  return {
+    companyName: profile.company_name,
+    companyType: profile.company_type?.toLowerCase() as UpdateEmployerProfileRequest['companyType'],
+    industryName: profile.industry,
+    description: profile.description,
+    websiteUrl: nullableText(profile.website_url),
+    yearEstablished: nullableNumber(profile.year_established),
+    companySize: nullableNumber(profile.company_size),
+    addressLine: profile.address_line,
+    addressBarangay: profile.address_barangay,
+    addressDistrict: normalizeDistrictOption(profile.address_district) || undefined,
+    addressCity: profile.address_city,
+    contactEmail: profile.contact_email,
+    contactNumber: profile.contact_number,
+    contactPersonFirstName: profile.contact_person_first_name,
+    contactPersonMiddleName: nullableText(profile.contact_person_middle_name),
+    contactPersonLastName: profile.contact_person_last_name,
+    contactPersonExtensionName: nullableText(profile.contact_person_extension_name),
   };
 }

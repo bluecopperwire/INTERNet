@@ -3,11 +3,13 @@ import { useEffect, useState, type ChangeEvent, type FormEvent, type ReactNode }
 import { useNavigate } from 'react-router-dom'
 import { qcpesoService } from '../services/qcpeso.service'
 import { referenceService } from '../../../services/reference.service'
+import { DistrictSelect } from '../../../components/DistrictSelect'
 import { useToastStore } from '../../../stores/useToastStore'
 import type { CreateEmployerPayload } from '../types/qcpeso.types'
 import styles from '../../intern-seeker/pages/ProfileEditorPage.module.css'
 import {
   getContactNumberError,
+  CONTACT_NUMBER_PLACEHOLDER,
   getPasswordError,
   sanitizeContactNumberInput,
 } from '../../../utils/input-validation'
@@ -116,20 +118,20 @@ export function CreateEmployerPage() {
           <header className={styles.sectionHeader}><span className={styles.sectionIcon}><Building2 size={21} /></span><h2>Company Information</h2></header>
           <div className={styles.sectionBody}>
             <div className={styles.fieldGrid}>
-              <Field label="Company Name" required><input required name="companyName" placeholder="Enter company name" value={form.companyName} onChange={update} /></Field>
+              <Field label="Company Name" required><input required name="companyName" placeholder="e.g., ABC Technologies Inc." value={form.companyName} onChange={update} /></Field>
               <Field label="Company Type" required><select required name="companyType" value={form.companyType} onChange={update}><option value="Government">Government</option><option value="Private">Private</option></select></Field>
               <Field label="Industry" required><select required name="industry" value={form.industry} onChange={update}>{industries.map((industry) => <option key={industry} value={industry}>{industry}</option>)}</select></Field>
-              <Field label="Company Size"><input name="companySize" inputMode="numeric" placeholder="Enter number of employees" value={form.companySize} onChange={update} /></Field>
+              <Field label="Company Size"><input name="companySize" inputMode="numeric" placeholder="e.g., 50" value={form.companySize} onChange={update} /></Field>
               <Field label="Company Year Established"><input name="yearEstablished" inputMode="numeric" placeholder="e.g., 2015" value={form.yearEstablished} onChange={update} /></Field>
               <Field label="Website URL"><input name="websiteUrl" type="url" placeholder="https://example.com" value={form.websiteUrl} onChange={update} /></Field>
             </div>
             <div className={`${styles.fieldGrid} ${styles.addressGrid}`}>
-              <Field label="Address Line" required><input required name="addressLine" placeholder="Enter house / building / street" value={form.addressLine} onChange={update} /></Field>
-              <Field label="Barangay" required><input required name="barangay" placeholder="Enter barangay" value={form.barangay} onChange={update} /></Field>
-              <Field label="District"><input name="district" placeholder="If none, type N/A" value={form.district} onChange={update} /></Field>
-              <Field label="City" required><input required name="city" placeholder="Enter city" value={form.city} onChange={update} /></Field>
+              <Field label="Address Line" required><input required name="addressLine" placeholder="e.g., 200 Development Avenue" value={form.addressLine} onChange={update} /></Field>
+              <Field label="Barangay" required><input required name="barangay" placeholder="e.g., Central" value={form.barangay} onChange={update} /></Field>
+              <Field label="District" required><DistrictSelect name="district" value={form.district} onChange={update} /></Field>
+              <Field label="City" required><input required name="city" placeholder="e.g., Quezon City" value={form.city} onChange={update} /></Field>
             </div>
-            <Field label="About Company" required><textarea required name="description" placeholder="Describe the company" value={form.description} onChange={update} /></Field>
+            <Field label="About Company" required><textarea required name="description" placeholder="e.g., A technology company providing software services." value={form.description} onChange={update} /></Field>
           </div>
         </section>
 
@@ -137,21 +139,21 @@ export function CreateEmployerPage() {
           <header className={styles.sectionHeader}><span className={styles.sectionIcon}><UserRound size={21} /></span><h2>Contact Information</h2></header>
           <div className={styles.sectionBody}>
             <div className={`${styles.fieldGrid} ${styles.nameGrid}`}>
-              <Field label="Contact Person First Name" required><input required name="contactFirstName" placeholder="Enter first name" value={form.contactFirstName} onChange={update} /></Field>
-              <Field label="Contact Person Middle Name"><input name="contactMiddleName" placeholder="Enter middle name" value={form.contactMiddleName} onChange={update} /></Field>
-              <Field label="Contact Person Last Name" required><input required name="contactLastName" placeholder="Enter last name" value={form.contactLastName} onChange={update} /></Field>
+              <Field label="Contact Person First Name" required><input required name="contactFirstName" placeholder="e.g., Juan" value={form.contactFirstName} onChange={update} /></Field>
+              <Field label="Contact Person Middle Name"><input name="contactMiddleName" placeholder="e.g., Santos" value={form.contactMiddleName} onChange={update} /></Field>
+              <Field label="Contact Person Last Name" required><input required name="contactLastName" placeholder="e.g., Dela Cruz" value={form.contactLastName} onChange={update} /></Field>
               <Field label="Suffix"><input name="contactSuffix" placeholder="e.g., Jr" value={form.contactSuffix} onChange={update} /></Field>
             </div>
             <div className={styles.fieldGrid}>
-              <Field label="Contact Email" required><input required name="contactEmail" type="email" placeholder="Enter company contact email" value={form.contactEmail} onChange={update} /></Field>
-              <Field label="Contact Number" required><input required name="contactNumber" type="tel" placeholder="e.g. +63 912 345 6789" value={form.contactNumber} onChange={(event) => setForm((current) => ({ ...current, contactNumber: sanitizeContactNumberInput(event.target.value) }))} /></Field>
+              <Field label="Contact Email" required><input required name="contactEmail" type="email" placeholder="e.g., hr@example.com" value={form.contactEmail} onChange={update} /></Field>
+              <Field label="Contact Number" required><input required name="contactNumber" type="tel" placeholder={CONTACT_NUMBER_PLACEHOLDER} value={form.contactNumber} onChange={(event) => setForm((current) => ({ ...current, contactNumber: sanitizeContactNumberInput(event.target.value) }))} /></Field>
             </div>
           </div>
         </section>
 
         <section className={styles.section}>
           <header className={styles.sectionHeader}><span className={styles.sectionIcon}><LockKeyhole size={21} /></span><h2>Login Credentials</h2></header>
-          <div className={styles.sectionBody}><div className={styles.fieldGrid}><Field label="Account Email" required><input required name="loginEmail" type="email" placeholder="Enter employer login email" value={form.loginEmail} onChange={update} /></Field><Field label="Temporary Password" required><input required minLength={8} name="password" type="password" placeholder="Enter temporary password" value={form.password} onChange={update} /></Field></div></div>
+          <div className={styles.sectionBody}><div className={styles.fieldGrid}><Field label="Account Email" required><input required name="loginEmail" type="email" placeholder="e.g., employer@example.com" value={form.loginEmail} onChange={update} /></Field><Field label="Temporary Password" required><input required minLength={8} name="password" type="password" placeholder="e.g., SecurePass123!" value={form.password} onChange={update} /></Field></div></div>
         </section>
       </div>
       <footer className={styles.formFooter}><button className={styles.cancelButton} type="button" onClick={() => navigate('/qcpeso/monitor-users/employers')}>Cancel</button><button className={styles.saveButton} type="submit" disabled={isSubmitting}>{isSubmitting ? 'Submitting...' : 'Submit'}</button></footer>

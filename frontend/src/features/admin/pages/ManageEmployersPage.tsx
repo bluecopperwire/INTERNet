@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronLeft, ChevronRight, Eye, Filter, Plus, Search } from 'lucide-react'
+import { Eye, Filter, Plus, Search } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { PageHero } from '../../../components/PageHero'
+import { TablePagination } from '../../../components/TablePagination'
 import suitcaseIcon from '../../../assets/suitcase.svg'
 import { adminService } from '../services/admin.service'
 import type { EmployerRecord } from '../types/admin.types'
@@ -31,7 +32,6 @@ export function ManageEmployersPage() {
     })
   }, [employers, query, status])
 
-  const pages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const records = filtered.slice((page - 1) * pageSize, page * pageSize)
 
   const summary = {
@@ -151,70 +151,18 @@ export function ManageEmployersPage() {
           </div>
         </section>
 
-        <Pagination
+        <TablePagination
           page={page}
-          pages={pages}
           pageSize={pageSize}
-          onPage={setPage}
-          onPageSize={(value) => {
+          totalRecords={filtered.length}
+          onPageChange={setPage}
+          onPageSizeChange={(value) => {
             setPageSize(value)
             setPage(1)
           }}
         />
       </section>
     </main>
-  )
-}
-
-function Pagination({
-  page,
-  pages,
-  pageSize,
-  onPage,
-  onPageSize,
-}: {
-  page: number
-  pages: number
-  pageSize: number
-  onPage: (page: number) => void
-  onPageSize: (value: number) => void
-}) {
-  return (
-    <nav className={styles.pagination} aria-label="Employer pages">
-      <label className={styles.pageSizeControl}>
-        <span>View</span>
-        <select
-          value={pageSize}
-          onChange={(event) => onPageSize(Number(event.target.value))}
-        >
-          <option value={5}>5</option>
-          <option value={7}>7</option>
-          <option value={14}>14</option>
-          <option value={21}>21</option>
-        </select>
-        <span>Employers per page</span>
-      </label>
-
-      <div>
-        <button
-          type="button"
-          aria-label="Previous page"
-          disabled={page === 1}
-          onClick={() => onPage(Math.max(1, page - 1))}
-        >
-          <ChevronLeft size={18} />
-        </button>
-        <span className={styles.currentPage}>{page}</span>
-        <button
-          type="button"
-          aria-label="Next page"
-          disabled={page === pages}
-          onClick={() => onPage(Math.min(pages, page + 1))}
-        >
-          <ChevronRight size={18} />
-        </button>
-      </div>
-    </nav>
   )
 }
 

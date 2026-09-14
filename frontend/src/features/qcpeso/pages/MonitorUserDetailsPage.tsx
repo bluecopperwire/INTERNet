@@ -47,7 +47,7 @@ function StudentProfile({ student }: { student: MonitoredStudentUser }) {
   return <div className={styles.body}>
     <ProfileSummary imageUrl={student.profileImageUrl} icon={<UserRound size={30} />} name={student.studentName} email={student.email} phone={student.mobileNumber} address={student.address} status={student.status} />
     <InfoCard icon={<UserRound size={21} />} title="Personal Information" items={[["Full Name", student.studentName], ["Address", student.address], ["Birthdate", student.birthdate], ["Sex", student.sex]]} />
-    <InfoCard icon={<Mail size={21} />} title="Contact Information" items={[["Email", student.email], ["Mobile Number", student.mobileNumber], ["LinkedIn", student.linkedIn]]} />
+    <InfoCard icon={<Mail size={21} />} title="Contact Information" items={[["Email", student.email], ["Contact Number", student.mobileNumber], ["LinkedIn", student.linkedIn]]} />
     <InfoCard icon={<GraduationCap size={21} />} title="Current Academic Information" items={[["School", student.school], ["Year Level", formatYearLevel(student.yearLevel)], ["Program / Strand", student.program]]} />
     <InfoCard icon={<Building2 size={21} />} title="Internship Preferences" items={[["Internship Required Hours", student.requiredHours], ["Preferred Host Organization Type", student.preferredHostOrganizationType], ["Internship Days Availability", student.internshipDaysAvailability], ["Internship Start Date Availability", student.internshipStartDateAvailability], ["Preferred Field of Internship", student.preferredField], ["Willing to Be Assigned Outside Preferred Field", student.willingOutsidePreferredField]]} />
   </div>

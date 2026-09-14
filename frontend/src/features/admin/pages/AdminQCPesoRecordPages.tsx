@@ -8,14 +8,16 @@ import formStyles from '../../intern-seeker/pages/ProfileEditorPage.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
 import { birthdateMaximum } from '../../../utils/date-only'
-import { getContactNumberError, sanitizeContactNumberInput } from '../../../utils/input-validation'
+import { CONTACT_NUMBER_PLACEHOLDER, getContactNumberError, sanitizeContactNumberInput } from '../../../utils/input-validation'
+import { DistrictSelect } from '../../../components/DistrictSelect'
+import { districtAddressPart } from '../../../utils/district'
 
 const fullNameOf = (record: QCPesoRecord) =>
   [record.firstName, record.middleName, record.lastName, record.suffix].filter(Boolean).join(' ') ||
   record.fullName
 
 const addressOf = (record: QCPesoRecord) =>
-  [record.addressLine, record.barangay, record.district && `District ${record.district}`, record.city]
+  [record.addressLine, record.barangay, districtAddressPart(record.district), record.city]
     .filter(Boolean)
     .join(', ')
 
@@ -129,7 +131,7 @@ export function AdminQCPesoDetailsPage() {
 
             <Card icon={<Mail size={21} />} title="Contact Information">
               <Row label="Email" value={record.contactEmail || record.email} />
-              <Row label="Mobile Number" value={record.contactNumber} />
+              <Row label="Contact Number" value={record.contactNumber} />
             </Card>
 
             <Card icon={<BriefcaseBusiness size={21} />} title="Work Information">
@@ -266,7 +268,7 @@ export function AdminQCPesoEditorPage() {
                 <input
                   required
                   value={form.firstName}
-                  placeholder="Enter first name"
+                  placeholder="e.g., Juan"
                   onChange={(e) => letters('firstName', e.target.value)}
                 />
               </Field>
@@ -274,7 +276,7 @@ export function AdminQCPesoEditorPage() {
               <Field label="Middle Name">
                 <input
                   value={form.middleName}
-                  placeholder="Enter middle name"
+                  placeholder="e.g., Santos"
                   onChange={(e) => letters('middleName', e.target.value)}
                 />
               </Field>
@@ -283,7 +285,7 @@ export function AdminQCPesoEditorPage() {
                 <input
                   required
                   value={form.lastName}
-                  placeholder="Enter last name"
+                  placeholder="e.g., Dela Cruz"
                   onChange={(e) => letters('lastName', e.target.value)}
                 />
               </Field>
@@ -302,7 +304,7 @@ export function AdminQCPesoEditorPage() {
                 <input
                   required
                   value={form.addressLine || ''}
-                  placeholder="Enter house / block no. / street"
+                  placeholder="e.g., 200 Development Avenue"
                   onChange={(e) => change('addressLine', e.target.value)}
                 />
               </Field>
@@ -311,16 +313,14 @@ export function AdminQCPesoEditorPage() {
                 <input
                   required
                   value={form.barangay || ''}
-                  placeholder="Enter barangay"
+                  placeholder="e.g., Central"
                   onChange={(e) => change('barangay', e.target.value)}
                 />
               </Field>
 
               <Field label="District" required>
-                <input
-                  required
-                  value={form.district || ''}
-                  placeholder="If none, type N/A"
+                <DistrictSelect
+                  value={form.district}
                   onChange={(e) => change('district', e.target.value)}
                 />
               </Field>
@@ -329,7 +329,7 @@ export function AdminQCPesoEditorPage() {
                 <input
                   required
                   value={form.city || ''}
-                  placeholder="Enter city"
+                  placeholder="e.g., Quezon City"
                   onChange={(e) => change('city', e.target.value)}
                 />
               </Field>
@@ -381,17 +381,17 @@ export function AdminQCPesoEditorPage() {
                 <input
                   required
                   type="email"
-                  placeholder="Enter email address"
+                  placeholder="e.g., juan.delacruz@quezoncity.gov.ph"
                   value={form.contactEmail || form.email}
                   onChange={(e) => change('contactEmail', e.target.value)}
                 />
               </Field>
 
-              <Field label="Mobile Number" required>
+              <Field label="Contact Number" required>
                 <input
                   required
                   type="tel"
-                  placeholder="e.g. 09123456789"
+                  placeholder={CONTACT_NUMBER_PLACEHOLDER}
                   value={form.contactNumber}
                   onChange={(e) =>
                     change('contactNumber', sanitizeContactNumberInput(e.target.value))
@@ -406,7 +406,7 @@ export function AdminQCPesoEditorPage() {
               <Field label="Employee ID" required>
                 <input
                   required
-                  placeholder="Enter employee ID"
+                  placeholder="e.g., PESO-001"
                   value={form.employeeId}
                   onChange={(e) => change('employeeId', e.target.value)}
                 />
@@ -415,7 +415,7 @@ export function AdminQCPesoEditorPage() {
               <Field label="Department" required>
                 <input
                   required
-                  placeholder="Enter department"
+                  placeholder="e.g., Employment Services Division"
                   value={form.department}
                   onChange={(e) => change('department', e.target.value)}
                 />
@@ -424,7 +424,7 @@ export function AdminQCPesoEditorPage() {
               <Field label="Position" required>
                 <input
                   required
-                  placeholder="Enter position"
+                  placeholder="e.g., Employment Officer"
                   value={form.position}
                   onChange={(e) => change('position', e.target.value)}
                 />

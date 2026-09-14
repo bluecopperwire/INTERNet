@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Eye, Search, SlidersHorizontal } from 'lucide-react';
+import { Eye, Search, SlidersHorizontal } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type {
@@ -10,6 +10,7 @@ import { getErrorMessage } from '../../../utils/error-message';
 import { EmployerHero } from '../components/EmployerHero';
 import { employerApiService } from '../services/employer-api.service';
 import { COMPANY_PAGE_SIZES, formatMinutes, MANAGE_INTERNSHIP_COLUMNS } from '../utils/internship-workflow';
+import { TablePagination } from '../../../components/TablePagination';
 import styles from './MonitorInternshipPage.module.css';
 
 const EMPTY_META: PageMeta = { page: 1, limit: 5, total: 0, totalPages: 0 };
@@ -84,10 +85,7 @@ export function MonitorInternshipPage() {
         {error && <p className={styles.emptyState} role="alert">{error}</p>}
       </div>
 
-      <div className={styles.paginationRow}>
-        <div className={styles.perPage}><span>View</span><span className={styles.selectWrap}><select value={limit} onChange={(event) => { beginReload(); setLimit(Number(event.target.value)); resetPage(); }}>{COMPANY_PAGE_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</select></span><span>Students per page</span></div>
-        <div className={styles.pagination}><button type="button" aria-label="Previous page" disabled={page <= 1} onClick={() => { beginReload(); setPage((current) => current - 1); }}><ChevronLeft size={18} /></button><button type="button" className={styles.currentPage} aria-current="page">{page}</button><button type="button" aria-label="Next page" disabled={page >= Math.max(meta.totalPages, 1)} onClick={() => { beginReload(); setPage((current) => current + 1); }}><ChevronRight size={18} /></button></div>
-      </div>
+      <TablePagination page={page} pageSize={limit} totalRecords={meta.total} pageSizes={COMPANY_PAGE_SIZES} onPageChange={(value) => { beginReload(); setPage(value); }} onPageSizeChange={(value) => { beginReload(); setLimit(value); resetPage(); }} />
     </section>
   </main>;
 }

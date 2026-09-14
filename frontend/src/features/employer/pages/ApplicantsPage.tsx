@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Search, SlidersHorizontal, ChevronLeft, ChevronRight, Eye, Trash2 } from 'lucide-react'
+import { Search, SlidersHorizontal, Eye, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { EmployerHero } from '../components/EmployerHero'
 import { employerService } from '../services/employer.service'
 import type { Applicant } from '../types/employer.types'
 import styles from './ApplicantsPage.module.css'
 import { ConfirmDeleteModal } from '../../../components/feedback/ConfirmDeleteModal'
+import { TablePagination } from '../../../components/TablePagination'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
 import { openReferralForReview } from '../services/employer-review-flow'
@@ -70,14 +71,6 @@ export function ApplicantsPage() {
   const indexOfLastItem = currentPage * itemsPerPage
   const indexOfFirstItem = indexOfLastItem - itemsPerPage
   const currentItems = filteredApplicants.slice(indexOfFirstItem, indexOfLastItem)
-
-  const handlePrevPage = () => {
-    if (currentPage > 1) setCurrentPage(currentPage - 1)
-  }
-
-  const handleNextPage = () => {
-    if (currentPage < totalPages) setCurrentPage(currentPage + 1)
-  }
 
   const handleOpenReferral = async (referral: Applicant) => {
     await openReferralForReview(referral, {
@@ -180,46 +173,7 @@ export function ApplicantsPage() {
           </div>
         </div>
 
-        <div className={styles.paginationRow}>
-          <div className={styles.leftControls}>
-            <span className={styles.viewLabel}>View</span>
-            <div className={styles.viewSelectBox}>
-              <select 
-                className={styles.viewSelect}
-                value={itemsPerPage}
-                onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value))
-                  setCurrentPage(1)
-                }}
-              >
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={15}>15</option>
-              </select>
-            </div>
-            <span className={styles.perPageLabel}>Students per page</span>
-          </div>
-
-          <div className={styles.pagination}>
-            <button 
-              className={styles.pageBtn} 
-              onClick={handlePrevPage}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <button className={`${styles.pageBtn} ${styles.active}`}>
-              {currentPage}
-            </button>
-            <button 
-              className={styles.pageBtn} 
-              onClick={handleNextPage}
-              disabled={currentPage === totalPages}
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
+        <TablePagination page={currentPage} pageSize={itemsPerPage} totalRecords={filteredApplicants.length} onPageChange={setCurrentPage} onPageSizeChange={(value) => { setItemsPerPage(value); setCurrentPage(1) }} />
       </section>
     </main>
   )
@@ -311,7 +265,7 @@ export function ReferralsHistoryPage() {
           <td><div className={styles.actionButtons}><button className={styles.reviewBtn} onClick={() => navigate(`/employer/referrals-history/${referral.id}`)}><Eye size={16} />View</button>{referral.canHide && <button className={styles.deleteBtn} onClick={() => setDeleteTarget(referral)}><Trash2 size={16} />Delete</button>}</div></td>
         </tr>)}</tbody>
       </table></div></div>
-      <div className={styles.paginationRow}><div className={styles.leftControls}><span className={styles.viewLabel}>View</span><div className={styles.viewSelectBox}><select className={styles.viewSelect} value={perPage} onChange={(event) => { setPerPage(Number(event.target.value)); setPage(1) }}><option value={5}>5</option><option value={10}>10</option><option value={15}>15</option></select></div><span className={styles.perPageLabel}>Students per page</span></div><div className={styles.pagination}><button className={styles.pageBtn} disabled={page === 1} onClick={() => setPage((current) => current - 1)}><ChevronLeft size={16} /></button><button className={`${styles.pageBtn} ${styles.active}`}>{page}</button><button className={styles.pageBtn} disabled={page === totalPages} onClick={() => setPage((current) => current + 1)}><ChevronRight size={16} /></button></div></div>
+      <TablePagination page={page} pageSize={perPage} totalRecords={filtered.length} onPageChange={setPage} onPageSizeChange={(value) => { setPerPage(value); setPage(1) }} />
     </section>
     {deleteTarget && <ConfirmDeleteModal subject={`${deleteTarget.name}'s referral`} isDeleting={isDeleting} onClose={() => setDeleteTarget(null)} onConfirm={() => void deleteReferral()} />}
   </main>

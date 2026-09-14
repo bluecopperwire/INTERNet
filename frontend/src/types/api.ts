@@ -96,6 +96,50 @@ export interface IndustryItemDto {
   isCustomText: boolean;
 }
 
+export interface EmployerProfileDto {
+  companyId: number;
+  companyName: string;
+  companyType: CompanyType;
+  industryId: number;
+  industryName: string;
+  description: string;
+  websiteUrl: string | null;
+  yearEstablished: number | null;
+  companySize: number | null;
+  addressLine: string;
+  addressBarangay: string;
+  addressDistrict: string | null;
+  addressCity: string;
+  contactEmail: string;
+  contactNumber: string;
+  contactPersonFirstName: string;
+  contactPersonMiddleName: string | null;
+  contactPersonLastName: string;
+  contactPersonExtensionName: string | null;
+  logoFilePath: string | null;
+  updatedAt: string;
+}
+
+export interface UpdateEmployerProfileRequest {
+  companyName?: string;
+  companyType?: CompanyType;
+  industryName?: string;
+  description?: string;
+  websiteUrl?: string | null;
+  yearEstablished?: number | null;
+  companySize?: number | null;
+  addressLine?: string;
+  addressBarangay?: string;
+  addressDistrict?: string;
+  addressCity?: string;
+  contactEmail?: string;
+  contactNumber?: string;
+  contactPersonFirstName?: string;
+  contactPersonMiddleName?: string | null;
+  contactPersonLastName?: string;
+  contactPersonExtensionName?: string | null;
+}
+
 export interface OpportunitySummaryDto {
   opportunityId: number;
   companyId: number;

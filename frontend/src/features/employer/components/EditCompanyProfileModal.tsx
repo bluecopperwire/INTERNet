@@ -2,8 +2,13 @@ import React, { useState, useRef } from 'react'
 import { X, Upload, Building2 } from 'lucide-react'
 import type { CompanyProfile } from '../types/employer.types'
 import styles from './EditCompanyProfileModal.module.css'
-import { getContactNumberError, sanitizeContactNumberInput } from '../../../utils/input-validation'
+import {
+  CONTACT_NUMBER_PLACEHOLDER,
+  getContactNumberError,
+  sanitizeContactNumberInput,
+} from '../../../utils/input-validation'
 import { useToastStore } from '../../../stores/useToastStore'
+import { DistrictSelect } from '../../../components/DistrictSelect'
 
 interface EditCompanyProfileModalProps {
   profile: CompanyProfile
@@ -15,7 +20,6 @@ const NULLABLE_FIELDS = new Set([
   'website_url',
   'year_established',
   'company_size',
-  'address_district',
   'contact_person_middle_name',
   'contact_person_extension_name',
 ])
@@ -156,6 +160,7 @@ export function EditCompanyProfileModal({
                 id="company_name"
                 name="company_name"
                 type="text"
+                placeholder="e.g., ABC Technologies Inc."
                 value={formData.company_name}
                 onChange={handleChange}
                 required
@@ -189,6 +194,7 @@ export function EditCompanyProfileModal({
                 id="address_line"
                 name="address_line"
                 type="text"
+                placeholder="e.g., 200 Development Avenue"
                 value={formData.address_line}
                 onChange={handleChange}
                 required
@@ -200,6 +206,7 @@ export function EditCompanyProfileModal({
               <textarea
                 id="description"
                 name="description"
+                placeholder="e.g., A technology company providing software services."
                 value={formData.description}
                 onChange={handleChange}
                 required
@@ -212,6 +219,7 @@ export function EditCompanyProfileModal({
                 id="address_barangay"
                 name="address_barangay"
                 type="text"
+                placeholder="e.g., Central"
                 value={formData.address_barangay}
                 onChange={handleChange}
                 required
@@ -219,12 +227,11 @@ export function EditCompanyProfileModal({
             </div>
 
             <div className={styles.field}>
-              <label htmlFor="address_district">District</label>
-              <input
+              <label htmlFor="address_district">District *</label>
+              <DistrictSelect
                 id="address_district"
                 name="address_district"
-                type="text"
-                value={formData.address_district ?? ''}
+                value={formData.address_district}
                 onChange={handleChange}
               />
             </div>
@@ -235,6 +242,7 @@ export function EditCompanyProfileModal({
                 id="address_city"
                 name="address_city"
                 type="text"
+                placeholder="e.g., Quezon City"
                 value={formData.address_city}
                 onChange={handleChange}
                 required
@@ -247,6 +255,7 @@ export function EditCompanyProfileModal({
                 id="contact_person_first_name"
                 name="contact_person_first_name"
                 type="text"
+                placeholder="e.g., Juan"
                 value={formData.contact_person_first_name}
                 onChange={handleChange}
                 required
@@ -259,6 +268,7 @@ export function EditCompanyProfileModal({
                 id="contact_person_middle_name"
                 name="contact_person_middle_name"
                 type="text"
+                placeholder="e.g., Santos"
                 value={formData.contact_person_middle_name ?? ''}
                 onChange={handleChange}
               />
@@ -270,6 +280,7 @@ export function EditCompanyProfileModal({
                 id="contact_person_last_name"
                 name="contact_person_last_name"
                 type="text"
+                placeholder="e.g., Dela Cruz"
                 value={formData.contact_person_last_name}
                 onChange={handleChange}
                 required
@@ -278,32 +289,32 @@ export function EditCompanyProfileModal({
 
             <div className={styles.field}>
               <label htmlFor="contact_person_extension_name">Contact Person Extension Name</label>
-              <input id="contact_person_extension_name" name="contact_person_extension_name" type="text" value={formData.contact_person_extension_name ?? ''} onChange={handleChange} />
+              <input id="contact_person_extension_name" name="contact_person_extension_name" type="text" placeholder="e.g., Jr." value={formData.contact_person_extension_name ?? ''} onChange={handleChange} />
             </div>
 
             <div className={styles.field}>
               <label htmlFor="contact_email">Contact Email</label>
-              <input id="contact_email" name="contact_email" type="email" value={formData.contact_email} onChange={handleChange} required />
+              <input id="contact_email" name="contact_email" type="email" placeholder="e.g., hr@example.com" value={formData.contact_email} onChange={handleChange} required />
             </div>
 
             <div className={styles.field}>
               <label htmlFor="contact_number">Contact Number</label>
-              <input id="contact_number" name="contact_number" type="tel" placeholder="e.g. +63 912 345 6789" value={formData.contact_number} onChange={handleChange} required />
+              <input id="contact_number" name="contact_number" type="tel" placeholder={CONTACT_NUMBER_PLACEHOLDER} value={formData.contact_number} onChange={handleChange} required />
             </div>
 
             <div className={styles.field}>
               <label htmlFor="website_url">Company Website</label>
-              <input id="website_url" name="website_url" type="text" value={formData.website_url ?? ''} onChange={handleChange} />
+              <input id="website_url" name="website_url" type="text" placeholder="e.g., https://example.com" value={formData.website_url ?? ''} onChange={handleChange} />
             </div>
 
             <div className={styles.field}>
               <label htmlFor="year_established">Year Established</label>
-              <input id="year_established" name="year_established" type="text" value={formData.year_established ?? ''} onChange={handleChange} />
+              <input id="year_established" name="year_established" type="text" placeholder="e.g., 2015" value={formData.year_established ?? ''} onChange={handleChange} />
             </div>
 
             <div className={styles.field}>
               <label htmlFor="company_size">Company Size</label>
-              <input id="company_size" name="company_size" type="text" value={formData.company_size ?? ''} onChange={handleChange} placeholder="e.g. 51-200 employees" />
+              <input id="company_size" name="company_size" type="text" value={formData.company_size ?? ''} onChange={handleChange} placeholder="e.g., 51-200 employees" />
             </div>
           </div>
 

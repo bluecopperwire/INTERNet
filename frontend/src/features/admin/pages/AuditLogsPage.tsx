@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Search, Filter, FileSpreadsheet, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
+import { Search, Filter, FileSpreadsheet, Eye } from 'lucide-react'
 import { PageHero } from '../../../components/PageHero'
 import { adminService } from '../services/admin.service'
 import type { AuditLog } from '../types/admin.types'
@@ -7,6 +7,7 @@ import { AuditLogDetailsModal } from '../components/AuditLogDetailsModal'
 import styles from './AuditLogsPage.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
 import { todayDateOnly } from '../../../utils/date-only'
+import { TablePagination } from '../../../components/TablePagination'
 
 export function AuditLogsPage() {
   const toast = useToastStore()
@@ -63,7 +64,6 @@ export function AuditLogsPage() {
   }, [logs, searchQuery, selectedRole, selectedAction, selectedStatus, startDate, endDate])
 
   // Pagination Logic
-  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage) || 1
   const displayedLogs = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage
     return filteredLogs.slice(start, start + itemsPerPage)
@@ -271,54 +271,7 @@ export function AuditLogsPage() {
           </table>
         </div>
 
-        {/* Pagination */}
-        <div className={styles.paginationRow}>
-          <div className={styles.rowsPerPage}>
-            <span>View</span>
-            <select 
-              className={styles.viewSelect}
-              value={itemsPerPage}
-              onChange={(e) => {
-                setItemsPerPage(Number(e.target.value))
-                setCurrentPage(1)
-              }}
-            >
-              <option value={5}>5</option>
-              <option value={7}>7</option>
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-            </select>
-            <span>Rows per page</span>
-          </div>
-
-          <div className={styles.paginationControls}>
-            <button 
-              className={styles.navIconBtn} 
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            >
-              <ChevronLeft size={20} />
-            </button>
-            
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
-              <button 
-                key={pageNum}
-                className={`${styles.pageBtn} ${pageNum === currentPage ? styles.active : ''}`}
-                onClick={() => setCurrentPage(pageNum)}
-              >
-                {pageNum}
-              </button>
-            ))}
-
-            <button 
-              className={styles.navIconBtn}
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            >
-              <ChevronRight size={20} />
-            </button>
-          </div>
-        </div>
+        <TablePagination page={currentPage} pageSize={itemsPerPage} totalRecords={filteredLogs.length} onPageChange={setCurrentPage} onPageSizeChange={(value) => { setItemsPerPage(value); setCurrentPage(1) }} />
 
       </div>
 

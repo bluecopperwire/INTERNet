@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ChevronLeft, ChevronRight, Eye, Search, SlidersHorizontal } from 'lucide-react'
+import { Eye, Search, SlidersHorizontal } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import type { AssignmentStatus, PageMeta, StudentInternshipDto } from '../../../types/api'
 import { useAuthStore } from '../../../stores/useAuthStore'
@@ -7,6 +7,7 @@ import { getErrorMessage } from '../../../utils/error-message'
 import { studentApiService } from '../services/student-api.service'
 import { studentAssignmentStatus } from '../utils/internship-display'
 import styles from './StudentInternshipPages.module.css'
+import { TablePagination } from '../../../components/TablePagination'
 
 const PAGE_SIZES = [5, 10, 15]
 type HistoryStatus = '' | 'pending' | 'ongoing' | 'completed' | 'withdrawn' | 'cancelled' | 'finalized'
@@ -93,10 +94,7 @@ function InternshipHistoryPage() {
         {!isLoading && !error && records.length === 0 && <div className={styles.emptyHistory}><h2>No internship history found</h2><p>Try another company, job title, or status.</p></div>}
       </div>
 
-      <div className={styles.pagination}>
-        <label><span>View</span><select value={limit} onChange={(event) => { setLimit(Number(event.target.value)); setPage(1) }}>{PAGE_SIZES.map((size) => <option value={size} key={size}>{size}</option>)}</select><span>Internships per page</span></label>
-        <div><button type="button" aria-label="Previous page" disabled={page <= 1} onClick={() => setPage((current) => current - 1)}><ChevronLeft size={18} /></button><button type="button" className={styles.currentPage} aria-current="page">{meta.page}</button><button type="button" aria-label="Next page" disabled={page >= Math.max(meta.totalPages, 1)} onClick={() => setPage((current) => current + 1)}><ChevronRight size={18} /></button></div>
-      </div>
+      <TablePagination page={page} pageSize={limit} totalRecords={meta.total} pageSizes={PAGE_SIZES} onPageChange={setPage} onPageSizeChange={(value) => { setLimit(value); setPage(1) }} />
     </section>
   )
 }

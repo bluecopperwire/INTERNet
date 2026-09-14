@@ -10,7 +10,7 @@ import {
   Min,
 } from 'class-validator';
 import { AccountStatus } from '../../users/entities/account.entities';
-import { IsValidContactNumber } from '../../common/validation/input-validation';
+import { IsValidContactNumber, IsValidDistrict } from '../../common/validation/input-validation';
 
 export class AdminDashboardMetricsDto {
   totalRegistered: number;
@@ -72,6 +72,7 @@ export class UpdateStudentAccountDto {
 
   @IsOptional()
   @IsString()
+  @IsValidDistrict()
   addressDistrict?: string;
 
   @IsOptional()
@@ -164,6 +165,7 @@ export class UpdateEmployerAccountDto {
 
   @IsOptional()
   @IsString()
+  @IsValidDistrict()
   addressDistrict?: string;
 
   @IsOptional()
@@ -233,6 +235,7 @@ export class UpdatePesoPersonnelAccountDto {
 
   @IsOptional()
   @IsString()
+  @IsValidDistrict()
   addressDistrict?: string;
 
   @IsOptional()

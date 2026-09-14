@@ -1,6 +1,7 @@
-import { ArrowLeft, CalendarDays, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react'
+import { ArrowLeft, CalendarDays, SlidersHorizontal } from 'lucide-react'
 import { formatAttendanceDate, formatAttendanceDuration, formatAttendanceWholeHours } from '../utils/attendance-format'
 import { AttendanceProfileSummary, type AttendanceProfileSummaryData } from './AttendanceProfileSummary'
+import { TablePagination } from './TablePagination'
 import styles from './AttendanceHistoryView.module.css'
 
 export interface AttendanceHistoryRecordView {
@@ -24,7 +25,7 @@ interface AttendanceHistoryViewProps {
   onStatusChange: (value: string) => void
   page: number
   limit: number
-  totalPages: number
+  totalRecords: number
   pageSizes: readonly number[]
   onPageChange: (value: number) => void
   onLimitChange: (value: number) => void
@@ -33,7 +34,6 @@ interface AttendanceHistoryViewProps {
 }
 
 export function AttendanceHistoryView(props: AttendanceHistoryViewProps) {
-  const totalPages = Math.max(props.totalPages, 1)
   return (
     <main className={styles.page}>
       <div className={styles.wrap}>
@@ -60,10 +60,7 @@ export function AttendanceHistoryView(props: AttendanceHistoryViewProps) {
           {props.error && <p className={`${styles.message} ${styles.error}`} role="alert">{props.error}</p>}
           {!props.loading && !props.error && props.records.length === 0 && <p className={styles.message}>No attendance records match the selected filters.</p>}
         </section>
-        <div className={styles.paginationRow}>
-          <label className={styles.leftControls}><span>View</span><select className={styles.viewSelect} value={props.limit} onChange={(event) => props.onLimitChange(Number(event.target.value))}>{props.pageSizes.map((size) => <option key={size} value={size}>{size}</option>)}</select><span>Records per page</span></label>
-          <div className={styles.pagination}><button type="button" aria-label="Previous page" disabled={props.page <= 1} onClick={() => props.onPageChange(props.page - 1)}><ChevronLeft size={18} /></button><button type="button" className={styles.active} aria-current="page">{props.page}</button><button type="button" aria-label="Next page" disabled={props.page >= totalPages} onClick={() => props.onPageChange(props.page + 1)}><ChevronRight size={18} /></button></div>
-        </div>
+        <TablePagination page={props.page} pageSize={props.limit} totalRecords={props.totalRecords} pageSizes={props.pageSizes} onPageChange={props.onPageChange} onPageSizeChange={props.onLimitChange} />
       </div>
     </main>
   )

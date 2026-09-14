@@ -6,28 +6,44 @@ import type { CompanyProfile } from '../types/employer.types'
 import styles from '../../intern-seeker/pages/ProfileEditorPage.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
-import { getContactNumberError, sanitizeContactNumberInput } from '../../../utils/input-validation'
+import { CONTACT_NUMBER_PLACEHOLDER, getContactNumberError, sanitizeContactNumberInput } from '../../../utils/input-validation'
+import { referenceService } from '../../../services/reference.service'
+import { DistrictSelect } from '../../../components/DistrictSelect'
 
-const INDUSTRIES = [
+const DEFAULT_INDUSTRIES = [
   'Office Administration',
   'Engineering',
   'Information Technology',
-  'Accounting / Finance',
-  'Customer Service / Retail',
+  'Accounting/ Finance',
+  'Customer Service/ Retail',
   'Human Resources',
-  'Hospitality / Tourism',
+  'Hospitality/ Tourism',
   'Healthcare',
 ]
+
+const formatIndustryLabel = (industry: string) => industry.replace(/\s*\/\s*/g, ' / ')
 
 export function CompanyProfileEditorPage() {
   const navigate = useNavigate()
   const [profile, setProfile] = useState<CompanyProfile | null>(null)
   const [formData, setFormData] = useState<CompanyProfile | null>(null)
+  const [industries, setIndustries] = useState(DEFAULT_INDUSTRIES)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const toast = useToastStore()
 
   useEffect(() => {
+    referenceService.getIndustries()
+      .then((items) => {
+        const standardized = items
+          .filter((industry) => !industry.isCustomText)
+          .map((industry) => industry.industryName)
+        if (standardized.length > 0) setIndustries(standardized)
+      })
+      .catch(() => {
+        // Keep the canonical fallback list when reference data is unavailable.
+      })
+
     employerService.getCompanyProfile()
       .then((data) => {
         setProfile(data)
@@ -94,20 +110,20 @@ export function CompanyProfileEditorPage() {
             <header className={styles.sectionHeader}><span className={styles.sectionIcon}><Building2 size={21} /></span><h2>Company Information</h2></header>
             <div className={styles.sectionBody}>
               <div className={styles.fieldGrid}>
-                <Field label="Company Name" required><input required name="company_name" placeholder="Enter company name" value={formData.company_name} onChange={handleChange} /></Field>
+                <Field label="Company Name" required><input required name="company_name" placeholder="e.g., ABC Technologies Inc." value={formData.company_name} onChange={handleChange} /></Field>
                 <Field label="Company Type" required><select required name="company_type" value={formData.company_type} onChange={handleChange}><option value="Government">Government</option><option value="Private">Private</option></select></Field>
-                <Field label="Industry" required><select required name="industry" value={formData.industry} onChange={handleChange}>{INDUSTRIES.map((industry) => <option key={industry} value={industry}>{industry}</option>)}</select></Field>
-                <Field label="Company Size"><input name="company_size" inputMode="numeric" pattern="[0-9]*" placeholder="Enter number of employees" value={formData.company_size ?? ''} onChange={handleChange} /></Field>
+                <Field label="Industry" required><select required name="industry" value={formData.industry} onChange={handleChange}>{industries.map((industry) => <option key={industry} value={industry}>{formatIndustryLabel(industry)}</option>)}</select></Field>
+                <Field label="Company Size"><input name="company_size" inputMode="numeric" pattern="[0-9]*" placeholder="e.g., 50" value={formData.company_size ?? ''} onChange={handleChange} /></Field>
                 <Field label="Company Year Established"><input name="year_established" inputMode="numeric" pattern="[0-9]*" placeholder="e.g., 2015" value={formData.year_established ?? ''} onChange={handleChange} /></Field>
                 <Field label="Website URL"><input name="website_url" type="url" placeholder="https://example.com" value={formData.website_url ?? ''} onChange={handleChange} /></Field>
               </div>
               <div className={`${styles.fieldGrid} ${styles.addressGrid}`}>
-                <Field label="Address Line" required><input required name="address_line" placeholder="Enter house / building / street" value={formData.address_line} onChange={handleChange} /></Field>
-                <Field label="Barangay" required><input required name="address_barangay" placeholder="Enter barangay" value={formData.address_barangay} onChange={handleChange} /></Field>
-                <Field label="District"><input name="address_district" placeholder="If none, type N/A" value={formData.address_district ?? ''} onChange={handleChange} /></Field>
-                <Field label="City" required><input required name="address_city" placeholder="Enter city" value={formData.address_city} onChange={handleChange} /></Field>
+                <Field label="Address Line" required><input required name="address_line" placeholder="e.g., 200 Development Avenue" value={formData.address_line} onChange={handleChange} /></Field>
+                <Field label="Barangay" required><input required name="address_barangay" placeholder="e.g., Central" value={formData.address_barangay} onChange={handleChange} /></Field>
+                <Field label="District" required><DistrictSelect name="address_district" value={formData.address_district} onChange={handleChange} /></Field>
+                <Field label="City" required><input required name="address_city" placeholder="e.g., Quezon City" value={formData.address_city} onChange={handleChange} /></Field>
               </div>
-              <Field label="About Company" required><textarea required name="description" placeholder="Describe your company" value={formData.description} onChange={handleChange} /></Field>
+              <Field label="About Company" required><textarea required name="description" placeholder="e.g., A technology company providing software services." value={formData.description} onChange={handleChange} /></Field>
             </div>
           </section>
 
@@ -115,14 +131,14 @@ export function CompanyProfileEditorPage() {
             <header className={styles.sectionHeader}><span className={styles.sectionIcon}><UserRound size={21} /></span><h2>Contact Information</h2></header>
             <div className={styles.sectionBody}>
               <div className={`${styles.fieldGrid} ${styles.nameGrid}`}>
-                <Field label="Contact Person First Name" required><input required name="contact_person_first_name" placeholder="Enter first name" value={formData.contact_person_first_name} onChange={handleChange} /></Field>
-                <Field label="Contact Person Middle Name"><input name="contact_person_middle_name" placeholder="Enter middle name" value={formData.contact_person_middle_name ?? ''} onChange={handleChange} /></Field>
-                <Field label="Contact Person Last Name" required><input required name="contact_person_last_name" placeholder="Enter last name" value={formData.contact_person_last_name} onChange={handleChange} /></Field>
+                <Field label="Contact Person First Name" required><input required name="contact_person_first_name" placeholder="e.g., Juan" value={formData.contact_person_first_name} onChange={handleChange} /></Field>
+                <Field label="Contact Person Middle Name"><input name="contact_person_middle_name" placeholder="e.g., Santos" value={formData.contact_person_middle_name ?? ''} onChange={handleChange} /></Field>
+                <Field label="Contact Person Last Name" required><input required name="contact_person_last_name" placeholder="e.g., Dela Cruz" value={formData.contact_person_last_name} onChange={handleChange} /></Field>
                 <Field label="Suffix"><input name="contact_person_extension_name" placeholder="e.g., Jr" value={formData.contact_person_extension_name ?? ''} onChange={handleChange} /></Field>
               </div>
               <div className={styles.fieldGrid}>
-                <Field label="Contact Email" required><input required name="contact_email" type="email" placeholder="Enter company email" value={formData.contact_email} onChange={handleChange} /></Field>
-                <Field label="Contact Number" required><input required name="contact_number" type="tel" placeholder="e.g. +63 912 345 6789" value={formData.contact_number} onChange={(event) => setFormData((current) => current ? { ...current, contact_number: sanitizeContactNumberInput(event.target.value) } : current)} /></Field>
+                <Field label="Contact Email" required><input required name="contact_email" type="email" placeholder="e.g., hr@example.com" value={formData.contact_email} onChange={handleChange} /></Field>
+                <Field label="Contact Number" required><input required name="contact_number" type="tel" placeholder={CONTACT_NUMBER_PLACEHOLDER} value={formData.contact_number} onChange={(event) => setFormData((current) => current ? { ...current, contact_number: sanitizeContactNumberInput(event.target.value) } : current)} /></Field>
               </div>
             </div>
           </section>

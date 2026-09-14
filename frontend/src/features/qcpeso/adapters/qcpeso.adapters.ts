@@ -8,6 +8,7 @@ import type {
 import { publicUploadUrl } from "../../../utils/public-upload-url";
 import { formatAvailabilityDays } from "../../../utils/availability-days";
 import { formatYearLevel } from "../../../utils/year-level";
+import { districtAddressPart, normalizeDistrictOption } from "../../../utils/district";
 import type {
   QCPesoDashboardSummary,
   QCPesoReviewApplicant,
@@ -324,7 +325,7 @@ export function adaptToPesoProfilePayload(
   if (profile.barangay !== undefined)
     payload.addressBarangay = profile.barangay.trim();
   if (profile.district !== undefined)
-    payload.addressDistrict = profile.district.trim();
+    payload.addressDistrict = normalizeDistrictOption(profile.district);
   if (profile.city !== undefined) payload.addressCity = profile.city.trim();
   if (profile.mobileNumber !== undefined)
     payload.contactNumber = profile.mobileNumber.trim();
@@ -351,11 +352,7 @@ export function adaptPesoProfile(p: any): QCPesoProfile {
     `${p.firstName || ""} ${p.lastName || ""}`.trim() ||
     "QC PESO Personnel";
 
-  const districtStr = p.addressDistrict
-    ? String(p.addressDistrict).toLowerCase().startsWith("district")
-      ? p.addressDistrict
-      : `District ${p.addressDistrict}`
-    : "";
+  const districtStr = districtAddressPart(p.addressDistrict);
 
   const location =
     [p.addressLine, p.addressBarangay, districtStr, p.addressCity]
@@ -373,7 +370,7 @@ export function adaptPesoProfile(p: any): QCPesoProfile {
     sex: p.sex && String(p.sex).toLowerCase() === "female" ? "Female" : "Male",
     addressLine: p.addressLine || "",
     barangay: p.addressBarangay || "",
-    district: p.addressDistrict || "",
+    district: normalizeDistrictOption(p.addressDistrict),
     city: p.addressCity || "",
     email: p.contactEmail || p.email || "",
     mobileNumber: p.contactNumber || "",
@@ -395,7 +392,7 @@ export function adaptMonitoredStudent(row: any): MonitoredStudentUser {
     [
       row.address_line,
       row.address_barangay,
-      row.address_district,
+      districtAddressPart(row.address_district),
       row.address_city,
     ]
       .filter(Boolean)
@@ -494,7 +491,7 @@ export function adaptMonitoredCompany(row: any): MonitoredCompanyUser {
     [
       row.address_line,
       row.address_barangay,
-      row.address_district,
+      districtAddressPart(row.address_district),
       row.address_city,
     ]
       .filter(Boolean)

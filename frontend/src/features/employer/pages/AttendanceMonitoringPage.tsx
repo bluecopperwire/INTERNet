@@ -1,4 +1,4 @@
-import { CalendarDays, ChevronLeft, ChevronRight, Eye, Search, SlidersHorizontal } from 'lucide-react';
+import { CalendarDays, Eye, Search, SlidersHorizontal } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { EmployerAttendanceItemDto, EmployerAttendanceSummaryDto, PageMeta } from '../../../types/api';
@@ -7,6 +7,7 @@ import { getErrorMessage } from '../../../utils/error-message';
 import { EmployerHero } from '../components/EmployerHero';
 import { employerApiService } from '../services/employer-api.service';
 import { ATTENDANCE_MONITOR_COLUMNS, attendanceStatusLabel, COMPANY_PAGE_SIZES } from '../utils/internship-workflow';
+import { TablePagination } from '../../../components/TablePagination';
 import styles from './AttendanceMonitoringPage.module.css';
 
 export function AttendanceMonitoringPage() {
@@ -55,7 +56,7 @@ export function AttendanceMonitoringPage() {
         <label className={styles.dateFilter}><CalendarDays size={16} /><span className={styles.srOnly}>Selected date</span><input type="date" value={date} max={todayDateOnly()} onChange={(event) => { beginReload(); setDate(event.target.value); resetPage(); }} /></label>
       </div>
       <div className={styles.tableCard}><div className={styles.tableScroller}><table className={styles.table}><thead><tr>{ATTENDANCE_MONITOR_COLUMNS.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{rows.map((row) => <tr key={row.internshipAssignmentId}><td>{row.studentFullName}</td><td>{row.jobTitle}</td><td>{row.strandProgram || 'N/A'}</td><td><span className={`${styles.statusPill} ${styles[row.status] ?? ''}`}>{attendanceStatusLabel(row.status)}</span></td><td><button type="button" className={styles.actionBtn} onClick={() => navigate(`/employer/attendance/${row.internshipAssignmentId}`, { state: { attendanceHistoryBackPath: '/employer/attendance' } })}><Eye size={14} />View</button></td></tr>)}</tbody></table></div>{loading && <p className={styles.noData}>Loading attendance...</p>}{error && <p className={styles.noData} role="alert">{error}</p>}{!loading && !error && rows.length === 0 && <p className={styles.noData}>No interns match the selected date and status.</p>}</div>
-      <div className={styles.paginationRow}><div className={styles.leftControls}><span>View</span><div className={styles.viewSelectBox}><select value={limit} onChange={(event) => { beginReload(); setLimit(Number(event.target.value)); resetPage(); }}>{COMPANY_PAGE_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</select></div><span>Students per page</span></div><div className={styles.pagination}><button type="button" aria-label="Previous page" disabled={page <= 1} onClick={() => { beginReload(); setPage((current) => current - 1); }}><ChevronLeft size={18} /></button><button type="button" className={styles.active}>{page}</button><button type="button" aria-label="Next page" disabled={page >= Math.max(meta.totalPages, 1)} onClick={() => { beginReload(); setPage((current) => current + 1); }}><ChevronRight size={18} /></button></div></div>
+      <TablePagination page={page} pageSize={limit} totalRecords={meta.total} pageSizes={COMPANY_PAGE_SIZES} onPageChange={(value) => { beginReload(); setPage(value); }} onPageSizeChange={(value) => { beginReload(); setLimit(value); resetPage(); }} />
     </section>
   </main>;
 }

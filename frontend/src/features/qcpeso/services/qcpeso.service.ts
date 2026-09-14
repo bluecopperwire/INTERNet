@@ -1,6 +1,7 @@
 import { useQCPesoStore } from '../stores/useQCPesoStore';
 import { qcpesoApiService } from './qcpeso-api.service';
 import { referenceService } from '../../../services/reference.service';
+import { normalizeDistrictOption } from '../../../utils/district';
 import {
   adaptMonitoredStudent,
   adaptMonitoredCompany,
@@ -216,7 +217,7 @@ export const qcpesoService = {
       websiteUrl,
       addressLine: payload.addressLine.trim(),
       addressBarangay: payload.barangay.trim(),
-      addressDistrict: payload.district?.trim() || null,
+      addressDistrict: normalizeDistrictOption(payload.district),
       addressCity: payload.city.trim(),
       contactPersonFirstName: payload.contactFirstName.trim(),
       contactPersonMiddleName: payload.contactMiddleName?.trim() || null,

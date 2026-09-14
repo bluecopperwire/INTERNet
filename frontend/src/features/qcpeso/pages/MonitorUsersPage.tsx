@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronLeft, ChevronRight, Eye, Search, SlidersHorizontal } from 'lucide-react'
+import { Eye, Search, SlidersHorizontal } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import QCPesoHero from '../components/QCPesoHero'
+import { TablePagination } from '../../../components/TablePagination'
 import { qcpesoService } from '../services/qcpeso.service'
 import type { MonitoredCompanyUser, MonitoredStudentUser, MonitorUserStatus } from '../types/qcpeso.types'
 import styles from './MonitorUsersPage.module.css'
@@ -43,7 +44,6 @@ export function MonitorUsersPage({ kind }: MonitorUsersPageProps) {
     })
   }, [searchQuery, selectedStatus, users])
 
-  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / itemsPerPage))
   const displayedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
   return (
@@ -89,18 +89,7 @@ export function MonitorUsersPage({ kind }: MonitorUsersPageProps) {
           {!displayedUsers.length && <p className={styles.noData}>No {isStudents ? 'students' : 'companies'} match your search criteria.</p>}
         </div>
 
-        <div className={styles.pagination}>
-          <div className={styles.pageSize}>
-            <span>View</span>
-            <span className={styles.pageSizeValue}><select value={itemsPerPage} onChange={(event) => { setItemsPerPage(Number(event.target.value)); setCurrentPage(1) }} aria-label={`${isStudents ? 'Students' : 'Companies'} per page`}><option value={5}>5</option><option value={10}>10</option><option value={15}>15</option></select></span>
-            <span>{isStudents ? 'Students' : 'Companies'} per page</span>
-          </div>
-          <div className={styles.paginationButtons}>
-            <button type="button" aria-label="Previous page" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={currentPage === 1}><ChevronLeft size={19} /></button>
-            <button type="button" className={styles.currentPage}>{currentPage}</button>
-            <button type="button" aria-label="Next page" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={currentPage === totalPages}><ChevronRight size={19} /></button>
-          </div>
-        </div>
+        <TablePagination page={currentPage} pageSize={itemsPerPage} totalRecords={filteredUsers.length} onPageChange={setCurrentPage} onPageSizeChange={(value) => { setItemsPerPage(value); setCurrentPage(1) }} />
       </section>
     </main>
   )

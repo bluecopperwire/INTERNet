@@ -14,6 +14,7 @@ import { publicUploadUrl } from '../../../utils/public-upload-url';
 import { toDateOnly } from '../../../utils/date-only';
 import { normalizeAvailabilityDays } from '../../../utils/availability-days';
 import { formatYearLevel } from '../../../utils/year-level';
+import { districtAddressPart, normalizeDistrictOption } from '../../../utils/district';
 
 export function adaptAdminDashboardSummary(
   studentMetrics: AdminMetricsDto,
@@ -69,10 +70,10 @@ export function adaptAdminStudentItem(dto: AdminStudentListItemDto): StudentReco
     sex: data.sex === 'Male' || data.sex === 'Female' ? data.sex : 'Other',
     birthdate: toDateOnly(data.birthDate) || 'N/A',
     contactNumber: data.contactNumber || 'N/A',
-    fullAddress: [data.addressLine, data.addressBarangay, data.addressDistrict, data.addressCity].filter(Boolean).join(', ') || 'Quezon City',
+    fullAddress: [data.addressLine, data.addressBarangay, districtAddressPart(data.addressDistrict), data.addressCity].filter(Boolean).join(', ') || 'Quezon City',
     addressStreet: data.addressLine || '',
     addressBarangay: data.addressBarangay || '',
-    addressDistrict: data.addressDistrict || '',
+    addressDistrict: normalizeDistrictOption(data.addressDistrict),
     addressCity: data.addressCity || '',
     linkedinUrl: data.linkedinUrl || '',
     inquiryVia: 'online',
@@ -114,10 +115,10 @@ export function adaptAdminEmployerItem(dto: AdminEmployerListItemDto): EmployerR
     ),
     industry: data.industryName || 'N/A',
     companyType: data.companyType === 'government' ? 'Government' : 'Private',
-    location: [data.addressLine, data.addressBarangay, data.addressDistrict, data.addressCity].filter(Boolean).join(', ') || 'Quezon City',
+    location: [data.addressLine, data.addressBarangay, districtAddressPart(data.addressDistrict), data.addressCity].filter(Boolean).join(', ') || 'Quezon City',
     addressLine: data.addressLine || '',
     addressBarangay: data.addressBarangay || '',
-    addressDistrict: data.addressDistrict || '',
+    addressDistrict: normalizeDistrictOption(data.addressDistrict),
     addressCity: data.addressCity || '',
     description: data.description || '',
     companyWebsite: data.websiteUrl || '',
@@ -164,7 +165,7 @@ export function adaptAdminPesoItem(dto: AdminPesoListItemDto): QCPesoRecord {
     sex: data.sex === 'Male' || data.sex === 'Female' ? data.sex : 'Other',
     addressLine: data.addressLine || '',
     barangay: data.addressBarangay || '',
-    district: data.addressDistrict || '',
+    district: normalizeDistrictOption(data.addressDistrict),
     city: data.addressCity || '',
     position: data.position || 'PESO Officer',
     department: data.department || 'PESO',

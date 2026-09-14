@@ -6,12 +6,13 @@ import { qcpesoService } from '../services/qcpeso.service'
 import type { QCPesoProfile } from '../types/qcpeso.types'
 import styles from './QCPesoProfilePage.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
+import { districtAddressPart } from '../../../utils/district'
 
 const formatAddress = (profile: QCPesoProfile) =>
   [
     profile.addressLine,
     profile.barangay,
-    profile.district && `District ${profile.district}`,
+    districtAddressPart(profile.district),
     profile.city,
   ]
     .filter(Boolean)
@@ -151,7 +152,7 @@ export function QCPesoProfilePage() {
           <ProfileSection icon={<Mail size={22} />} title="Contact Information">
             <DetailsList>
               <DetailItem label="Email Address" value={profile.email} />
-              <DetailItem label="Mobile Number" value={profile.mobileNumber} />
+              <DetailItem label="Contact Number" value={profile.mobileNumber} />
             </DetailsList>
           </ProfileSection>
 

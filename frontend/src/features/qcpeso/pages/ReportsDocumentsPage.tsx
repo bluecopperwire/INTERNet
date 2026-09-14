@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronLeft, ChevronRight, Eye, Search } from 'lucide-react'
+import { Eye, Search } from 'lucide-react'
 import QCPesoHero from '../components/QCPesoHero'
 import { StudentReviewModal } from '../components/StudentReviewModal'
 import { qcpesoService } from '../services/qcpeso.service'
 import type { StudentApplication } from '../types/qcpeso.types'
 import styles from './ReportsDocumentsPage.module.css'
+import { TablePagination } from '../../../components/TablePagination'
 
 const reportStatuses = [
   { label: 'Pending Review', source: 'Pending', color: '#4b4395' },
@@ -65,7 +66,6 @@ export function ReportsDocumentsPage() {
     })
   }, [applications, searchQuery, selectedStatus])
 
-  const totalPages = Math.max(1, Math.ceil(filteredApplications.length / itemsPerPage))
   const displayedApplications = filteredApplications.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
   const updateStatus = (id: string, status: string) => {
@@ -167,20 +167,7 @@ export function ReportsDocumentsPage() {
           {!displayedApplications.length && <div className={styles.noData}>No applications found matching your filter criteria.</div>}
         </div>
 
-        <div className={styles.toolbarRow}>
-          <div className={styles.leftControls}>
-            <span>View</span>
-            <select className={styles.viewSelect} value={itemsPerPage} onChange={(event) => { setItemsPerPage(Number(event.target.value)); setCurrentPage(1) }}>
-              <option value={5}>5</option><option value={7}>7</option><option value={10}>10</option><option value={15}>15</option>
-            </select>
-            <span>Students per page</span>
-          </div>
-          <div className={styles.pagination}>
-            <button className={styles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage((page) => page - 1)} aria-label="Previous page"><ChevronLeft size={18} /></button>
-            {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => <button key={page} className={`${styles.pageBtn} ${page === currentPage ? styles.active : ''}`} onClick={() => setCurrentPage(page)}>{page}</button>)}
-            <button className={styles.pageBtn} disabled={currentPage === totalPages} onClick={() => setCurrentPage((page) => page + 1)} aria-label="Next page"><ChevronRight size={18} /></button>
-          </div>
-        </div>
+        <TablePagination page={currentPage} pageSize={itemsPerPage} totalRecords={filteredApplications.length} onPageChange={setCurrentPage} onPageSizeChange={(value) => { setItemsPerPage(value); setCurrentPage(1) }} />
       </section>
 
       <StudentReviewModal student={selectedApplication} isOpen={!!selectedApplication} onClose={() => setSelectedApplication(null)} onApprove={(id) => updateStatus(id, 'Verified')} onFlag={(id) => updateStatus(id, 'Flagged')} onReject={(id) => updateStatus(id, 'Rejected')} />

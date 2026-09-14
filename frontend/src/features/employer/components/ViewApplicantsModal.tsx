@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react'
-import { X, Search, SlidersHorizontal, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
+import { X, Search, SlidersHorizontal, Eye } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { employerService } from '../services/employer.service'
 import type { Opportunity, Applicant } from '../types/employer.types'
 import styles from './ViewApplicantsModal.module.css'
+import { TablePagination } from '../../../components/TablePagination'
 import { getErrorMessage } from '../../../utils/error-message'
 
 interface ViewApplicantsModalProps {
@@ -59,14 +60,6 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
   const indexOfLastItem = currentPage * itemsPerPage
   const indexOfFirstItem = indexOfLastItem - itemsPerPage
   const currentItems = filteredApplicants.slice(indexOfFirstItem, indexOfLastItem)
-
-  const handlePrevPage = () => {
-    if (currentPage > 1) setCurrentPage(currentPage - 1)
-  }
-
-  const handleNextPage = () => {
-    if (currentPage < totalPages) setCurrentPage(currentPage + 1)
-  }
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
@@ -158,38 +151,7 @@ export function ViewApplicantsModal({ opportunity, onClose }: ViewApplicantsModa
           </table>
         </div>
 
-        <div className={styles.paginationRow}>
-          <div className={styles.leftControls}>
-            <span className={styles.viewLabel}>View</span>
-            <span className={styles.viewSelectBox}>
-              <select className={styles.viewSelect} value={itemsPerPage} onChange={(event) => { setItemsPerPage(Number(event.target.value)); setCurrentPage(1) }} aria-label="Students per page">
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={15}>15</option>
-              </select>
-            </span>
-            <span className={styles.viewLabel}>Students per page</span>
-          </div>
-          <div className={styles.pagination}>
-            <button
-              className={styles.pageBtn}
-              onClick={handlePrevPage}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <button className={`${styles.pageBtn} ${styles.active}`}>
-              {currentPage}
-            </button>
-            <button
-              className={styles.pageBtn}
-              onClick={handleNextPage}
-              disabled={currentPage === totalPages}
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
+        <TablePagination page={currentPage} pageSize={itemsPerPage} totalRecords={filteredApplicants.length} onPageChange={setCurrentPage} onPageSizeChange={(value) => { setItemsPerPage(value); setCurrentPage(1) }} />
       </div>
       
     </div>

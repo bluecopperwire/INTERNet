@@ -94,7 +94,7 @@ export function AdminStudentDetailsPage() {
             </InfoCard>
             <InfoCard icon={<Mail size={21} />} title="Contact Information">
               <Row label="Email" value={student.email} />
-              <Row label="Mobile Number" value={student.contactNumber} />
+              <Row label="Contact Number" value={student.contactNumber} />
               <Row label="Inquiry Method" value={student.inquiryVia} />
             </InfoCard>
             <InfoCard icon={<GraduationCap size={21} />} title="Current Academic Information">
