@@ -245,7 +245,7 @@ export class PesoDashboardController {
   }
 
   @Get('students')
-  getStudents(@Query() queryDto: PaginationDto & { search?: string }) {
+  getStudents(@Query() queryDto: QueryCompanyEmployersDto) {
     return this.pesoService.getStudents(queryDto);
   }
 

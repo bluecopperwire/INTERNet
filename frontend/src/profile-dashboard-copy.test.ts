@@ -40,4 +40,37 @@ describe('profile and dashboard labels', () => {
       useEmployerStore.setState({ summary: null, fetchDashboard: originalFetchDashboard })
     }
   })
+
+  it('shows read-only account information only on owner and Admin profile views', () => {
+    const ownerProfiles = [
+      readSource('src/features/intern-seeker/pages/DashboardPage.tsx'),
+      readSource('src/features/employer/pages/CompanyProfilePage.tsx'),
+      readSource('src/features/qcpeso/pages/QCPesoProfilePage.tsx'),
+    ]
+    const adminProfiles = [
+      readSource('src/features/admin/pages/AdminStudentDetailsPage.tsx'),
+      readSource('src/features/admin/pages/AdminEmployerRecordPages.tsx'),
+      readSource('src/features/admin/pages/AdminQCPesoRecordPages.tsx'),
+    ]
+
+    for (const profile of [...ownerProfiles, ...adminProfiles]) {
+      expect(profile).toContain('Account Information')
+      expect(profile).toContain('Account Email Address')
+      expect(profile).toContain('Account User Code')
+    }
+    for (const profile of ownerProfiles) expect(profile).toContain('useAuthStore')
+
+    const restrictedView = readSource('src/features/qcpeso/pages/MonitorUserDetailsPage.tsx')
+    expect(restrictedView).not.toContain('Account Information')
+
+    for (const editor of [
+      'src/features/intern-seeker/pages/ProfileEditorPage.tsx',
+      'src/features/employer/pages/CompanyProfileEditorPage.tsx',
+      'src/features/qcpeso/pages/QCPesoProfileEditorPage.tsx',
+      'src/features/admin/pages/AdminStudentProfileEditorPage.tsx',
+    ]) {
+      expect(readSource(editor)).not.toContain('Account Email Address')
+      expect(readSource(editor)).not.toContain('Account User Code')
+    }
+  })
 })

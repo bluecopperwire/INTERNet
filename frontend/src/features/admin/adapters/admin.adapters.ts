@@ -52,6 +52,7 @@ export function adaptAdminStudentItem(dto: AdminStudentListItemDto): StudentReco
   return {
     id: String(dto.studentId),
     userAccountId: String(dto.userAccountId),
+    accountCode: dto.accountCode,
     studentId: String(dto.studentId),
     fullName: dto.fullName,
     email: dto.accountEmail,
@@ -101,6 +102,7 @@ export function adaptAdminEmployerItem(dto: AdminEmployerListItemDto): EmployerR
   return {
     id: String(dto.companyId),
     userAccountId: String(dto.userAccountId),
+    accountCode: dto.accountCode,
     companyId: String(dto.companyId),
     fullName: dto.companyName,
     companyName: dto.companyName,
@@ -146,6 +148,7 @@ export function adaptAdminPesoItem(dto: AdminPesoListItemDto): QCPesoRecord {
   return {
     id: String(dto.pesoPersonnelId),
     userAccountId: String(dto.userAccountId),
+    accountCode: dto.accountCode,
     fullName: dto.fullName,
     email: dto.accountEmail,
     employeeId: dto.employeeId,

@@ -26,6 +26,12 @@ export function MonitorUsersPage({ kind }: MonitorUsersPageProps) {
   const title = isStudents ? 'Monitor Students' : 'Monitor Employers'
   const subtitle = isStudents ? 'Monitor student accounts and registration status.' : 'Monitor company accounts and registration status.'
 
+  const summary = useMemo(() => ({
+    total: users.length,
+    active: users.filter((user) => user.status === 'Active').length,
+    suspended: users.filter((user) => user.status === 'Suspended').length,
+  }), [users])
+
   useEffect(() => {
     if (isStudents) {
       qcpesoService.getMonitoredStudents().then(setUsers)
@@ -50,6 +56,19 @@ export function MonitorUsersPage({ kind }: MonitorUsersPageProps) {
     <main className={styles.page}>
       <QCPesoHero title={title} subtitle={subtitle} />
       <section className={styles.content}>
+        <div className={styles.summaryGrid}>
+          {[
+            [`Total ${isStudents ? 'Students' : 'Employers'}`, summary.total],
+            [`Active ${isStudents ? 'Students' : 'Employers'}`, summary.active],
+            [`Suspended ${isStudents ? 'Students' : 'Employers'}`, summary.suspended],
+          ].map(([label, value]) => (
+            <article className={styles.summaryCard} key={label}>
+              <h2>{label}</h2>
+              <p>{String(value).padStart(2, '0')}</p>
+            </article>
+          ))}
+        </div>
+
         <div className={styles.controls}>
           <label className={styles.searchField}>
             <Search size={19} aria-hidden="true" />

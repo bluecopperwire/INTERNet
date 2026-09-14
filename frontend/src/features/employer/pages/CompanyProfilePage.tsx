@@ -5,6 +5,7 @@ import {
   User,
   Mail,
   Camera,
+  LockKeyhole,
 } from 'lucide-react'
 import { EmployerHero } from '../components/EmployerHero'
 import { employerService } from '../services/employer.service'
@@ -13,6 +14,7 @@ import styles from './CompanyProfilePage.module.css'
 import { useNavigate } from 'react-router-dom'
 import { useToastStore } from '../../../stores/useToastStore'
 import { districtAddressPart } from '../../../utils/district'
+import { useAuthStore } from '../../../stores/useAuthStore'
 
 const formatAddress = (profile: CompanyProfile) =>
   [
@@ -40,6 +42,7 @@ export function CompanyProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
   const toast = useToastStore()
+  const account = useAuthStore((state) => state.user)
 
   const fetchProfile = async () => {
     setIsLoading(true)
@@ -223,6 +226,13 @@ export function CompanyProfilePage() {
                 label="Contact Number"
                 value={profile.contact_number}
               />
+            </div>
+          </ProfileSection>
+
+          <ProfileSection icon={<LockKeyhole size={24} />} title="Account Information">
+            <div className={styles.detailsList}>
+              <DetailItem label="Account Email Address" value={account?.email ?? 'Not provided'} />
+              <DetailItem label="Account User Code" value={account?.accountCode || 'Not provided'} />
             </div>
           </ProfileSection>
         </div>

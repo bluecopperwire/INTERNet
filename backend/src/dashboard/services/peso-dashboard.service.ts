@@ -176,7 +176,10 @@ export class PesoDashboardService {
     const limit = Math.max(1, Math.min(100, Number(queryDto?.limit) || 20));
     const offset = (page - 1) * limit;
 
-    const whereClauses: string[] = ['ua.deleted_at IS NULL'];
+    const whereClauses: string[] = [
+      "ua.account_status IN ('active', 'suspended')",
+      'ua.deleted_at IS NULL',
+    ];
     const params: any[] = [];
     let paramIndex = 1;
 
@@ -939,17 +942,22 @@ export class PesoDashboardService {
     });
   }
 
-  async getStudents(query: { search?: string; page?: number; limit?: number }) {
+  async getStudents(query: QueryCompanyEmployersDto) {
     const page = query.page && query.page > 0 ? query.page : 1;
     const limit = query.limit && query.limit > 0 ? query.limit : 10;
     const offset = (page - 1) * limit;
 
     const whereClauses: string[] = [
-      "ua.account_status = 'active'",
+      "ua.account_status IN ('active', 'suspended')",
       'ua.deleted_at IS NULL',
     ];
     const params: any[] = [];
     let pIdx = 1;
+
+    if (query.accountStatus) {
+      whereClauses.push(`ua.account_status = $${pIdx++}`);
+      params.push(query.accountStatus);
+    }
 
     if (query.search) {
       whereClauses.push(
@@ -979,7 +987,6 @@ export class PesoDashboardService {
       `
         SELECT 
           s.student_id,
-          s.user_account_id,
           concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS full_name,
           s.contact_email,
           s.contact_number,
@@ -1029,16 +1036,37 @@ export class PesoDashboardService {
     if (!rows || rows.length === 0) {
       throw new NotFoundException('Student not found');
     }
-    return rows[0];
+    const { user_account_id: _userAccountId, deleted_at: _deletedAt, ...studentProfile } =
+      rows[0];
+    return studentProfile;
   }
 
   async getEmployerDetail(companyId: number) {
     const rows = await this.dataSource.query(
       `
         SELECT 
-          c.*,
+          c.company_id,
+          c.industry_id,
+          c.company_name,
+          c.company_type,
+          c.description,
+          c.website_url,
+          c.year_established,
+          c.company_size,
+          c.contact_email,
+          c.contact_number,
+          c.contact_person_first_name,
+          c.contact_person_middle_name,
+          c.contact_person_last_name,
+          c.contact_person_extension_name,
+          c.address_line,
+          c.address_barangay,
+          c.address_district,
+          c.address_city,
+          c.logo_file_path,
+          c.created_at,
+          c.updated_at,
           i.industry_name,
-          ua.email,
           ua.account_status,
           (
             SELECT count(o.opportunity_id)::int

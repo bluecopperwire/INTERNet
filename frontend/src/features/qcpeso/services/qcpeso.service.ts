@@ -160,9 +160,15 @@ export const qcpesoService = {
   },
 
   async getStudentUsers(): Promise<MonitoredStudentUser[]> {
-    const store = useQCPesoStore.getState();
-    await store.fetchStudents();
-    return useQCPesoStore.getState().students;
+    const records: MonitoredStudentUser[] = [];
+    let page = 1;
+    do {
+      const result = await qcpesoApiService.getStudents({ page, limit: 100 });
+      records.push(...result.data.map(adaptMonitoredStudent));
+      if (page >= result.meta.totalPages) break;
+      page++;
+    } while (true);
+    return records;
   },
 
   async getMonitoredStudents(): Promise<MonitoredStudentUser[]> {
@@ -175,9 +181,15 @@ export const qcpesoService = {
   },
 
   async getCompanyUsers(): Promise<MonitoredCompanyUser[]> {
-    const store = useQCPesoStore.getState();
-    await store.fetchCompanies();
-    return useQCPesoStore.getState().companies;
+    const records: MonitoredCompanyUser[] = [];
+    let page = 1;
+    do {
+      const result = await qcpesoApiService.getEmployers({ page, limit: 100 });
+      records.push(...result.data.map(adaptMonitoredCompany));
+      if (page >= result.meta.totalPages) break;
+      page++;
+    } while (true);
+    return records;
   },
 
   async getMonitoredCompanies(): Promise<MonitoredCompanyUser[]> {

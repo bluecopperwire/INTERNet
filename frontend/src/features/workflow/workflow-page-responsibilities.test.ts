@@ -110,6 +110,27 @@ describe('workflow page responsibility boundaries', () => {
     }
   })
 
+  it('standardizes Admin User Management summaries and table columns', () => {
+    const students = readSource('../admin/pages/ManageStudentsPage.tsx')
+    const employers = readSource('../admin/pages/ManageEmployersPage.tsx')
+    const personnel = readSource('../admin/pages/ManageQCPesoPage.tsx')
+
+    expect(headings(students)).toEqual(['User Code', 'Student Name', 'Email', 'Date Registered', 'Status', 'Action'])
+    expect(headings(employers)).toEqual(['User Code', 'Company Name', 'Email', 'Date Registered', 'Status', 'Action'])
+    expect(headings(personnel)).toEqual(['User Code', 'Employee Name', 'Email', 'Date Registered', 'Status', 'Action'])
+
+    for (const source of [students, employers, personnel]) {
+      expect(source).toContain("padStart(2, '0')")
+      expect(source).toContain("accountCode || 'Not provided'")
+      expect(source).not.toMatch(/<strong>\{(?:student\.fullName|employer\.companyName|record\.fullName)\}<\/strong>/)
+      expect(source).not.toMatch(/(?:peopleIcon|suitcaseIcon)/)
+    }
+
+    for (const source of [students, employers, personnel]) {
+      expect(source).not.toMatch(/(?:Total|Active|Suspended|Deactivated) [^'\"]* Accounts/)
+    }
+  })
+
   it('removes every frontend acceptance-reversal call and control', () => {
     const api = readSource('../employer/services/employer-api.service.ts')
     const service = readSource('../employer/services/employer.service.ts')

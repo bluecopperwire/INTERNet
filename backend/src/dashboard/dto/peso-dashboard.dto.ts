@@ -82,8 +82,12 @@ export class QueryReferralsDto extends DateFilterDto {
 
 export class QueryCompanyEmployersDto extends PaginationDto {
   @IsOptional()
-  @IsString()
+  @IsIn(['active', 'suspended'])
   accountStatus?: string;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
 }
 
 export class QueryAttendanceDto extends DateFilterDto {

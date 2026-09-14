@@ -3,6 +3,7 @@ export type AccountStatus = 'Active' | 'Inactive' | 'Suspended' | 'Deactivated' 
 export interface BaseRecord {
   id: string
   userAccountId?: string
+  accountCode?: string
   fullName: string
   email: string
   status: AccountStatus

@@ -3,7 +3,6 @@ import { Eye, Filter, Plus, Search } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { PageHero } from '../../../components/PageHero'
 import { TablePagination } from '../../../components/TablePagination'
-import suitcaseIcon from '../../../assets/suitcase.svg'
 import { adminService } from '../services/admin.service'
 import type { EmployerRecord } from '../types/admin.types'
 import styles from './ManageStudentsPage.module.css'
@@ -25,6 +24,7 @@ export function ManageEmployersPage() {
       const term = query.trim().toLowerCase()
       const matchesTerm =
         !term ||
+        employer.accountCode?.toLowerCase().includes(term) ||
         employer.companyName.toLowerCase().includes(term) ||
         employer.email.toLowerCase().includes(term)
       const matchesStatus = status === 'All Statuses' || employer.status === status
@@ -49,10 +49,10 @@ export function ManageEmployersPage() {
         : styles.inactive
 
   const summaryItems = [
-    { label: 'Total Employer Accounts', value: summary.total },
-    { label: 'Active Employer Accounts', value: summary.active },
-    { label: 'Suspended Employer Accounts', value: summary.suspended },
-    { label: 'Deactivated Employer Accounts', value: summary.deactivated },
+    { label: 'Total Employers', value: summary.total },
+    { label: 'Active Employers', value: summary.active },
+    { label: 'Suspended Employers', value: summary.suspended },
+    { label: 'Deactivated Employers', value: summary.deactivated },
   ]
 
   return (
@@ -64,8 +64,7 @@ export function ManageEmployersPage() {
           {summaryItems.map((item) => (
             <article className={styles.summaryCard} key={item.label}>
               <h2>{item.label}</h2>
-              <p>{item.value}</p>
-              <img src={suitcaseIcon} alt="" />
+              <p>{String(item.value).padStart(2, '0')}</p>
             </article>
           ))}
         </div>
@@ -107,6 +106,7 @@ export function ManageEmployersPage() {
             <table>
               <thead>
                 <tr>
+                  <th>User Code</th>
                   <th>Company Name</th>
                   <th>Email</th>
                   <th>Date Registered</th>
@@ -117,9 +117,8 @@ export function ManageEmployersPage() {
               <tbody>
                 {records.map((employer) => (
                   <tr key={employer.id}>
-                    <td>
-                      <strong>{employer.companyName}</strong>
-                    </td>
+                    <td>{employer.accountCode || 'Not provided'}</td>
+                    <td>{employer.companyName}</td>
                     <td>{employer.email}</td>
                     <td>{employer.dateCreated}</td>
                     <td>
@@ -141,7 +140,7 @@ export function ManageEmployersPage() {
                 ))}
                 {!records.length && (
                   <tr>
-                    <td className={styles.empty} colSpan={5}>
+                    <td className={styles.empty} colSpan={6}>
                       No employers match the selected filters.
                     </td>
                   </tr>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Building2, Edit3, GraduationCap, Mail, MapPin, Phone, UserRound, X } from 'lucide-react'
+import { ArrowLeft, Building2, Edit3, GraduationCap, LockKeyhole, Mail, MapPin, Phone, UserRound, X } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { adminService } from '../services/admin.service'
 import type { StudentRecord } from '../types/admin.types'
@@ -109,6 +109,10 @@ export function AdminStudentDetailsPage() {
               <Row label="Internship Start Date Availability" value={student.startDate} />
               <Row label="Preferred Field of Internship" value={formatPreferredIndustries(student.preferredIndustries, student.otherPreferredField)} />
               <Row label="Willing to Be Assigned Outside Preferred Field" value={student.flexibleAssignment ? 'Yes' : 'No'} />
+            </InfoCard>
+            <InfoCard icon={<LockKeyhole size={21} />} title="Account Information">
+              <Row label="Account Email Address" value={student.email} />
+              <Row label="Account User Code" value={student.accountCode || 'Not provided'} />
             </InfoCard>
           </div>
           <footer className={styles.actions}>

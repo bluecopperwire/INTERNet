@@ -23,6 +23,18 @@ describe('QC PESO Phase 5 workflow contracts', () => {
     expect(page).toContain("String(value).padStart(2, '0')")
   })
 
+  it('shows complete account summaries on both monitor-user pages', () => {
+    const monitorUsers = read('./pages/MonitorUsersPage.tsx')
+    const service = read('./services/qcpeso.service.ts')
+
+    for (const label of ['Total', 'Active', 'Suspended']) {
+      expect(monitorUsers).toContain(`${label} \${isStudents ? 'Students' : 'Employers'}`)
+    }
+    expect(monitorUsers).toContain("String(value).padStart(2, '0')")
+    expect(service).toContain('qcpesoApiService.getStudents({ page, limit: 100 })')
+    expect(service).toContain('qcpesoApiService.getEmployers({ page, limit: 100 })')
+  })
+
   it('uses concise and grouped filters with finalized-only history deletion', () => {
     expect(page).not.toContain('All Statuses')
     expect(page).toContain("statuses={['active', 'closed', ...ALL_STATUSES]}")

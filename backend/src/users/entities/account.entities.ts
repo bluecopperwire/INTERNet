@@ -30,6 +30,9 @@ export class UserAccount {
   @PrimaryGeneratedColumn({ name: 'user_account_id', type: 'integer' })
   userAccountId: number;
 
+  @Column({ name: 'account_code', type: 'text', insert: false, update: false })
+  accountCode: string;
+
   @Column({ name: 'email', type: 'text' })
   email: string;
 

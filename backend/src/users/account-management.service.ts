@@ -190,6 +190,7 @@ export class AccountManagementService {
       photoFilePath: peso.photoFilePath,
       updatedAt: peso.updatedAt,
       email: account?.email,
+      accountCode: account?.accountCode,
       accountStatus: account?.accountStatus,
     };
   }

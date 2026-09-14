@@ -82,6 +82,7 @@ describe('Database migration paths and behavioral validation', () => {
       'QcAssignmentVisibility1788739200000',
       'StudentAvailabilityDays1788825600000',
       'ApplicationRejectionRemarkOnly1788912000000',
+      'AccountUserCode1788998400000',
     ]);
 
     // Validate redesigned columns
@@ -94,13 +95,33 @@ describe('Database migration paths and behavioral validation', () => {
         SELECT table_name, column_name, data_type, is_nullable
         FROM information_schema.columns
         WHERE table_schema = 'public' AND (
-          (table_name = 'user_account' AND column_name = 'suspended_until') OR
+          (table_name = 'user_account' AND column_name IN ('suspended_until', 'account_code')) OR
           (table_name = 'company' AND column_name = 'logo_file_path') OR
           (table_name = 'opportunity' AND column_name = 'allowance') OR
           (table_name = 'internship_assignment' AND column_name = 'deleted_at')
         )
       `);
-    expect(columns.length).toBe(4);
+    expect(columns.length).toBe(5);
+
+    const [manilaYearRow] = await dataSource.query(
+      `SELECT EXTRACT(YEAR FROM CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::integer AS year`,
+    );
+    const generatedAccounts = await dataSource.query(`
+      INSERT INTO public.user_account (email, user_role)
+      VALUES
+        ('code-student-1@example.test', 'student'),
+        ('code-admin-1@example.test', 'admin'),
+        ('code-company-1@example.test', 'company'),
+        ('code-student-2@example.test', 'student')
+      RETURNING user_role, account_code
+    `);
+    const year = manilaYearRow.year;
+    expect(generatedAccounts).toEqual([
+      { user_role: 'student', account_code: `${year}-STU-00001` },
+      { user_role: 'admin', account_code: `${year}-ADM-00001` },
+      { user_role: 'company', account_code: `${year}-COM-00001` },
+      { user_role: 'student', account_code: `${year}-STU-00002` },
+    ]);
 
     const [availabilitySchema] = await dataSource.query(`
       SELECT
@@ -155,6 +176,18 @@ describe('Database migration paths and behavioral validation', () => {
       `SELECT industry_name FROM public.industry WHERE is_custom_text = true`,
     );
     expect(customIndustries).toEqual([{ industry_name: 'Other' }]);
+
+    await dataSource.undoLastMigration();
+    const [accountCodeAfterRevert] = await dataSource.query(`
+      SELECT to_regclass('public.account_user_code_counter') AS counter,
+        (SELECT count(*)::int FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = 'user_account'
+           AND column_name = 'account_code') AS account_code_columns
+    `);
+    expect(accountCodeAfterRevert).toEqual({
+      counter: null,
+      account_code_columns: 0,
+    });
 
     await expect(dataSource.undoLastMigration()).rejects.toThrow(
       /ApplicationRejectionRemarkOnly1788912000000 is irreversible/,

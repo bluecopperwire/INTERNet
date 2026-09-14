@@ -62,7 +62,7 @@ export class AdminUserManagementService {
         filter.params,
       ),
       this.dataSource.query(
-        `SELECT s.student_id AS "studentId", ua.user_account_id AS "userAccountId",
+        `SELECT s.student_id AS "studentId", ua.user_account_id AS "userAccountId", ua.account_code AS "accountCode",
                 concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS "fullName",
                 ua.email AS "accountEmail", ua.created_at AS "createdAt",
                 ua.account_status AS "accountStatus", ua.suspended_until AS "suspendedUntil"
@@ -80,7 +80,7 @@ export class AdminUserManagementService {
   async getStudent(studentId: number) {
     this.assertPositiveId(studentId, 'studentId');
     const rows = await this.dataSource.query(
-      `SELECT s.student_id AS "studentId", ua.user_account_id AS "userAccountId",
+      `SELECT s.student_id AS "studentId", ua.user_account_id AS "userAccountId", ua.account_code AS "accountCode",
               ua.email AS "accountEmail", ua.account_status AS "accountStatus", ua.suspended_until AS "suspendedUntil", ua.created_at AS "createdAt",
               s.first_name AS "firstName", s.middle_name AS "middleName", s.last_name AS "lastName",
               s.extension_name AS "extensionName",
@@ -224,7 +224,7 @@ export class AdminUserManagementService {
         filter.params,
       ),
       this.dataSource.query(
-        `SELECT c.company_id AS "companyId", ua.user_account_id AS "userAccountId",
+        `SELECT c.company_id AS "companyId", ua.user_account_id AS "userAccountId", ua.account_code AS "accountCode",
                 c.company_name AS "companyName", ua.email AS "accountEmail",
                 ua.created_at AS "createdAt", ua.account_status AS "accountStatus", ua.suspended_until AS "suspendedUntil"
          FROM public.user_account ua JOIN public.company c ON c.user_account_id = ua.user_account_id
@@ -240,7 +240,7 @@ export class AdminUserManagementService {
   async getEmployer(companyId: number) {
     this.assertPositiveId(companyId, 'companyId');
     const rows = await this.dataSource.query(
-      `SELECT c.company_id AS "companyId", ua.user_account_id AS "userAccountId",
+      `SELECT c.company_id AS "companyId", ua.user_account_id AS "userAccountId", ua.account_code AS "accountCode",
               ua.email AS "accountEmail", ua.account_status AS "accountStatus", ua.suspended_until AS "suspendedUntil", ua.created_at AS "createdAt",
               c.company_name AS "companyName", c.company_type AS "companyType",
               c.industry_id AS "industryId", i.industry_name AS "industryName",
@@ -421,7 +421,7 @@ export class AdminUserManagementService {
         filter.params,
       ),
       this.dataSource.query(
-        `SELECT p.peso_personnel_id AS "pesoPersonnelId", ua.user_account_id AS "userAccountId",
+        `SELECT p.peso_personnel_id AS "pesoPersonnelId", ua.user_account_id AS "userAccountId", ua.account_code AS "accountCode",
                 concat_ws(' ', p.first_name, p.middle_name, p.last_name, p.extension_name) AS "fullName",
                 ua.email AS "accountEmail", p.employee_id AS "employeeId",
                 ua.created_at AS "createdAt", ua.account_status AS "accountStatus", ua.suspended_until AS "suspendedUntil"
@@ -438,7 +438,7 @@ export class AdminUserManagementService {
   async getPesoPersonnel(pesoPersonnelId: number) {
     this.assertPositiveId(pesoPersonnelId, 'pesoPersonnelId');
     const rows = await this.dataSource.query(
-      `SELECT p.peso_personnel_id AS "pesoPersonnelId", ua.user_account_id AS "userAccountId",
+      `SELECT p.peso_personnel_id AS "pesoPersonnelId", ua.user_account_id AS "userAccountId", ua.account_code AS "accountCode",
               ua.email AS "accountEmail", ua.account_status AS "accountStatus", ua.suspended_until AS "suspendedUntil", ua.created_at AS "createdAt",
               p.first_name AS "firstName", p.middle_name AS "middleName", p.last_name AS "lastName",
               p.extension_name AS "extensionName",

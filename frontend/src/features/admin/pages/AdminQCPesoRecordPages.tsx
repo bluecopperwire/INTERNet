@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { ArrowLeft, BriefcaseBusiness, Edit3, Mail, MapPin, Phone, UserRound, X } from 'lucide-react'
+import { ArrowLeft, BriefcaseBusiness, Edit3, LockKeyhole, Mail, MapPin, Phone, UserRound, X } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { adminService } from '../services/admin.service'
 import type { QCPesoRecord } from '../types/admin.types'
@@ -138,6 +138,11 @@ export function AdminQCPesoDetailsPage() {
               <Row label="Employee ID" value={record.employeeId} />
               <Row label="Department" value={record.department} />
               <Row label="Position" value={record.position} />
+            </Card>
+
+            <Card icon={<LockKeyhole size={21} />} title="Account Information">
+              <Row label="Account Email Address" value={record.email} />
+              <Row label="Account User Code" value={record.accountCode || 'Not provided'} />
             </Card>
           </div>
 

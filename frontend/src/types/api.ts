@@ -82,6 +82,7 @@ export interface AuthTokenResponse {
 
 export interface CurrentUserResponse {
   userAccountId: number;
+  accountCode: string;
   email: string;
   userRole: UserRole;
   accountStatus: AccountStatus;
@@ -709,6 +710,7 @@ export interface AdminMetricsDto {
 
 export interface AdminStudentListItemDto {
   userAccountId: number;
+  accountCode: string;
   studentId: number;
   fullName: string;
   accountEmail: string;
@@ -719,6 +721,7 @@ export interface AdminStudentListItemDto {
 
 export interface AdminEmployerListItemDto {
   userAccountId: number;
+  accountCode: string;
   companyId: number;
   companyName: string;
   accountEmail: string;
@@ -729,6 +732,7 @@ export interface AdminEmployerListItemDto {
 
 export interface AdminPesoListItemDto {
   userAccountId: number;
+  accountCode: string;
   pesoPersonnelId: number;
   employeeId: string;
   fullName: string;

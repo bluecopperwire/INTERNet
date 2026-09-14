@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { ArrowLeft, Building2, Edit3, Mail, MapPin, Phone, UserRound, X } from 'lucide-react'
+import { ArrowLeft, Building2, Edit3, LockKeyhole, Mail, MapPin, Phone, UserRound, X } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { adminService } from '../services/admin.service'
 import type { EmployerRecord } from '../types/admin.types'
@@ -150,6 +150,11 @@ export function AdminEmployerDetailsPage() {
               <Row label="Contact Person" value={contactNameOf(record)} />
               <Row label="Contact Email" value={record.contactEmail || record.email} />
               <Row label="Contact Number" value={record.contactNumber} />
+            </Card>
+
+            <Card icon={<LockKeyhole size={21} />} title="Account Information">
+              <Row label="Account Email Address" value={record.email} />
+              <Row label="Account User Code" value={record.accountCode || 'Not provided'} />
             </Card>
           </div>
 
