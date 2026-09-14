@@ -120,19 +120,24 @@ export const employerService = {
       useEmployerStore.getState().summary || {
         companyName: 'Company',
         activeOpportunities: 0,
-        totalApplicants: 0,
-        acceptedPercentage: 0,
-        rejectedPercentage: 0,
-        pendingReviews: 0,
-        acceptanceRate: 0,
+        activeInternships: 0,
+        awaitingReview: 0,
+        awaitingCompletion: 0,
+        totalReferrals: 0,
+        activePercentage: 0,
+        closedPercentage: 0,
       }
     );
   },
 
-  async getRecentApplicants(limit = 4): Promise<Applicant[]> {
+  async getRecentApplicants(limit = 5): Promise<Applicant[]> {
     const store = useEmployerStore.getState();
-    await store.fetchReferrals({ view: 'review', page: 1, limit });
+    await store.fetchReferrals({ view: 'history', page: 1, limit });
     return useEmployerStore.getState().referrals;
+  },
+
+  async getInternshipSummary() {
+    return employerApiService.getInternshipSummary();
   },
 
   async getCompanyProfile(): Promise<CompanyProfile> {

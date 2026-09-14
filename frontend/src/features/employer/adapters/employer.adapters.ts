@@ -29,20 +29,15 @@ export function adaptEmployerDashboardSummary(
   m: EmployerDashboardMetricsDto,
   companyName = 'Partner Company',
 ): EmployerDashboardSummary {
-  const total = m.totalApplicants || 0;
-  const acceptedPct =
-    total > 0 ? Math.round((m.acceptedCount / total) * 100) : 0;
-  const rejectedPct =
-    total > 0 ? Math.round((m.rejectedCount / total) * 100) : 0;
-
   return {
     companyName,
     activeOpportunities: m.activeOpportunities,
-    totalApplicants: m.totalApplicants,
-    acceptedPercentage: acceptedPct,
-    rejectedPercentage: rejectedPct,
-    pendingReviews: m.pendingReviews,
-    acceptanceRate: acceptedPct,
+    activeInternships: 0,
+    awaitingReview: 0,
+    awaitingCompletion: 0,
+    totalReferrals: 0,
+    activePercentage: 0,
+    closedPercentage: 0,
   };
 }
 

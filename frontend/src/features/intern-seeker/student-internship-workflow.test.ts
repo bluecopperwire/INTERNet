@@ -122,6 +122,13 @@ describe('Phase 2 Student internship workflow responsibilities', () => {
     expect(attendance).toContain('There is currently no active internship to track.')
   })
 
+  it('reuses the My Internship feedback design for Attendance errors', () => {
+    const attendance = readSource('./pages/AttendancePage.tsx')
+    expect(attendance).toContain("import internshipStyles from './StudentInternshipPages.module.css'")
+    expect(attendance).toContain('className={internshipStyles.feedback} role="alert"')
+    expect(attendance).not.toContain('className={styles.error}')
+  })
+
   it('keeps Apply clickable and shows blocked eligibility as an error toast', () => {
     const opportunity = readSource('./components/OpportunityDetail.tsx')
     expect(opportunity).toContain('getApplicationEligibility(studentId)')

@@ -9,11 +9,12 @@ import type {
 export const MOCK_EMPLOYER_DASHBOARD: EmployerDashboardSummary = {
   companyName: 'ABC Inc.',
   activeOpportunities: 0,
-  totalApplicants: 0,
-  acceptedPercentage: 40,
-  rejectedPercentage: 60,
-  pendingReviews: 0,
-  acceptanceRate: 0,
+  activeInternships: 0,
+  awaitingReview: 0,
+  awaitingCompletion: 0,
+  totalReferrals: 0,
+  activePercentage: 40,
+  closedPercentage: 60,
 }
 
 export const MOCK_OPPORTUNITIES: Opportunity[] = [

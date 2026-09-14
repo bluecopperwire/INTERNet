@@ -38,6 +38,12 @@ export function ApplicantsPage() {
   // Extract unique values for filter dropdowns
   const uniqueStatuses = ['All', 'For Review', 'Under Review', 'For Interview']
 
+  const reviewSummary = useMemo(() => ({
+    forReview: applicants.filter((app) => app.reviewStatus === 'For Review').length,
+    underReview: applicants.filter((app) => app.reviewStatus === 'Under Review').length,
+    forInterview: applicants.filter((app) => app.reviewStatus === 'For Interview').length,
+  }), [applicants])
+
   const filteredApplicants = useMemo(() => {
     return applicants.filter((app) => {
       let matches = true
@@ -98,6 +104,12 @@ export function ApplicantsPage() {
       />
 
       <section className={styles.mainContent}>
+        <SummaryCards items={[
+          ['For Review Referrals', reviewSummary.forReview],
+          ['Under Review Referrals', reviewSummary.underReview],
+          ['For Interview Referrals', reviewSummary.forInterview],
+        ]} />
+
         <div className={styles.toolbar}>
           <div className={styles.searchBox}>
             <Search size={18} color="#160e6f" />
@@ -228,6 +240,20 @@ export function ReferralsHistoryPage() {
     employerService.getReferralHistory().then(setReferrals)
   }, [])
 
+  const historySummary = useMemo(() => ({
+    total: referrals.length,
+    active: referrals.filter((referral) =>
+      REFERRAL_ONGOING_STATUSES.includes(
+        referral.historyStatus ?? 'For Review (Employer)',
+      ),
+    ).length,
+    closed: referrals.filter((referral) =>
+      REFERRAL_CLOSED_STATUSES.includes(
+        referral.historyStatus ?? 'For Review (Employer)',
+      ),
+    ).length,
+  }), [referrals])
+
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase()
     return referrals.filter((referral) => {
@@ -235,7 +261,7 @@ export function ReferralsHistoryPage() {
         `${referral.name} ${referral.opportunityTitle} ${referral.course} ${referral.historyStatus}`
           .toLowerCase().includes(query)
       const matchesStatus = status === 'All' ||
-        (status === 'Ongoing' && REFERRAL_ONGOING_STATUSES.includes(referral.historyStatus ?? 'For Review (Employer)')) ||
+        (status === 'Active' && REFERRAL_ONGOING_STATUSES.includes(referral.historyStatus ?? 'For Review (Employer)')) ||
         (status === 'Closed' && REFERRAL_CLOSED_STATUSES.includes(referral.historyStatus ?? 'For Review (Employer)')) ||
         referral.historyStatus === status
       return matchesSearch && matchesStatus
@@ -267,9 +293,15 @@ export function ReferralsHistoryPage() {
   return <main className={styles.pageContainer}>
     <EmployerHero title="Referrals History" subtitle="View the complete lifecycle of every referral sent to your company." comfortableSpacing />
     <section className={styles.mainContent}>
+      <SummaryCards items={[
+        ['Total Referrals', historySummary.total],
+        ['Active Referrals', historySummary.active],
+        ['Closed Referrals', historySummary.closed],
+      ]} />
+
       <div className={styles.toolbar}>
         <div className={styles.searchBox}><Search size={18} color="#160e6f" /><input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1) }} placeholder="Search referrals..." /></div>
-        <div className={styles.statusFilter}><SlidersHorizontal size={18} /><select value={status} onChange={(event) => { setStatus(event.target.value); setPage(1) }} aria-label="Filter referral history by status"><option value="All">All</option><option>Ongoing</option><option>Closed</option>{REFERRAL_HISTORY_STATUSES.map((value) => <option key={value}>{value}</option>)}</select></div>
+        <div className={styles.statusFilter}><SlidersHorizontal size={18} /><select value={status} onChange={(event) => { setStatus(event.target.value); setPage(1) }} aria-label="Filter referral history by status"><option value="All">All</option><option>Active</option><option>Closed</option>{REFERRAL_HISTORY_STATUSES.map((value) => <option key={value}>{value}</option>)}</select></div>
       </div>
       <div className={styles.tableCard}><div className={styles.tableWrapper}><table className={styles.table}>
         <thead><tr><th>Student Name</th><th>Job Title</th><th>Program / Strand</th><th>Application Date</th><th>Referral Date</th><th>Status</th><th>Action</th></tr></thead>
@@ -283,6 +315,15 @@ export function ReferralsHistoryPage() {
     </section>
     {deleteTarget && <ConfirmDeleteModal subject={`${deleteTarget.name}'s referral`} isDeleting={isDeleting} onClose={() => setDeleteTarget(null)} onConfirm={() => void deleteReferral()} />}
   </main>
+}
+
+function SummaryCards({ items }: { items: Array<[string, number]> }) {
+  return <div className={styles.summaryGrid}>
+    {items.map(([label, value]) => <article className={styles.summaryCard} key={label}>
+      <h2>{label}</h2>
+      <p>{String(value).padStart(2, '0')}</p>
+    </article>)}
+  </div>
 }
 
 export default ApplicantsPage

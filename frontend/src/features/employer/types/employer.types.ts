@@ -84,11 +84,12 @@ export interface CompanyProfile {
 export interface EmployerDashboardSummary {
   companyName: string
   activeOpportunities: number
-  totalApplicants: number
-  acceptedPercentage: number
-  rejectedPercentage: number
-  pendingReviews: number
-  acceptanceRate: number
+  activeInternships: number
+  awaitingReview: number
+  awaitingCompletion: number
+  totalReferrals: number
+  activePercentage: number
+  closedPercentage: number
 }
 
 export interface EmployerNotification {
