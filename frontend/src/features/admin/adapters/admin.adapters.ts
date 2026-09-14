@@ -19,21 +19,32 @@ import { districtAddressPart, normalizeDistrictOption } from '../../../utils/dis
 export function adaptAdminDashboardSummary(
   studentMetrics: AdminMetricsDto,
   employerMetrics: AdminMetricsDto,
-  _pesoMetrics: AdminMetricsDto,
+  pesoMetrics: AdminMetricsDto,
 ): AdminDashboardSummary {
+  const studentAccounts = {
+    total: studentMetrics.totalRegistered,
+    active: studentMetrics.activeAccounts,
+    suspended: studentMetrics.suspendedAccounts,
+    deactivated: studentMetrics.archivedAccounts,
+  };
+  const employerAccounts = {
+    total: employerMetrics.totalRegistered,
+    active: employerMetrics.activeAccounts,
+    suspended: employerMetrics.suspendedAccounts,
+    deactivated: employerMetrics.archivedAccounts,
+  };
+  const pesoAccounts = {
+    total: pesoMetrics.totalRegistered,
+    active: pesoMetrics.activeAccounts,
+    suspended: pesoMetrics.suspendedAccounts,
+    deactivated: pesoMetrics.archivedAccounts,
+  };
+
   return {
-    totalStudents: studentMetrics.totalRegistered,
-    activeStudents: studentMetrics.activeAccounts,
-    totalEmployers: employerMetrics.totalRegistered,
-    totalAvailableOpportunities: employerMetrics.activeAccounts,
-    systemHealth: {
-      serverStatus: 'Operational',
-      uptime: '99.9%',
-      databaseLoad: 'Normal',
-      activeSessions: studentMetrics.activeAccounts + employerMetrics.activeAccounts,
-      lastBackup: 'N/A',
-      storageUsedPercent: 25,
-    },
+    totalAccounts: studentAccounts.total + pesoAccounts.total + employerAccounts.total,
+    studentAccounts,
+    pesoAccounts,
+    employerAccounts,
   };
 }
 

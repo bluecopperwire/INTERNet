@@ -83,6 +83,7 @@ describe('Database migration paths and behavioral validation', () => {
       'StudentAvailabilityDays1788825600000',
       'ApplicationRejectionRemarkOnly1788912000000',
       'AccountUserCode1788998400000',
+      'AdminProfile1789084800000',
     ]);
 
     // Validate redesigned columns
@@ -122,6 +123,15 @@ describe('Database migration paths and behavioral validation', () => {
       { user_role: 'company', account_code: `${year}-COM-00001` },
       { user_role: 'student', account_code: `${year}-STU-00002` },
     ]);
+    const [generatedAdminProfile] = await dataSource.query(`
+      SELECT ap.contact_email
+      FROM public.admin_profile ap
+      JOIN public.user_account ua ON ua.user_account_id = ap.user_account_id
+      WHERE ua.email = 'code-admin-1@example.test'
+    `);
+    expect(generatedAdminProfile).toEqual({
+      contact_email: 'code-admin-1@example.test',
+    });
 
     const [availabilitySchema] = await dataSource.query(`
       SELECT
@@ -176,6 +186,12 @@ describe('Database migration paths and behavioral validation', () => {
       `SELECT industry_name FROM public.industry WHERE is_custom_text = true`,
     );
     expect(customIndustries).toEqual([{ industry_name: 'Other' }]);
+
+    await dataSource.undoLastMigration();
+    const [adminProfileAfterRevert] = await dataSource.query(`
+      SELECT to_regclass('public.admin_profile') AS admin_profile
+    `);
+    expect(adminProfileAfterRevert.admin_profile).toBeNull();
 
     await dataSource.undoLastMigration();
     const [accountCodeAfterRevert] = await dataSource.query(`

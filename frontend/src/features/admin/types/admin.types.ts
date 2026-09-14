@@ -118,21 +118,18 @@ export interface AuditLog {
   details?: AuditLogDetails
 }
 
-export interface SystemHealthStatus {
-  serverStatus: 'Operational' | 'Degraded' | 'Maintenance'
-  uptime: string
-  databaseLoad: string
-  activeSessions: number
-  lastBackup: string
-  storageUsedPercent: number
+export interface AccountStatusSummary {
+  total: number
+  active: number
+  suspended: number
+  deactivated: number
 }
 
 export interface AdminDashboardSummary {
-  totalStudents: number
-  activeStudents: number
-  totalEmployers: number
-  totalAvailableOpportunities: number
-  systemHealth: SystemHealthStatus
+  totalAccounts: number
+  studentAccounts: AccountStatusSummary
+  pesoAccounts: AccountStatusSummary
+  employerAccounts: AccountStatusSummary
 }
 
 export interface AdminNotification {

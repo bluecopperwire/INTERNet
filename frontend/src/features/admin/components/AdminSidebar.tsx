@@ -1,17 +1,21 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Grid2X2,
   ChevronDown,
   ChevronRight,
+  ExternalLink,
   Users,
   Search,
   Settings,
+  UserRound,
   LogOut,
   Menu,
 } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import internetLogo from '../../../assets/internet-logo.svg'
 import { useAuthStore } from '../../../stores/useAuthStore'
+import { adminProfileService } from '../services/admin-profile.service'
+import type { AdminProfile } from '../types/admin-profile.types'
 import styles from './AdminSidebar.module.css'
 
 interface AdminSidebarProps {
@@ -22,8 +26,21 @@ interface AdminSidebarProps {
 export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
   const [search, setSearch] = useState('')
   const [isUserManagementOpen, setIsUserManagementOpen] = useState(false)
+  const [profile, setProfile] = useState<AdminProfile | null>(null)
   const navigate = useNavigate()
-  const { logout: authLogout } = useAuthStore()
+  const { user, logout: authLogout } = useAuthStore()
+
+  useEffect(() => {
+    let isMounted = true
+    void adminProfileService.getProfile()
+      .then((loadedProfile) => {
+        if (isMounted) setProfile(loadedProfile)
+      })
+      .catch(() => undefined)
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const logout = async () => {
     onClose()
@@ -35,6 +52,9 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
     if (!search.trim()) return true
     return text.toLowerCase().includes(search.trim().toLowerCase())
   }
+
+  const displayName = profile?.fullName || user?.email.split('@')[0] || 'Administrator'
+  const userInitials = displayName.substring(0, 2).toUpperCase()
 
   return (
     <aside
@@ -83,6 +103,20 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
             >
               <Grid2X2 size={20} />
               <span>Dashboard</span>
+            </NavLink>
+          )}
+
+          {matchesSearch('Admin Profile') && (
+            <NavLink
+              className={({ isActive }) =>
+                `${styles.navItem} ${isActive ? styles.activeNavItem : ''}`
+              }
+              to="/admin/profile"
+              onClick={onClose}
+              tabIndex={isOpen ? 0 : -1}
+            >
+              <UserRound size={20} />
+              <span>Admin Profile</span>
             </NavLink>
           )}
 
@@ -189,10 +223,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
               </span>
             </NavLink>
           )}
-        </div>
 
-        {/* Bottom Section: Settings & Log Out */}
-        <div className={styles.bottomNavGroup}>
           {matchesSearch('Settings') && (
             <NavLink
               className={({ isActive }) =>
@@ -206,6 +237,25 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
               <span>Settings</span>
             </NavLink>
           )}
+        </div>
+
+        {/* Bottom Section: Profile shortcut and Log Out */}
+        <div className={styles.bottomNavGroup}>
+          <button
+            type="button"
+            className={styles.userSummary}
+            onClick={() => { onClose(); navigate('/admin/profile') }}
+            tabIndex={isOpen ? 0 : -1}
+          >
+            <span className={styles.avatar} aria-hidden="true">
+              {profile?.avatarUrl ? <img src={profile.avatarUrl} alt="" /> : userInitials}
+            </span>
+            <span className={styles.userText}>
+              <strong>{displayName}</strong>
+              <small>{user?.email}</small>
+            </span>
+            <ExternalLink aria-hidden="true" />
+          </button>
 
           <button
             type="button"

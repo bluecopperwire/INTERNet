@@ -155,6 +155,86 @@
   stroke-width: 1.8;
 }
 
+.navGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.navGroupButton {
+  display: flex;
+  width: 100%;
+  min-height: 39px;
+  align-items: center;
+  gap: 13px;
+  padding: 8px 13px;
+  border: 0;
+  border-radius: 5px;
+  color: #ffffff;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  transition: color 150ms ease, background 150ms ease;
+}
+
+.navGroupButton:hover {
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.navGroupButton > svg:first-child {
+  width: 19px;
+  height: 19px;
+  flex: none;
+  stroke-width: 1.8;
+}
+
+.groupChevron {
+  width: 17px !important;
+  height: 17px !important;
+  margin-left: auto;
+}
+
+.subNav {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 1px 0 4px;
+}
+
+.subNavItem {
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 13px 7px 45px;
+  border-radius: 5px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  line-height: 1.3;
+  text-decoration: none;
+  transition: color 150ms ease, background 150ms ease;
+}
+
+.subNavItem:hover {
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.subNavItem.active {
+  color: #21167b;
+  background: #ffffff;
+  box-shadow: 0 3px 10px rgba(9, 7, 31, 0.08);
+  font-weight: 600;
+}
+
+.subNavItem svg {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  stroke-width: 1.8;
+}
+
 .noResults {
   margin: 12px 13px;
   color: rgba(255, 255, 255, 0.7);
@@ -263,6 +343,8 @@
 
 .headerActions button:focus-visible,
 .navItem:focus-visible,
+.navGroupButton:focus-visible,
+.subNavItem:focus-visible,
 .logout:focus-visible {
   outline: 3px solid rgba(255, 255, 255, 0.42);
   outline-offset: 2px;
@@ -281,7 +363,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .sidebar,
-  .navItem {
+  .navItem,
+  .navGroupButton,
+  .subNavItem {
     transition: none;
   }
 }

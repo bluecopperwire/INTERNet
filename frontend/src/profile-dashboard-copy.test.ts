@@ -73,4 +73,75 @@ describe('profile and dashboard labels', () => {
       expect(readSource(editor)).not.toContain('Account User Code')
     }
   })
+
+  it('provides the standardized Admin owner profile and a separate editable form', () => {
+    const profile = readSource('src/features/admin/pages/AdminProfilePage.tsx')
+    const editor = readSource('src/features/admin/pages/AdminProfileEditorPage.tsx')
+    const routes = readSource('src/App.tsx')
+    const sidebar = readSource('src/features/admin/components/AdminSidebar.tsx')
+
+    for (const label of [
+      'Personal Information',
+      'Full Name',
+      'Address',
+      'Birthdate',
+      'Sex',
+      'Contact Information',
+      'Email Address',
+      'Contact Number',
+      'Account Information',
+      'Account Email Address',
+      'Account User Code',
+    ]) {
+      expect(profile).toContain(label)
+    }
+    expect(editor).toContain('Edit Admin Profile')
+    expect(editor).not.toContain('Account Email Address')
+    expect(editor).not.toContain('Account User Code')
+    expect(routes).toContain('<Route path="profile" element={<AdminProfilePage />} />')
+    expect(routes).toContain('<Route path="profile/edit" element={<AdminProfileEditorPage />} />')
+    expect(sidebar).toContain('to="/admin/profile"')
+  })
+
+  it('organizes the Student tracking menu and Admin account navigation', () => {
+    const studentSidebar = readSource('src/features/intern-seeker/components/InternSeekerSidebar.tsx')
+    const adminSidebar = readSource('src/features/admin/components/AdminSidebar.tsx')
+
+    expect(studentSidebar).toContain("label: 'Student Profile'")
+    expect(studentSidebar).not.toContain("label: 'User Profile'")
+    expect(studentSidebar).toContain('<span>My Tracking</span>')
+    for (const [label, path] of [
+      ['My Requirements', '/intern-seeker/requirements'],
+      ['My Applications', '/intern-seeker/application-status'],
+      ['My Internship', '/intern-seeker/internship'],
+      ['My Attendance', '/intern-seeker/attendance'],
+      ['My Internship History', '/intern-seeker/internship-history'],
+    ]) {
+      expect(studentSidebar).toContain(`label: '${label}', path: '${path}'`)
+    }
+
+    expect(adminSidebar).toContain('<span>Admin Profile</span>')
+    expect(adminSidebar).toContain('className={styles.userSummary}')
+    expect(adminSidebar).toContain("navigate('/admin/profile')")
+    expect(adminSidebar.indexOf('Backups and<br />Maintenance')).toBeLessThan(
+      adminSidebar.indexOf('to="/admin/settings"'),
+    )
+  })
+
+  it('highlights only the selected Student tracking child and aligns Admin settings', () => {
+    const studentSidebar = readSource('src/features/intern-seeker/components/InternSeekerSidebar.tsx')
+    const adminSettings = readSource('src/features/admin/pages/AdminSettingsPage.tsx')
+
+    expect(studentSidebar).toContain('className={styles.navGroupButton}')
+    expect(studentSidebar).not.toContain('styles.activeGroup')
+    expect(studentSidebar).toContain('styles.subNavItem')
+    expect(studentSidebar).toContain('? styles.active')
+
+    expect(adminSettings).toContain("const [currentPassword, setCurrentPassword] = useState('')")
+    expect(adminSettings).toContain('className={styles.fullWidth}')
+    expect(adminSettings).toContain('authService.changePassword({ currentPassword, password: newPassword })')
+    expect(adminSettings).toContain('disabled={isSubmitting}')
+    expect(adminSettings).toContain("isSubmitting ? 'Updating...' : 'Update Password'")
+    expect(adminSettings).toContain('Manage your account preferences and security settings.')
+  })
 })

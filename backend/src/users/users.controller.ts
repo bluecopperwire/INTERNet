@@ -24,6 +24,7 @@ import {
   CreatePesoPersonnelAccountDto,
 } from './dto/account-management.dto';
 import { UpdatePesoProfileDto } from './dto/peso-profile.dto';
+import { UpdateAdminProfileDto } from './dto/admin-profile.dto';
 import { profilePictureUploadOptions } from '../storage/profile-picture-upload.config';
 
 @Controller('users')
@@ -73,5 +74,34 @@ export class UsersController {
       throw new BadRequestException('Multipart field "image" is required.');
     }
     return this.accounts.replacePesoProfilePicture(id, file);
+  }
+
+  @Roles(UserRole.ADMIN)
+  @Get('admin/profile')
+  getAdminProfile(@CurrentUser('userAccountId') id: number) {
+    return this.accounts.getAdminProfile(id);
+  }
+
+  @Roles(UserRole.ADMIN)
+  @Patch('admin/profile')
+  updateAdminProfile(
+    @CurrentUser('userAccountId') id: number,
+    @Body() dto: UpdateAdminProfileDto,
+  ) {
+    return this.accounts.updateAdminProfile(id, dto);
+  }
+
+  @Roles(UserRole.ADMIN)
+  @Put('admin/profile/image')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('image', profilePictureUploadOptions))
+  replaceAdminProfilePicture(
+    @CurrentUser('userAccountId') id: number,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Multipart field "image" is required.');
+    }
+    return this.accounts.replaceAdminProfilePicture(id, file);
   }
 }

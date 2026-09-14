@@ -10,12 +10,16 @@ import {
   Min,
 } from 'class-validator';
 import { AccountStatus } from '../../users/entities/account.entities';
-import { IsValidContactNumber, IsValidDistrict } from '../../common/validation/input-validation';
+import {
+  IsValidContactNumber,
+  IsValidDistrict,
+} from '../../common/validation/input-validation';
 
 export class AdminDashboardMetricsDto {
   totalRegistered: number;
   activeAccounts: number;
-  deactivatedAccounts: number;
+  suspendedAccounts: number;
+  archivedAccounts: number;
 }
 
 export class UpdateStudentAccountDto {

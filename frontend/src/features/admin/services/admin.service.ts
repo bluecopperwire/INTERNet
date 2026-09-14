@@ -217,18 +217,10 @@ export const adminService = {
     await store.fetchDashboard();
     return (
       store.summary || {
-        totalStudents: 0,
-        activeStudents: 0,
-        totalEmployers: 0,
-        totalAvailableOpportunities: 0,
-        systemHealth: {
-          serverStatus: 'Operational',
-          uptime: '100%',
-          databaseLoad: 'Normal',
-          activeSessions: 0,
-          lastBackup: 'N/A',
-          storageUsedPercent: 0,
-        },
+        totalAccounts: 0,
+        studentAccounts: { total: 0, active: 0, suspended: 0, deactivated: 0 },
+        pesoAccounts: { total: 0, active: 0, suspended: 0, deactivated: 0 },
+        employerAccounts: { total: 0, active: 0, suspended: 0, deactivated: 0 },
       }
     );
   },

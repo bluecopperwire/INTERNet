@@ -70,6 +70,8 @@ import { AdminEmployerDetailsPage, AdminEmployerEditorPage } from './features/ad
 import { AdminQCPesoDetailsPage, AdminQCPesoEditorPage } from './features/admin/pages/AdminQCPesoRecordPages'
 import { AdminCreateEmployerPage, AdminCreateQCPesoPage } from './features/admin/pages/AdminCreateRecordPages'
 import { AdminSettingsPage } from './features/admin/pages/AdminSettingsPage'
+import { AdminProfilePage } from './features/admin/pages/AdminProfilePage'
+import { AdminProfileEditorPage } from './features/admin/pages/AdminProfileEditorPage'
 
 function App() {
   return (
@@ -199,6 +201,8 @@ function App() {
         >
           <Route index element={<AdminDashboardPage />} />
           <Route path="dashboard" element={<AdminDashboardPage />} />
+          <Route path="profile" element={<AdminProfilePage />} />
+          <Route path="profile/edit" element={<AdminProfileEditorPage />} />
           <Route path="audit-logs" element={<AuditLogsPage />} />
           <Route path="manage-students" element={<ManageStudentsPage />} />
           <Route path="manage-students/:id/edit" element={<AdminStudentProfileEditorPage />} />

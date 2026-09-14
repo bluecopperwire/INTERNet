@@ -8,18 +8,10 @@ import type {
 } from '../types/admin.types'
 
 export const MOCK_ADMIN_SUMMARY: AdminDashboardSummary = {
-  totalStudents: 1291, //[cite: 1]
-  activeStudents: 1200, //[cite: 1]
-  totalEmployers: 322, //[cite: 1]
-  totalAvailableOpportunities: 310, //[cite: 1]
-  systemHealth: {
-    serverStatus: 'Operational',
-    uptime: '99.98%',
-    databaseLoad: '18% Optimal',
-    activeSessions: 142,
-    lastBackup: 'Today at 00:00:00 UTC',
-    storageUsedPercent: 34,
-  },
+  totalAccounts: 1620,
+  studentAccounts: { total: 1291, active: 1200, suspended: 41, deactivated: 50 },
+  pesoAccounts: { total: 7, active: 6, suspended: 0, deactivated: 1 },
+  employerAccounts: { total: 322, active: 310, suspended: 5, deactivated: 7 },
 }
 
 export const MOCK_ADMIN_NOTIFICATIONS: AdminNotification[] = [

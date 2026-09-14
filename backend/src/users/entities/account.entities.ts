@@ -326,6 +326,41 @@ export class PesoPersonnel {
   updatedAt: Date;
 }
 
+@Entity({ schema: 'public', name: 'admin_profile' })
+export class AdminProfile {
+  @PrimaryGeneratedColumn({ name: 'admin_profile_id', type: 'integer' })
+  adminProfileId: number;
+  @Column({ name: 'user_account_id', type: 'integer' }) userAccountId: number;
+  @Column({ name: 'first_name', type: 'text', nullable: true }) firstName:
+    string | null;
+  @Column({ name: 'middle_name', type: 'text', nullable: true }) middleName:
+    string | null;
+  @Column({ name: 'last_name', type: 'text', nullable: true }) lastName:
+    string | null;
+  @Column({ name: 'extension_name', type: 'text', nullable: true })
+  extensionName: string | null;
+  @Column({ name: 'sex', type: 'text', nullable: true }) sex: string | null;
+  @Column({ name: 'birth_date', type: 'date', nullable: true }) birthDate:
+    string | null;
+  @Column({ name: 'address_line', type: 'text', nullable: true }) addressLine:
+    string | null;
+  @Column({ name: 'address_barangay', type: 'text', nullable: true })
+  addressBarangay: string | null;
+  @Column({ name: 'address_district', type: 'text', nullable: true })
+  addressDistrict: string | null;
+  @Column({ name: 'address_city', type: 'text', nullable: true }) addressCity:
+    string | null;
+  @Column({ name: 'contact_email', type: 'text' }) contactEmail: string;
+  @Column({ name: 'contact_number', type: 'text', nullable: true })
+  contactNumber: string | null;
+  @Column({ name: 'photo_file_path', type: 'text', nullable: true })
+  photoFilePath: string | null;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  createdAt: Date;
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+  updatedAt: Date;
+}
+
 export const AUTH_REGISTRATION_ENTITIES = [
   UserAccount,
   LocalAuthenticationCredential,
@@ -335,5 +370,6 @@ export const AUTH_REGISTRATION_ENTITIES = [
   Student,
   Company,
   PesoPersonnel,
+  AdminProfile,
   Industry,
 ] as const;
