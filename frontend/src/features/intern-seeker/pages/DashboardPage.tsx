@@ -8,7 +8,7 @@ import {
   UserRound,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import headerImage from '../../../assets/requirements-header-image.png'
+import { PageHero } from '../../../components/PageHero'
 import { useInternshipPortal } from '../hooks/useInternshipPortal'
 import styles from './DashboardPage.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
@@ -84,10 +84,7 @@ export const DashboardPage: React.FC = () => {
         onChange={handleAvatarChange}
       />
 
-      <header className={styles.hero}>
-        <img className={styles.heroImage} src={headerImage} alt="" />
-        <div className={styles.heroOverlay} />
-      </header>
+      <PageHero />
 
       <section className={styles.profileHeader}>
         <div className={styles.headerContent}>

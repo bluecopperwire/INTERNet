@@ -5,9 +5,9 @@ import {
   ChevronRight,
   Plus, 
   FileText, 
-  Users, 
+  BriefcaseBusiness,
 } from 'lucide-react'
-import headerImage from '../../../assets/requirements-header-image.png'
+import { PageHero } from '../../../components/PageHero'
 import styles from './EmployerDashboardPage.module.css'
 import { useEmployerDashboard } from '../hooks/useEmployerDashboard'
 
@@ -33,24 +33,14 @@ export const EmployerDashboardPage: React.FC = () => {
 
   return (
     <main className={styles.pageContainer}>
-      <header className={styles.heroHeader}>
-        <div className={styles.heroBgWrapper}>
-          <img src={headerImage} alt="" className={styles.heroBgImage} />
-          <div className={styles.heroOverlay} />
-        </div>
-
-        <div className={styles.heroContent}>
-          <h1 className={styles.heroTitle}>Welcome, {summary.companyName}!</h1>
-          <p className={styles.heroSubtitle}>Here is what’s happening with your opportunities.</p>
-        </div>
-      </header>
+      <PageHero title={`Welcome, ${summary.companyName}!`} subtitle="Company Dashboard" />
 
       <section className={styles.mainContent}>
         <div className={styles.topSectionGrid}>
           <div className={styles.statsQuad}>
             <div className={styles.blueStatCard}>
-              <h3 className={styles.statLabel}>Active Opportunities</h3>
-              <span className={styles.statNumber}>{formatNumber(summary.activeOpportunities)}</span>
+              <h3 className={styles.statLabel}>Active Referrals</h3>
+              <span className={styles.statNumber}>{formatNumber(summary.activeReferrals)}</span>
             </div>
 
             <div className={styles.blueStatCard}>
@@ -59,12 +49,12 @@ export const EmployerDashboardPage: React.FC = () => {
             </div>
 
             <div className={styles.blueStatCard}>
-              <h3 className={styles.statLabel}>Awaiting Review</h3>
+              <h3 className={styles.statLabel}>Awaiting Referral Review</h3>
               <span className={styles.statNumber}>{formatNumber(summary.awaitingReview)}</span>
             </div>
 
             <div className={styles.blueStatCard}>
-              <h3 className={styles.statLabel}>Awaiting Completion</h3>
+              <h3 className={styles.statLabel}>Awaiting Internship Completion</h3>
               <span className={styles.statNumber}>{formatNumber(summary.awaitingCompletion)}</span>
             </div>
           </div>
@@ -166,7 +156,7 @@ export const EmployerDashboardPage: React.FC = () => {
           <div className={styles.quickActionsContainer}>
             <div className={styles.sectionTitle}>
               <h2 className={styles.sectionHeading}>Quick Actions</h2>
-              <p>Manage opportunities and your company profile</p>
+              <p>Manage opportunities, referrals, and internships</p>
             </div>
 
             <div className={styles.actionsList}>
@@ -176,7 +166,7 @@ export const EmployerDashboardPage: React.FC = () => {
                 onClick={() => navigate('/employer/opportunities/create')}
               >
                 <Plus size={20} strokeWidth={2.5} />
-                <span>Post Opportunities</span>
+                <span>Post Opportunity</span>
               </button>
 
               <button
@@ -191,10 +181,10 @@ export const EmployerDashboardPage: React.FC = () => {
               <button
                 type="button"
                 className={styles.actionButton}
-                onClick={() => navigate('/employer/profile')}
+                onClick={() => navigate('/employer/manage-internship')}
               >
-                <Users size={20} />
-                <span>Update Profile</span>
+                <BriefcaseBusiness size={20} />
+                <span>Manage Internships</span>
               </button>
             </div>
           </div>

@@ -35,7 +35,7 @@ describe('profile and dashboard labels', () => {
     try {
       await expect(employerService.getDashboardSummary()).resolves.toEqual(summary)
       expect(fetchDashboard).toHaveBeenCalledOnce()
-      expect(readSource('src/features/employer/pages/EmployerDashboardPage.tsx')).toContain('Welcome, {summary.companyName}!')
+      expect(readSource('src/features/employer/pages/EmployerDashboardPage.tsx')).toContain('title={`Welcome, ${summary.companyName}!`}')
     } finally {
       useEmployerStore.setState({ summary: null, fetchDashboard: originalFetchDashboard })
     }

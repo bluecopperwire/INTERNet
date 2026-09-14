@@ -1,107 +1,134 @@
-import React from 'react'
+import type { FC } from 'react'
+import { ArrowRight, BriefcaseBusiness, Building2, ChevronRight, FileText } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { Eye, ChevronRight } from 'lucide-react'
 import QCPesoHero from '../components/QCPesoHero'
-import twoDocumentIcon from '../../../assets/two-docu.svg'
-import suitcaseIcon from '../../../assets/suitcase.svg'
-import styles from './QCPesoDashboardPage.module.css'
+import styles from '../../employer/pages/EmployerDashboardPage.module.css'
 import { useQCPeso } from '../hooks/useQCPeso'
-import { qcpesoApiService } from '../services/qcpeso-api.service'
-import { openApplicantForReview } from '../services/qcpeso-review-flow'
-import { useToastStore } from '../../../stores/useToastStore'
-import { getErrorMessage } from '../../../utils/error-message'
 
-export const QCPesoDashboardPage: React.FC = () => {
-  const { summary, students, isLoading } = useQCPeso()
+export const QCPesoDashboardPage: FC = () => {
+  const { summary, profile, students, isLoading, error, refetch } = useQCPeso()
   const navigate = useNavigate()
-  const toast = useToastStore()
+  const formatNumber = (value: number) => String(value).padStart(2, '0')
+  const firstName = profile?.firstName.trim() || 'User'
 
-  const handleOpenApplicant = async (student: (typeof students)[number]) => {
-    await openApplicantForReview(student, {
-      markUnderReview: qcpesoApiService.markApplicationUnderReview,
-      navigate,
-      onMutationError: (error) => toast.error(getErrorMessage(error, 'Failed to start applicant review.')),
-    })
+  if (isLoading) return <div className={styles.loading}>Loading Dashboard...</div>
+
+  if (error || !summary) {
+    return (
+      <div className={styles.loading} role="alert">
+        <p>{error ?? 'Dashboard data is unavailable.'}</p>
+        <button type="button" className={styles.retryButton} onClick={() => void refetch()}>
+          Try Again
+        </button>
+      </div>
+    )
   }
-
-  if (isLoading || !summary) return <div className={styles.loading}>Loading Dashboard...</div>
 
   return (
     <main className={styles.pageContainer}>
-      <QCPesoHero title="Main Dashboard" subtitle="QCPESO Information Summary" />
+      <QCPesoHero title={`Welcome, ${firstName}!`} subtitle="QC PESO Dashboard" />
 
       <section className={styles.mainContent}>
-        <div className={styles.summaryGrid}>
-          <div className={`${styles.summaryCard} ${styles.cardBlue}`}>
-            <h3 className={styles.cardTitle}>Total Pending Student Applications</h3>
-            <p className={styles.cardValue}>{summary.pendingApplications}</p>
-            <img className={styles.summaryIcon} src={twoDocumentIcon} alt="" />
+        <div className={styles.topSectionGrid}>
+          <div className={styles.statsQuad}>
+            <article className={styles.blueStatCard}>
+              <h2 className={styles.statLabel}>Active Applications</h2>
+              <span className={styles.statNumber}>{formatNumber(summary.activeApplications)}</span>
+            </article>
+
+            <article className={styles.blueStatCard}>
+              <h2 className={styles.statLabel}>Active Internships</h2>
+              <span className={styles.statNumber}>{formatNumber(summary.activeInternships)}</span>
+            </article>
+
+            <article className={styles.blueStatCard}>
+              <h2 className={styles.statLabel}>Awaiting Application Review</h2>
+              <span className={styles.statNumber}>{formatNumber(summary.pendingApplications)}</span>
+            </article>
+
+            <article className={styles.blueStatCard}>
+              <h2 className={styles.statLabel}>Awaiting Internship Finalization</h2>
+              <span className={styles.statNumber}>{formatNumber(summary.awaitingFinalization)}</span>
+            </article>
           </div>
 
-          <div className={`${styles.summaryCard} ${styles.cardGradient}`}>
-            <h3 className={styles.cardTitleDark}>Total Verified Requirements</h3>
-            <p className={styles.cardValueDark}>{summary.verifiedRequirements}</p>
-            <img className={styles.summaryIcon} src={twoDocumentIcon} alt="" />
-          </div>
+          <section className={styles.statusChartCard}>
+            <h2 className={styles.statusCardTitle}>Application Status</h2>
+            <div className={styles.chartArea}>
+              <div className={styles.donutWrapper}>
+                <svg className={styles.donutSvg} viewBox="0 0 36 36">
+                  <title>{`Application history: ${summary.activePercentage}% active, ${summary.closedPercentage}% closed`}</title>
+                  <path className={styles.donutTrack} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  <path className={styles.donutSegment} strokeDasharray={`${summary.activePercentage}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                </svg>
+              </div>
 
-          <div className={`${styles.summaryCard} ${styles.cardGradient}`}>
-            <h3 className={styles.cardTitleDark}>Total Active Employers</h3>
-            <p className={styles.cardValueDark}>{summary.activeEmployers}</p>
-            <img className={`${styles.summaryIcon} ${styles.suitcaseIcon}`} src={suitcaseIcon} alt="" />
-          </div>
-
-          <div className={`${styles.summaryCard} ${styles.cardBlue}`}>
-            <h3 className={styles.cardTitle}>Total Available Opportunities</h3>
-            <p className={styles.cardValue}>{summary.availableOpportunities}</p>
-            <img className={`${styles.summaryIcon} ${styles.suitcaseIcon}`} src={suitcaseIcon} alt="" />
-          </div>
-        </div>
-
-        <div className={styles.tableSection}>
-          <div className={styles.tableHeader}>
-            <div className={styles.tableTitle}>
-              <h2>Recent Student Applications</h2>
-              <p>Latest submissions awaiting verification</p>
+              <div className={styles.chartLegend}>
+                <div className={styles.legendRow}>
+                  <span className={`${styles.legendBox} ${styles.boxActive}`} />
+                  <div className={styles.legendTexts}><strong>{summary.activePercentage}%</strong><span>Active</span></div>
+                </div>
+                <div className={styles.legendRow}>
+                  <span className={`${styles.legendBox} ${styles.boxClosed}`} />
+                  <div className={styles.legendTexts}><strong>{summary.closedPercentage}%</strong><span>Closed</span></div>
+                </div>
+              </div>
             </div>
 
-            <button className={styles.viewAllBtn} onClick={() => navigate('/qcpeso/manage-applicants/review')}>
-              View All <ChevronRight size={16} />
+            <button type="button" className={styles.viewAllAppsBtn} onClick={() => navigate('/qcpeso/manage-applicants/history')}>
+              <span>View All Applications</span>
+              <ArrowRight size={18} />
             </button>
-          </div>
+          </section>
+        </div>
 
-          <div className={styles.tableCard}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Student Name</th>
-                  <th>Job Title</th>
-                  <th>Program / Strand</th>
-                  <th>Date Submitted</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {students.map((student) => (
-                  <tr key={student.id}>
-                    <td>
-                      <strong style={{ color: '#160e6f' }}>{student.name}</strong>
-                    </td>
-                    <td>{student.appliedFor}</td>
-                    <td>{student.program}</td>
-                    <td>{student.date}</td>
-                    <td>
-                      <button className={styles.actionBtn} onClick={() => void handleOpenApplicant(student)}>
-                        <Eye size={14} />
-                        <span>Review</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className={styles.bottomSectionGrid}>
+          <section className={styles.recentAppsContainer}>
+            <div className={styles.sectionHeader}>
+              <div className={styles.sectionTitle}>
+                <h2 className={styles.sectionHeading}>Recent Applications</h2>
+                <p>Latest applications awaiting QC PESO review</p>
+              </div>
+              <button type="button" className={styles.outlineViewAllBtn} onClick={() => navigate('/qcpeso/manage-applicants/review')}>
+                <span>View All</span>
+                <ChevronRight size={16} aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className={styles.tableCard}>
+              <table className={styles.table}>
+                <thead><tr><th>Student Name</th><th>Company</th><th>Job Title</th><th>Application Date</th></tr></thead>
+                <tbody>
+                  {students.length > 0 ? students.map((student) => (
+                    <tr key={student.id}>
+                      <td><strong>{student.studentName}</strong></td>
+                      <td>{student.company}</td>
+                      <td>{student.jobTitle}</td>
+                      <td>{student.dateApplied}</td>
+                    </tr>
+                  )) : (
+                    <tr><td colSpan={4} className={styles.emptyTable}>No applications awaiting review.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className={styles.quickActionsContainer}>
+            <div className={styles.sectionTitle}>
+              <h2 className={styles.sectionHeading}>Quick Actions</h2>
+              <p>Manage accounts, applicants, and internships</p>
+            </div>
+            <div className={styles.actionsList}>
+              <button type="button" className={styles.actionButton} onClick={() => navigate('/qcpeso/monitor-users/employers/create')}><Building2 size={20} /><span>Create Employer Account</span></button>
+              <button type="button" className={styles.actionButton} onClick={() => navigate('/qcpeso/manage-applicants/review')}><FileText size={20} /><span>Review Applications</span></button>
+              <button type="button" className={styles.actionButton} onClick={() => navigate('/qcpeso/manage-interns/internships')}><BriefcaseBusiness size={20} /><span>Finalize Internships</span></button>
+            </div>
+          </section>
         </div>
       </section>
     </main>
   )
 }
+
+export default QCPesoDashboardPage

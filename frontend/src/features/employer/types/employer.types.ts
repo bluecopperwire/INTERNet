@@ -84,6 +84,7 @@ export interface CompanyProfile {
 export interface EmployerDashboardSummary {
   companyName: string
   activeOpportunities: number
+  activeReferrals: number
   activeInternships: number
   awaitingReview: number
   awaitingCompletion: number

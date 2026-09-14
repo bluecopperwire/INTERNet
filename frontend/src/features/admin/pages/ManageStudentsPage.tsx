@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight, Eye, Filter, Search } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import headerImage from '../../../assets/requirements-header-image.png'
+import { PageHero } from '../../../components/PageHero'
 import peopleIcon from '../../../assets/people.svg'
 import { adminService } from '../services/admin.service'
 import type { StudentRecord } from '../types/admin.types'
@@ -34,11 +34,7 @@ export function ManageStudentsPage() {
   }
 
   return <main className={styles.pageContainer}>
-    <header className={styles.hero}>
-      <img src={headerImage} alt="" className={styles.heroImage} />
-      <div className={styles.heroOverlay} />
-      <div className={styles.heroContent}><h1>Manage Students</h1><p>View, update, and manage student accounts.</p></div>
-    </header>
+    <PageHero title="Manage Students" subtitle="View, update, and manage student accounts." />
 
     <section className={styles.mainContent}>
       <div className={styles.summaryGrid}>

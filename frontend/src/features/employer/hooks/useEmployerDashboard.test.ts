@@ -8,6 +8,7 @@ import {
 const base: EmployerDashboardSummary = {
   companyName: 'Test Company',
   activeOpportunities: 3,
+  activeReferrals: 0,
   activeInternships: 0,
   awaitingReview: 0,
   awaitingCompletion: 0,
@@ -38,6 +39,7 @@ describe('employer dashboard referral metrics', () => {
       awaitingCompletion: 1,
     }, history)).toEqual({
       ...base,
+      activeReferrals: 2,
       activeInternships: 7,
       awaitingReview: 1,
       awaitingCompletion: 1,

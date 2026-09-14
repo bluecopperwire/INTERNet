@@ -8,7 +8,7 @@ function TrackingLayout() {
   return (
     <TrackingDataProvider>
       <main className={styles.page}>
-        <TrackingHeader showSeeMore={false} />
+        <TrackingHeader />
         <section className={styles.trackingContent}>
           <TrackingTabs />
           <Outlet />

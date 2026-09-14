@@ -40,6 +40,12 @@ export function adaptPesoDashboardMetrics(
     activeEmployers: m.totalActiveEmployers,
     verifiedRequirements: 0,
     availableOpportunities: m.totalAvailableOpportunities,
+    activeInternships: 0,
+    awaitingFinalization: 0,
+    totalApplications: 0,
+    activeApplications: 0,
+    activePercentage: 0,
+    closedPercentage: 0,
   };
 }
 

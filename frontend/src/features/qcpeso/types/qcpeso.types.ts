@@ -50,6 +50,25 @@ export interface QCPesoDashboardSummary {
   activeEmployers: number;
   verifiedRequirements: number;
   availableOpportunities: number;
+  activeInternships: number;
+  awaitingFinalization: number;
+  totalApplications: number;
+  activeApplications: number;
+  activePercentage: number;
+  closedPercentage: number;
+}
+
+export interface QCPesoInternshipHistorySummary {
+  totalInternships: number;
+  activeInternships: number;
+  closedInternships: number;
+}
+
+export interface QCPesoFinalizationSummary {
+  awaitingFinalization: number;
+  completedInternships: number;
+  withdrawalInternships: number;
+  cancelledInternships: number;
 }
 
 export interface StudentApplication {

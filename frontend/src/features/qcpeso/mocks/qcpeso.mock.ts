@@ -16,7 +16,13 @@ export const MOCK_QCPESO_SUMMARY: QCPesoDashboardSummary = {
   pendingApplications: 1291,
   activeEmployers: 100,
   verifiedRequirements: 1200,
-  availableOpportunities: 522
+  availableOpportunities: 522,
+  activeInternships: 0,
+  awaitingFinalization: 0,
+  totalApplications: 0,
+  activeApplications: 0,
+  activePercentage: 0,
+  closedPercentage: 0,
 }
 
 export const MOCK_QCPESO_PROFILE: QCPesoProfile = {

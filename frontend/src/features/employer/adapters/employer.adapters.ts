@@ -32,6 +32,7 @@ export function adaptEmployerDashboardSummary(
   return {
     companyName,
     activeOpportunities: m.activeOpportunities,
+    activeReferrals: 0,
     activeInternships: 0,
     awaitingReview: 0,
     awaitingCompletion: 0,

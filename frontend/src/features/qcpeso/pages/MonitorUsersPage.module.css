@@ -138,11 +138,6 @@
   background: #f8fafc;
 }
 
-.nameCell {
-  color: #160e6f !important;
-  font-weight: 600;
-}
-
 .statusPill {
   display: inline-flex;
   align-items: center;

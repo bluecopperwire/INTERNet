@@ -9,6 +9,7 @@ import type {
 export const MOCK_EMPLOYER_DASHBOARD: EmployerDashboardSummary = {
   companyName: 'ABC Inc.',
   activeOpportunities: 0,
+  activeReferrals: 0,
   activeInternships: 0,
   awaitingReview: 0,
   awaitingCompletion: 0,

@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { LockKeyhole, ShieldCheck } from 'lucide-react'
-import headerImage from '../../../assets/requirements-header-image.png'
-import adminStyles from './AuditLogsPage.module.css'
+import { PageHero } from '../../../components/PageHero'
 import styles from '../../employer/pages/EmployerSettingsPage.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getPasswordError, PASSWORD_REQUIREMENTS } from '../../../utils/input-validation'
@@ -20,7 +19,7 @@ export function AdminSettingsPage() {
   }
 
   return <main className={styles.pageContainer}>
-    <header className={adminStyles.hero}><img src={headerImage} alt="" className={adminStyles.heroImage} /><div className={adminStyles.heroOverlay} /><div className={adminStyles.heroContent}><h1>Settings</h1><p>Manage administrator preferences and security settings.</p></div></header>
+    <PageHero title="Settings" subtitle="Manage administrator preferences and security settings." />
     <div className={styles.settingsContent}>
       <section className={styles.settingsSection}>
         <header className={styles.sectionHeader}><div className={styles.sectionIcon}><LockKeyhole size={21} /></div><div><h2>Account Security</h2><p>Use a strong password to keep this administrator account secure.</p></div></header>

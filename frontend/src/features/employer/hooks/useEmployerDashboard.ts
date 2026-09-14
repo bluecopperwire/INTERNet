@@ -30,6 +30,7 @@ export function buildEmployerDashboardSummary(
 
   return {
     ...base,
+    activeReferrals: ongoing,
     activeInternships: internships.activeInternships,
     awaitingReview: referralHistory.filter(
       (referral) => referral.historyStatus === 'For Review (Employer)',

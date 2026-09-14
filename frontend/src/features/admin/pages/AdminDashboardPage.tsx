@@ -8,7 +8,7 @@ import {
   Database,
   RefreshCw
 } from 'lucide-react'
-import headerImage from '../../../assets/requirements-header-image.png'
+import { PageHero } from '../../../components/PageHero'
 import peopleIcon from '../../../assets/people.svg'
 import suitcaseIcon from '../../../assets/suitcase.svg'
 import styles from './AdminDashboardPage.module.css'
@@ -35,21 +35,7 @@ export const AdminDashboardPage: React.FC = () => {
 
   return (
     <main className={styles.pageContainer}>
-      <header className={styles.heroHeader}>
-        <div className={styles.heroBgWrapper}>
-          <img src={headerImage} alt="" className={styles.heroBgImage} />
-          <div className={styles.heroOverlay} />
-        </div>
-
-        <div className={styles.heroContent}>
-          <div className={styles.superBadge}>
-            <ShieldCheck size={16} />
-            <span>Super Administrator Control Center</span>
-          </div>
-          <h1 className={styles.heroTitle}>Main Dashboard</h1>
-          <p className={styles.heroSubtitle}>QCPESO Information Summary & System Status</p>
-        </div>
-      </header>
+      <PageHero title="Main Dashboard" subtitle="QCPESO Information Summary & System Status" />
 
       <section className={styles.mainContent}>
         {/* Metric Summary Quad */}

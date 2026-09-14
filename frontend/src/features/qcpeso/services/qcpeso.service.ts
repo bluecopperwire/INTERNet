@@ -21,6 +21,8 @@ import type {
   StudentApplication,
   QCPesoOpportunity,
   CreateEmployerPayload,
+  QCPesoInternshipHistorySummary,
+  QCPesoFinalizationSummary,
 } from '../types/qcpeso.types';
 import { todayDateOnly } from '../../../utils/date-only';
 
@@ -29,11 +31,17 @@ export const qcpesoService = {
     const store = useQCPesoStore.getState();
     await store.fetchMetrics();
     return (
-      store.metrics || {
+      useQCPesoStore.getState().metrics || {
         pendingApplications: 0,
         activeEmployers: 0,
         verifiedRequirements: 0,
         availableOpportunities: 0,
+        activeInternships: 0,
+        awaitingFinalization: 0,
+        totalApplications: 0,
+        activeApplications: 0,
+        activePercentage: 0,
+        closedPercentage: 0,
       }
     );
   },
@@ -66,6 +74,14 @@ export const qcpesoService = {
       page++;
     } while (true);
     return records;
+  },
+
+  async getInternshipHistorySummary(): Promise<QCPesoInternshipHistorySummary> {
+    return qcpesoApiService.getInternshipHistorySummary();
+  },
+
+  async getFinalizationSummary(): Promise<QCPesoFinalizationSummary> {
+    return qcpesoApiService.getFinalizationSummary();
   },
 
   async getReviewApplicant(id: string): Promise<QCPesoReviewApplicant | null> {

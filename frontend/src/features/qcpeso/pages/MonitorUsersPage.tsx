@@ -46,10 +46,6 @@ export function MonitorUsersPage({ kind }: MonitorUsersPageProps) {
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / itemsPerPage))
   const displayedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [itemsPerPage, searchQuery, selectedStatus])
-
   return (
     <main className={styles.page}>
       <QCPesoHero title={title} subtitle={subtitle} />
@@ -58,12 +54,12 @@ export function MonitorUsersPage({ kind }: MonitorUsersPageProps) {
           <label className={styles.searchField}>
             <Search size={19} aria-hidden="true" />
             <span className={styles.srOnly}>Search {isStudents ? 'students' : 'companies'}</span>
-            <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder={`Search ${isStudents ? 'students' : 'companies'}...`} />
+            <input value={searchQuery} onChange={(event) => { setSearchQuery(event.target.value); setCurrentPage(1) }} placeholder={`Search ${isStudents ? 'students' : 'companies'}...`} />
           </label>
           <label className={styles.statusFilter}>
             <SlidersHorizontal size={16} aria-hidden="true" />
             <span className={styles.srOnly}>Filter by account status</span>
-            <select value={selectedStatus} onChange={(event) => setSelectedStatus(event.target.value as 'All' | MonitorUserStatus)}>
+            <select value={selectedStatus} onChange={(event) => { setSelectedStatus(event.target.value as 'All' | MonitorUserStatus); setCurrentPage(1) }}>
               <option value="All">All Statuses</option>
               <option value="Active">Active</option>
               <option value="Suspended">Suspended</option>
@@ -80,7 +76,7 @@ export function MonitorUsersPage({ kind }: MonitorUsersPageProps) {
                 {displayedUsers.map((user) => {
                   const name = isStudent(user) ? user.studentName : user.companyName
                   return <tr key={user.id}>
-                    <td className={styles.nameCell}>{name}</td>
+                    <td>{name}</td>
                     <td>{user.email}</td>
                     <td>{user.dateRegistered}</td>
                     <td><StatusPill status={user.status} /></td>
@@ -96,7 +92,7 @@ export function MonitorUsersPage({ kind }: MonitorUsersPageProps) {
         <div className={styles.pagination}>
           <div className={styles.pageSize}>
             <span>View</span>
-            <span className={styles.pageSizeValue}><select value={itemsPerPage} onChange={(event) => setItemsPerPage(Number(event.target.value))} aria-label={`${isStudents ? 'Students' : 'Companies'} per page`}><option value={5}>5</option><option value={7}>7</option><option value={10}>10</option><option value={15}>15</option></select></span>
+            <span className={styles.pageSizeValue}><select value={itemsPerPage} onChange={(event) => { setItemsPerPage(Number(event.target.value)); setCurrentPage(1) }} aria-label={`${isStudents ? 'Students' : 'Companies'} per page`}><option value={5}>5</option><option value={10}>10</option><option value={15}>15</option></select></span>
             <span>{isStudents ? 'Students' : 'Companies'} per page</span>
           </div>
           <div className={styles.paginationButtons}>

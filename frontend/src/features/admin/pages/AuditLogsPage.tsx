@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Search, Filter, FileSpreadsheet, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
-import headerImage from '../../../assets/requirements-header-image.png'
+import { PageHero } from '../../../components/PageHero'
 import { adminService } from '../services/admin.service'
 import type { AuditLog } from '../types/admin.types'
 import { AuditLogDetailsModal } from '../components/AuditLogDetailsModal'
@@ -134,7 +134,7 @@ export function AuditLogsPage() {
 
   return (
     <main className={styles.pageContainer}>
-      <header className={styles.hero}><img src={headerImage} alt="" className={styles.heroImage} /><div className={styles.heroOverlay} /><div className={styles.heroContent}><h1>Audit Logs</h1><p>Monitor system activity, user actions, and security events.</p></div></header>
+      <PageHero title="Audit Logs" subtitle="Monitor system activity, user actions, and security events." />
 
       <div className={styles.mainContent}>
         {/* Top Toolbar */}

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight, Eye, Filter, Plus, Search } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import headerImage from '../../../assets/requirements-header-image.png'
+import { PageHero } from '../../../components/PageHero'
 import suitcaseIcon from '../../../assets/suitcase.svg'
 import { adminService } from '../services/admin.service'
 import type { EmployerRecord } from '../types/admin.types'
@@ -57,14 +57,7 @@ export function ManageEmployersPage() {
 
   return (
     <main className={styles.pageContainer}>
-      <header className={styles.hero}>
-        <img src={headerImage} alt="" className={styles.heroImage} />
-        <div className={styles.heroOverlay} />
-        <div className={styles.heroContent}>
-          <h1>Manage Employers</h1>
-          <p>View, update, and manage employer accounts.</p>
-        </div>
-      </header>
+      <PageHero title="Manage Employers" subtitle="View, update, and manage employer accounts." />
 
       <section className={styles.mainContent}>
         <div className={styles.summaryGrid}>

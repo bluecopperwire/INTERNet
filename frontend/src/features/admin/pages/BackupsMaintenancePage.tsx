@@ -11,7 +11,7 @@ import {
   ShieldCheck,
   Trash2,
 } from 'lucide-react'
-import headerImage from '../../../assets/requirements-header-image.png'
+import { PageHero } from '../../../components/PageHero'
 import type { BackupRecord } from '../types/admin.types'
 import styles from './BackupsMaintenancePage.module.css'
 
@@ -122,17 +122,10 @@ export function BackupsMaintenancePage() {
 
   return (
     <main className={styles.pageContainer}>
-      {/* Hero Header matching design spec */}
-      <header className={styles.heroHeader}>
-        <img src={headerImage} alt="" className={styles.heroBgImage} />
-        <div className={styles.heroOverlay} />
-        <div className={styles.heroContent}>
-          <h1 className={styles.heroTitle}>Backups and Maintenance</h1>
-          <p className={styles.heroSubtitle}>
-            Monitor system status and control automated or manual backups.
-          </p>
-        </div>
-      </header>
+      <PageHero
+        title="Backups and Maintenance"
+        subtitle="Monitor system status and control automated or manual backups."
+      />
 
       {/* Main Section Content */}
       <section className={styles.mainContent}>

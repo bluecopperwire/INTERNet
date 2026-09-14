@@ -120,6 +120,7 @@ export const employerService = {
       useEmployerStore.getState().summary || {
         companyName: 'Company',
         activeOpportunities: 0,
+        activeReferrals: 0,
         activeInternships: 0,
         awaitingReview: 0,
         awaitingCompletion: 0,
