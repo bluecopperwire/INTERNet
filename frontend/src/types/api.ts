@@ -42,6 +42,7 @@ export interface EmployerAssignmentCandidateDto {
   applicationId: number;
   studentId: number;
   studentFullName: string;
+  studentAccountCode?: string | null;
   strandProgram: string;
   opportunityId: number;
   jobTitle: string;
@@ -444,6 +445,7 @@ export interface DashboardApplicationDto {
   companyName: string;
   studentId: number;
   studentFullName: string;
+  studentAccountCode?: string | null;
   studentContactEmail: string;
   studentContactNumber: string;
   schoolName?: string | null;
@@ -557,6 +559,8 @@ export interface EmployerReferralListItemDto {
   opportunityId: number;
   opportunityTitle: string;
   studentFullName: string;
+  studentAccountCode?: string | null;
+  schoolName?: string | null;
   strandProgram?: string | null;
   yearLevel?: string | null;
   submittedAt: string;
@@ -571,6 +575,7 @@ export interface EmployerAttendanceItemDto {
   internshipAssignmentId: number;
   studentId: number;
   studentFullName: string;
+  studentAccountCode?: string | null;
   jobTitle: string;
   strandProgram: string | null;
   date: string;
@@ -585,8 +590,12 @@ export interface EmployerInternshipListItemDto {
   internshipAssignmentId: number;
   studentId: number;
   studentFullName: string;
+  studentAccountCode?: string | null;
   jobTitle: string;
   strandProgram: string | null;
+  startDate: string;
+  expectedEndDate?: string | null;
+  endDate?: string | null;
   requiredHours: number;
   requiredMinutes: number;
   renderedHours: number;
@@ -717,6 +726,7 @@ export interface AdminStudentListItemDto {
   accountStatus: AccountStatus;
   createdAt: string;
   suspendedUntil?: string | null;
+  strandProgram?: string | null;
 }
 
 export interface AdminEmployerListItemDto {
@@ -728,6 +738,7 @@ export interface AdminEmployerListItemDto {
   accountStatus: AccountStatus;
   createdAt: string;
   suspendedUntil?: string | null;
+  industryName?: string | null;
 }
 
 export interface AdminPesoListItemDto {

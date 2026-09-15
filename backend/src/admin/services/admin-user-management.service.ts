@@ -65,9 +65,11 @@ export class AdminUserManagementService {
         `SELECT s.student_id AS "studentId", ua.user_account_id AS "userAccountId", ua.account_code AS "accountCode",
                 concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS "fullName",
                 ua.email AS "accountEmail", ua.created_at AS "createdAt",
-                ua.account_status AS "accountStatus", ua.suspended_until AS "suspendedUntil"
+                ua.account_status AS "accountStatus", ua.suspended_until AS "suspendedUntil",
+                sai.strand_program AS "strandProgram"
          FROM public.user_account ua
          JOIN public.student s ON s.user_account_id = ua.user_account_id
+         LEFT JOIN public.student_academic_information sai ON sai.student_id = s.student_id
          WHERE ua.user_role = 'student' ${filter.sql}
          ORDER BY ua.created_at DESC, s.student_id DESC
          LIMIT $${filter.params.length + 1} OFFSET $${filter.params.length + 2}`,
@@ -226,8 +228,11 @@ export class AdminUserManagementService {
       this.dataSource.query(
         `SELECT c.company_id AS "companyId", ua.user_account_id AS "userAccountId", ua.account_code AS "accountCode",
                 c.company_name AS "companyName", ua.email AS "accountEmail",
-                ua.created_at AS "createdAt", ua.account_status AS "accountStatus", ua.suspended_until AS "suspendedUntil"
-         FROM public.user_account ua JOIN public.company c ON c.user_account_id = ua.user_account_id
+                ua.created_at AS "createdAt", ua.account_status AS "accountStatus", ua.suspended_until AS "suspendedUntil",
+                i.industry_name AS "industryName"
+         FROM public.user_account ua
+         JOIN public.company c ON c.user_account_id = ua.user_account_id
+         LEFT JOIN public.industry i ON i.industry_id = c.industry_id
          WHERE ua.user_role = 'company' ${filter.sql}
          ORDER BY ua.created_at DESC, c.company_id DESC
          LIMIT $${filter.params.length + 1} OFFSET $${filter.params.length + 2}`,

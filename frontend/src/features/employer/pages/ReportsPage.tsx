@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Download } from 'lucide-react'
 import { EmployerHero } from '../components/EmployerHero'
+import { DataTable, type DataTableColumn } from '../../../components/DataTable'
 import { employerService } from '../services/employer.service'
 import type { Applicant } from '../types/employer.types'
 import qcLogos from '../../../assets/qc-logos-2.png'
@@ -33,6 +34,15 @@ export function ReportsPage() {
   const points = timeline.map(([, count], index) => `${timeline.length === 1 ? 310 : 44 + index * 532 / (timeline.length - 1)},${182 - count / maxValue * 142}`).join(' ')
   const summary = { total: rangedApplicants.length, accepted: statusData[1].count, forInterview: statusData[2].count, rejected: statusData[3].count }
   const generatedAt = new Intl.DateTimeFormat('en-PH', { dateStyle: 'long' }).format(new Date())
+  const statusColumns: DataTableColumn<(typeof statusData)[number]>[] = [
+    { key: 'status', header: 'Status', render: (item) => <><span className={styles.printDot} style={{ background: item.color }} />{item.label}</> },
+    { key: 'count', header: 'Referrals', align: 'right', render: (item) => item.count },
+    { key: 'distribution', header: 'Distribution', align: 'right', render: (item) => `${item.percentage}%` },
+  ]
+  const timelineColumns: DataTableColumn<(typeof timeline)[number]>[] = [
+    { key: 'date', header: 'Date', render: ([day]) => day },
+    { key: 'count', header: 'Referrals Submitted', align: 'right', render: ([, count]) => count },
+  ]
 
   return <main className={styles.pageContainer}>
     <EmployerHero title="Reports" subtitle="Generate and download reports" comfortableSpacing />
@@ -54,8 +64,8 @@ export function ReportsPage() {
         <section className={styles.printMetrics}>
           <PrintMetric label="Total Referrals" value={summary.total} /><PrintMetric label="Accepted" value={summary.accepted} /><PrintMetric label="Interview Scheduled" value={summary.forInterview} /><PrintMetric label="Rejected" value={summary.rejected} />
         </section>
-        <section className={styles.printSection}><h2>Referrals by Status</h2><table><thead><tr><th>Status</th><th>Referrals</th><th>Distribution</th></tr></thead><tbody>{statusData.map((item) => <tr key={item.label}><td><span className={styles.printDot} style={{ background: item.color }} />{item.label}</td><td>{item.count}</td><td>{item.percentage}%</td></tr>)}</tbody></table></section>
-        <section className={styles.printSection}><h2>Referrals Over Time</h2><table><thead><tr><th>Date</th><th>Referrals Submitted</th></tr></thead><tbody>{timeline.map(([day, count]) => <tr key={day}><td>{day}</td><td>{count}</td></tr>)}</tbody></table></section>
+        <section className={styles.printSection}><h2>Referrals by Status</h2><DataTable ariaLabel="Referrals by status" columns={statusColumns} rows={statusData} rowKey={(item) => item.label} variant="print" /></section>
+        <section className={styles.printSection}><h2>Referrals Over Time</h2><DataTable ariaLabel="Referrals submitted over time" columns={timelineColumns} rows={timeline} rowKey={([day]) => day} variant="print" /></section>
         <footer className={styles.printFooter}>INTERNet · QC PESO Referral Management Report</footer>
       </article>
     </section>

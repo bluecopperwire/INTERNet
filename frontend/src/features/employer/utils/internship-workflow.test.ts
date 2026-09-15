@@ -38,10 +38,10 @@ describe('Company internship workflow display helpers', () => {
 
   it('locks the four Company tables and pagination to the Phase 4 contract', () => {
     expect(COMPANY_PAGE_SIZES).toEqual([5, 10, 15]);
-    expect(MANAGE_INTERNSHIP_COLUMNS).toEqual(['Student Name', 'Job Title', 'Program / Strand', 'Remaining Hours', 'Status', 'Action']);
-    expect(INTERNSHIP_HISTORY_COLUMNS).toEqual(['Student Name', 'Job Title', 'Program / Strand', 'Status', 'Action']);
-    expect(ATTENDANCE_MONITOR_COLUMNS).toEqual(['Student Name', 'Job Title', 'Program / Strand', 'Status', 'Action']);
-    expect(ATTENDANCE_HISTORY_COLUMNS).toEqual(['Date', 'Clock In Time', 'Clock Out Time', 'Rendered Time', 'Attendance Status']);
+    expect(MANAGE_INTERNSHIP_COLUMNS).toEqual(['Intern', 'Opportunity', 'Progress', 'Period', 'Status', 'Actions']);
+    expect(INTERNSHIP_HISTORY_COLUMNS).toEqual(['Intern', 'Opportunity', 'Progress', 'Period', 'Status', 'Actions']);
+    expect(ATTENDANCE_MONITOR_COLUMNS).toEqual(['Intern', 'Opportunity', 'Attendance', 'Status', 'Actions']);
+    expect(ATTENDANCE_HISTORY_COLUMNS).toEqual(['Date', 'Time', 'Rendered', 'Status']);
   });
 
   it('renders student names like the other values in Company tables', () => {
@@ -51,13 +51,10 @@ describe('Company internship workflow display helpers', () => {
     }
   });
 
-  it('renders Company internship-history statuses as state-colored tags', () => {
+  it('renders Company internship-history statuses with the shared semantic badge', () => {
     const source = readSource('../pages/InternshipHistoryPage.tsx');
-    const styles = readSource('../pages/MonitorInternshipPage.module.css');
-    expect(source).toContain("styles[row.assignmentStatus.replaceAll('_', '')]");
-    for (const statusClass of ['pending', 'ongoing', 'completecompany', 'completestudent', 'withdrawn', 'cancelled', 'finalized']) {
-      expect(styles).toContain(`.${statusClass}`);
-    }
+    expect(source).toContain('<StatusBadge value={assignmentStatusLabel(row.assignmentStatus)} />');
+    expect(source).toContain('TablePrimitives');
   });
 
   it('offers grouped history filters and finalized-only row deletion', () => {
@@ -65,7 +62,7 @@ describe('Company internship workflow display helpers', () => {
     const styles = readSource('../pages/MonitorInternshipPage.module.css');
     expect(source).toContain('<option value="">All</option><option value="active">Active</option><option value="closed">Closed</option>');
     expect(source).toContain("row.assignmentStatus === 'finalized'");
-    expect(source).toContain('styles.rowActions');
+    expect(source).toContain('<TableActions>');
     expect(source).toContain('styles.deleteButton');
     expect(source).toContain('ConfirmDeleteModal');
     expect(styles).toContain('.deleteButton');

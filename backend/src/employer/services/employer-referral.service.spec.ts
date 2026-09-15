@@ -43,6 +43,7 @@ describe('EmployerReferralService workflows', () => {
           application_id: 20,
           application_status: 'withdrawn',
           student_response: 'pending',
+          school_name: 'Quezon City University',
         },
         {
           referral_id: 11,
@@ -65,6 +66,7 @@ describe('EmployerReferralService workflows', () => {
         expect.objectContaining({
           referralId: 10,
           referralStatus: 'withdrawn',
+          schoolName: 'Quezon City University',
         }),
         expect.objectContaining({ referralId: 11, referralStatus: 'expired' }),
       ]),
@@ -74,6 +76,7 @@ describe('EmployerReferralService workflows', () => {
       .join('\n');
     expect(sql).not.toContain("r.referral_status IN ('sent', 'under_review')");
     expect(sql).toContain('rv.employer_hidden_at IS NOT NULL');
+    expect(sql).toContain('sai.school_name');
   });
 
   it.each(['pending', 'for_interview'])(

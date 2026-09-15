@@ -21,6 +21,7 @@ describe('QcInternshipWorkflowService Phase 5', () => {
     expect(sql).toContain('profile_contact_email');
     expect(sql).toContain('sai.school_name');
     expect(sql).toContain('sai.year_level');
+    expect(sql).toContain('ua.account_code AS student_account_code');
   });
 
   it('uses historical ongoing dates, actual ended_at and exact selected-date attendance without writes', async () => {
@@ -34,6 +35,7 @@ describe('QcInternshipWorkflowService Phase 5', () => {
     expect(sql).toContain("AT TIME ZONE 'Asia/Manila'");
     expect(sql).toContain('ia.ended_at');
     expect(sql).toContain('ar.attendance_date = $1::date');
+    expect(sql).toContain('ua.account_code AS student_account_code');
     expect(sql).not.toMatch(/\b(INSERT|UPDATE|DELETE)\b/i);
   });
 
@@ -132,6 +134,7 @@ describe('QcInternshipWorkflowService Phase 5', () => {
     ].map((assignment_status, index) => ({
       internship_assignment_id: index + 1,
       assignment_status,
+      student_account_code: `2026-STU-${String(index + 1).padStart(5, '0')}`,
       required_minutes: 600,
       total_rendered_minutes: 0,
     }));
@@ -148,6 +151,7 @@ describe('QcInternshipWorkflowService Phase 5', () => {
       'pending',
       'ongoing',
     ]);
+    expect(active.data[0].studentAccountCode).toBe('2026-STU-00001');
 
     const closed = await service.history({
       page: 1,

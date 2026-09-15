@@ -99,6 +99,7 @@ export function mapAssignmentCandidate(
     referralId: c.referralId,
     internshipAssignmentId: c.internshipAssignmentId,
     studentName: c.studentFullName,
+    studentAccountCode: c.studentAccountCode || undefined,
     strandProgram: c.strandProgram || 'N/A',
     company: c.companyName,
     jobTitle: c.jobTitle,
@@ -289,25 +290,6 @@ export const employerService = {
 
   async deleteReferral(referralId: string): Promise<void> {
     await employerApiService.hideReferral(Number(referralId));
-  },
-
-  async getApplicantsForOpportunity(
-    opportunityId: string,
-  ): Promise<Applicant[]> {
-    const records: Applicant[] = [];
-    let page = 1;
-    let totalPages = 1;
-    while (page <= totalPages) {
-      const result = await employerApiService.getOpportunityReferrals(Number(opportunityId), {
-        view: 'history',
-        page,
-        limit: 15,
-      });
-      records.push(...result.data.map(adaptEmployerReferral));
-      totalPages = result.meta.totalPages;
-      page++;
-    }
-    return records;
   },
 
   async getAttendanceRecords(): Promise<EmployerAttendanceRecord[]> {

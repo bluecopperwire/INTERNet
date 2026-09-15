@@ -7,6 +7,10 @@ import {
   Users,
   Settings,
   UserRound,
+  GraduationCap,
+  Building2,
+  BriefcaseBusiness,
+  FileText,
   LogOut,
   Menu,
 } from 'lucide-react'
@@ -148,20 +152,8 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                     onClick={onClose}
                     tabIndex={isOpen ? 0 : -1}
                   >
-                    Manage Students
-                  </NavLink>
-                )}
-
-                {matchesSearch('Manage Employers') && (
-                  <NavLink
-                    className={({ isActive }) =>
-                      `${styles.subItem} ${isActive ? styles.activeSubItem : ''}`
-                    }
-                    to="/admin/manage-employers"
-                    onClick={onClose}
-                    tabIndex={isOpen ? 0 : -1}
-                  >
-                    Manage Employers
+                    <GraduationCap size={17} aria-hidden="true" />
+                    <span>Manage Students</span>
                   </NavLink>
                 )}
 
@@ -174,7 +166,22 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                     onClick={onClose}
                     tabIndex={isOpen ? 0 : -1}
                   >
-                    Manage QC PESO
+                    <BriefcaseBusiness size={17} aria-hidden="true" />
+                    <span>Manage QC PESO</span>
+                  </NavLink>
+                )}
+
+                {matchesSearch('Manage Employers') && (
+                  <NavLink
+                    className={({ isActive }) =>
+                      `${styles.subItem} ${isActive ? styles.activeSubItem : ''}`
+                    }
+                    to="/admin/manage-employers"
+                    onClick={onClose}
+                    tabIndex={isOpen ? 0 : -1}
+                  >
+                    <Building2 size={17} aria-hidden="true" />
+                    <span>Manage Employers</span>
                   </NavLink>
                 )}
               </div>}
@@ -222,7 +229,8 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                     onClick={onClose}
                     tabIndex={isOpen ? 0 : -1}
                   >
-                    Accounts
+                    <UserRound size={17} aria-hidden="true" />
+                    <span>Accounts</span>
                   </NavLink>
                 )}
                 {matchesSearch('Applications and Referrals') && (
@@ -232,7 +240,8 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                     onClick={onClose}
                     tabIndex={isOpen ? 0 : -1}
                   >
-                    Applications and Referrals
+                    <FileText size={17} aria-hidden="true" />
+                    <span>Applications and Referrals</span>
                   </NavLink>
                 )}
                 {matchesSearch('Internships') && (
@@ -242,7 +251,8 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                     onClick={onClose}
                     tabIndex={isOpen ? 0 : -1}
                   >
-                    Internships
+                    <BriefcaseBusiness size={17} aria-hidden="true" />
+                    <span>Internships</span>
                   </NavLink>
                 )}
               </div>}

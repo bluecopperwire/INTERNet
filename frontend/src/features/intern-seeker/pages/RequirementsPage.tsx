@@ -1,5 +1,7 @@
 import { type ChangeEvent, useMemo } from 'react'
 import { Download, Trash2 } from 'lucide-react'
+import { DataTable, type DataTableColumn } from '../../../components/DataTable'
+import { StatusBadge, TableActions, TableCellStack } from '../../../components/TablePrimitives'
 import { useRequirements } from '../hooks/useRequirements'
 import type { InternshipRequirement } from '../types/requirement.types'
 import styles from './RequirementsPage.module.css'
@@ -44,6 +46,7 @@ function RequirementsPage() {
   }
 
   const handleDelete = async (requirement: InternshipRequirement) => {
+    if (!window.confirm(`Delete the submitted ${requirement.title} document?`)) return
     const success = await deleteRequirement(requirement.id)
     if (success) {
       toast.success(`${requirement.title} deleted.`)
@@ -51,6 +54,59 @@ function RequirementsPage() {
       toast.error(`Failed to delete ${requirement.title}.`)
     }
   }
+
+  const columns: DataTableColumn<InternshipRequirement>[] = [
+    {
+      key: 'requirement',
+      header: 'Requirement',
+      width: '48%',
+      render: (requirement) => (
+        <TableCellStack
+          primary={requirement.title}
+          secondary={requirement.description}
+          tertiary={requirement.recipientLines?.join(' · ')}
+        />
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      align: 'center',
+      render: (requirement) => (
+        <StatusBadge value={requirement.status === 'submitted' ? 'Submitted' : 'Pending'} />
+      ),
+    },
+    {
+      key: 'updated',
+      header: 'Last Updated',
+      align: 'center',
+      render: (requirement) => requirement.document ? formatDate(requirement.document.uploadedAt) : '—',
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      align: 'center',
+      headerAlign: 'center',
+      render: (requirement) => {
+        const inputId = `requirement-${requirement.id}`
+        return (
+          <TableActions>
+            {requirement.status === 'submitted' ? (
+              <span className={styles.documentActions}>
+                <button className={styles.iconAction} type="button" aria-label={`Download ${requirement.document?.fileName ?? requirement.title}`} title="Download" onClick={() => downloadDocument(requirement)}><Download aria-hidden="true" /></button>
+                <button className={`${styles.iconAction} ${styles.deleteAction}`} type="button" aria-label={`Delete ${requirement.document?.fileName ?? requirement.title}`} title="Delete" onClick={() => void handleDelete(requirement)}><Trash2 aria-hidden="true" /></button>
+              </span>
+            ) : (
+              <>
+                <label className={styles.uploadButton} htmlFor={inputId}>{uploadingId === requirement.id ? 'Uploading...' : 'Upload'}</label>
+                <input className={styles.hiddenFileInput} id={inputId} type="file" accept=".pdf,application/pdf" disabled={uploadingId === requirement.id} onChange={(event) => void handleFileSelection(requirement, event)} />
+              </>
+            )}
+          </TableActions>
+        )
+      },
+    },
+  ]
 
   return (
     <>
@@ -70,69 +126,18 @@ function RequirementsPage() {
           </div>
 
           {error && <p className={styles.error} role="alert">{error}</p>}
-          {isLoading && <p className={styles.feedback}>Loading requirements...</p>}
-          {!isLoading && requirements.length === 0 && <p className={styles.feedback}>No requirements are currently assigned.</p>}
-
-          {!isLoading && requirements.length > 0 && (
-            <div className={styles.table} role="table" aria-label="Pre-referral requirements">
-              <div className={styles.tableHeader} role="row">
-                <span role="columnheader">Requirement</span>
-                <span role="columnheader">Status</span>
-                <span role="columnheader">Last Updated</span>
-                <span role="columnheader">Action</span>
-              </div>
-              {requirements.map((requirement) => (
-                <RequirementRow
-                  key={requirement.id}
-                  requirement={requirement}
-                  isUploading={uploadingId === requirement.id}
-                  onDelete={() => void handleDelete(requirement)}
-                  onFileSelection={(event) => void handleFileSelection(requirement, event)}
-                />
-              ))}
-            </div>
-          )}
+          <DataTable
+            ariaLabel="Pre-referral requirements"
+            columns={columns}
+            rows={requirements}
+            rowKey={(requirement) => requirement.id}
+            minWidth={760}
+            loading={isLoading}
+            emptyMessage="No requirements are currently assigned."
+          />
         </section>
 
     </>
-  )
-}
-
-interface RequirementRowProps {
-  requirement: InternshipRequirement
-  isUploading: boolean
-  onDelete: () => void
-  onFileSelection: (event: ChangeEvent<HTMLInputElement>) => void
-}
-
-function RequirementRow({ requirement, isUploading, onDelete, onFileSelection }: RequirementRowProps) {
-  const inputId = `requirement-${requirement.id}`
-  return (
-    <div className={styles.requirementRow} role="row">
-      <div className={styles.requirementDetails} role="cell">
-        <h3>{requirement.title}</h3>
-        <p>{requirement.description}</p>
-        {requirement.recipientLines && <div className={styles.recipient}>{requirement.recipientLines.map((line, index) => <span className={index > 0 ? styles.recipientName : ''} key={line}>{line}</span>)}</div>}
-      </div>
-      <div className={styles.mobileLabel}>Status</div>
-      <div role="cell"><span className={`${styles.status} ${styles[requirement.status]}`}>{requirement.status === 'submitted' ? 'Submitted' : 'Pending'}</span></div>
-      <div className={styles.mobileLabel}>Last Updated</div>
-      <div className={styles.lastUpdated} role="cell">{requirement.document ? formatDate(requirement.document.uploadedAt) : '-'}</div>
-      <div className={styles.mobileLabel}>Action</div>
-      <div className={styles.actionCell} role="cell">
-        {requirement.status === 'submitted' ? (
-          <div className={styles.documentActions}>
-            <button className={styles.iconAction} type="button" aria-label={`Download ${requirement.document?.fileName ?? requirement.title}`} title="Download" onClick={() => downloadDocument(requirement)}><Download aria-hidden="true" /></button>
-            <button className={`${styles.iconAction} ${styles.deleteAction}`} type="button" aria-label={`Delete ${requirement.document?.fileName ?? requirement.title}`} title="Delete" onClick={onDelete}><Trash2 aria-hidden="true" /></button>
-          </div>
-        ) : (
-          <>
-            <label className={styles.uploadButton} htmlFor={inputId}>{isUploading ? 'Uploading...' : 'Upload'}</label>
-            <input id={inputId} type="file" accept=".pdf,application/pdf" disabled={isUploading} onChange={onFileSelection} />
-          </>
-        )}
-      </div>
-    </div>
   )
 }
 

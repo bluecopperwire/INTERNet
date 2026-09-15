@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Calendar, Check, Download, FileText, Mail, MapPin, Phone, User, X } from 'lucide-react'
 import { employerService } from '../services/employer.service'
 import type { Applicant } from '../types/employer.types'
@@ -16,7 +16,6 @@ import { formatYearLevel } from '../../../utils/year-level'
 export function ReviewApplicantPage({ readOnly = false }: { readOnly?: boolean }) {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
   const [applicant, setApplicant] = useState<Applicant | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -98,11 +97,6 @@ export function ReviewApplicantPage({ readOnly = false }: { readOnly?: boolean }
   const handleBack = () => {
     if (readOnly) {
       navigate('/employer/referrals-history')
-      return
-    }
-    const opportunityId = searchParams.get('opportunityId')
-    if (searchParams.get('from') === 'opportunity' && opportunityId) {
-      navigate(`/employer/opportunities?viewApplicants=${opportunityId}`)
       return
     }
     navigate('/employer/applicants')

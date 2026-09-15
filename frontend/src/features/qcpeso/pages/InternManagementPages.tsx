@@ -3,13 +3,16 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { AttendanceHistoryView } from '../../../components/AttendanceHistoryView'
 import { AttendanceProfileSummary } from '../../../components/AttendanceProfileSummary'
+import { DataTable, TABLE_COLUMN_WIDTHS, type DataTableColumn } from '../../../components/DataTable'
+import { StatusBadge, TableActions, TableCellStack } from '../../../components/TablePrimitives'
 import { TablePagination } from '../../../components/TablePagination'
 import { ConfirmDeleteModal } from '../../../components/feedback/ConfirmDeleteModal'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
 import QCPesoHero from '../components/QCPesoHero'
 import { qcpesoApiService } from '../services/qcpeso-api.service'
-import { todayDateOnly } from '../../../utils/date-only'
+import { formatTableDate, todayDateOnly } from '../../../utils/date-only'
+import { formatAttendanceDuration } from '../../../utils/attendance-format'
 import { formatYearLevel } from '../../../utils/year-level'
 import attendanceStyles from '../../employer/pages/AttendanceMonitoringPage.module.css'
 import attendanceDetailStyles from '../../employer/pages/AttendanceInternshipDetailsPage.module.css'
@@ -28,15 +31,19 @@ const daysLabel = (days: unknown) => Array.isArray(days) ? days.map((d) => ['Sun
 function SummaryCard({ label, value, styles }: { label: string; value: number | string; styles: Record<string, string> }) {
   return <article className={styles.summaryCard}><h2>{label}</h2><p>{String(value).padStart(2, '0')}</p></article>
 }
-function StatusPill({ value, styles }: { value: string; styles: Record<string, string> }) {
-  const key = value.replaceAll('_', '').replaceAll(' ', '').toLowerCase()
-  return <span className={`${styles.statusPill} ${styles[key] || ''}`}>{statusLabel(value)}</span>
-}
 function Pager({ meta, limit, setLimit, setPage }: { meta: Meta; limit: number; setLimit: (n: number) => void; setPage: (n: number) => void; styles?: Record<string, string> }) {
   return <TablePagination page={meta.page} pageSize={limit} totalRecords={meta.total} pageSizes={PAGE_SIZES} onPageChange={setPage} onPageSizeChange={(value) => { setLimit(value); setPage(1) }} />
 }
-function InternshipTable({ rows, onView, onDelete, wideStudentName = false }: { rows: any[]; onView: (id: number) => void; onDelete?: (row: any) => void; wideStudentName?: boolean }) {
-  return <div className={internshipStyles.tableCard}><div className={internshipStyles.tableScroller}><table className={`${internshipStyles.table} ${internshipStyles.qcpesoInternshipTable} ${wideStudentName ? internshipStyles.wideStudentNameTable : ''}`}><thead><tr><th>Student Name</th><th>Company</th><th>Job Title</th><th>Program / Strand</th><th>Status</th><th>Action</th></tr></thead><tbody>{rows.map((row) => <tr key={row.internshipAssignmentId}><td>{row.studentFullName}</td><td>{row.companyName}</td><td>{row.jobTitle}</td><td>{row.strandProgram || '—'}</td><td><StatusPill value={row.assignmentStatus} styles={internshipStyles} /></td><td><div className={internshipStyles.rowActions}><button type="button" className={internshipStyles.viewButton} onClick={() => onView(row.internshipAssignmentId)}><Eye size={16} />View</button>{onDelete && row.assignmentStatus === 'finalized' && <button type="button" className={internshipStyles.deleteButton} onClick={() => onDelete(row)}><Trash2 size={16} />Delete</button>}</div></td></tr>)}</tbody></table></div>{rows.length === 0 && <p className={internshipStyles.emptyState}>No internship assignments match the selected filters.</p>}</div>
+function InternshipTable({ rows, onView, onDelete, footer }: { rows: any[]; onView: (id: number) => void; onDelete?: (row: any) => void; footer: ReactNode }) {
+  const columns: DataTableColumn<any>[] = [
+    { key: 'intern', header: 'Intern', minWidth: TABLE_COLUMN_WIDTHS.identity, render: (row) => <TableCellStack primary={row.studentFullName} secondary={row.studentAccountCode} code /> },
+    { key: 'placement', header: 'Placement', minWidth: TABLE_COLUMN_WIDTHS.placement, render: (row) => <TableCellStack primary={row.jobTitle} secondary={row.companyName} /> },
+    { key: 'progress', header: 'Progress', minWidth: TABLE_COLUMN_WIDTHS.progress, noWrap: true, render: (row) => <TableCellStack primary={`${formatDetailMinutes(row.renderedMinutes)} rendered`} secondary={`${formatDetailMinutes(row.requiredMinutes)} required`} tertiary={`${formatDetailMinutes(row.remainingMinutes)} remaining`} /> },
+    { key: 'period', header: 'Period', minWidth: TABLE_COLUMN_WIDTHS.period, noWrap: true, render: (row) => <TableCellStack primary={`Start: ${formatAssignmentDate(row.startDate)}`} secondary={`End: ${formatAssignmentDate(row.endDate || row.expectedEndDate)}`} /> },
+    { key: 'status', header: 'Status', width: TABLE_COLUMN_WIDTHS.status, align: 'center', render: (row) => <StatusBadge value={statusLabel(row.assignmentStatus)} /> },
+    { key: 'actions', header: 'Actions', width: TABLE_COLUMN_WIDTHS.actions, align: 'center', headerAlign: 'center', render: (row) => <TableActions><button type="button" className={internshipStyles.viewButton} onClick={() => onView(row.internshipAssignmentId)} aria-label={`View ${row.studentFullName}'s internship`}><Eye size={16} aria-hidden="true" />View</button>{onDelete && row.assignmentStatus === 'finalized' && <button type="button" className={internshipStyles.deleteButton} onClick={() => onDelete(row)} aria-label={`Delete ${row.studentFullName}'s internship`}><Trash2 size={16} aria-hidden="true" />Delete</button>}</TableActions> },
+  ]
+  return <DataTable ariaLabel="Internship assignments" columns={columns} rows={rows} rowKey={(row) => row.internshipAssignmentId} minWidth={1440} emptyMessage="No internship assignments are available yet." filteredEmptyMessage="No internship assignments match the selected filters." footer={footer} />
 }
 function InternshipToolbar({ search, setSearch, status, setStatus, statuses, reset }: any) {
   return <div className={internshipStyles.toolbar}><label className={internshipStyles.searchBox}><Search size={17} /><input value={search} onChange={(e) => { setSearch(e.target.value); reset() }} placeholder="Search students, companies, or job titles..." /></label><label className={internshipStyles.statusFilter}><SlidersHorizontal size={16} /><select value={status} onChange={(e) => { setStatus(e.target.value); reset() }}><option value="">All</option>{statuses.map((s: string) => <option key={s} value={s}>{statusLabel(s)}</option>)}</select></label></div>
@@ -47,7 +54,7 @@ export function QCPesoManageInternshipPage() {
   const [search, setSearch] = useState(''); const [status, setStatus] = useState(''); const [page, setPage] = useState(1); const [limit, setLimit] = useState(5)
   useEffect(() => { void qcpesoApiService.getFinalizationSummary().then(setSummary) }, [])
   useEffect(() => { void qcpesoApiService.getFinalizationQueue({ search: search || undefined, status: status || undefined, page, limit }).then((r) => { setRows(r.data); setMeta(r.meta) }) }, [search, status, page, limit])
-  return <main className={internshipStyles.page}><QCPesoHero title="Finalize Internships" subtitle="Review ended internships and complete QC PESO finalization." /><section className={internshipStyles.content}><div className={internshipStyles.summaryGrid}><SummaryCard styles={internshipStyles} label="Awaiting Finalization" value={summary.awaitingFinalization || 0} /><SummaryCard styles={internshipStyles} label="Completed Internships" value={summary.completedInternships || 0} /><SummaryCard styles={internshipStyles} label="Withdrawn Internships" value={summary.withdrawalInternships || 0} /><SummaryCard styles={internshipStyles} label="Cancelled Internships" value={summary.cancelledInternships || 0} /></div><InternshipToolbar search={search} setSearch={setSearch} status={status} setStatus={setStatus} statuses={['complete_student', 'withdrawn', 'cancelled']} reset={() => setPage(1)} /><InternshipTable rows={rows} wideStudentName onView={(id) => navigate(`/qcpeso/manage-interns/internships/${id}`)} /><Pager meta={meta} limit={limit} setLimit={setLimit} setPage={setPage} styles={internshipStyles} /></section></main>
+  return <main className={internshipStyles.page}><QCPesoHero title="Finalize Internships" subtitle="Review ended internships and complete QC PESO finalization." /><section className={internshipStyles.content}><div className={internshipStyles.summaryGrid}><SummaryCard styles={internshipStyles} label="Awaiting Finalization" value={summary.awaitingFinalization || 0} /><SummaryCard styles={internshipStyles} label="Completed Internships" value={summary.completedInternships || 0} /><SummaryCard styles={internshipStyles} label="Withdrawn Internships" value={summary.withdrawalInternships || 0} /><SummaryCard styles={internshipStyles} label="Cancelled Internships" value={summary.cancelledInternships || 0} /></div><InternshipToolbar search={search} setSearch={setSearch} status={status} setStatus={setStatus} statuses={['complete_student', 'withdrawn', 'cancelled']} reset={() => setPage(1)} /><InternshipTable rows={rows} onView={(id) => navigate(`/qcpeso/manage-interns/internships/${id}`)} footer={<Pager meta={meta} limit={limit} setLimit={setLimit} setPage={setPage} styles={internshipStyles} />} /></section></main>
 }
 
 export function QCPesoInternshipHistoryPage() {
@@ -58,7 +65,7 @@ export function QCPesoInternshipHistoryPage() {
   useEffect(() => { void qcpesoApiService.getInternshipHistorySummary().then(setSummary) }, [])
   useEffect(() => { void load() }, [search, status, page, limit])
   const remove = async () => { if (!deleteTarget || deleting) return; setDeleting(true); try { await qcpesoApiService.hideFinalizedInternship(deleteTarget.internshipAssignmentId); await Promise.all([load(), qcpesoApiService.getInternshipHistorySummary().then(setSummary)]); toast.success('Internship record hidden from QC PESO history.'); setDeleteTarget(null) } catch (error: unknown) { toast.error(getErrorMessage(error, 'Failed to hide internship record.')) } finally { setDeleting(false) } }
-  return <><main className={internshipStyles.page}><QCPesoHero title="Internship History" subtitle="Review all internship assignment states and finalized records." /><section className={internshipStyles.content}><div className={`${internshipStyles.summaryGrid} ${internshipStyles.historySummaryGrid}`}><SummaryCard styles={internshipStyles} label="Total Internships" value={summary.totalInternships || 0} /><SummaryCard styles={internshipStyles} label="Active Internships" value={summary.activeInternships || 0} /><SummaryCard styles={internshipStyles} label="Closed Internships" value={summary.closedInternships || 0} /></div><InternshipToolbar search={search} setSearch={setSearch} status={status} setStatus={setStatus} statuses={['active', 'closed', ...ALL_STATUSES]} reset={() => setPage(1)} /><InternshipTable rows={rows} onView={(id) => navigate(`/qcpeso/manage-interns/history/${id}`)} onDelete={setDeleteTarget} /><Pager meta={meta} limit={limit} setLimit={setLimit} setPage={setPage} styles={internshipStyles} /></section></main>{deleteTarget && <ConfirmDeleteModal subject={`${deleteTarget.studentFullName}'s finalized internship record`} isDeleting={deleting} onClose={() => { if (!deleting) setDeleteTarget(null) }} onConfirm={remove} />}</>
+  return <><main className={internshipStyles.page}><QCPesoHero title="Internship History" subtitle="Review all internship assignment states and finalized records." /><section className={internshipStyles.content}><div className={`${internshipStyles.summaryGrid} ${internshipStyles.historySummaryGrid}`}><SummaryCard styles={internshipStyles} label="Total Internships" value={summary.totalInternships || 0} /><SummaryCard styles={internshipStyles} label="Active Internships" value={summary.activeInternships || 0} /><SummaryCard styles={internshipStyles} label="Closed Internships" value={summary.closedInternships || 0} /></div><InternshipToolbar search={search} setSearch={setSearch} status={status} setStatus={setStatus} statuses={['active', 'closed', ...ALL_STATUSES]} reset={() => setPage(1)} /><InternshipTable rows={rows} onView={(id) => navigate(`/qcpeso/manage-interns/history/${id}`)} onDelete={setDeleteTarget} footer={<Pager meta={meta} limit={limit} setLimit={setLimit} setPage={setPage} styles={internshipStyles} />} /></section></main>{deleteTarget && <ConfirmDeleteModal subject={`${deleteTarget.studentFullName}'s finalized internship record`} isDeleting={deleting} onClose={() => { if (!deleting) setDeleteTarget(null) }} onConfirm={remove} />}</>
 }
 
 type QcInternshipDetail = {
@@ -331,24 +338,15 @@ function QcStudentReviewCard({ review }: { review?: { rating: number; remark?: s
 }
 
 function formatDetailMinutes(value: unknown): string {
-  const minutes = Math.max(0, Math.round(Number(value) || 0))
-  const hours = Math.floor(minutes / 60)
-  const remainder = minutes % 60
-  if (remainder === 0) return `${hours} ${hours === 1 ? 'hour' : 'hours'}`
-  if (hours === 0) return `${remainder} ${remainder === 1 ? 'minute' : 'minutes'}`
-  return `${hours} ${hours === 1 ? 'hour' : 'hours'}, ${remainder} ${remainder === 1 ? 'minute' : 'minutes'}`
+  return formatAttendanceDuration(Number(value) || 0)
 }
 
 function formatAssignmentDate(value?: string | null): string {
-  if (!value) return 'Not specified'
-  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value)
-  const parsed = new Date(dateOnly ? `${value}T00:00:00+08:00` : value)
-  if (Number.isNaN(parsed.getTime())) return value
-  return new Intl.DateTimeFormat('en-PH', { timeZone: 'Asia/Manila', month: 'long', day: 'numeric', year: 'numeric' }).format(parsed)
+  return formatTableDate(value) || '—'
 }
 
-function formatClockTime(value?: string | null): string {
-  if (!value) return 'Not specified'
+function formatClockTime(value?: string | null, fallback = 'Not specified'): string {
+  if (!value) return fallback
   const [hourValue, minuteValue] = value.split(':')
   const hour = Number(hourValue)
   if (!Number.isInteger(hour) || minuteValue === undefined) return value
@@ -366,7 +364,14 @@ export function QCPesoAttendancePage() {
   const [search, setSearch] = useState(''); const [status, setStatus] = useState(''); const [date, setDate] = useState(todayDateOnly()); const [page, setPage] = useState(1); const [limit, setLimit] = useState(5)
   useEffect(() => { void qcpesoApiService.getInternshipAttendanceSummary(date).then(setSummary) }, [date])
   useEffect(() => { void qcpesoApiService.getInternshipAttendance({ date, search: search || undefined, status: status || undefined, page, limit }).then((r) => { setRows(r.data); setMeta(r.meta) }) }, [date, search, status, page, limit])
-  return <main className={attendanceStyles.pageContainer}><QCPesoHero title="Monitor Attendance" subtitle="Monitor daily attendance using each assignment's historical lifecycle." /><section className={attendanceStyles.mainContent}><div className={`${attendanceStyles.summaryGrid} ${attendanceStyles.threeCards}`}><SummaryCard styles={attendanceStyles} label="Ongoing Interns" value={summary.ongoingInterns || 0} /><SummaryCard styles={attendanceStyles} label="Present Interns" value={summary.presentInterns || 0} /><SummaryCard styles={attendanceStyles} label="Absent Interns" value={summary.absentInterns || 0} /></div><div className={attendanceStyles.toolbar}><label className={attendanceStyles.searchBox}><Search size={16} /><input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} placeholder="Search student, company, or job..." /></label><label className={attendanceStyles.statusFilter}><SlidersHorizontal size={16} /><select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1) }}><option value="">All</option><option value="pending">Pending</option><option value="present">Present</option><option value="absent">Absent</option><option value="incomplete">Incomplete</option></select></label><label className={attendanceStyles.dateFilter}><CalendarDays size={16} /><input type="date" max={todayDateOnly()} value={date} onChange={(e) => { setDate(e.target.value); setPage(1) }} /></label></div><div className={attendanceStyles.tableCard}><div className={attendanceStyles.tableScroller}><table className={`${attendanceStyles.table} ${attendanceStyles.qcpesoAttendanceTable}`}><thead><tr><th>Student Name</th><th>Company</th><th>Job Title</th><th>Program / Strand</th><th>Status</th><th>Action</th></tr></thead><tbody>{rows.map((row) => <tr key={row.internshipAssignmentId}><td>{row.studentFullName}</td><td>{row.companyName}</td><td>{row.jobTitle}</td><td>{row.strandProgram || '—'}</td><td><StatusPill value={row.status} styles={attendanceStyles} /></td><td><button className={attendanceStyles.actionBtn} onClick={() => navigate(`/qcpeso/manage-interns/attendance/${row.internshipAssignmentId}`, { state: { attendanceHistoryBackPath: '/qcpeso/manage-interns/attendance' } })}><Eye size={14} />View</button></td></tr>)}</tbody></table></div>{rows.length === 0 && <p className={attendanceStyles.noData}>No scheduled interns match the selected date and filters.</p>}</div><Pager meta={meta} limit={limit} setLimit={setLimit} setPage={setPage} styles={attendanceStyles} /></section></main>
+  const columns: DataTableColumn<any>[] = [
+    { key: 'intern', header: 'Intern', minWidth: TABLE_COLUMN_WIDTHS.identity, render: (row) => <TableCellStack primary={row.studentFullName} secondary={row.studentAccountCode} code /> },
+    { key: 'placement', header: 'Placement', minWidth: TABLE_COLUMN_WIDTHS.placement, render: (row) => <TableCellStack primary={row.jobTitle} secondary={row.companyName} /> },
+    { key: 'attendance', header: 'Attendance', minWidth: TABLE_COLUMN_WIDTHS.attendance, noWrap: true, render: (row) => <TableCellStack primary={`${formatClockTime(row.timeIn, 'No Time In')} → ${formatClockTime(row.timeOut, 'No Time Out')}`} secondary={`${formatDetailMinutes(row.renderedMinutes)} rendered`} /> },
+    { key: 'status', header: 'Status', width: TABLE_COLUMN_WIDTHS.status, align: 'center', render: (row) => <StatusBadge value={statusLabel(row.status)} /> },
+    { key: 'actions', header: 'Actions', width: TABLE_COLUMN_WIDTHS.actions, align: 'center', headerAlign: 'center', render: (row) => <TableActions><button type="button" className={attendanceStyles.actionBtn} onClick={() => navigate(`/qcpeso/manage-interns/attendance/${row.internshipAssignmentId}`, { state: { attendanceHistoryBackPath: '/qcpeso/manage-interns/attendance' } })} aria-label={`View ${row.studentFullName}'s attendance`}><Eye size={14} aria-hidden="true" />View</button></TableActions> },
+  ]
+  return <main className={attendanceStyles.pageContainer}><QCPesoHero title="Monitor Attendance" subtitle="Monitor daily attendance using each assignment's historical lifecycle." /><section className={attendanceStyles.mainContent}><div className={`${attendanceStyles.summaryGrid} ${attendanceStyles.threeCards}`}><SummaryCard styles={attendanceStyles} label="Ongoing Interns" value={summary.ongoingInterns || 0} /><SummaryCard styles={attendanceStyles} label="Present Interns" value={summary.presentInterns || 0} /><SummaryCard styles={attendanceStyles} label="Absent Interns" value={summary.absentInterns || 0} /></div><div className={attendanceStyles.toolbar}><label className={attendanceStyles.searchBox}><Search size={16} /><input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} placeholder="Search student, company, or job..." /></label><label className={attendanceStyles.statusFilter}><SlidersHorizontal size={16} /><select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1) }}><option value="">All</option><option value="pending">Pending</option><option value="present">Present</option><option value="absent">Absent</option><option value="incomplete">Incomplete</option></select></label><label className={attendanceStyles.dateFilter}><CalendarDays size={16} /><input type="date" max={todayDateOnly()} value={date} onChange={(e) => { setDate(e.target.value); setPage(1) }} /></label></div><DataTable ariaLabel={`Attendance records for ${date}`} columns={columns} rows={rows} rowKey={(row) => row.internshipAssignmentId} minWidth={1190} emptyMessage="No interns are scheduled for the selected date." filteredEmptyMessage="No scheduled interns match the selected date and filters." hasActiveFilters={Boolean(search || status)} footer={<Pager meta={meta} limit={limit} setLimit={setLimit} setPage={setPage} styles={attendanceStyles} />} /></section></main>
 }
 
 export function QCPesoAttendanceDetailsPage() {

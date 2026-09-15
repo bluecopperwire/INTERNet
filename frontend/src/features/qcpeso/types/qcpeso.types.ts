@@ -90,6 +90,7 @@ export type MonitorUserStatus = "Active" | "Suspended";
 
 export interface MonitoredStudentUser {
   id: string;
+  accountCode?: string;
   studentName: string;
   email: string;
   mobileNumber: string;
@@ -113,6 +114,7 @@ export interface MonitoredStudentUser {
 
 export interface MonitoredCompanyUser {
   id: string;
+  accountCode?: string;
   companyName: string;
   email: string;
   contactNumber: string;
@@ -164,6 +166,7 @@ export interface QCPesoDocument {
 export interface QCPesoReviewApplicant {
   id: string;
   studentName: string;
+  accountCode?: string;
   company: string;
   jobTitle: string;
   program: string;

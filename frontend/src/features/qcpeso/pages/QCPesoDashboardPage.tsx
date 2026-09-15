@@ -1,6 +1,8 @@
 import type { FC } from 'react'
 import { ArrowRight, BriefcaseBusiness, Building2, ChevronRight, FileText } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { DataTable, type DataTableColumn } from '../../../components/DataTable'
+import { TableCellStack } from '../../../components/TablePrimitives'
 import QCPesoHero from '../components/QCPesoHero'
 import styles from '../../employer/pages/EmployerDashboardPage.module.css'
 import { useQCPeso } from '../hooks/useQCPeso'
@@ -10,6 +12,11 @@ export const QCPesoDashboardPage: FC = () => {
   const navigate = useNavigate()
   const formatNumber = (value: number) => String(value).padStart(2, '0')
   const firstName = profile?.firstName.trim() || 'User'
+  const recentColumns: DataTableColumn<(typeof students)[number]>[] = [
+    { key: 'applicant', header: 'Applicant', render: (student) => <TableCellStack primary={student.studentName} /> },
+    { key: 'opportunity', header: 'Opportunity', render: (student) => <TableCellStack primary={student.jobTitle} secondary={student.company} /> },
+    { key: 'submitted', header: 'Submitted', render: (student) => student.dateApplied },
+  ]
 
   if (isLoading) return <div className={styles.loading}>Loading Dashboard...</div>
 
@@ -95,23 +102,7 @@ export const QCPesoDashboardPage: FC = () => {
               </button>
             </div>
 
-            <div className={styles.tableCard}>
-              <table className={styles.table}>
-                <thead><tr><th>Student Name</th><th>Company</th><th>Job Title</th><th>Application Date</th></tr></thead>
-                <tbody>
-                  {students.length > 0 ? students.map((student) => (
-                    <tr key={student.id}>
-                      <td><strong>{student.studentName}</strong></td>
-                      <td>{student.company}</td>
-                      <td>{student.jobTitle}</td>
-                      <td>{student.dateApplied}</td>
-                    </tr>
-                  )) : (
-                    <tr><td colSpan={4} className={styles.emptyTable}>No applications awaiting review.</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+            <DataTable ariaLabel="Recent applications awaiting review" columns={recentColumns} rows={students} rowKey={(student) => student.id} variant="compact" minWidth={620} emptyMessage="No applications are awaiting review." />
           </section>
 
           <section className={styles.quickActionsContainer}>

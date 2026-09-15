@@ -203,14 +203,26 @@ export class PesoDashboardService {
       SELECT 
         c.company_id AS "companyId",
         c.company_name AS "companyName",
+        ua.account_code AS "accountCode",
+        ua.created_at AS "createdAt",
         concat_ws(' ', c.contact_person_first_name, c.contact_person_middle_name, c.contact_person_last_name, c.contact_person_extension_name) AS "representativeName",
         c.contact_email AS "contactEmail",
         c.contact_number AS "contactNumber",
         c.company_type AS "companyType",
+        c.company_size AS "companySize",
+        c.year_established AS "yearEstablished",
+        c.website_url AS "websiteUrl",
+        c.description,
+        c.address_line AS "addressLine",
+        c.address_barangay AS "addressBarangay",
+        c.address_district AS "addressDistrict",
+        c.address_city AS "addressCity",
+        i.industry_name AS "industryName",
         ua.account_status AS "accountStatus",
         COALESCE(opp.cnt, 0) AS "activeOpportunityCount"
       FROM public.company c
       JOIN public.user_account ua ON ua.user_account_id = c.user_account_id
+      LEFT JOIN public.industry i ON i.industry_id = c.industry_id
       LEFT JOIN (
         SELECT company_id, COUNT(*) AS cnt 
         FROM public.opportunity 
@@ -987,6 +999,7 @@ export class PesoDashboardService {
       `
         SELECT 
           s.student_id,
+          ua.account_code,
           concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS full_name,
           s.contact_email,
           s.contact_number,

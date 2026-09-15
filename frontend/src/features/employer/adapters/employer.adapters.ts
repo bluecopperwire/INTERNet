@@ -106,6 +106,7 @@ export function adaptEmployerReferral(
 
   return {
     id: String(referralId),
+    accountCode: student.accountCode || r.studentAccountCode || undefined,
     name: fullName,
     opportunityId: String(oppId),
     opportunityTitle: oppTitle,
@@ -125,7 +126,7 @@ export function adaptEmployerReferral(
     email: student.contactEmail || 'N/A',
     phone: student.contactNumber || 'N/A',
     location: address,
-    school: student.schoolName || 'N/A',
+    school: student.schoolName || r.schoolName || 'N/A',
     preferredField: 'N/A',
     requiredHours: Number(internshipPref.requiredHours || 0),
     availabilityDays: formatAvailabilityDays(internshipPref.availableDays),

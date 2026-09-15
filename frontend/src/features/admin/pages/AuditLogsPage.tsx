@@ -1,8 +1,11 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { FileSpreadsheet, Filter, Search } from 'lucide-react'
 import { Navigate, useParams } from 'react-router-dom'
+import { DataTable, type DataTableColumn } from '../../../components/DataTable'
 import { PageHero } from '../../../components/PageHero'
+import { StatusTransition, TableCellStack } from '../../../components/TablePrimitives'
 import { TablePagination } from '../../../components/TablePagination'
+import { TableToolbar } from '../../../components/TableToolbar'
 import { useToastStore } from '../../../stores/useToastStore'
 import { todayDateOnly } from '../../../utils/date-only'
 import { adminApiService } from '../services/admin-api.service'
@@ -153,6 +156,21 @@ function AuditLogsView({ category }: { category: AdminAuditLogCategory }) {
     }
   }
 
+  const columns: DataTableColumn<AdminAuditLogItem>[] = [
+    {
+      key: 'occurredAt',
+      header: 'Date & Time',
+      render: (log) => {
+        const timestamp = formatTimestamp(log.occurredAt)
+        return <TableCellStack primary={timestamp.date} secondary={timestamp.time} />
+      },
+    },
+    { key: 'action', header: 'Action', render: (log) => log.action },
+    { key: 'entity', header: 'Entity', render: (log) => <TableCellStack primary={log.entityEmail} secondary={log.entityCode} code /> },
+    { key: 'status', header: 'Status Change', align: 'center', render: (log) => <StatusTransition previous={log.previousStatus} next={log.newStatus} /> },
+    { key: 'actor', header: 'Actor', render: (log) => <TableCellStack primary={log.actorEmail} secondary={log.actorCode} code /> },
+  ]
+
   return (
     <main className={styles.pageContainer}>
       <PageHero title={config.title} subtitle={config.subtitle} />
@@ -171,7 +189,7 @@ function AuditLogsView({ category }: { category: AdminAuditLogCategory }) {
           </button>
         </div>
 
-        <div className={styles.filterRow}>
+        <TableToolbar className={styles.filterRow} hasActiveFilters={Boolean(searchInput.trim() || action || dateFrom || dateTo)} onClearFilters={() => { setSearchInput(''); setAction(''); setDateFrom(''); setDateTo(''); resetPage() }}>
           <label className={styles.searchBox}>
             <Search size={18} aria-hidden="true" />
             <span className={styles.srOnly}>Search audit logs</span>
@@ -230,96 +248,58 @@ function AuditLogsView({ category }: { category: AdminAuditLogCategory }) {
               />
             </label>
           </div>
-        </div>
+        </TableToolbar>
 
-        {error && (
-          <div className={styles.errorState} role="alert">
-            <span>{error}</span>
-            <button
-              type="button"
-              onClick={() => {
-                setIsLoading(true)
-                setError('')
-                setRetryKey((value) => value + 1)
-              }}
-            >
-              Retry
-            </button>
-          </div>
-        )}
-
-        <div className={styles.tableContainer}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Date and Time</th>
-                <th>Action</th>
-                <th>Entity Email</th>
-                <th>Entity Code</th>
-                <th>Previous Status</th>
-                <th>New Status</th>
-                <th>Actor Email</th>
-                <th>Actor Code</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr><td colSpan={8} className={styles.noData}>Loading audit logs…</td></tr>
-              ) : logs.length === 0 ? (
-                <tr><td colSpan={8} className={styles.noData}>No audit logs match the current filters.</td></tr>
-              ) : logs.map((log) => (
-                <tr key={log.auditEventId}>
-                  <td className={styles.dateCell}>{formatTimestamp(log.occurredAt)}</td>
-                  <td>{log.action}</td>
-                  <td>{log.entityEmail}</td>
-                  <td>{log.entityCode}</td>
-                  <td><StatusBadge value={log.previousStatus ?? '—'} /></td>
-                  <td><StatusBadge value={log.newStatus} /></td>
-                  <td>{log.actorEmail}</td>
-                  <td>{log.actorCode ?? '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <TablePagination
-          page={page}
-          pageSize={pageSize}
-          totalRecords={total}
-          onPageChange={setPage}
-          onPageSizeChange={(value) => {
-            setPageSize(value as 5 | 10 | 15)
-            resetPage()
+        <DataTable
+          ariaLabel={`${config.title} records`}
+          columns={columns}
+          rows={logs}
+          rowKey={(log) => log.auditEventId}
+          minWidth={1050}
+          loading={isLoading}
+          error={error}
+          onRetry={() => {
+            setIsLoading(true)
+            setError('')
+            setRetryKey((value) => value + 1)
           }}
+          emptyMessage="No audit events have been recorded yet."
+          filteredEmptyMessage="No audit logs match the current filters."
+          hasActiveFilters={Boolean(deferredSearch || action || dateFrom || dateTo)}
+          footer={(
+            <TablePagination
+              page={page}
+              pageSize={pageSize}
+              totalRecords={total}
+              onPageChange={setPage}
+              onPageSizeChange={(value) => {
+                setPageSize(value as 5 | 10 | 15)
+                resetPage()
+              }}
+            />
+          )}
         />
       </div>
     </main>
   )
 }
 
-function StatusBadge({ value }: { value: string }) {
-  const normalized = value.toLowerCase()
-  const tone = normalized.includes('deactivated') || normalized.includes('rejected') || normalized.includes('cancelled')
-    ? styles.badgeError
-    : normalized.includes('suspended') || normalized.includes('pending') || normalized.includes('review')
-      ? styles.badgeWarning
-      : normalized === '—'
-        ? styles.badgeDefault
-        : styles.badgeSuccess
-  return <span className={`${styles.statusBadge} ${tone}`}>{value}</span>
-}
-
 function formatTimestamp(value: string) {
-  return new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Manila',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  }).format(new Date(value))
+  const date = new Date(value)
+  return {
+    date: new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Manila',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }).format(date),
+    time: new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Manila',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    }).format(date),
+  }
 }
 
 function apiMessage(error: unknown, fallback: string) {

@@ -103,14 +103,14 @@ describe('Phase 2 Student internship workflow responsibilities', () => {
 
   it('uses exact history columns, server pagination, and no Delete action', () => {
     const page = readSource('./pages/InternshipHistoryPage.tsx')
-    const headings = [...page.matchAll(/<th>([^<]+)<\/th>/g)].map((match) => match[1])
-    expect(headings).toEqual(['Company', 'Job Title', 'Status', 'Action'])
+    const headings = [...page.matchAll(/header:\s*'([^']+)'/g)].map((match) => match[1])
+    expect(headings).toEqual(['Placement', 'Period', 'Progress', 'Status', 'Actions'])
     expect(page).toContain('const PAGE_SIZES = [5, 10, 15]')
     expect(page).toContain('studentApiService.getInternshipHistory(studentId, page, limit, {')
     expect(page).toContain('placeholder="Search company or job title..."')
     expect(page).toContain('All Statuses')
-    expect(page).toContain('No internship history found')
-    expect(page).toContain('<Eye size={15} />View')
+    expect(page).toContain('No internship history is available yet.')
+    expect(page).toContain('DataTable')
     expect(page).not.toContain('Delete')
   })
 

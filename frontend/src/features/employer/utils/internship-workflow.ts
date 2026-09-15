@@ -2,33 +2,33 @@ import type { AssignmentStatus } from '../../../types/api';
 
 export const COMPANY_PAGE_SIZES = [5, 10, 15] as const;
 export const MANAGE_INTERNSHIP_COLUMNS = [
-  'Student Name',
-  'Job Title',
-  'Program / Strand',
-  'Remaining Hours',
+  'Intern',
+  'Opportunity',
+  'Progress',
+  'Period',
   'Status',
-  'Action',
+  'Actions',
 ] as const;
 export const INTERNSHIP_HISTORY_COLUMNS = [
-  'Student Name',
-  'Job Title',
-  'Program / Strand',
+  'Intern',
+  'Opportunity',
+  'Progress',
+  'Period',
   'Status',
-  'Action',
+  'Actions',
 ] as const;
 export const ATTENDANCE_MONITOR_COLUMNS = [
-  'Student Name',
-  'Job Title',
-  'Program / Strand',
+  'Intern',
+  'Opportunity',
+  'Attendance',
   'Status',
-  'Action',
+  'Actions',
 ] as const;
 export const ATTENDANCE_HISTORY_COLUMNS = [
   'Date',
-  'Clock In Time',
-  'Clock Out Time',
-  'Rendered Time',
-  'Attendance Status',
+  'Time',
+  'Rendered',
+  'Status',
 ] as const;
 
 const WEEKDAYS = [

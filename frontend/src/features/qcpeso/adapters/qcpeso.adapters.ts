@@ -84,6 +84,7 @@ export function adaptPesoApplication(
   return {
     id: String(d.applicationId || d.application_id || ""),
     studentName: d.studentFullName || d.student_full_name || "Applicant",
+    accountCode: d.studentAccountCode || d.student_account_code || undefined,
     company: d.companyName || d.company_name || "Partner Company",
     jobTitle: d.opportunityTitle || d.opportunity_title || "Internship Role",
     program: d.strandProgram || d.strand_program || "N/A",
@@ -449,6 +450,7 @@ export function adaptMonitoredStudent(row: any): MonitoredStudentUser {
 
   return {
     id: String(row.student_id || row.studentId || ""),
+    accountCode: row.account_code || row.accountCode || undefined,
     studentName:
       row.full_name ||
       row.fullName ||
@@ -506,6 +508,7 @@ export function adaptMonitoredCompany(row: any): MonitoredCompanyUser {
 
   return {
     id: String(row.company_id || row.companyId || ""),
+    accountCode: row.account_code || row.accountCode || undefined,
     companyName: row.company_name || row.companyName || "Company",
     email: row.contact_email || row.contactEmail || row.email || "N/A",
     contactNumber: row.contact_number || row.contactNumber || "N/A",

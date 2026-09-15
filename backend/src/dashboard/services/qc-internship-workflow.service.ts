@@ -243,6 +243,7 @@ export class QcInternshipWorkflowService {
     const rows: Row[] = await this.dataSource.query(
       `SELECT ia.internship_assignment_id, ia.working_days,
          concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS student_full_name,
+         ua.account_code AS student_account_code,
          sai.strand_program, o.title AS job_title, c.company_name,
          ar.attendance_record_id, ar.time_in, ar.time_out, ar.attendance_status, ar.rendered_minutes
        FROM public.internship_assignment ia
@@ -251,6 +252,7 @@ export class QcInternshipWorkflowService {
        JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
        JOIN public.company c ON c.company_id = o.company_id
        JOIN public.student s ON s.student_id = a.student_id
+       JOIN public.user_account ua ON ua.user_account_id = s.user_account_id
        LEFT JOIN public.student_academic_information sai ON sai.student_id = s.student_id
        LEFT JOIN public.attendance_record ar ON ar.internship_assignment_id = ia.internship_assignment_id
          AND ar.attendance_date = $1::date
@@ -273,6 +275,7 @@ export class QcInternshipWorkflowService {
         return {
           internshipAssignmentId: asNumber(row.internship_assignment_id),
           studentFullName: String(row.student_full_name),
+          studentAccountCode: row.student_account_code,
           companyName: String(row.company_name),
           jobTitle: String(row.job_title),
           strandProgram: row.strand_program,
@@ -297,12 +300,14 @@ export class QcInternshipWorkflowService {
          concat_ws(', ', NULLIF(s.address_line, ''), NULLIF(s.address_barangay, ''), NULLIF(s.address_city, '')) AS student_address,
          s.photo_file_path AS student_photo_file_path,
          s.updated_at AS student_profile_updated_at,
+         ua.account_code AS student_account_code,
          sai.school_name,
          sai.year_level,
          previous.previous_assignment_status
        FROM public.vw_internship_assignment_details iad
        JOIN public.internship_assignment ia ON ia.internship_assignment_id = iad.internship_assignment_id
        JOIN public.student s ON s.student_id = iad.student_id
+       JOIN public.user_account ua ON ua.user_account_id = s.user_account_id
        LEFT JOIN public.student_academic_information sai ON sai.student_id = s.student_id
        LEFT JOIN public.vw_attendance_summary ats ON ats.internship_assignment_id = iad.internship_assignment_id
        LEFT JOIN LATERAL (
@@ -395,6 +400,7 @@ export class QcInternshipWorkflowService {
     return {
       internshipAssignmentId: asNumber(row.internship_assignment_id),
       studentFullName: row.student_full_name,
+      studentAccountCode: row.student_account_code,
       studentContactEmail: row.profile_contact_email,
       studentContactNumber: row.profile_contact_number,
       studentAddress: row.student_address,

@@ -423,13 +423,15 @@ export class EmployerReferralService {
         SELECT r.referral_id, r.referral_status, r.company_response, r.referred_at,
                a.application_id, a.application_status, a.student_response, a.submitted_at,
                s.student_id,
+               ua.account_code AS student_account_code,
                concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS student_full_name,
-               sai.strand_program, sai.year_level,
+               sai.school_name, sai.strand_program, sai.year_level,
                o.opportunity_id, o.title AS opportunity_title
         FROM public.referral r
         JOIN public.application a ON a.application_id = r.application_id
         JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
         JOIN public.student s ON s.student_id = a.student_id
+        JOIN public.user_account ua ON ua.user_account_id = s.user_account_id
         LEFT JOIN public.student_academic_information sai ON sai.student_id = s.student_id
         WHERE o.company_id = $1
           AND NOT EXISTS (
@@ -451,7 +453,9 @@ export class EmployerReferralService {
         referralId: asNumber(row.referral_id),
         applicationId: asNumber(row.application_id),
         studentId: asNumber(row.student_id),
+        studentAccountCode: row.student_account_code,
         studentFullName: row.student_full_name,
+        schoolName: row.school_name,
         opportunityId: asNumber(row.opportunity_id),
         opportunityTitle: row.opportunity_title,
         strandProgram: row.strand_program,

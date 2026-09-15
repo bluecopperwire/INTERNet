@@ -264,7 +264,7 @@
   background: #d9515d;
 }
 
-.actionCell input {
+.hiddenFileInput {
   position: absolute;
   width: 1px;
   height: 1px;

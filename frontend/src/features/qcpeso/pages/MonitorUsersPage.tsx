@@ -2,7 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { Eye, Search, SlidersHorizontal } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import QCPesoHero from '../components/QCPesoHero'
+import { DataTable, TABLE_COLUMN_WIDTHS, type DataTableColumn } from '../../../components/DataTable'
+import { StatusBadge, TableActions, TableCellStack } from '../../../components/TablePrimitives'
 import { TablePagination } from '../../../components/TablePagination'
+import { TableToolbar } from '../../../components/TableToolbar'
 import { qcpesoService } from '../services/qcpeso.service'
 import type { MonitoredCompanyUser, MonitoredStudentUser, MonitorUserStatus } from '../types/qcpeso.types'
 import styles from './MonitorUsersPage.module.css'
@@ -51,6 +54,23 @@ export function MonitorUsersPage({ kind }: MonitorUsersPageProps) {
   }, [searchQuery, selectedStatus, users])
 
   const displayedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+  const columns: DataTableColumn<MonitorUser>[] = isStudents
+    ? [
+        { key: 'student', header: 'Student', minWidth: TABLE_COLUMN_WIDTHS.identity, render: (user) => { const student = user as MonitoredStudentUser; return <TableCellStack primary={student.studentName} secondary={student.accountCode} code /> } },
+        { key: 'academic', header: 'Academic Information', minWidth: TABLE_COLUMN_WIDTHS.academic, render: (user) => { const student = user as MonitoredStudentUser; return <TableCellStack primary={student.school} secondary={student.program} truncateSecondary /> } },
+        { key: 'contact', header: 'Contact', minWidth: TABLE_COLUMN_WIDTHS.contact, render: (user) => { const student = user as MonitoredStudentUser; return <TableCellStack primary={student.email} secondary={student.mobileNumber} /> } },
+        { key: 'registered', header: 'Registered', width: TABLE_COLUMN_WIDTHS.registered, minWidth: TABLE_COLUMN_WIDTHS.registered, noWrap: true, render: (user) => user.dateRegistered },
+        { key: 'status', header: 'Status', width: TABLE_COLUMN_WIDTHS.status, align: 'center', render: (user) => <StatusBadge value={user.status} /> },
+        { key: 'actions', header: 'Actions', width: TABLE_COLUMN_WIDTHS.actions, align: 'center', headerAlign: 'center', render: (user) => <TableActions><button className={styles.viewButton} type="button" onClick={() => navigate(`/qcpeso/monitor-users/${routeSegment}/${user.id}`)} aria-label={`View ${(user as MonitoredStudentUser).studentName}`}><Eye size={16} aria-hidden="true" />View</button></TableActions> },
+      ]
+    : [
+        { key: 'employer', header: 'Employer', minWidth: TABLE_COLUMN_WIDTHS.identity, render: (user) => { const company = user as MonitoredCompanyUser; return <TableCellStack primary={company.companyName} secondary={company.accountCode} code /> } },
+        { key: 'organization', header: 'Organization', minWidth: TABLE_COLUMN_WIDTHS.academic, render: (user) => { const company = user as MonitoredCompanyUser; return <TableCellStack primary={company.industry} secondary={company.companyType} /> } },
+        { key: 'contact', header: 'Contact', minWidth: TABLE_COLUMN_WIDTHS.contact, render: (user) => { const company = user as MonitoredCompanyUser; return <TableCellStack primary={company.email} secondary={company.contactNumber} /> } },
+        { key: 'registered', header: 'Registered', width: TABLE_COLUMN_WIDTHS.registered, minWidth: TABLE_COLUMN_WIDTHS.registered, noWrap: true, render: (user) => user.dateRegistered },
+        { key: 'status', header: 'Status', width: TABLE_COLUMN_WIDTHS.status, align: 'center', render: (user) => <StatusBadge value={user.status} /> },
+        { key: 'actions', header: 'Actions', width: TABLE_COLUMN_WIDTHS.actions, align: 'center', headerAlign: 'center', render: (user) => <TableActions><button className={styles.viewButton} type="button" onClick={() => navigate(`/qcpeso/monitor-users/${routeSegment}/${user.id}`)} aria-label={`View ${(user as MonitoredCompanyUser).companyName}`}><Eye size={16} aria-hidden="true" />View</button></TableActions> },
+      ]
 
   return (
     <main className={styles.page}>
@@ -69,7 +89,7 @@ export function MonitorUsersPage({ kind }: MonitorUsersPageProps) {
           ))}
         </div>
 
-        <div className={styles.controls}>
+        <TableToolbar className={styles.controls} hasActiveFilters={Boolean(searchQuery.trim()) || selectedStatus !== 'All'} onClearFilters={() => { setSearchQuery(''); setSelectedStatus('All'); setCurrentPage(1) }}>
           <label className={styles.searchField}>
             <Search size={19} aria-hidden="true" />
             <span className={styles.srOnly}>Search {isStudents ? 'students' : 'companies'}</span>
@@ -85,30 +105,9 @@ export function MonitorUsersPage({ kind }: MonitorUsersPageProps) {
             </select>
           </label>
           {!isStudents && <button className={styles.addEmployerButton} type="button" aria-label="Create employer" onClick={() => navigate('/qcpeso/monitor-users/employers/create')}>+</button>}
-        </div>
+        </TableToolbar>
 
-        <div className={styles.tableCard}>
-          <div className={styles.tableScroller}>
-            <table className={styles.table}>
-              <thead><tr><th>{isStudents ? 'Student Name' : 'Company Name'}</th><th>Email</th><th>Date Registered</th><th>Status</th><th>Action</th></tr></thead>
-              <tbody>
-                {displayedUsers.map((user) => {
-                  const name = isStudent(user) ? user.studentName : user.companyName
-                  return <tr key={user.id}>
-                    <td>{name}</td>
-                    <td>{user.email}</td>
-                    <td>{user.dateRegistered}</td>
-                    <td><StatusPill status={user.status} /></td>
-                    <td><button className={styles.viewButton} type="button" onClick={() => navigate(`/qcpeso/monitor-users/${routeSegment}/${user.id}`)}><Eye size={16} />View</button></td>
-                  </tr>
-                })}
-              </tbody>
-            </table>
-          </div>
-          {!displayedUsers.length && <p className={styles.noData}>No {isStudents ? 'students' : 'companies'} match your search criteria.</p>}
-        </div>
-
-        <TablePagination page={currentPage} pageSize={itemsPerPage} totalRecords={filteredUsers.length} onPageChange={setCurrentPage} onPageSizeChange={(value) => { setItemsPerPage(value); setCurrentPage(1) }} />
+        <DataTable ariaLabel={isStudents ? 'Monitored student accounts' : 'Monitored employer accounts'} columns={columns} rows={displayedUsers} rowKey={(user) => user.id} minWidth={1320} emptyMessage={`No ${isStudents ? 'student' : 'employer'} accounts are available yet.`} filteredEmptyMessage={`No ${isStudents ? 'students' : 'employers'} match your search criteria.`} hasActiveFilters={Boolean(searchQuery.trim()) || selectedStatus !== 'All'} footer={<TablePagination page={currentPage} pageSize={itemsPerPage} totalRecords={filteredUsers.length} onPageChange={setCurrentPage} onPageSizeChange={(value) => { setItemsPerPage(value); setCurrentPage(1) }} />} />
       </section>
     </main>
   )
@@ -116,8 +115,4 @@ export function MonitorUsersPage({ kind }: MonitorUsersPageProps) {
 
 function isStudent(user: MonitorUser): user is MonitoredStudentUser {
   return 'studentName' in user
-}
-
-function StatusPill({ status }: { status: MonitorUserStatus }) {
-  return <span className={`${styles.statusPill} ${status === 'Active' ? styles.active : styles.suspended}`}>{status}</span>
 }

@@ -1,6 +1,8 @@
 import { ArrowLeft, CalendarDays, SlidersHorizontal } from 'lucide-react'
 import { formatAttendanceDate, formatAttendanceDuration, formatAttendanceWholeHours } from '../utils/attendance-format'
 import { AttendanceProfileSummary, type AttendanceProfileSummaryData } from './AttendanceProfileSummary'
+import { DataTable, type DataTableColumn } from './DataTable'
+import { StatusBadge, TableCellStack } from './TablePrimitives'
 import { TablePagination } from './TablePagination'
 import styles from './AttendanceHistoryView.module.css'
 
@@ -34,6 +36,12 @@ interface AttendanceHistoryViewProps {
 }
 
 export function AttendanceHistoryView(props: AttendanceHistoryViewProps) {
+  const columns: DataTableColumn<AttendanceHistoryRecordView>[] = [
+    { key: 'date', header: 'Date', render: (record) => formatAttendanceDate(record.date) },
+    { key: 'time', header: 'Time', render: (record) => <TableCellStack primary={`In: ${formatClockTime(record.timeIn)}`} secondary={`Out: ${formatClockTime(record.timeOut)}`} /> },
+    { key: 'rendered', header: 'Rendered', render: (record) => formatAttendanceDuration(record.renderedMinutes) },
+    { key: 'status', header: 'Status', align: 'center', render: (record) => <StatusBadge value={attendanceStatusLabel(record.status)} /> },
+  ]
   return (
     <main className={styles.page}>
       <div className={styles.wrap}>
@@ -49,18 +57,7 @@ export function AttendanceHistoryView(props: AttendanceHistoryViewProps) {
           <label className={styles.filter}><CalendarDays size={16} /><span className={styles.srOnly}>Attendance date</span><input type="date" value={props.date} onChange={(event) => props.onDateChange(event.target.value)} /></label>
           <label className={styles.filter}><SlidersHorizontal size={16} /><span className={styles.srOnly}>Attendance status</span><select value={props.status} onChange={(event) => props.onStatusChange(event.target.value)}><option value="">All</option><option value="present">Present</option><option value="absent">Absent</option><option value="incomplete">Incomplete</option></select></label>
         </div>
-        <section className={styles.tableCard} aria-label="Attendance history">
-          <div className={styles.tableScroller}>
-            <table className={styles.table}>
-              <thead><tr><th>Date</th><th>Clock In Time</th><th>Clock Out Time</th><th>Rendered Time</th><th>Attendance Status</th></tr></thead>
-              <tbody>{props.records.map((record) => <tr key={record.id}><td>{formatAttendanceDate(record.date)}</td><td>{formatClockTime(record.timeIn)}</td><td>{formatClockTime(record.timeOut)}</td><td>{formatAttendanceDuration(record.renderedMinutes)}</td><td><StatusPill status={record.status} /></td></tr>)}</tbody>
-            </table>
-          </div>
-          {props.loading && <p className={styles.message}>Loading attendance history...</p>}
-          {props.error && <p className={`${styles.message} ${styles.error}`} role="alert">{props.error}</p>}
-          {!props.loading && !props.error && props.records.length === 0 && <p className={styles.message}>No attendance records match the selected filters.</p>}
-        </section>
-        <TablePagination page={props.page} pageSize={props.limit} totalRecords={props.totalRecords} pageSizes={props.pageSizes} onPageChange={props.onPageChange} onPageSizeChange={props.onLimitChange} />
+        <DataTable ariaLabel="Attendance history" columns={columns} rows={props.records} rowKey={(record) => record.id} minWidth={700} loading={props.loading} error={props.error || undefined} emptyMessage="No attendance records are available yet." filteredEmptyMessage="No attendance records match the selected filters." hasActiveFilters={Boolean(props.date || props.status)} footer={<TablePagination page={props.page} pageSize={props.limit} totalRecords={props.totalRecords} pageSizes={props.pageSizes} onPageChange={props.onPageChange} onPageSizeChange={props.onLimitChange} />} />
       </div>
     </main>
   )
@@ -70,12 +67,14 @@ function SummaryCard({ label, value }: { label: string; value: number }) {
   return <article className={styles.summaryCard}><h2>{label}</h2><p>{String(value).padStart(2, '0')}</p></article>
 }
 
-function StatusPill({ status }: { status: string }) {
+function attendanceStatusLabel(status: string) {
   const normalized = status.toLowerCase()
-  const label = normalized ? normalized[0].toUpperCase() + normalized.slice(1) : 'Unknown'
-  return <span className={`${styles.statusPill} ${styles[normalized] ?? ''}`}>{label}</span>
+  return normalized ? normalized[0].toUpperCase() + normalized.slice(1) : 'Unknown'
 }
 
 function formatClockTime(value?: string | null): string {
-  return value ? value.slice(0, 5) : '—'
+  if (!value) return '—'
+  const [hours, minutes] = value.slice(0, 5).split(':').map(Number)
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return value
+  return new Date(2000, 0, 1, hours, minutes).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })
 }

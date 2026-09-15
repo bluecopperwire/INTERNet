@@ -22,6 +22,7 @@ export interface Opportunity {
 
 export interface Applicant {
   id: string
+  accountCode?: string
   name: string
   opportunityId: string
   opportunityTitle: string
@@ -137,6 +138,7 @@ export interface InternshipAssignment {
   referralId: number
   internshipAssignmentId: number | null
   studentName: string
+  studentAccountCode?: string
   strandProgram: string
   company: string
   jobTitle: string

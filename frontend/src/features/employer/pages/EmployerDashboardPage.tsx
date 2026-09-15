@@ -8,6 +8,8 @@ import {
   BriefcaseBusiness,
 } from 'lucide-react'
 import { PageHero } from '../../../components/PageHero'
+import { DataTable, type DataTableColumn } from '../../../components/DataTable'
+import { TableCellStack } from '../../../components/TablePrimitives'
 import styles from './EmployerDashboardPage.module.css'
 import { useEmployerDashboard } from '../hooks/useEmployerDashboard'
 
@@ -15,6 +17,11 @@ export const EmployerDashboardPage: React.FC = () => {
   const navigate = useNavigate()
   const { summary, recentApplicants, isLoading, error, refetch } = useEmployerDashboard()
   const formatNumber = (num: number) => (num < 10 ? `0${num}` : `${num}`)
+  const recentColumns: DataTableColumn<(typeof recentApplicants)[number]>[] = [
+    { key: 'applicant', header: 'Applicant', render: (app) => <TableCellStack primary={app.name} secondary={app.course} /> },
+    { key: 'opportunity', header: 'Opportunity', render: (app) => app.opportunityTitle },
+    { key: 'referred', header: 'Referred', render: (app) => app.referralDate },
+  ]
 
   if (isLoading) {
     return <div className={styles.loading}>Loading Dashboard...</div>
@@ -125,32 +132,7 @@ export const EmployerDashboardPage: React.FC = () => {
               </button>
             </div>
 
-            <div className={styles.tableCard}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Student Name</th>
-                    <th>Job Title</th>
-                    <th>Referral Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentApplicants.length > 0 ? (
-                    recentApplicants.map((app) => (
-                      <tr key={app.id}>
-                        <td><strong>{app.name}</strong></td>
-                        <td>{app.opportunityTitle}</td>
-                        <td>{app.referralDate}</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={3} className={styles.emptyTable}>No referrals awaiting review.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+            <DataTable ariaLabel="Recent referrals awaiting review" columns={recentColumns} rows={recentApplicants} rowKey={(app) => app.id} variant="compact" minWidth={620} emptyMessage="No referrals are awaiting review." />
           </div>
 
           <div className={styles.quickActionsContainer}>
