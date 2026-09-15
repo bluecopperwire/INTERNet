@@ -20,6 +20,7 @@ import InternshipHistoryPage from './features/intern-seeker/pages/InternshipHist
 import InternshipHistoryDetailsPage from './features/intern-seeker/pages/InternshipHistoryDetailsPage'
 import AttendanceHistoryPage from './features/intern-seeker/pages/AttendanceHistoryPage'
 import TrackingLayout from './features/intern-seeker/components/TrackingLayout'
+import StudentSettingsPage from './features/intern-seeker/pages/StudentSettingsPage'
 
 // QCPESO
 import QCPesoLayout from './features/qcpeso/components/QCPesoLayout'
@@ -59,7 +60,6 @@ import { EmployerInternshipHistoryDetailsPage } from './features/employer/pages/
 import AdminLayout from './features/admin/components/AdminLayout'
 import { AdminDashboardPage } from './features/admin/pages/AdminDashboardPage'
 import { AuditLogsPage } from './features/admin/pages/AuditLogsPage'
-import { BackupsMaintenancePage } from './features/admin/pages/BackupsMaintenancePage'
 import { ManageStudentsPage } from './features/admin/pages/ManageStudentsPage'
 import { AdminStudentDetailsPage } from './features/admin/pages/AdminStudentDetailsPage'
 import { AdminStudentProfileEditorPage } from './features/admin/pages/AdminStudentProfileEditorPage'
@@ -69,6 +69,8 @@ import { AdminEmployerDetailsPage, AdminEmployerEditorPage } from './features/ad
 import { AdminQCPesoDetailsPage, AdminQCPesoEditorPage } from './features/admin/pages/AdminQCPesoRecordPages'
 import { AdminCreateEmployerPage, AdminCreateQCPesoPage } from './features/admin/pages/AdminCreateRecordPages'
 import { AdminSettingsPage } from './features/admin/pages/AdminSettingsPage'
+import { AdminProfilePage } from './features/admin/pages/AdminProfilePage'
+import { AdminProfileEditorPage } from './features/admin/pages/AdminProfileEditorPage'
 
 function App() {
   return (
@@ -95,6 +97,7 @@ function App() {
           <Route path="profile" element={<DashboardPage />} />
           <Route path="profile/edit" element={<ProfileEditorPage />} />
           <Route path="digicv" element={<DigiCVPage />} />
+          <Route path="settings" element={<StudentSettingsPage />} />
           <Route path="internship-details" element={<Navigate to="/intern-seeker/internship" replace />} />
           <Route path="attendance-history/:assignmentId" element={<AttendanceHistoryPage />} />
           <Route path="internship-history/:assignmentId" element={<InternshipHistoryDetailsPage />} />
@@ -197,7 +200,10 @@ function App() {
         >
           <Route index element={<AdminDashboardPage />} />
           <Route path="dashboard" element={<AdminDashboardPage />} />
-          <Route path="audit-logs" element={<AuditLogsPage />} />
+          <Route path="profile" element={<AdminProfilePage />} />
+          <Route path="profile/edit" element={<AdminProfileEditorPage />} />
+          <Route path="audit-logs" element={<Navigate to="/admin/audit-logs/accounts" replace />} />
+          <Route path="audit-logs/:category" element={<AuditLogsPage />} />
           <Route path="manage-students" element={<ManageStudentsPage />} />
           <Route path="manage-students/:id/edit" element={<AdminStudentProfileEditorPage />} />
           <Route path="manage-students/:id" element={<AdminStudentDetailsPage />} />
@@ -210,7 +216,6 @@ function App() {
           <Route path="manage-qcpeso/:id/edit" element={<AdminQCPesoEditorPage />} />
           <Route path="manage-qcpeso/:id" element={<AdminQCPesoDetailsPage />} />
           <Route path="settings" element={<AdminSettingsPage />} />
-          <Route path="backups-maintenance" element={<BackupsMaintenancePage />} />
           <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
         </Route>
       </Routes>

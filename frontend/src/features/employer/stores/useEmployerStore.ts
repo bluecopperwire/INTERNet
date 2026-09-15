@@ -17,6 +17,7 @@ import type {
   EmployerInternshipDetails,
 } from '../types/employer.types';
 import { normalizeApiError } from '../../../services/api';
+import type { UpdateEmployerProfileRequest } from '../../../types/api';
 
 interface EmployerState {
   summary: EmployerDashboardSummary | null;
@@ -42,7 +43,7 @@ interface EmployerState {
 
   fetchDashboard: () => Promise<void>;
   fetchProfile: () => Promise<void>;
-  updateProfile: (payload: any) => Promise<void>;
+  updateProfile: (payload: UpdateEmployerProfileRequest) => Promise<void>;
   uploadLogo: (file: File) => Promise<void>;
   fetchOpportunities: (params?: any) => Promise<void>;
   createOpportunity: (payload: any) => Promise<Opportunity>;
@@ -111,7 +112,7 @@ export const useEmployerStore = create<EmployerState>((set, get) => ({
     }
   },
 
-  updateProfile: async (payload: any) => {
+  updateProfile: async (payload: UpdateEmployerProfileRequest) => {
     set({ isLoadingProfile: true, error: null });
     try {
       const raw = await employerApiService.updateProfile(payload);

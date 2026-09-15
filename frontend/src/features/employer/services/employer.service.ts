@@ -4,6 +4,7 @@ import {
   adaptEmployerOpportunity,
   adaptEmployerReferral,
   adaptEmployerInternship,
+  mapCompanyProfileUpdateRequest,
 } from '../adapters/employer.adapters';
 import type {
   Opportunity,
@@ -98,6 +99,7 @@ export function mapAssignmentCandidate(
     referralId: c.referralId,
     internshipAssignmentId: c.internshipAssignmentId,
     studentName: c.studentFullName,
+    studentAccountCode: c.studentAccountCode || undefined,
     strandProgram: c.strandProgram || 'N/A',
     company: c.companyName,
     jobTitle: c.jobTitle,
@@ -120,19 +122,25 @@ export const employerService = {
       useEmployerStore.getState().summary || {
         companyName: 'Company',
         activeOpportunities: 0,
-        totalApplicants: 0,
-        acceptedPercentage: 0,
-        rejectedPercentage: 0,
-        pendingReviews: 0,
-        acceptanceRate: 0,
+        activeReferrals: 0,
+        activeInternships: 0,
+        awaitingReview: 0,
+        awaitingCompletion: 0,
+        totalReferrals: 0,
+        activePercentage: 0,
+        closedPercentage: 0,
       }
     );
   },
 
-  async getRecentApplicants(limit = 4): Promise<Applicant[]> {
+  async getRecentApplicants(limit = 5): Promise<Applicant[]> {
     const store = useEmployerStore.getState();
-    await store.fetchReferrals({ view: 'review', page: 1, limit });
+    await store.fetchReferrals({ view: 'history', page: 1, limit });
     return useEmployerStore.getState().referrals;
+  },
+
+  async getInternshipSummary() {
+    return employerApiService.getInternshipSummary();
   },
 
   async getCompanyProfile(): Promise<CompanyProfile> {
@@ -145,7 +153,7 @@ export const employerService = {
     updated: Partial<CompanyProfile>,
   ): Promise<CompanyProfile> {
     const store = useEmployerStore.getState();
-    await store.updateProfile(updated);
+    await store.updateProfile(mapCompanyProfileUpdateRequest(updated));
     return useEmployerStore.getState().profile!;
   },
 
@@ -282,25 +290,6 @@ export const employerService = {
 
   async deleteReferral(referralId: string): Promise<void> {
     await employerApiService.hideReferral(Number(referralId));
-  },
-
-  async getApplicantsForOpportunity(
-    opportunityId: string,
-  ): Promise<Applicant[]> {
-    const records: Applicant[] = [];
-    let page = 1;
-    let totalPages = 1;
-    while (page <= totalPages) {
-      const result = await employerApiService.getOpportunityReferrals(Number(opportunityId), {
-        view: 'history',
-        page,
-        limit: 15,
-      });
-      records.push(...result.data.map(adaptEmployerReferral));
-      totalPages = result.meta.totalPages;
-      page++;
-    }
-    return records;
   },
 
   async getAttendanceRecords(): Promise<EmployerAttendanceRecord[]> {

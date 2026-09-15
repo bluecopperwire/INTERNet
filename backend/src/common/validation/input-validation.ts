@@ -1,4 +1,16 @@
-import { Matches, type ValidationOptions } from 'class-validator';
+import { IsIn, Matches, type ValidationOptions } from 'class-validator';
+
+export const DISTRICT_OPTIONS = [
+  'District 1',
+  'District 2',
+  'District 3',
+  'District 4',
+  'District 5',
+  'District 6',
+  'N/A',
+] as const;
+export const DISTRICT_MESSAGE =
+  'District must be one of District 1 through District 6, or N/A';
 
 export const CONTACT_NUMBER_PATTERN =
   /^(?:09(?:[()\-\s]*\d){9}|\+63[()\-\s]*9(?:[()\-\s]*\d){9})$/;
@@ -20,6 +32,13 @@ export function IsValidContactNumber(options?: ValidationOptions) {
 export function IsStrongPassword(options?: ValidationOptions) {
   return Matches(STRONG_PASSWORD_PATTERN, {
     message: STRONG_PASSWORD_MESSAGE,
+    ...options,
+  });
+}
+
+export function IsValidDistrict(options?: ValidationOptions) {
+  return IsIn(DISTRICT_OPTIONS, {
+    message: DISTRICT_MESSAGE,
     ...options,
   });
 }

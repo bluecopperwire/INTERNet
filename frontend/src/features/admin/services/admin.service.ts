@@ -16,6 +16,7 @@ import type {
   AdminDashboardSummary,
   AdminNotification,
 } from '../types/admin.types';
+import { normalizeDistrictOption } from '../../../utils/district';
 
 export const adminService = {
   getStudentRecords: async (): Promise<StudentRecord[]> => {
@@ -40,7 +41,7 @@ export const adminService = {
       sex: updates.sex,
       addressLine: updates.addressStreet,
       addressBarangay: updates.addressBarangay,
-      addressDistrict: updates.addressDistrict,
+      addressDistrict: updates.addressDistrict === undefined ? undefined : normalizeDistrictOption(updates.addressDistrict),
       addressCity: updates.addressCity,
       contactNumber: updates.contactNumber,
       linkedinUrl: updates.linkedinUrl,
@@ -88,7 +89,7 @@ export const adminService = {
       description: updates.description,
       addressLine: updates.addressLine,
       addressBarangay: updates.addressBarangay,
-      addressDistrict: updates.addressDistrict,
+      addressDistrict: updates.addressDistrict === undefined ? undefined : normalizeDistrictOption(updates.addressDistrict),
       addressCity: updates.addressCity,
       contactPersonFirstName: updates.contactFirstName,
       contactPersonMiddleName: updates.contactMiddleName,
@@ -123,7 +124,7 @@ export const adminService = {
       description: record.description,
       addressLine: record.addressLine,
       addressBarangay: record.addressBarangay,
-      addressDistrict: record.addressDistrict || null,
+      addressDistrict: normalizeDistrictOption(record.addressDistrict),
       addressCity: record.addressCity,
       contactPersonFirstName: record.contactFirstName,
       contactPersonMiddleName: record.contactMiddleName || null,
@@ -173,7 +174,7 @@ export const adminService = {
       sex: updates.sex,
       addressLine: updates.addressLine,
       addressBarangay: updates.barangay,
-      addressDistrict: updates.district,
+      addressDistrict: updates.district === undefined ? undefined : normalizeDistrictOption(updates.district),
       addressCity: updates.city,
       contactEmail: updates.contactEmail,
       contactNumber: updates.contactNumber,
@@ -198,7 +199,7 @@ export const adminService = {
       extensionName: record.suffix || null,
       addressLine: record.addressLine,
       addressBarangay: record.barangay,
-      addressDistrict: record.district,
+      addressDistrict: normalizeDistrictOption(record.district),
       addressCity: record.city,
       birthDate: record.birthdate,
       sex: record.sex,
@@ -216,18 +217,10 @@ export const adminService = {
     await store.fetchDashboard();
     return (
       store.summary || {
-        totalStudents: 0,
-        activeStudents: 0,
-        totalEmployers: 0,
-        totalAvailableOpportunities: 0,
-        systemHealth: {
-          serverStatus: 'Operational',
-          uptime: '100%',
-          databaseLoad: 'Normal',
-          activeSessions: 0,
-          lastBackup: 'N/A',
-          storageUsedPercent: 0,
-        },
+        totalAccounts: 0,
+        studentAccounts: { total: 0, active: 0, suspended: 0, deactivated: 0 },
+        pesoAccounts: { total: 0, active: 0, suspended: 0, deactivated: 0 },
+        employerAccounts: { total: 0, active: 0, suspended: 0, deactivated: 0 },
       }
     );
   },
@@ -287,9 +280,6 @@ export const adminService = {
     return [];
   },
 
-  triggerManualBackup: async (): Promise<{ success: boolean; message: string }> => {
-    return { success: false, message: 'Database backup is not configured on this server.' };
-  },
 };
 
 export default adminService;

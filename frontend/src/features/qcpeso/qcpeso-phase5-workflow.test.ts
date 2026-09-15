@@ -6,7 +6,6 @@ const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf
 describe('QC PESO Phase 5 workflow contracts', () => {
   const page = read('./pages/InternManagementPages.tsx')
   const sharedHistory = read('../../components/AttendanceHistoryView.tsx')
-  const attendanceStyles = read('../employer/pages/AttendanceMonitoringPage.module.css')
   const internshipStyles = read('../employer/pages/MonitorInternshipPage.module.css')
 
   it('has dedicated finalization and all-status history workflows', () => {
@@ -23,11 +22,23 @@ describe('QC PESO Phase 5 workflow contracts', () => {
     expect(page).toContain("String(value).padStart(2, '0')")
   })
 
+  it('shows complete account summaries on both monitor-user pages', () => {
+    const monitorUsers = read('./pages/MonitorUsersPage.tsx')
+    const service = read('./services/qcpeso.service.ts')
+
+    for (const label of ['Total', 'Active', 'Suspended']) {
+      expect(monitorUsers).toContain(`${label} \${isStudents ? 'Students' : 'Employers'}`)
+    }
+    expect(monitorUsers).toContain("String(value).padStart(2, '0')")
+    expect(service).toContain('qcpesoApiService.getStudents({ page, limit: 100 })')
+    expect(service).toContain('qcpesoApiService.getEmployers({ page, limit: 100 })')
+  })
+
   it('uses concise and grouped filters with finalized-only history deletion', () => {
     expect(page).not.toContain('All Statuses')
     expect(page).toContain("statuses={['active', 'closed', ...ALL_STATUSES]}")
     expect(page).toContain("row.assignmentStatus === 'finalized'")
-    expect(page).toContain('internshipStyles.rowActions')
+    expect(page).toContain('<TableActions>')
     expect(page).toContain('internshipStyles.deleteButton')
     expect(page).toContain('ConfirmDeleteModal')
     expect(page).not.toContain('window.confirm')
@@ -35,22 +46,24 @@ describe('QC PESO Phase 5 workflow contracts', () => {
   })
 
   it('uses the exact internship and attendance column contracts', () => {
-    expect(page).toContain('<th>Student Name</th><th>Company</th><th>Job Title</th><th>Program / Strand</th><th>Status</th><th>Action</th>')
-    expect(page).toContain('<th>Student Name</th><th>Company</th><th>Job Title</th><th>Program / Strand</th><th>Status</th><th>Action</th>')
+    for (const header of ['Intern', 'Placement', 'Progress', 'Period', 'Attendance', 'Status', 'Actions']) expect(page).toContain(`header: '${header}'`)
     expect(page).toContain('AttendanceHistoryView')
-    expect(sharedHistory).toContain('<th>Date</th><th>Clock In Time</th><th>Clock Out Time</th><th>Rendered Time</th><th>Attendance Status</th>')
+    for (const header of ['Date', 'Time', 'Rendered', 'Status']) expect(sharedHistory).toContain(`header: '${header}'`)
   })
 
   it('uses full-width summaries and readable horizontally scrollable tables', () => {
     expect(page).toContain('attendanceStyles.threeCards')
     expect(page).toContain('internshipStyles.historySummaryGrid')
-    expect(page).toContain('wideStudentName')
-    expect(page).toContain('attendanceStyles.qcpesoAttendanceTable')
+    expect(page).toContain('TABLE_COLUMN_WIDTHS.identity')
+    expect(page).toContain('TABLE_COLUMN_WIDTHS.placement')
+    expect(page).toContain('TABLE_COLUMN_WIDTHS.progress')
+    expect(page).toContain('minWidth={1440}')
+    expect(page).toContain('secondary={row.studentAccountCode}')
+    expect(page).toContain('ariaLabel={`Attendance records for ${date}`}')
     expect(page).not.toMatch(/<strong>\{row\.studentFullName\}<\/strong>/)
-    expect(attendanceStyles).toMatch(/\.statusPill\s*\{[^}]*white-space:\s*nowrap/s)
-    expect(attendanceStyles).toContain('.qcpesoAttendanceTable')
-    expect(internshipStyles).toContain('.qcpesoInternshipTable')
-    expect(internshipStyles).toContain('.wideStudentNameTable')
+    const dataTableStyles = read('../../components/DataTable.module.css')
+    expect(dataTableStyles).toContain('overflow-x: auto')
+    expect(dataTableStyles).toContain('.mobileCard')
   })
 
   it('uses the shared internship details layout with QC-only actions and outcome sections', () => {

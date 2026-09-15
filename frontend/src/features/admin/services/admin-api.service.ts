@@ -6,6 +6,11 @@ import type {
   AdminPesoListItemDto,
   AdminListResponse,
 } from '../../../types/api';
+import type {
+  AdminAuditLogCategory,
+  AdminAuditLogQuery,
+  AdminAuditLogResponse,
+} from '../types/admin.types';
 
 export const adminApiService = {
   async getStudentMetrics(): Promise<AdminMetricsDto> {
@@ -106,5 +111,27 @@ export const adminApiService = {
   async createCompanyUser(payload: any): Promise<any> {
     const response = await api.post('/admin/employers', payload);
     return response.data;
+  },
+
+  async getAuditLogs(
+    category: AdminAuditLogCategory,
+    params: AdminAuditLogQuery,
+  ): Promise<AdminAuditLogResponse> {
+    const response = await api.get<AdminAuditLogResponse>(
+      `/admin/audit-logs/${category}`,
+      { params },
+    );
+    return response.data;
+  },
+
+  async exportAuditLogs(
+    category: AdminAuditLogCategory,
+    params: Omit<AdminAuditLogQuery, 'page' | 'limit'>,
+  ): Promise<Blob> {
+    const response = await api.get(`/admin/audit-logs/${category}/export`, {
+      params,
+      responseType: 'blob',
+    });
+    return response.data as Blob;
   },
 };

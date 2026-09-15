@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { ArrowLeft, Building2, Edit3, Mail, MapPin, Phone, UserRound, X } from 'lucide-react'
+import { ArrowLeft, Building2, Edit3, LockKeyhole, Mail, MapPin, Phone, UserRound, X } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { adminService } from '../services/admin.service'
 import type { EmployerRecord } from '../types/admin.types'
@@ -7,7 +7,9 @@ import detailStyles from './AdminStudentDetailsPage.module.css'
 import formStyles from '../../intern-seeker/pages/ProfileEditorPage.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
-import { getContactNumberError, sanitizeContactNumberInput } from '../../../utils/input-validation'
+import { CONTACT_NUMBER_PLACEHOLDER, getContactNumberError, sanitizeContactNumberInput } from '../../../utils/input-validation'
+import { DistrictSelect } from '../../../components/DistrictSelect'
+import { districtAddressPart } from '../../../utils/district'
 
 const INDUSTRIES = [
   'Office Administration',
@@ -21,7 +23,7 @@ const INDUSTRIES = [
 ]
 
 const addressOf = (record: EmployerRecord) =>
-  [record.addressLine, record.addressBarangay, record.addressDistrict, record.addressCity].filter(Boolean).join(', ') ||
+  [record.addressLine, record.addressBarangay, districtAddressPart(record.addressDistrict), record.addressCity].filter(Boolean).join(', ') ||
   record.location
 
 const contactNameOf = (record: EmployerRecord) =>
@@ -148,6 +150,11 @@ export function AdminEmployerDetailsPage() {
               <Row label="Contact Person" value={contactNameOf(record)} />
               <Row label="Contact Email" value={record.contactEmail || record.email} />
               <Row label="Contact Number" value={record.contactNumber} />
+            </Card>
+
+            <Card icon={<LockKeyhole size={21} />} title="Account Information">
+              <Row label="Account Email Address" value={record.email} />
+              <Row label="Account User Code" value={record.accountCode || 'Not provided'} />
             </Card>
           </div>
 
@@ -280,7 +287,7 @@ export function AdminEmployerEditorPage() {
                 <input
                   required
                   value={form.companyName}
-                  placeholder="Enter company name"
+                  placeholder="e.g., ABC Technologies Inc."
                   onChange={(e) => change('companyName', e.target.value)}
                 />
               </Field>
@@ -313,7 +320,7 @@ export function AdminEmployerEditorPage() {
               <Field label="Company Size">
                 <input
                   inputMode="numeric"
-                  placeholder="Enter number of employees"
+                  placeholder="e.g., 50"
                   value={form.companySize || ''}
                   onChange={(e) => change('companySize', e.target.value.replace(/\D/g, ''))}
                 />
@@ -343,7 +350,7 @@ export function AdminEmployerEditorPage() {
                 <input
                   required
                   value={form.addressLine || ''}
-                  placeholder="Enter house / building / street"
+                  placeholder="e.g., 200 Development Avenue"
                   onChange={(e) => change('addressLine', e.target.value)}
                 />
               </Field>
@@ -352,15 +359,14 @@ export function AdminEmployerEditorPage() {
                 <input
                   required
                   value={form.addressBarangay || ''}
-                  placeholder="Enter barangay"
+                  placeholder="e.g., Central"
                   onChange={(e) => change('addressBarangay', e.target.value)}
                 />
               </Field>
 
-              <Field label="District">
-                <input
-                  value={form.addressDistrict || ''}
-                  placeholder="If none, type N/A"
+              <Field label="District" required>
+                <DistrictSelect
+                  value={form.addressDistrict}
                   onChange={(e) => change('addressDistrict', e.target.value)}
                 />
               </Field>
@@ -369,7 +375,7 @@ export function AdminEmployerEditorPage() {
                 <input
                   required
                   value={form.addressCity || ''}
-                  placeholder="Enter city"
+                  placeholder="e.g., Quezon City"
                   onChange={(e) => change('addressCity', e.target.value)}
                 />
               </Field>
@@ -379,7 +385,7 @@ export function AdminEmployerEditorPage() {
               <textarea
                 required
                 value={form.description || ''}
-                placeholder="Describe your company"
+                placeholder="e.g., A technology company providing software services."
                 onChange={(e) => change('description', e.target.value)}
               />
             </Field>
@@ -391,7 +397,7 @@ export function AdminEmployerEditorPage() {
                 <input
                   required
                   value={form.contactFirstName || ''}
-                  placeholder="Enter first name"
+                  placeholder="e.g., Juan"
                   onChange={(e) => letters('contactFirstName', e.target.value)}
                 />
               </Field>
@@ -399,7 +405,7 @@ export function AdminEmployerEditorPage() {
               <Field label="Contact Person Middle Name">
                 <input
                   value={form.contactMiddleName || ''}
-                  placeholder="Enter middle name"
+                  placeholder="e.g., Santos"
                   onChange={(e) => letters('contactMiddleName', e.target.value)}
                 />
               </Field>
@@ -408,7 +414,7 @@ export function AdminEmployerEditorPage() {
                 <input
                   required
                   value={form.contactLastName || ''}
-                  placeholder="Enter last name"
+                  placeholder="e.g., Dela Cruz"
                   onChange={(e) => letters('contactLastName', e.target.value)}
                 />
               </Field>
@@ -427,7 +433,7 @@ export function AdminEmployerEditorPage() {
                 <input
                   required
                   type="email"
-                  placeholder="Enter company email"
+                  placeholder="e.g., hr@example.com"
                   value={form.contactEmail || form.email || ''}
                   onChange={(e) => change('contactEmail', e.target.value)}
                 />
@@ -437,7 +443,7 @@ export function AdminEmployerEditorPage() {
                 <input
                   required
                   type="tel"
-                  placeholder="e.g. +63 912 345 6789"
+                  placeholder={CONTACT_NUMBER_PLACEHOLDER}
                   value={form.contactNumber || ''}
                   onChange={(e) =>
                     change('contactNumber', sanitizeContactNumberInput(e.target.value))

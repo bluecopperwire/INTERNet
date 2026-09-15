@@ -10,6 +10,7 @@ import {
 } from 'class-validator';
 import {
   IsStrongPassword,
+  IsValidDistrict,
   IsValidContactNumber,
 } from '../../common/validation/input-validation';
 
@@ -31,7 +32,7 @@ export class CreateCompanyAccountDto {
   @IsOptional() @IsString() contactPersonExtensionName?: string;
   @IsString() @IsNotEmpty() addressLine: string;
   @IsString() @IsNotEmpty() addressBarangay: string;
-  @IsOptional() @IsString() addressDistrict?: string;
+  @IsString() @IsNotEmpty() @IsValidDistrict() addressDistrict: string;
   @IsString() @IsNotEmpty() addressCity: string;
   @IsOptional() @IsString() @IsNotEmpty() logoFilePath?: string;
 }
@@ -47,7 +48,7 @@ export class CreatePesoPersonnelAccountDto {
   @IsDateString() birthDate: string;
   @IsString() @IsNotEmpty() addressLine: string;
   @IsString() @IsNotEmpty() addressBarangay: string;
-  @IsString() @IsNotEmpty() addressDistrict: string;
+  @IsString() @IsNotEmpty() @IsValidDistrict() addressDistrict: string;
   @IsString() @IsNotEmpty() addressCity: string;
   @IsString() @IsNotEmpty() @IsValidContactNumber() contactNumber: string;
   @IsString() @IsNotEmpty() employeeId: string;

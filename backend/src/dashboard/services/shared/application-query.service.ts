@@ -90,6 +90,10 @@ export class ApplicationQueryService {
         application_id AS "applicationId",
         student_id AS "studentId",
         student_full_name AS "studentFullName",
+        (SELECT ua.account_code
+         FROM public.student s
+         JOIN public.user_account ua ON ua.user_account_id = s.user_account_id
+         WHERE s.student_id = ad.student_id) AS "studentAccountCode",
         student_contact_email AS "studentContactEmail",
         student_contact_number AS "studentContactNumber",
         school_name AS "schoolName",

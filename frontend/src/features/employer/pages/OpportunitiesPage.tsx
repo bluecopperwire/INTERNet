@@ -1,54 +1,18 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
 import { Plus, SlidersHorizontal } from 'lucide-react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { EmployerHero } from '../components/EmployerHero'
-import { ViewApplicantsModal } from '../components/ViewApplicantsModal'
 import { employerService, formatOpportunityDeadline } from '../services/employer.service'
 import type { Opportunity } from '../types/employer.types'
 import styles from './OpportunitiesPage.module.css'
 
 export function OpportunitiesPage() {
   const navigate = useNavigate()
-  const [searchParams, setSearchParams] = useSearchParams()
   const [opportunities, setOpportunities] = useState<Opportunity[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('All')
-  const [opportunityForApplicants, setOpportunityForApplicants] = useState<Opportunity | null>(null)
 
-  const requestedApplicantsId = searchParams.get('viewApplicants')
-
-  useEffect(() => {
-    fetchOpportunities()
-  }, [])
-
-  useEffect(() => {
-    if (!requestedApplicantsId || opportunities.length === 0) return
-    const opportunity = opportunities.find((item) => item.id === requestedApplicantsId)
-    if (opportunity) setOpportunityForApplicants(opportunity)
-  }, [opportunities, requestedApplicantsId])
-
-  const closeApplicants = () => {
-    setOpportunityForApplicants(null)
-    if (requestedApplicantsId) {
-      setSearchParams((current) => {
-        const next = new URLSearchParams(current)
-        next.delete('viewApplicants')
-        return next
-      })
-    }
-  }
-
-  const openApplicants = (opportunity: Opportunity) => {
-    setOpportunityForApplicants(opportunity)
-    setSearchParams((current) => {
-      const next = new URLSearchParams(current)
-      next.set('viewApplicants', opportunity.id)
-      return next
-    })
-  }
-
-  const fetchOpportunities = async () => {
-    setIsLoading(true)
+  const fetchOpportunities = useCallback(async () => {
     try {
       const data = await employerService.getOpportunities()
       setOpportunities(data)
@@ -57,7 +21,13 @@ export function OpportunitiesPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    // The state updates occur after the asynchronous request settles.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchOpportunities()
+  }, [fetchOpportunities])
 
   const filteredOpportunities = useMemo(() => {
     if (statusFilter === 'All') return opportunities
@@ -131,12 +101,6 @@ export function OpportunitiesPage() {
                 <div className={styles.cardActions}>
                   <button 
                     className={styles.actionBtn}
-                    onClick={() => openApplicants(opp)}
-                  >
-                    View Referrals
-                  </button>
-                  <button 
-                    className={styles.actionBtn}
                     onClick={() => navigate(`/employer/opportunities/${opp.id}`)}
                   >
                     View Opportunity
@@ -148,12 +112,6 @@ export function OpportunitiesPage() {
         </div>
       </section>
 
-      {opportunityForApplicants && (
-        <ViewApplicantsModal 
-          opportunity={opportunityForApplicants}
-          onClose={closeApplicants}
-        />
-      )}
     </main>
   )
 }

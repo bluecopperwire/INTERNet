@@ -66,6 +66,49 @@ describe('EmployerInternshipService', () => {
     expect(sql).toContain('rv.employer_hidden_at IS NOT NULL');
   });
 
+  it('returns account code and all period dates in internship lists', async () => {
+    const query = jest.fn(async (sql: string) => {
+      if (sql.includes('attendance_record')) return [];
+      if (sql.includes('FROM public.internship_assignment')) {
+        return [
+          {
+            internship_assignment_id: 8,
+            assignment_status: 'ongoing',
+            student_id: 1,
+            student_account_code: '2026-STU-00001',
+            student_full_name: 'Intern Example',
+            strand_program: 'BS Information Technology',
+            job_title: 'Developer Intern',
+            start_date: '2026-09-01',
+            expected_end_date: '2026-10-01',
+            end_date: '2026-09-30',
+            required_minutes: 24_000,
+          },
+        ];
+      }
+      return [];
+    });
+    const service = new EmployerInternshipService(
+      { query } as unknown as DataSource,
+      resolver,
+    );
+
+    const result = await service.list(50, { page: 1, limit: 10 });
+
+    expect(result.data[0]).toMatchObject({
+      studentAccountCode: '2026-STU-00001',
+      startDate: '2026-09-01',
+      expectedEndDate: '2026-10-01',
+      endDate: '2026-09-30',
+    });
+    const sql = query.mock.calls
+      .map(([statement]) => String(statement))
+      .join('\n');
+    expect(sql).toContain('ia.start_date::text AS start_date');
+    expect(sql).toContain('ia.expected_end_date::text AS expected_end_date');
+    expect(sql).toContain('ia.end_date::text AS end_date');
+  });
+
   it.each([
     ['pending', 'accepted'],
     ['accepted', 'pending'],

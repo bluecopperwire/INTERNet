@@ -121,18 +121,15 @@ export class EmployerReferralService {
           'Only pending or for_interview referrals can be accepted.',
         );
       }
-      if (row.referral_status === 'sent') {
-        await runner.query(
-          `UPDATE public.referral SET referral_status = 'under_review' WHERE referral_id = $1`,
-          [referralId],
-        );
-      } else if (row.referral_status !== 'under_review') {
+      if (!['sent', 'under_review'].includes(String(row.referral_status))) {
         throw new ConflictException('Referral is not in an actionable state.');
       }
       await runner.query(
         `
           UPDATE public.referral
-          SET company_response = 'accepted', company_responded_at = CURRENT_TIMESTAMP
+          SET referral_status = 'under_review',
+              company_response = 'accepted',
+              company_responded_at = CURRENT_TIMESTAMP
           WHERE referral_id = $1
         `,
         [referralId],
@@ -183,16 +180,12 @@ export class EmployerReferralService {
       if (!['sent', 'under_review'].includes(String(row.referral_status))) {
         throw new ConflictException('Referral is not in an actionable state.');
       }
-      if (row.referral_status === 'sent') {
-        await runner.query(
-          `UPDATE public.referral SET referral_status = 'under_review' WHERE referral_id = $1`,
-          [referralId],
-        );
-      }
       await runner.query(
         `
           UPDATE public.referral
-          SET company_response = 'for_interview', company_responded_at = CURRENT_TIMESTAMP
+          SET referral_status = 'under_review',
+              company_response = 'for_interview',
+              company_responded_at = CURRENT_TIMESTAMP
           WHERE referral_id = $1
         `,
         [referralId],
@@ -245,9 +238,7 @@ export class EmployerReferralService {
         true,
       );
       if (
-        !['pending', 'for_interview'].includes(
-          String(row.company_response),
-        )
+        !['pending', 'for_interview'].includes(String(row.company_response))
       ) {
         throw new ConflictException(
           'Only pending or for_interview referrals can be rejected.',
@@ -255,8 +246,13 @@ export class EmployerReferralService {
       }
       if (row.referral_status === 'sent') {
         await runner.query(
-          `UPDATE public.referral SET referral_status = 'under_review' WHERE referral_id = $1`,
-          [referralId],
+          `UPDATE public.referral
+           SET referral_status = 'under_review',
+               company_response = 'rejected',
+               company_responded_at = CURRENT_TIMESTAMP,
+               remark = $2
+           WHERE referral_id = $1`,
+          [referralId, remark],
         );
       } else if (row.referral_status !== 'under_review') {
         throw new ConflictException('Referral is not in an actionable state.');
@@ -427,13 +423,15 @@ export class EmployerReferralService {
         SELECT r.referral_id, r.referral_status, r.company_response, r.referred_at,
                a.application_id, a.application_status, a.student_response, a.submitted_at,
                s.student_id,
+               ua.account_code AS student_account_code,
                concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS student_full_name,
-               sai.strand_program, sai.year_level,
+               sai.school_name, sai.strand_program, sai.year_level,
                o.opportunity_id, o.title AS opportunity_title
         FROM public.referral r
         JOIN public.application a ON a.application_id = r.application_id
         JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
         JOIN public.student s ON s.student_id = a.student_id
+        JOIN public.user_account ua ON ua.user_account_id = s.user_account_id
         LEFT JOIN public.student_academic_information sai ON sai.student_id = s.student_id
         WHERE o.company_id = $1
           AND NOT EXISTS (
@@ -455,7 +453,9 @@ export class EmployerReferralService {
         referralId: asNumber(row.referral_id),
         applicationId: asNumber(row.application_id),
         studentId: asNumber(row.student_id),
+        studentAccountCode: row.student_account_code,
         studentFullName: row.student_full_name,
+        schoolName: row.school_name,
         opportunityId: asNumber(row.opportunity_id),
         opportunityTitle: row.opportunity_title,
         strandProgram: row.strand_program,

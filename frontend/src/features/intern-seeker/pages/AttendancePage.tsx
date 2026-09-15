@@ -9,6 +9,7 @@ import { todayDateOnly } from '../../../utils/date-only'
 import { studentApiService } from '../services/student-api.service'
 import { buildCalendarDays, formatSummaryHours, getTodayTag } from '../utils/attendance-display'
 import styles from './AttendancePage.module.css'
+import internshipStyles from './StudentInternshipPages.module.css'
 
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'TH', 'F', 'ST']
 const assignmentLabels: Record<Exclude<AssignmentStatus, 'finalized'>, string> = {
@@ -56,7 +57,7 @@ function AttendancePage() {
   }
 
   if (isLoading) return <p className={styles.feedback}>Loading attendance...</p>
-  if (error) return <p className={styles.error} role="alert">{error}</p>
+  if (error) return <p className={internshipStyles.feedback} role="alert">{error}</p>
   if (!data?.assignment) return <div className={styles.emptyState}><section className={styles.todayPanel}><h2>No active internship yet</h2><p>There is currently no active internship to track.</p></section><section className={styles.summaryPanel}><h2>Attendance Summary</h2><p>Attendance information will appear once an internship assignment is available.</p></section></div>
 
   const assignment = data.assignment

@@ -1,6 +1,9 @@
 export const CONTACT_NUMBER_REQUIREMENTS =
   'Enter a valid Philippine mobile number: 11 digits starting with 09, or +63 followed by 10 digits starting with 9.';
 
+export const CONTACT_NUMBER_PLACEHOLDER =
+  'e.g., 09123456789 or +63 912 345 6789';
+
 export const PASSWORD_REQUIREMENTS =
   'Password must be at least 8 characters and include an uppercase letter, a lowercase letter, a number, and a special character.';
 

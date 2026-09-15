@@ -42,6 +42,7 @@ export interface EmployerAssignmentCandidateDto {
   applicationId: number;
   studentId: number;
   studentFullName: string;
+  studentAccountCode?: string | null;
   strandProgram: string;
   opportunityId: number;
   jobTitle: string;
@@ -82,6 +83,7 @@ export interface AuthTokenResponse {
 
 export interface CurrentUserResponse {
   userAccountId: number;
+  accountCode: string;
   email: string;
   userRole: UserRole;
   accountStatus: AccountStatus;
@@ -94,6 +96,50 @@ export interface IndustryItemDto {
   industryId: number;
   industryName: string;
   isCustomText: boolean;
+}
+
+export interface EmployerProfileDto {
+  companyId: number;
+  companyName: string;
+  companyType: CompanyType;
+  industryId: number;
+  industryName: string;
+  description: string;
+  websiteUrl: string | null;
+  yearEstablished: number | null;
+  companySize: number | null;
+  addressLine: string;
+  addressBarangay: string;
+  addressDistrict: string | null;
+  addressCity: string;
+  contactEmail: string;
+  contactNumber: string;
+  contactPersonFirstName: string;
+  contactPersonMiddleName: string | null;
+  contactPersonLastName: string;
+  contactPersonExtensionName: string | null;
+  logoFilePath: string | null;
+  updatedAt: string;
+}
+
+export interface UpdateEmployerProfileRequest {
+  companyName?: string;
+  companyType?: CompanyType;
+  industryName?: string;
+  description?: string;
+  websiteUrl?: string | null;
+  yearEstablished?: number | null;
+  companySize?: number | null;
+  addressLine?: string;
+  addressBarangay?: string;
+  addressDistrict?: string;
+  addressCity?: string;
+  contactEmail?: string;
+  contactNumber?: string;
+  contactPersonFirstName?: string;
+  contactPersonMiddleName?: string | null;
+  contactPersonLastName?: string;
+  contactPersonExtensionName?: string | null;
 }
 
 export interface OpportunitySummaryDto {
@@ -399,6 +445,7 @@ export interface DashboardApplicationDto {
   companyName: string;
   studentId: number;
   studentFullName: string;
+  studentAccountCode?: string | null;
   studentContactEmail: string;
   studentContactNumber: string;
   schoolName?: string | null;
@@ -512,6 +559,8 @@ export interface EmployerReferralListItemDto {
   opportunityId: number;
   opportunityTitle: string;
   studentFullName: string;
+  studentAccountCode?: string | null;
+  schoolName?: string | null;
   strandProgram?: string | null;
   yearLevel?: string | null;
   submittedAt: string;
@@ -526,6 +575,7 @@ export interface EmployerAttendanceItemDto {
   internshipAssignmentId: number;
   studentId: number;
   studentFullName: string;
+  studentAccountCode?: string | null;
   jobTitle: string;
   strandProgram: string | null;
   date: string;
@@ -540,8 +590,12 @@ export interface EmployerInternshipListItemDto {
   internshipAssignmentId: number;
   studentId: number;
   studentFullName: string;
+  studentAccountCode?: string | null;
   jobTitle: string;
   strandProgram: string | null;
+  startDate: string;
+  expectedEndDate?: string | null;
+  endDate?: string | null;
   requiredHours: number;
   requiredMinutes: number;
   renderedHours: number;
@@ -665,26 +719,31 @@ export interface AdminMetricsDto {
 
 export interface AdminStudentListItemDto {
   userAccountId: number;
+  accountCode: string;
   studentId: number;
   fullName: string;
   accountEmail: string;
   accountStatus: AccountStatus;
   createdAt: string;
   suspendedUntil?: string | null;
+  strandProgram?: string | null;
 }
 
 export interface AdminEmployerListItemDto {
   userAccountId: number;
+  accountCode: string;
   companyId: number;
   companyName: string;
   accountEmail: string;
   accountStatus: AccountStatus;
   createdAt: string;
   suspendedUntil?: string | null;
+  industryName?: string | null;
 }
 
 export interface AdminPesoListItemDto {
   userAccountId: number;
+  accountCode: string;
   pesoPersonnelId: number;
   employeeId: string;
   fullName: string;

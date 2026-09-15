@@ -34,20 +34,69 @@ describe('manual QA UI regressions', () => {
     expect(employer).toContain('isTerminalReferral(applicant.referralStatus)')
   })
 
-  it('provides wide, centered, wrapping workflow tables without changing columns', () => {
-    const workflowTable = readSource('../employer/pages/ApplicantsPage.module.css')
-    const assignmentTable = readSource('../employer/pages/InternshipWorkflowPages.module.css')
-    expect(workflowTable).toContain('overflow-x: auto')
-    expect(workflowTable).toContain('min-width: 1120px')
-    expect(workflowTable).toContain('overflow-wrap: anywhere')
-    expect(workflowTable).toContain('justify-content: center')
-    expect(assignmentTable).toContain('text-align: center')
-    expect(assignmentTable).toContain('overflow-wrap: anywhere')
+  it('uses one responsive table system with desktop overflow and mobile record cards', () => {
+    const table = readSource('../../components/DataTable.tsx')
+    const css = readSource('../../components/DataTable.module.css')
+    const primitives = readSource('../../components/TablePrimitives.tsx')
+    const primitiveCss = readSource('../../components/TablePrimitives.module.css')
+    expect(table).toContain('desktopViewport')
+    expect(table).toContain('mobileCard')
+    expect(table).toContain('headerAlign')
+    expect(table).toContain('minWidth')
+    expect(table).toContain('noWrap')
+    expect(table).toContain('styles.footer')
+    expect(css).toContain('overflow-x: auto')
+    expect(css).toContain('overflow-y: auto')
+    expect(css).toMatch(/\.desktopViewport\s*\{[^}]*max-height:\s*clamp\(/s)
+    expect(css).toMatch(/\.table th\s*\{[^}]*position:\s*sticky;[^}]*top:\s*0;/s)
+    expect(css).toMatch(/\.footer\s*\{[^}]*padding-top:\s*24px/s)
+    expect(css).toContain('@media (max-width: 720px)')
+    expect(css).toContain('.mobileField')
+    expect(primitives).toContain('truncateSecondary')
+    expect(primitives).toContain('title={truncateSecondary')
+    expect(primitiveCss).toMatch(/\.truncate\s*\{[^}]*text-overflow:\s*ellipsis/s)
+  })
+
+  it('keeps attendance fallbacks, minutes, periods, and action alignment explicit', () => {
+    const qc = readSource('../qcpeso/pages/InternManagementPages.tsx')
+    const employerAttendance = readSource('../employer/pages/AttendanceMonitoringPage.tsx')
+    const employerManage = readSource('../employer/pages/MonitorInternshipPage.tsx')
+    const employerHistory = readSource('../employer/pages/InternshipHistoryPage.tsx')
+
+    for (const source of [qc, employerAttendance]) {
+      expect(source).toContain("'No Time In'")
+      expect(source).toContain("'No Time Out'")
+      expect(source).toContain('renderedMinutes')
+      expect(source).toContain("headerAlign: 'center'")
+    }
+    for (const source of [qc, employerManage, employerHistory]) {
+      expect(source).toContain("header: 'Progress'")
+      expect(source).toContain("header: 'Period'")
+      expect(source).toContain('remainingMinutes')
+      expect(source).toContain('endDate ||')
+    }
+  })
+
+  it('aligns history actions and keeps Admin submenu navigation ordered and illustrated', () => {
+    const primitiveCss = readSource('../../components/TablePrimitives.module.css')
+    const sidebar = readSource('../admin/components/AdminSidebar.tsx')
+    const actionsRule = primitiveCss.slice(
+      primitiveCss.indexOf('.actions {'),
+      primitiveCss.indexOf('}', primitiveCss.indexOf('.actions {')) + 1,
+    )
+
+    expect(actionsRule).toContain('width: 100%')
+    expect(actionsRule).toContain('justify-content: center')
+    expect(sidebar.indexOf('<span>Manage Students</span>')).toBeLessThan(sidebar.indexOf('<span>Manage QC PESO</span>'))
+    expect(sidebar.indexOf('<span>Manage QC PESO</span>')).toBeLessThan(sidebar.indexOf('<span>Manage Employers</span>'))
+    for (const icon of ['GraduationCap', 'Building2', 'BriefcaseBusiness', 'FileText']) {
+      expect(sidebar).toContain(`<${icon} size={17}`)
+    }
   })
 
   it('keeps Create Assignment student names at normal body weight', () => {
     const page = readSource('../employer/pages/InternshipWorkflowPages.tsx')
-    expect(page).toContain('<td>{assignment.studentName}</td>')
+    expect(page).toContain('primary={assignment.studentName}')
     expect(page).not.toContain('<td><strong>{assignment.studentName}</strong></td>')
   })
 

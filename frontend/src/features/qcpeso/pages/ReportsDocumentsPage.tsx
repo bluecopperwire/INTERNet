@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronLeft, ChevronRight, Eye, Search } from 'lucide-react'
+import { Eye, Search } from 'lucide-react'
 import QCPesoHero from '../components/QCPesoHero'
 import { StudentReviewModal } from '../components/StudentReviewModal'
 import { qcpesoService } from '../services/qcpeso.service'
 import type { StudentApplication } from '../types/qcpeso.types'
 import styles from './ReportsDocumentsPage.module.css'
+import { TablePagination } from '../../../components/TablePagination'
+import { DataTable, type DataTableColumn } from '../../../components/DataTable'
+import { StatusBadge, TableActions, TableCellStack } from '../../../components/TablePrimitives'
 
 const reportStatuses = [
   { label: 'Pending Review', source: 'Pending', color: '#4b4395' },
@@ -65,19 +68,11 @@ export function ReportsDocumentsPage() {
     })
   }, [applications, searchQuery, selectedStatus])
 
-  const totalPages = Math.max(1, Math.ceil(filteredApplications.length / itemsPerPage))
   const displayedApplications = filteredApplications.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
   const updateStatus = (id: string, status: string) => {
     setApplications((current) => current.map((item) => item.id === id ? { ...item, status } : item))
     setSelectedApplication((current) => current?.id === id ? { ...current, status } : current)
-  }
-
-  const statusClass = (status: string) => {
-    if (status === 'Verified') return styles.verified
-    if (status === 'Rejected') return styles.rejected
-    if (status === 'Flagged') return styles.flagged
-    return ''
   }
 
   const maxTimelineValue = Math.max(4, ...timeline.map(([, count]) => count))
@@ -89,6 +84,13 @@ export function ReportsDocumentsPage() {
     const y = 182 - (count / maxTimelineValue) * 142
     return `${x},${y}`
   }).join(' ')
+  const columns: DataTableColumn<StudentApplication>[] = [
+    { key: 'student', header: 'Student', render: (application) => <TableCellStack primary={application.name} secondary={application.email} /> },
+    { key: 'academic', header: 'Academic Information', render: (application) => <TableCellStack primary={application.school} secondary={application.program} /> },
+    { key: 'submitted', header: 'Submitted', render: (application) => application.date },
+    { key: 'verification', header: 'Verification', align: 'center', render: (application) => <StatusBadge value={application.status} tone={application.status === 'Flagged' ? 'warning' : undefined} /> },
+    { key: 'actions', header: 'Actions', align: 'center', headerAlign: 'center', render: (application) => <TableActions><button className={styles.actionBtn} type="button" onClick={() => setSelectedApplication(application)} aria-label={`Review ${application.name}`}><Eye size={14} aria-hidden="true" /><span>Review</span></button></TableActions> },
+  ]
 
   return (
     <main className={styles.pageContainer}>
@@ -151,36 +153,7 @@ export function ReportsDocumentsPage() {
           </select>
         </div>
 
-        <div className={styles.tableCard}>
-          <table className={styles.table}>
-            <thead><tr><th>Student Name</th><th>School</th><th>Program</th><th>Date Submitted</th><th>Verification Status</th><th>Action</th></tr></thead>
-            <tbody>
-              {displayedApplications.map((application) => (
-                <tr key={application.id}>
-                  <td><strong>{application.name}</strong></td><td>{application.school}</td><td>{application.program}</td><td>{application.date}</td>
-                  <td><span className={`${styles.statusPill} ${statusClass(application.status)}`}>{application.status}</span></td>
-                  <td><button className={styles.actionBtn} type="button" onClick={() => setSelectedApplication(application)}><Eye size={14} /><span>Review</span></button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {!displayedApplications.length && <div className={styles.noData}>No applications found matching your filter criteria.</div>}
-        </div>
-
-        <div className={styles.toolbarRow}>
-          <div className={styles.leftControls}>
-            <span>View</span>
-            <select className={styles.viewSelect} value={itemsPerPage} onChange={(event) => { setItemsPerPage(Number(event.target.value)); setCurrentPage(1) }}>
-              <option value={5}>5</option><option value={7}>7</option><option value={10}>10</option><option value={15}>15</option>
-            </select>
-            <span>Students per page</span>
-          </div>
-          <div className={styles.pagination}>
-            <button className={styles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage((page) => page - 1)} aria-label="Previous page"><ChevronLeft size={18} /></button>
-            {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => <button key={page} className={`${styles.pageBtn} ${page === currentPage ? styles.active : ''}`} onClick={() => setCurrentPage(page)}>{page}</button>)}
-            <button className={styles.pageBtn} disabled={currentPage === totalPages} onClick={() => setCurrentPage((page) => page + 1)} aria-label="Next page"><ChevronRight size={18} /></button>
-          </div>
-        </div>
+        <DataTable ariaLabel="Submitted reports and documents" columns={columns} rows={displayedApplications} rowKey={(application) => application.id} minWidth={900} emptyMessage="No applications are available yet." filteredEmptyMessage="No applications match the selected filters." hasActiveFilters={Boolean(searchQuery.trim()) || selectedStatus !== 'All'} footer={<TablePagination page={currentPage} pageSize={itemsPerPage} totalRecords={filteredApplications.length} onPageChange={setCurrentPage} onPageSizeChange={(value) => { setItemsPerPage(value); setCurrentPage(1) }} />} />
       </section>
 
       <StudentReviewModal student={selectedApplication} isOpen={!!selectedApplication} onClose={() => setSelectedApplication(null)} onApprove={(id) => updateStatus(id, 'Verified')} onFlag={(id) => updateStatus(id, 'Flagged')} onReject={(id) => updateStatus(id, 'Rejected')} />

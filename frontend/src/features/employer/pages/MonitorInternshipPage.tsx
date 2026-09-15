@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Eye, Search, SlidersHorizontal } from 'lucide-react';
+import { Eye, Search, SlidersHorizontal } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type {
@@ -7,9 +7,13 @@ import type {
   PageMeta,
 } from '../../../types/api';
 import { getErrorMessage } from '../../../utils/error-message';
+import { formatTableDate } from '../../../utils/date-only';
 import { EmployerHero } from '../components/EmployerHero';
 import { employerApiService } from '../services/employer-api.service';
-import { COMPANY_PAGE_SIZES, formatMinutes, MANAGE_INTERNSHIP_COLUMNS } from '../utils/internship-workflow';
+import { COMPANY_PAGE_SIZES, formatMinutes } from '../utils/internship-workflow';
+import { TablePagination } from '../../../components/TablePagination';
+import { DataTable, TABLE_COLUMN_WIDTHS, type DataTableColumn } from '../../../components/DataTable';
+import { StatusBadge, TableActions, TableCellStack } from '../../../components/TablePrimitives';
 import styles from './MonitorInternshipPage.module.css';
 
 const EMPTY_META: PageMeta = { page: 1, limit: 5, total: 0, totalPages: 0 };
@@ -59,6 +63,14 @@ export function MonitorInternshipPage() {
 
   const resetPage = () => setPage(1);
   const beginReload = () => { setLoading(true); setError(''); };
+  const columns: DataTableColumn<EmployerInternshipListItemDto>[] = [
+    { key: 'intern', header: 'Intern', minWidth: TABLE_COLUMN_WIDTHS.identity, render: (internship) => <TableCellStack primary={internship.studentFullName} secondary={internship.studentAccountCode} code /> },
+    { key: 'opportunity', header: 'Opportunity', minWidth: TABLE_COLUMN_WIDTHS.placement, render: (internship) => internship.jobTitle },
+    { key: 'progress', header: 'Progress', minWidth: TABLE_COLUMN_WIDTHS.progress, noWrap: true, render: (internship) => <TableCellStack primary={`${formatMinutes(internship.renderedMinutes)} rendered`} secondary={`${formatMinutes(internship.requiredMinutes)} required`} tertiary={`${formatMinutes(internship.remainingMinutes)} remaining`} /> },
+    { key: 'period', header: 'Period', minWidth: TABLE_COLUMN_WIDTHS.period, noWrap: true, render: (internship) => <TableCellStack primary={`Start: ${formatPeriodDate(internship.startDate)}`} secondary={`End: ${formatPeriodDate(internship.endDate || internship.expectedEndDate)}`} /> },
+    { key: 'status', header: 'Status', width: TABLE_COLUMN_WIDTHS.status, align: 'center', render: (internship) => <StatusBadge value={internship.displayStatus} /> },
+    { key: 'actions', header: 'Actions', width: TABLE_COLUMN_WIDTHS.actions, align: 'center', headerAlign: 'center', render: (internship) => <TableActions><button type="button" className={styles.viewButton} onClick={() => navigate(`/employer/manage-internship/${internship.internshipAssignmentId}`)} aria-label={`View ${internship.studentFullName}'s internship`}><Eye size={16} aria-hidden="true" />View</button></TableActions> },
+  ];
 
   return <main className={styles.page}>
     <EmployerHero title="Manage Internship" subtitle="Manage operationally active internship assignments" comfortableSpacing />
@@ -75,23 +87,15 @@ export function MonitorInternshipPage() {
         <label className={styles.statusFilter}><SlidersHorizontal size={16} /><span className={styles.srOnly}>Filter internship status</span><select value={status} onChange={(event) => { beginReload(); setStatus(event.target.value); resetPage(); }}><option value="">All</option><option value="pending">Pending</option><option value="ongoing">Ongoing</option><option value="awaiting_completion">Awaiting Completion</option></select></label>
       </div>
 
-      <div className={styles.tableCard}>
-        <div className={styles.tableScroller}>
-          <table className={styles.table}><thead><tr>{MANAGE_INTERNSHIP_COLUMNS.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{rows.map((internship) => <tr key={internship.internshipAssignmentId}><td>{internship.studentFullName}</td><td>{internship.jobTitle}</td><td>{internship.strandProgram || 'N/A'}</td><td>{formatMinutes(internship.remainingMinutes)}</td><td><span className={`${styles.statusPill} ${styles[internship.displayStatus.replaceAll(' ', '').toLowerCase()] ?? ''}`}>{internship.displayStatus}</span></td><td><button type="button" className={styles.viewButton} onClick={() => navigate(`/employer/manage-internship/${internship.internshipAssignmentId}`)}><Eye size={16} />View</button></td></tr>)}</tbody></table>
-        </div>
-        {!loading && !error && rows.length === 0 && <div className={styles.emptyState}><strong>No active internships</strong><br />There are currently no internships to manage.</div>}
-        {loading && <p className={styles.emptyState}>Loading active internships...</p>}
-        {error && <p className={styles.emptyState} role="alert">{error}</p>}
-      </div>
-
-      <div className={styles.paginationRow}>
-        <div className={styles.perPage}><span>View</span><span className={styles.selectWrap}><select value={limit} onChange={(event) => { beginReload(); setLimit(Number(event.target.value)); resetPage(); }}>{COMPANY_PAGE_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</select></span><span>Students per page</span></div>
-        <div className={styles.pagination}><button type="button" aria-label="Previous page" disabled={page <= 1} onClick={() => { beginReload(); setPage((current) => current - 1); }}><ChevronLeft size={18} /></button><button type="button" className={styles.currentPage} aria-current="page">{page}</button><button type="button" aria-label="Next page" disabled={page >= Math.max(meta.totalPages, 1)} onClick={() => { beginReload(); setPage((current) => current + 1); }}><ChevronRight size={18} /></button></div>
-      </div>
+      <DataTable ariaLabel="Active internship assignments" columns={columns} rows={rows} rowKey={(internship) => internship.internshipAssignmentId} minWidth={1440} loading={loading} error={error} emptyMessage="There are currently no internships to manage." filteredEmptyMessage="No internships match the selected filters." hasActiveFilters={Boolean(search.trim()) || Boolean(status)} footer={<TablePagination page={page} pageSize={limit} totalRecords={meta.total} pageSizes={COMPANY_PAGE_SIZES} onPageChange={(value) => { beginReload(); setPage(value); }} onPageSizeChange={(value) => { beginReload(); setLimit(value); resetPage(); }} />} />
     </section>
   </main>;
 }
 
 function SummaryCard({ label, value }: { label: string; value: number }) {
   return <article className={styles.summaryCard}><h2>{label}</h2><p>{String(value).padStart(2, '0')}</p></article>;
+}
+
+function formatPeriodDate(value?: string | null) {
+  return formatTableDate(value) || '—';
 }

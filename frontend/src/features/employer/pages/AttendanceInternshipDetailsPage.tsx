@@ -55,7 +55,7 @@ export function AttendanceInternshipDetailsPage() {
     onStatusChange={(value) => { setLoading(true); setError(''); setStatus(value); setPage(1) }}
     page={page}
     limit={limit}
-    totalPages={history.meta.totalPages}
+    totalRecords={history.meta.total}
     pageSizes={COMPANY_PAGE_SIZES}
     onPageChange={(value) => { setLoading(true); setError(''); setPage(value) }}
     onLimitChange={(value) => { setLoading(true); setError(''); setLimit(value); setPage(1) }}

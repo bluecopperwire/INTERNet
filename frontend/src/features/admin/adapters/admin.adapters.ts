@@ -14,25 +14,37 @@ import { publicUploadUrl } from '../../../utils/public-upload-url';
 import { toDateOnly } from '../../../utils/date-only';
 import { normalizeAvailabilityDays } from '../../../utils/availability-days';
 import { formatYearLevel } from '../../../utils/year-level';
+import { districtAddressPart, normalizeDistrictOption } from '../../../utils/district';
 
 export function adaptAdminDashboardSummary(
   studentMetrics: AdminMetricsDto,
   employerMetrics: AdminMetricsDto,
-  _pesoMetrics: AdminMetricsDto,
+  pesoMetrics: AdminMetricsDto,
 ): AdminDashboardSummary {
+  const studentAccounts = {
+    total: studentMetrics.totalRegistered,
+    active: studentMetrics.activeAccounts,
+    suspended: studentMetrics.suspendedAccounts,
+    deactivated: studentMetrics.archivedAccounts,
+  };
+  const employerAccounts = {
+    total: employerMetrics.totalRegistered,
+    active: employerMetrics.activeAccounts,
+    suspended: employerMetrics.suspendedAccounts,
+    deactivated: employerMetrics.archivedAccounts,
+  };
+  const pesoAccounts = {
+    total: pesoMetrics.totalRegistered,
+    active: pesoMetrics.activeAccounts,
+    suspended: pesoMetrics.suspendedAccounts,
+    deactivated: pesoMetrics.archivedAccounts,
+  };
+
   return {
-    totalStudents: studentMetrics.totalRegistered,
-    activeStudents: studentMetrics.activeAccounts,
-    totalEmployers: employerMetrics.totalRegistered,
-    totalAvailableOpportunities: employerMetrics.activeAccounts,
-    systemHealth: {
-      serverStatus: 'Operational',
-      uptime: '99.9%',
-      databaseLoad: 'Normal',
-      activeSessions: studentMetrics.activeAccounts + employerMetrics.activeAccounts,
-      lastBackup: 'N/A',
-      storageUsedPercent: 25,
-    },
+    totalAccounts: studentAccounts.total + pesoAccounts.total + employerAccounts.total,
+    studentAccounts,
+    pesoAccounts,
+    employerAccounts,
   };
 }
 
@@ -51,6 +63,7 @@ export function adaptAdminStudentItem(dto: AdminStudentListItemDto): StudentReco
   return {
     id: String(dto.studentId),
     userAccountId: String(dto.userAccountId),
+    accountCode: dto.accountCode,
     studentId: String(dto.studentId),
     fullName: dto.fullName,
     email: dto.accountEmail,
@@ -69,10 +82,10 @@ export function adaptAdminStudentItem(dto: AdminStudentListItemDto): StudentReco
     sex: data.sex === 'Male' || data.sex === 'Female' ? data.sex : 'Other',
     birthdate: toDateOnly(data.birthDate) || 'N/A',
     contactNumber: data.contactNumber || 'N/A',
-    fullAddress: [data.addressLine, data.addressBarangay, data.addressDistrict, data.addressCity].filter(Boolean).join(', ') || 'Quezon City',
+    fullAddress: [data.addressLine, data.addressBarangay, districtAddressPart(data.addressDistrict), data.addressCity].filter(Boolean).join(', ') || 'Quezon City',
     addressStreet: data.addressLine || '',
     addressBarangay: data.addressBarangay || '',
-    addressDistrict: data.addressDistrict || '',
+    addressDistrict: normalizeDistrictOption(data.addressDistrict),
     addressCity: data.addressCity || '',
     linkedinUrl: data.linkedinUrl || '',
     inquiryVia: 'online',
@@ -100,6 +113,7 @@ export function adaptAdminEmployerItem(dto: AdminEmployerListItemDto): EmployerR
   return {
     id: String(dto.companyId),
     userAccountId: String(dto.userAccountId),
+    accountCode: dto.accountCode,
     companyId: String(dto.companyId),
     fullName: dto.companyName,
     companyName: dto.companyName,
@@ -114,10 +128,10 @@ export function adaptAdminEmployerItem(dto: AdminEmployerListItemDto): EmployerR
     ),
     industry: data.industryName || 'N/A',
     companyType: data.companyType === 'government' ? 'Government' : 'Private',
-    location: [data.addressLine, data.addressBarangay, data.addressDistrict, data.addressCity].filter(Boolean).join(', ') || 'Quezon City',
+    location: [data.addressLine, data.addressBarangay, districtAddressPart(data.addressDistrict), data.addressCity].filter(Boolean).join(', ') || 'Quezon City',
     addressLine: data.addressLine || '',
     addressBarangay: data.addressBarangay || '',
-    addressDistrict: data.addressDistrict || '',
+    addressDistrict: normalizeDistrictOption(data.addressDistrict),
     addressCity: data.addressCity || '',
     description: data.description || '',
     companyWebsite: data.websiteUrl || '',
@@ -145,6 +159,7 @@ export function adaptAdminPesoItem(dto: AdminPesoListItemDto): QCPesoRecord {
   return {
     id: String(dto.pesoPersonnelId),
     userAccountId: String(dto.userAccountId),
+    accountCode: dto.accountCode,
     fullName: dto.fullName,
     email: dto.accountEmail,
     employeeId: dto.employeeId,
@@ -164,7 +179,7 @@ export function adaptAdminPesoItem(dto: AdminPesoListItemDto): QCPesoRecord {
     sex: data.sex === 'Male' || data.sex === 'Female' ? data.sex : 'Other',
     addressLine: data.addressLine || '',
     barangay: data.addressBarangay || '',
-    district: data.addressDistrict || '',
+    district: normalizeDistrictOption(data.addressDistrict),
     city: data.addressCity || '',
     position: data.position || 'PESO Officer',
     department: data.department || 'PESO',

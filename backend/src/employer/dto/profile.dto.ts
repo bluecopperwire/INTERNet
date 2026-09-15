@@ -11,7 +11,7 @@ import {
   Min,
 } from 'class-validator';
 import { NullableTrim, Trim } from './common.dto';
-import { IsValidContactNumber } from '../../common/validation/input-validation';
+import { IsValidContactNumber, IsValidDistrict } from '../../common/validation/input-validation';
 
 export enum EmployerCompanyType {
   PRIVATE = 'private',
@@ -107,9 +107,10 @@ export class UpdateEmployerProfileDto {
   addressBarangay?: string;
 
   @IsOptional()
-  @NullableTrim()
+  @Trim()
   @IsString()
-  addressDistrict?: string | null;
+  @IsValidDistrict()
+  addressDistrict?: string;
 
   @IsOptional()
   @Trim()

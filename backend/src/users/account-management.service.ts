@@ -6,8 +6,10 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { DataSource } from 'typeorm';
+import { withStatusActor } from '../database/status-actor.transaction';
 import {
   AccountStatus,
+  AdminProfile,
   Company,
   Industry,
   LocalAuthenticationCredential,
@@ -20,6 +22,7 @@ import {
   CreatePesoPersonnelAccountDto,
 } from './dto/account-management.dto';
 import { UpdatePesoProfileDto } from './dto/peso-profile.dto';
+import { UpdateAdminProfileDto } from './dto/admin-profile.dto';
 import { ProfilePictureStorageService } from '../storage/profile-picture-storage.service';
 import {
   assertValidDate,
@@ -35,8 +38,10 @@ export class AccountManagementService {
 
   async createCompany(
     dto: CreateCompanyAccountDto,
+    actorAccountId: number,
   ): Promise<{ userAccountId: number; companyId: number }> {
-    return this.dataSource.transaction(async (manager) => {
+    return withStatusActor(this.dataSource, actorAccountId, async (runner) => {
+      const manager = runner.manager;
       const industry = await manager.findOne(Industry, {
         where: { industryId: dto.industryId },
       });
@@ -102,12 +107,12 @@ export class AccountManagementService {
     dto: CreatePesoPersonnelAccountDto,
     adminAccountId: number,
   ): Promise<{ userAccountId: number; pesoPersonnelId: number }> {
-    void adminAccountId;
     assertValidDate(dto.birthDate, 'birthDate');
     if (dto.birthDate >= currentManilaDate()) {
       throw new BadRequestException('birthDate must be in the past.');
     }
-    return this.dataSource.transaction(async (manager) => {
+    return withStatusActor(this.dataSource, adminAccountId, async (runner) => {
+      const manager = runner.manager;
       const existing = await manager
         .getRepository(UserAccount)
         .createQueryBuilder('a')
@@ -190,6 +195,7 @@ export class AccountManagementService {
       photoFilePath: peso.photoFilePath,
       updatedAt: peso.updatedAt,
       email: account?.email,
+      accountCode: account?.accountCode,
       accountStatus: account?.accountStatus,
     };
   }
@@ -266,5 +272,107 @@ export class AccountManagementService {
       }
     }
     return this.getPesoProfile(userAccountId);
+  }
+
+  async getAdminProfile(userAccountId: number) {
+    const adminRepo = this.dataSource.getRepository(AdminProfile);
+    const accountRepo = this.dataSource.getRepository(UserAccount);
+    const [profile, account] = await Promise.all([
+      adminRepo.findOne({ where: { userAccountId } }),
+      accountRepo.findOne({
+        where: { userAccountId, userRole: UserRole.ADMIN },
+      }),
+    ]);
+    if (!profile || !account) {
+      throw new NotFoundException('Admin profile not found');
+    }
+    return {
+      adminProfileId: profile.adminProfileId,
+      userAccountId,
+      firstName: profile.firstName,
+      middleName: profile.middleName,
+      lastName: profile.lastName,
+      extensionName: profile.extensionName,
+      sex: profile.sex,
+      birthDate: profile.birthDate,
+      addressLine: profile.addressLine,
+      addressBarangay: profile.addressBarangay,
+      addressDistrict: profile.addressDistrict,
+      addressCity: profile.addressCity,
+      contactEmail: profile.contactEmail,
+      contactNumber: profile.contactNumber,
+      photoFilePath: profile.photoFilePath,
+      updatedAt: profile.updatedAt,
+      accountEmail: account.email,
+      accountCode: account.accountCode,
+    };
+  }
+
+  async updateAdminProfile(userAccountId: number, dto: UpdateAdminProfileDto) {
+    if (dto.birthDate) {
+      assertValidDate(dto.birthDate, 'birthDate');
+      if (dto.birthDate >= currentManilaDate()) {
+        throw new BadRequestException('birthDate must be in the past.');
+      }
+    }
+    const repo = this.dataSource.getRepository(AdminProfile);
+    const profile = await repo.findOne({ where: { userAccountId } });
+    if (!profile) throw new NotFoundException('Admin profile not found');
+
+    const updates: Partial<AdminProfile> = {};
+    if (dto.firstName !== undefined) updates.firstName = dto.firstName.trim();
+    if (dto.middleName !== undefined)
+      updates.middleName = dto.middleName.trim() || null;
+    if (dto.lastName !== undefined) updates.lastName = dto.lastName.trim();
+    if (dto.extensionName !== undefined)
+      updates.extensionName = dto.extensionName.trim() || null;
+    if (dto.sex !== undefined) updates.sex = dto.sex;
+    if (dto.birthDate !== undefined) updates.birthDate = dto.birthDate;
+    if (dto.addressLine !== undefined)
+      updates.addressLine = dto.addressLine.trim();
+    if (dto.addressBarangay !== undefined)
+      updates.addressBarangay = dto.addressBarangay.trim();
+    if (dto.addressDistrict !== undefined)
+      updates.addressDistrict = dto.addressDistrict;
+    if (dto.addressCity !== undefined)
+      updates.addressCity = dto.addressCity.trim();
+    if (dto.contactEmail !== undefined)
+      updates.contactEmail = dto.contactEmail.trim().toLowerCase();
+    if (dto.contactNumber !== undefined)
+      updates.contactNumber = dto.contactNumber.trim();
+
+    await repo.update({ userAccountId }, updates);
+    return this.getAdminProfile(userAccountId);
+  }
+
+  async replaceAdminProfilePicture(
+    userAccountId: number,
+    file: Express.Multer.File,
+  ) {
+    const repo = this.dataSource.getRepository(AdminProfile);
+    const profile = await repo.findOne({ where: { userAccountId } });
+    if (!profile) throw new NotFoundException('Admin profile not found');
+
+    const oldPath = profile.photoFilePath;
+    const newPath = await this.profilePictures.storePerson(file, {
+      userAccountId,
+      firstName: profile.firstName || 'admin',
+      lastName: profile.lastName || 'profile',
+    });
+    try {
+      await repo.update({ userAccountId }, { photoFilePath: newPath });
+    } catch (error) {
+      if (oldPath !== newPath) await this.profilePictures.delete(newPath);
+      throw error;
+    }
+
+    if (oldPath !== newPath) {
+      try {
+        await this.profilePictures.delete(oldPath);
+      } catch {
+        // The new DB reference remains valid if an obsolete file cannot be removed.
+      }
+    }
+    return this.getAdminProfile(userAccountId);
   }
 }

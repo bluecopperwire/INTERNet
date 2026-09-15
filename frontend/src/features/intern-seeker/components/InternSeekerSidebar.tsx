@@ -1,14 +1,21 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   BriefcaseBusiness,
+  ChevronDown,
+  ChevronRight,
+  ClipboardList,
+  Clock3,
   ExternalLink,
+  FileCheck2,
   Grid2X2,
+  History,
   LogOut,
   Menu,
+  Settings,
   ShieldCheck,
   UserRound,
 } from 'lucide-react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import internetLogo from '../../../assets/internet-logo.svg'
 import { useAuthStore } from '../../../stores/useAuthStore'
 import { useStudentStore } from '../stores/useStudentStore'
@@ -21,13 +28,22 @@ interface InternSeekerSidebarProps {
 
 const NAVIGATION = [
   { label: 'Internship Portal', path: '/intern-seeker', icon: Grid2X2, end: true },
-  { label: 'User Profile', path: '/intern-seeker/profile', icon: UserRound },
+  { label: 'Student Profile', path: '/intern-seeker/profile', icon: UserRound },
   { label: 'DigiCV', path: '/intern-seeker/digicv', icon: ShieldCheck },
-  { label: 'My Tracking', path: '/intern-seeker/requirements', icon: BriefcaseBusiness },
+]
+
+const TRACKING_NAVIGATION = [
+  { label: 'My Requirements', path: '/intern-seeker/requirements', icon: FileCheck2 },
+  { label: 'My Applications', path: '/intern-seeker/application-status', icon: ClipboardList },
+  { label: 'My Internship', path: '/intern-seeker/internship', icon: BriefcaseBusiness },
+  { label: 'My Attendance', path: '/intern-seeker/attendance', icon: Clock3 },
+  { label: 'My Internship History', path: '/intern-seeker/internship-history', icon: History },
 ]
 
 function InternSeekerSidebar({ isOpen, onClose }: InternSeekerSidebarProps) {
   const [search, setSearch] = useState('')
+  const [isTrackingOpen, setIsTrackingOpen] = useState(false)
+  const location = useLocation()
   const navigate = useNavigate()
   const { user, logout: authLogout } = useAuthStore()
   const { profile, fetchProfile } = useStudentStore()
@@ -42,6 +58,20 @@ function InternSeekerSidebar({ isOpen, onClose }: InternSeekerSidebarProps) {
       ? NAVIGATION.filter((item) => item.label.toLowerCase().includes(query))
       : NAVIGATION
   }, [search])
+
+  const query = search.trim().toLowerCase()
+  const filteredTrackingNavigation = useMemo(() => {
+    if (!query || 'my tracking'.includes(query)) return TRACKING_NAVIGATION
+    return TRACKING_NAVIGATION.filter((item) => item.label.toLowerCase().includes(query))
+  }, [query])
+  const trackingIsActive = TRACKING_NAVIGATION.some(({ path }) => (
+    location.pathname === path || location.pathname.startsWith(`${path}/`)
+  )) || location.pathname.startsWith('/intern-seeker/attendance-history/')
+  const showTrackingGroup = !query
+    || 'my tracking'.includes(query)
+    || filteredTrackingNavigation.length > 0
+  const showSettings = !query || 'settings'.includes(query)
+  const trackingIsExpanded = Boolean(query) || isTrackingOpen || trackingIsActive
 
   const logout = async () => {
     onClose()
@@ -98,7 +128,63 @@ function InternSeekerSidebar({ isOpen, onClose }: InternSeekerSidebarProps) {
             <span>{label}</span>
           </NavLink>
         ))}
-        {filteredNavigation.length === 0 && <p className={styles.noResults}>No pages found</p>}
+
+        {showTrackingGroup && (
+          <div className={styles.navGroup}>
+            <button
+              type="button"
+              className={styles.navGroupButton}
+              onClick={() => setIsTrackingOpen((current) => !current)}
+              aria-expanded={trackingIsExpanded}
+              tabIndex={isOpen ? 0 : -1}
+            >
+              <BriefcaseBusiness aria-hidden="true" />
+              <span>My Tracking</span>
+              {trackingIsExpanded
+                ? <ChevronDown className={styles.groupChevron} aria-hidden="true" />
+                : <ChevronRight className={styles.groupChevron} aria-hidden="true" />}
+            </button>
+
+            {trackingIsExpanded && (
+              <div className={styles.subNav}>
+                {filteredTrackingNavigation.map(({ label, path, icon: Icon }) => (
+                  <NavLink
+                    className={({ isActive }) => `${styles.subNavItem} ${
+                      isActive
+                      || (path.endsWith('/attendance')
+                        && location.pathname.startsWith('/intern-seeker/attendance-history/'))
+                        ? styles.active
+                        : ''
+                    }`}
+                    key={path}
+                    to={path}
+                    onClick={onClose}
+                    tabIndex={isOpen ? 0 : -1}
+                  >
+                    <Icon aria-hidden="true" />
+                    <span>{label}</span>
+                  </NavLink>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {showSettings && (
+          <NavLink
+            className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
+            to="/intern-seeker/settings"
+            onClick={onClose}
+            tabIndex={isOpen ? 0 : -1}
+          >
+            <Settings aria-hidden="true" />
+            <span>Settings</span>
+          </NavLink>
+        )}
+
+        {filteredNavigation.length === 0 && !showTrackingGroup && !showSettings && (
+          <p className={styles.noResults}>No pages found</p>
+        )}
       </nav>
 
       <button

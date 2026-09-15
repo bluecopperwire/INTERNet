@@ -73,6 +73,7 @@ export interface AuthState {
   status: 'anonymous' | 'bootstrapping' | 'authenticated' | 'error';
   user: {
     userAccountId: number;
+    accountCode: string;
     email: string;
     userRole: BackendRole;
     accountStatus: AccountStatus;

@@ -1,333 +1,309 @@
-import { useState, useEffect, useMemo } from 'react'
-import { Search, Filter, FileSpreadsheet, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
-import headerImage from '../../../assets/requirements-header-image.png'
-import { adminService } from '../services/admin.service'
-import type { AuditLog } from '../types/admin.types'
-import { AuditLogDetailsModal } from '../components/AuditLogDetailsModal'
-import styles from './AuditLogsPage.module.css'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
+import { FileSpreadsheet, Filter, Search } from 'lucide-react'
+import { Navigate, useParams } from 'react-router-dom'
+import { DataTable, type DataTableColumn } from '../../../components/DataTable'
+import { PageHero } from '../../../components/PageHero'
+import { StatusTransition, TableCellStack } from '../../../components/TablePrimitives'
+import { TablePagination } from '../../../components/TablePagination'
+import { TableToolbar } from '../../../components/TableToolbar'
 import { useToastStore } from '../../../stores/useToastStore'
 import { todayDateOnly } from '../../../utils/date-only'
+import { adminApiService } from '../services/admin-api.service'
+import type {
+  AdminAuditLogCategory,
+  AdminAuditLogItem,
+  AdminAuditLogQuery,
+} from '../types/admin.types'
+import styles from './AuditLogsPage.module.css'
+
+const PAGE_CONFIG: Record<
+  AdminAuditLogCategory,
+  { title: string; subtitle: string; filename: string }
+> = {
+  accounts: {
+    title: 'Accounts Audit Logs',
+    subtitle: 'Review account creation, suspension, reactivation, and deactivation events.',
+    filename: 'accounts-audit-logs.csv',
+  },
+  'applications-referrals': {
+    title: 'Applications and Referrals Audit Logs',
+    subtitle: 'Review every recorded application and referral status change.',
+    filename: 'applications-referrals-audit-logs.csv',
+  },
+  internships: {
+    title: 'Internships Audit Logs',
+    subtitle: 'Review the complete status lifecycle of internship assignments.',
+    filename: 'internships-audit-logs.csv',
+  },
+}
+
+const ACTIONS: Record<AdminAuditLogCategory, Array<[string, string]>> = {
+  accounts: [
+    ['account_created', 'Account Created'],
+    ['account_suspended', 'Account Suspended'],
+    ['account_deactivated', 'Account Deactivated'],
+    ['account_unsuspended', 'Account Unsuspended'],
+  ],
+  'applications-referrals': [
+    ['application_submitted', 'Application Submitted'],
+    ['qc_peso_review_started', 'QC PESO Review Started'],
+    ['application_referred_to_employer', 'Application Referred to Employer'],
+    ['application_rejected_by_qc_peso', 'Application Rejected by QC PESO'],
+    ['employer_review_started', 'Employer Review Started'],
+    ['interview_scheduled', 'Interview Scheduled'],
+    ['offer_extended_by_employer', 'Offer Extended by Employer'],
+    ['referral_rejected_by_employer', 'Referral Rejected by Employer'],
+    ['offer_accepted_by_student', 'Offer Accepted by Student'],
+    ['offer_declined_by_student', 'Offer Declined by Student'],
+    ['application_withdrawn_by_student', 'Application Withdrawn by Student'],
+    ['application_or_referral_expired', 'Application or Referral Expired'],
+  ],
+  internships: [
+    ['internship_created', 'Internship Created'],
+    ['internship_started', 'Internship Started'],
+    ['internship_marked_complete_by_company', 'Internship Marked Complete by Company'],
+    ['internship_completion_confirmed_by_student', 'Internship Completion Confirmed by Student'],
+    ['internship_withdrawn_by_student', 'Internship Withdrawn by Student'],
+    ['internship_cancelled_by_company', 'Internship Cancelled by Company'],
+    ['internship_finalized_by_qc_peso', 'Internship Finalized by QC PESO'],
+  ],
+}
+
+const isCategory = (value?: string): value is AdminAuditLogCategory =>
+  value === 'accounts' || value === 'applications-referrals' || value === 'internships'
 
 export function AuditLogsPage() {
-  const toast = useToastStore()
-  const [logs, setLogs] = useState<AuditLog[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null)
-  
-  // Search and Filter State
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedRole, setSelectedRole] = useState('All')
-  const [selectedAction, setSelectedAction] = useState('All')
-  const [selectedStatus, setSelectedStatus] = useState('All')
-  const [startDate, setStartDate] = useState('2026-07-01')
-  const [endDate, setEndDate] = useState('2026-07-31')
-  const [showFilters, setShowFilters] = useState(false)
+  const { category: routeCategory } = useParams<{ category: string }>()
+  if (!isCategory(routeCategory)) {
+    return <Navigate to="/admin/audit-logs/accounts" replace />
+  }
+  return <AuditLogsView key={routeCategory} category={routeCategory} />
+}
 
-  // Pagination State
-  const [itemsPerPage, setItemsPerPage] = useState(5)
-  const [currentPage, setCurrentPage] = useState(1)
+function AuditLogsView({ category }: { category: AdminAuditLogCategory }) {
+  const config = PAGE_CONFIG[category]
+  const toast = useToastStore()
+  const [logs, setLogs] = useState<AdminAuditLogItem[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState<5 | 10 | 15>(5)
+  const [searchInput, setSearchInput] = useState('')
+  const deferredSearch = useDeferredValue(searchInput.trim())
+  const [action, setAction] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
+  const [isExporting, setIsExporting] = useState(false)
+  const [error, setError] = useState('')
+  const [retryKey, setRetryKey] = useState(0)
+
+  const filters = useMemo<Omit<AdminAuditLogQuery, 'page' | 'limit'>>(
+    () => ({
+      ...(deferredSearch ? { search: deferredSearch } : {}),
+      ...(action ? { action } : {}),
+      ...(dateFrom ? { dateFrom } : {}),
+      ...(dateTo ? { dateTo } : {}),
+    }),
+    [action, dateFrom, dateTo, deferredSearch],
+  )
 
   useEffect(() => {
-    adminService.getAuditLogs().then(data => {
-      setLogs(data)
-      setIsLoading(false)
-    })
-  }, [])
-
-  // Filter Logic
-  const filteredLogs = useMemo(() => {
-    return logs.filter(log => {
-      const q = searchQuery.toLowerCase().trim()
-      const matchesSearch = 
-        log.userId.toLowerCase().includes(q) ||
-        log.actionPerformed.toLowerCase().includes(q) ||
-        log.actionType.toLowerCase().includes(q) ||
-        log.role.toLowerCase().includes(q)
-      
-      const matchesRole = selectedRole === 'All' || log.role === selectedRole
-      const matchesAction = selectedAction === 'All' || log.actionType === selectedAction
-      const matchesStatus = selectedStatus === 'All' || log.accountStatus === selectedStatus
-
-      // Date logic
-      let matchesDate = true
-      if (startDate && endDate) {
-        const logDate = new Date(log.timestamp)
-        const start = new Date(startDate)
-        const end = new Date(endDate)
-        end.setHours(23, 59, 59, 999) // include the entire end day
-        matchesDate = logDate >= start && logDate <= end
-      }
-
-      return matchesSearch && matchesRole && matchesAction && matchesStatus && matchesDate
-    })
-  }, [logs, searchQuery, selectedRole, selectedAction, selectedStatus, startDate, endDate])
-
-  // Pagination Logic
-  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage) || 1
-  const displayedLogs = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage
-    return filteredLogs.slice(start, start + itemsPerPage)
-  }, [filteredLogs, currentPage, itemsPerPage])
-
-  const getStatusBadgeClass = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'active':
-      case 'verified':
-      case 'approved':
-        return styles.badgeSuccess
-      case 'pending':
-        return styles.badgeWarning
-      case 'inactive':
-      case 'deactivated':
-        return styles.badgeError
-      default:
-        return styles.badgeDefault
+    let active = true
+    void adminApiService
+      .getAuditLogs(category, { ...filters, page, limit: pageSize })
+      .then((response) => {
+        if (!active) return
+        setLogs(response.data)
+        setTotal(response.meta.total)
+        setError('')
+      })
+      .catch((requestError: unknown) => {
+        if (!active) return
+        setLogs([])
+        setTotal(0)
+        setError(apiMessage(requestError, 'Audit logs could not be loaded.'))
+      })
+      .finally(() => {
+        if (active) setIsLoading(false)
+      })
+    return () => {
+      active = false
     }
-  }
+  }, [category, filters, page, pageSize, retryKey])
 
-  const formatTimestamp = (isoString: string) => {
-    const date = new Date(isoString)
-    const options: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric', year: 'numeric' }
-    const formattedDate = date.toLocaleDateString('en-US', options)
-    const formattedTime = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-    return `${formattedDate} | ${formattedTime}`
-  }
-
-  const handleExportCSV = () => {
-    if (filteredLogs.length === 0) {
-      toast.info('No logs to export based on the current filters.')
+  const resetPage = () => setPage(1)
+  const exportCsv = async () => {
+    if (total === 0) {
+      toast.info('No audit logs match the current filters.')
       return
     }
-
-    const headers = ['Timestamp', 'User ID', 'Role', 'Action Type', 'Action Performed', 'IP Address', 'Account Status']
-    const csvRows = [headers.join(',')]
-
-    for (const log of filteredLogs) {
-      const values = [
-        `"${formatTimestamp(log.timestamp)}"`,
-        `"${log.userId}"`,
-        `"${log.role}"`,
-        `"${log.actionType}"`,
-        `"${log.actionPerformed}"`,
-        `"${log.ipAddress}"`,
-        `"${log.accountStatus}"`
-      ]
-      csvRows.push(values.join(','))
+    setIsExporting(true)
+    try {
+      const blob = await adminApiService.exportAuditLogs(category, filters)
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = config.filename
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+      toast.success('Audit logs exported to CSV.')
+    } catch (requestError) {
+      toast.error(apiMessage(requestError, 'Audit logs could not be exported.'))
+    } finally {
+      setIsExporting(false)
     }
-
-    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.setAttribute('hidden', '')
-    a.setAttribute('href', url)
-    a.setAttribute('download', 'audit_logs_export.csv')
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    window.URL.revokeObjectURL(url)
-    toast.success('Audit logs exported to CSV.')
   }
 
-  if (isLoading) {
-    return <div className={styles.pageContainer} style={{ padding: '40px', textAlign: 'center' }}>Loading Audit Logs...</div>
-  }
+  const columns: DataTableColumn<AdminAuditLogItem>[] = [
+    {
+      key: 'occurredAt',
+      header: 'Date & Time',
+      render: (log) => {
+        const timestamp = formatTimestamp(log.occurredAt)
+        return <TableCellStack primary={timestamp.date} secondary={timestamp.time} />
+      },
+    },
+    { key: 'action', header: 'Action', render: (log) => log.action },
+    { key: 'entity', header: 'Entity', render: (log) => <TableCellStack primary={log.entityEmail} secondary={log.entityCode} code /> },
+    { key: 'status', header: 'Status Change', align: 'center', render: (log) => <StatusTransition previous={log.previousStatus} next={log.newStatus} /> },
+    { key: 'actor', header: 'Actor', render: (log) => <TableCellStack primary={log.actorEmail} secondary={log.actorCode} code /> },
+  ]
 
   return (
     <main className={styles.pageContainer}>
-      <header className={styles.hero}><img src={headerImage} alt="" className={styles.heroImage} /><div className={styles.heroOverlay} /><div className={styles.heroContent}><h1>Audit Logs</h1><p>Monitor system activity, user actions, and security events.</p></div></header>
+      <PageHero title={config.title} subtitle={config.subtitle} />
 
       <div className={styles.mainContent}>
-        {/* Top Toolbar */}
         <div className={styles.topToolbar}>
-          <div className={styles.lastUpdatedBox}>
-            <div className={styles.blueDot}></div>
-            <p className={styles.lastUpdatedText}>Last Updated: {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} | {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
-          </div>
-          <button className={styles.exportBtn} onClick={handleExportCSV}>
-            <FileSpreadsheet size={16} />
-            Export to CSV
+          <p className={styles.scopeNote}>Times are displayed in Philippine Standard Time.</p>
+          <button
+            type="button"
+            className={styles.exportBtn}
+            onClick={() => void exportCsv()}
+            disabled={isExporting || isLoading}
+          >
+            <FileSpreadsheet size={17} aria-hidden="true" />
+            {isExporting ? 'Exporting…' : 'Export to CSV'}
           </button>
         </div>
 
-        {/* Search & Filter Toolbar */}
-        <div className={styles.filterRow}>
-          <div className={styles.searchBox}>
-            <Search size={18} color="#160e6f" />
-            <input 
-              type="text" 
-              placeholder="Search by User ID, Name, Email, or Action" 
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value)
-                setCurrentPage(1)
+        <TableToolbar className={styles.filterRow} hasActiveFilters={Boolean(searchInput.trim() || action || dateFrom || dateTo)} onClearFilters={() => { setSearchInput(''); setAction(''); setDateFrom(''); setDateTo(''); resetPage() }}>
+          <label className={styles.searchBox}>
+            <Search size={18} aria-hidden="true" />
+            <span className={styles.srOnly}>Search audit logs</span>
+            <input
+              type="search"
+              placeholder="Search entity or actor email/code"
+              value={searchInput}
+              onChange={(event) => {
+                setSearchInput(event.target.value)
+                resetPage()
               }}
             />
-          </div>
+          </label>
 
-          <div className={styles.dateRangeBox}>
-            <input 
-              type="date" 
-              className={styles.dateInput} 
-              value={startDate} 
-              max={endDate || todayDateOnly()}
-              onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }}
-            />
-            <span>to</span>
-            <input 
-              type="date" 
-              className={styles.dateInput} 
-              value={endDate} 
-              min={startDate}
-              max={todayDateOnly()}
-              onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }}
-            />
-          </div>
-
-          <div className={styles.filterMenuContainer}>
-            <button className={styles.filterBtn} onClick={() => setShowFilters(!showFilters)}>
-              <Filter size={18} />
-              Filter
-            </button>
-            
-            {showFilters && (
-              <div className={styles.filterDropdown}>
-                <div className={styles.filterGroup}>
-                  <label>Role</label>
-                  <select value={selectedRole} onChange={(e) => { setSelectedRole(e.target.value); setCurrentPage(1); }}>
-                    <option value="All">All Roles</option>
-                    <option value="Student">Student</option>
-                    <option value="Employer">Employer</option>
-                    <option value="QC PESO Personnel">QC PESO Personnel</option>
-                  </select>
-                </div>
-                <div className={styles.filterGroup}>
-                  <label>Action Type</label>
-                  <select value={selectedAction} onChange={(e) => { setSelectedAction(e.target.value); setCurrentPage(1); }}>
-                    <option value="All">All Actions</option>
-                    <option value="LOGIN">LOGIN</option>
-                    <option value="PROFILE_UPDATE">PROFILE_UPDATE</option>
-                    <option value="APPLICATION_SUBMIT">APPLICATION_SUBMIT</option>
-                    <option value="ACCOUNT_VERIFIED">ACCOUNT_VERIFIED</option>
-                    <option value="ACCOUNT_DEACTIVATED">ACCOUNT_DEACTIVATED</option>
-                    <option value="REQUIREMENTS_UPLOAD">REQUIREMENTS_UPLOAD</option>
-                    <option value="PASSWORD_CHANGE">PASSWORD_CHANGE</option>
-                  </select>
-                </div>
-                <div className={styles.filterGroup}>
-                  <label>Account Status</label>
-                  <select value={selectedStatus} onChange={(e) => { setSelectedStatus(e.target.value); setCurrentPage(1); }}>
-                    <option value="All">All Statuses</option>
-                    <option value="Active">Active</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Deactivated">Deactivated</option>
-                  </select>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Table Area */}
-        <div className={styles.tableContainer}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Timestamp</th>
-                <th>User ID</th>
-                <th>Role</th>
-                <th>Action Performed</th>
-                <th>IP Address</th>
-                <th>Account Status</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayedLogs.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className={styles.noData}>No audit logs match your search criteria.</td>
-                </tr>
-              ) : (
-                displayedLogs.map((log) => (
-                  <tr key={log.id}>
-                    <td>{formatTimestamp(log.timestamp)}</td>
-                    <td><strong>{log.userId}</strong></td>
-                    <td>{log.role}</td>
-                    <td>{log.actionPerformed}</td>
-                    <td>{log.ipAddress}</td>
-                    <td>
-                      <span className={`${styles.statusBadge} ${getStatusBadgeClass(log.accountStatus)}`}>
-                        {log.accountStatus}
-                      </span>
-                    </td>
-                    <td>
-                      <button className={styles.detailsBtn} onClick={() => setSelectedLog(log)}>
-                        <Eye size={16} aria-hidden="true" />Details
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        <div className={styles.paginationRow}>
-          <div className={styles.rowsPerPage}>
-            <span>View</span>
-            <select 
-              className={styles.viewSelect}
-              value={itemsPerPage}
-              onChange={(e) => {
-                setItemsPerPage(Number(e.target.value))
-                setCurrentPage(1)
+          <label className={styles.actionFilter}>
+            <Filter size={18} aria-hidden="true" />
+            <span className={styles.srOnly}>Filter by action</span>
+            <select
+              value={action}
+              onChange={(event) => {
+                setAction(event.target.value)
+                resetPage()
               }}
             >
-              <option value={5}>5</option>
-              <option value={7}>7</option>
-              <option value={10}>10</option>
-              <option value={20}>20</option>
+              <option value="">All Actions</option>
+              {ACTIONS[category].map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
             </select>
-            <span>Rows per page</span>
+          </label>
+
+          <div className={styles.dateRangeBox} aria-label="Date range">
+            <label>
+              <span>From</span>
+              <input
+                type="date"
+                value={dateFrom}
+                max={dateTo || todayDateOnly()}
+                onChange={(event) => {
+                  setDateFrom(event.target.value)
+                  resetPage()
+                }}
+              />
+            </label>
+            <label>
+              <span>To</span>
+              <input
+                type="date"
+                value={dateTo}
+                min={dateFrom || undefined}
+                max={todayDateOnly()}
+                onChange={(event) => {
+                  setDateTo(event.target.value)
+                  resetPage()
+                }}
+              />
+            </label>
           </div>
+        </TableToolbar>
 
-          <div className={styles.paginationControls}>
-            <button 
-              className={styles.navIconBtn} 
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            >
-              <ChevronLeft size={20} />
-            </button>
-            
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
-              <button 
-                key={pageNum}
-                className={`${styles.pageBtn} ${pageNum === currentPage ? styles.active : ''}`}
-                onClick={() => setCurrentPage(pageNum)}
-              >
-                {pageNum}
-              </button>
-            ))}
-
-            <button 
-              className={styles.navIconBtn}
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            >
-              <ChevronRight size={20} />
-            </button>
-          </div>
-        </div>
-
-      </div>
-
-      {selectedLog && (
-        <AuditLogDetailsModal
-          log={selectedLog}
-          onClose={() => setSelectedLog(null)}
+        <DataTable
+          ariaLabel={`${config.title} records`}
+          columns={columns}
+          rows={logs}
+          rowKey={(log) => log.auditEventId}
+          minWidth={1050}
+          loading={isLoading}
+          error={error}
+          onRetry={() => {
+            setIsLoading(true)
+            setError('')
+            setRetryKey((value) => value + 1)
+          }}
+          emptyMessage="No audit events have been recorded yet."
+          filteredEmptyMessage="No audit logs match the current filters."
+          hasActiveFilters={Boolean(deferredSearch || action || dateFrom || dateTo)}
+          footer={(
+            <TablePagination
+              page={page}
+              pageSize={pageSize}
+              totalRecords={total}
+              onPageChange={setPage}
+              onPageSizeChange={(value) => {
+                setPageSize(value as 5 | 10 | 15)
+                resetPage()
+              }}
+            />
+          )}
         />
-      )}
+      </div>
     </main>
   )
+}
+
+function formatTimestamp(value: string) {
+  const date = new Date(value)
+  return {
+    date: new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Manila',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }).format(date),
+    time: new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Manila',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    }).format(date),
+  }
+}
+
+function apiMessage(error: unknown, fallback: string) {
+  const candidate = error as { response?: { data?: { message?: string | string[] } } }
+  const message = candidate.response?.data?.message
+  return Array.isArray(message) ? message.join(', ') : message || fallback
 }

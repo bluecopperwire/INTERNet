@@ -33,6 +33,7 @@ describe('PESO Create Employer endpoint', () => {
       description: 'A partner company created by PESO.',
       addressLine: '100 Main St',
       addressBarangay: 'Central',
+      addressDistrict: 'District 1',
       addressCity: 'Quezon City',
       contactPersonFirstName: 'John',
       contactPersonLastName: 'Doe',
@@ -70,7 +71,7 @@ describe('PESO Create Employer endpoint', () => {
     expect(companies[0].company_name).toBe('PESO Partner Corp');
   });
 
-  it('creates an employer with websiteUrl = null and district = null', async () => {
+  it('creates an employer with websiteUrl = null and district = N/A', async () => {
     const payload = {
       accountEmail: 'peso-created-employer-nulls@example.com',
       initialPassword: 'Password123!',
@@ -83,7 +84,7 @@ describe('PESO Create Employer endpoint', () => {
       description: 'Another partner company.',
       addressLine: '200 Main St',
       addressBarangay: 'Batasan',
-      addressDistrict: null,
+      addressDistrict: 'N/A',
       addressCity: 'Quezon City',
       contactPersonFirstName: 'Jane',
       contactPersonMiddleName: null,

@@ -1,5 +1,4 @@
-import headerImage from '../../../assets/requirements-header-image.png'
-import styles from './QCPesoHero.module.css'
+import { PageHero } from '../../../components/PageHero'
 
 interface QCPesoHeroProps {
   title?: string
@@ -11,16 +10,7 @@ export function QCPesoHero({
   title = 'Monitor User',
   subtitle = 'QCPESO Referral Monitoring',
 }: QCPesoHeroProps) {
-  return (
-    <header className={styles.heroHeader}>
-      <img src={headerImage} alt="" className={styles.heroBgImage} />
-      <div className={styles.heroOverlay} />
-      <div className={styles.heroContent}>
-        <h1 className={styles.heroTitle}>{title}</h1>
-        <p className={styles.heroSubtitle}>{subtitle}</p>
-      </div>
-    </header>
-  )
+  return <PageHero title={title} subtitle={subtitle} />
 }
 
 export default QCPesoHero

@@ -5,56 +5,64 @@ import {
   ChevronRight,
   Plus, 
   FileText, 
-  Users, 
+  BriefcaseBusiness,
 } from 'lucide-react'
-import headerImage from '../../../assets/requirements-header-image.png'
+import { PageHero } from '../../../components/PageHero'
+import { DataTable, type DataTableColumn } from '../../../components/DataTable'
+import { TableCellStack } from '../../../components/TablePrimitives'
 import styles from './EmployerDashboardPage.module.css'
 import { useEmployerDashboard } from '../hooks/useEmployerDashboard'
 
 export const EmployerDashboardPage: React.FC = () => {
   const navigate = useNavigate()
-  const { summary, recentApplicants, isLoading } = useEmployerDashboard()
+  const { summary, recentApplicants, isLoading, error, refetch } = useEmployerDashboard()
   const formatNumber = (num: number) => (num < 10 ? `0${num}` : `${num}`)
+  const recentColumns: DataTableColumn<(typeof recentApplicants)[number]>[] = [
+    { key: 'applicant', header: 'Applicant', render: (app) => <TableCellStack primary={app.name} secondary={app.course} /> },
+    { key: 'opportunity', header: 'Opportunity', render: (app) => app.opportunityTitle },
+    { key: 'referred', header: 'Referred', render: (app) => app.referralDate },
+  ]
 
-  if (isLoading || !summary) {
+  if (isLoading) {
     return <div className={styles.loading}>Loading Dashboard...</div>
+  }
+
+  if (error || !summary) {
+    return (
+      <div className={styles.loading} role="alert">
+        <p>{error ?? 'Dashboard data is unavailable.'}</p>
+        <button type="button" className={styles.retryButton} onClick={() => void refetch()}>
+          Try Again
+        </button>
+      </div>
+    )
   }
 
   return (
     <main className={styles.pageContainer}>
-      <header className={styles.heroHeader}>
-        <div className={styles.heroBgWrapper}>
-          <img src={headerImage} alt="" className={styles.heroBgImage} />
-          <div className={styles.heroOverlay} />
-        </div>
-
-        <div className={styles.heroContent}>
-          <h1 className={styles.heroTitle}>Welcome, {summary.companyName}!</h1>
-          <p className={styles.heroSubtitle}>Here is what’s happening with your opportunities.</p>
-        </div>
-      </header>
+      <PageHero title={`Welcome, ${summary.companyName}!`} subtitle="Company Dashboard" />
 
       <section className={styles.mainContent}>
         <div className={styles.topSectionGrid}>
           <div className={styles.statsQuad}>
             <div className={styles.blueStatCard}>
-              <h3 className={styles.statLabel}>Active Opportunities</h3>
-              <span className={styles.statNumber}>{formatNumber(summary.activeOpportunities)}</span>
+              <h3 className={styles.statLabel}>Active Referrals</h3>
+              <span className={styles.statNumber}>{formatNumber(summary.activeReferrals)}</span>
             </div>
 
             <div className={styles.blueStatCard}>
-              <h3 className={styles.statLabel}>Total Referrals</h3>
-              <span className={styles.statNumber}>{formatNumber(summary.totalApplicants)}</span>
+              <h3 className={styles.statLabel}>Active Internships</h3>
+              <span className={styles.statNumber}>{formatNumber(summary.activeInternships)}</span>
             </div>
 
             <div className={styles.blueStatCard}>
-              <h3 className={styles.statLabel}>Pending Reviews</h3>
-              <span className={styles.statNumber}>{formatNumber(summary.pendingReviews)}</span>
+              <h3 className={styles.statLabel}>Awaiting Referral Review</h3>
+              <span className={styles.statNumber}>{formatNumber(summary.awaitingReview)}</span>
             </div>
 
             <div className={styles.blueStatCard}>
-              <h3 className={styles.statLabel}>Acceptance Rate</h3>
-              <span className={styles.statNumber}>{summary.acceptanceRate}%</span>
+              <h3 className={styles.statLabel}>Awaiting Internship Completion</h3>
+              <span className={styles.statNumber}>{formatNumber(summary.awaitingCompletion)}</span>
             </div>
           </div>
 
@@ -64,13 +72,14 @@ export const EmployerDashboardPage: React.FC = () => {
             <div className={styles.chartArea}>
               <div className={styles.donutWrapper}>
                 <svg className={styles.donutSvg} viewBox="0 0 36 36">
+                  <title>{`Referral history: ${summary.activePercentage}% active, ${summary.closedPercentage}% closed`}</title>
                   <path
                     className={styles.donutTrack}
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   />
                   <path
                     className={styles.donutSegment}
-                    strokeDasharray={`${summary.acceptedPercentage}, 100`}
+                    strokeDasharray={`${summary.activePercentage}, 100`}
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   />
                 </svg>
@@ -78,18 +87,18 @@ export const EmployerDashboardPage: React.FC = () => {
 
               <div className={styles.chartLegend}>
                 <div className={styles.legendRow}>
-                  <span className={`${styles.legendBox} ${styles.boxAccepted}`} />
+                  <span className={`${styles.legendBox} ${styles.boxActive}`} />
                   <div className={styles.legendTexts}>
-                    <strong>{summary.acceptedPercentage}%</strong>
-                    <span>Accepted</span>
+                    <strong>{summary.activePercentage}%</strong>
+                    <span>Active</span>
                   </div>
                 </div>
 
                 <div className={styles.legendRow}>
-                  <span className={`${styles.legendBox} ${styles.boxRejected}`} />
+                  <span className={`${styles.legendBox} ${styles.boxClosed}`} />
                   <div className={styles.legendTexts}>
-                    <strong>{summary.rejectedPercentage}%</strong>
-                    <span>Rejected</span>
+                    <strong>{summary.closedPercentage}%</strong>
+                    <span>Closed</span>
                   </div>
                 </div>
               </div>
@@ -98,7 +107,7 @@ export const EmployerDashboardPage: React.FC = () => {
             <button 
               type="button" 
               className={styles.viewAllAppsBtn}
-              onClick={() => navigate('/employer/applicants')}
+              onClick={() => navigate('/employer/referrals-history')}
             >
               <span>View All Referrals</span>
               <ArrowRight size={18} />
@@ -111,7 +120,7 @@ export const EmployerDashboardPage: React.FC = () => {
             <div className={styles.sectionHeader}>
               <div className={styles.sectionTitle}>
                 <h2 className={styles.sectionHeading}>Recent Referrals</h2>
-                <p>Latest student referrals endorsed to your opportunities</p>
+                <p>Latest referrals awaiting your review</p>
               </div>
               <button 
                 type="button" 
@@ -123,46 +132,13 @@ export const EmployerDashboardPage: React.FC = () => {
               </button>
             </div>
 
-            <div className={styles.tableCard}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Student Name</th>
-                    <th>Job Title</th>
-                    <th>Date Submitted</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentApplicants.length > 0 ? (
-                    recentApplicants.map((app) => (
-                      <tr key={app.id}>
-                        <td><strong>{app.name}</strong></td>
-                        <td>{app.opportunityTitle}</td>
-                        <td>{app.dateApplied}</td>
-                        <td>
-                          <span className={styles.statusCellText}>{formatRecentApplicationStatus(app.status)}</span>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    Array(6).fill(null).map((_, i) => (
-                      <tr key={i}>
-                        <td colSpan={4}>
-                          <div className={styles.skeletonBar} />
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+            <DataTable ariaLabel="Recent referrals awaiting review" columns={recentColumns} rows={recentApplicants} rowKey={(app) => app.id} variant="compact" minWidth={620} emptyMessage="No referrals are awaiting review." />
           </div>
 
           <div className={styles.quickActionsContainer}>
             <div className={styles.sectionTitle}>
               <h2 className={styles.sectionHeading}>Quick Actions</h2>
-              <p>Manage opportunities and your company profile</p>
+              <p>Manage opportunities, referrals, and internships</p>
             </div>
 
             <div className={styles.actionsList}>
@@ -172,7 +148,7 @@ export const EmployerDashboardPage: React.FC = () => {
                 onClick={() => navigate('/employer/opportunities/create')}
               >
                 <Plus size={20} strokeWidth={2.5} />
-                <span>Post Opportunities</span>
+                <span>Post Opportunity</span>
               </button>
 
               <button
@@ -187,10 +163,10 @@ export const EmployerDashboardPage: React.FC = () => {
               <button
                 type="button"
                 className={styles.actionButton}
-                onClick={() => navigate('/employer/profile')}
+                onClick={() => navigate('/employer/manage-internship')}
               >
-                <Users size={20} />
-                <span>Update Profile</span>
+                <BriefcaseBusiness size={20} />
+                <span>Manage Internships</span>
               </button>
             </div>
           </div>
@@ -198,10 +174,6 @@ export const EmployerDashboardPage: React.FC = () => {
       </section>
     </main>
   )
-}
-
-function formatRecentApplicationStatus(status: string) {
-  return status
 }
 
 export default EmployerDashboardPage

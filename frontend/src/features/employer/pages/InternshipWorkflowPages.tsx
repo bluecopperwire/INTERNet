@@ -1,7 +1,10 @@
-import { ArrowLeft, ChevronLeft, ChevronRight, Eye, Search } from 'lucide-react'
+import { ArrowLeft, Eye, Search } from 'lucide-react'
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { EmployerHero } from '../components/EmployerHero'
+import { DataTable, type DataTableColumn } from '../../../components/DataTable'
+import { TableActions, TableCellStack } from '../../../components/TablePrimitives'
+import { TablePagination } from '../../../components/TablePagination'
 import { employerService } from '../services/employer.service'
 import type { InternshipAssignment } from '../types/employer.types'
 import styles from './InternshipWorkflowPages.module.css'
@@ -27,9 +30,14 @@ export function CreateInternshipAssignmentPage() {
       !query || `${assignment.studentName} ${assignment.jobTitle}`.toLowerCase().includes(query)
     ))
   }, [assignments, search])
-  const totalPages = Math.max(1, Math.ceil(filteredAssignments.length / perPage))
   const visibleAssignments = filteredAssignments.slice((page - 1) * perPage, page * perPage)
   const resetPage = () => setPage(1)
+  const columns: DataTableColumn<InternshipAssignment>[] = [
+    { key: 'student', header: 'Student', render: (assignment) => <TableCellStack primary={assignment.studentName} secondary={assignment.studentAccountCode} tertiary={assignment.strandProgram} code /> },
+    { key: 'opportunity', header: 'Opportunity', render: (assignment) => assignment.jobTitle },
+    { key: 'accepted', header: 'Offer Accepted', render: (assignment) => assignment.acceptanceDate },
+    { key: 'actions', header: 'Actions', align: 'center', headerAlign: 'center', render: (assignment) => <TableActions><button type="button" className={styles.reviewButton} onClick={() => navigate(`/employer/internship-assignments/${assignment.id}`)} aria-label={`Create internship assignment for ${assignment.studentName}`}><Eye size={16} aria-hidden="true" />Create</button></TableActions> },
+  ]
 
   return (
     <main className={styles.heroOnlyPage}>
@@ -47,36 +55,7 @@ export function CreateInternshipAssignmentPage() {
           </label>
         </div>
 
-        <div className={styles.assignmentTableCard}>
-          <div className={styles.assignmentTableScroller}>
-            <table className={styles.assignmentTable}>
-              <thead><tr><th>Student Name</th><th>Job Title</th><th>Program / Strand</th><th>Acceptance Date</th><th>Action</th></tr></thead>
-              <tbody>{visibleAssignments.map((assignment) => <tr key={assignment.id}>
-                <td>{assignment.studentName}</td>
-                <td>{assignment.jobTitle}</td>
-                <td>{assignment.strandProgram}</td>
-                <td>{assignment.acceptanceDate}</td>
-                <td><div className={styles.assignmentRowActions}>
-                  <button type="button" className={styles.reviewButton} onClick={() => navigate(`/employer/internship-assignments/${assignment.id}`)}><Eye size={16} />Create</button>
-                </div></td>
-              </tr>)}</tbody>
-            </table>
-          </div>
-          {visibleAssignments.length === 0 && <p className={styles.assignmentEmpty}>No accepted offers match the selected filters.</p>}
-        </div>
-
-        <div className={styles.assignmentPagination}>
-          <div className={styles.assignmentPageSize}>
-            <span>View</span>
-            <span className={styles.pageSizeValue}><select value={perPage} onChange={(event) => { setPerPage(Number(event.target.value)); resetPage() }} aria-label="Students per page"><option value={5}>5</option><option value={10}>10</option><option value={15}>15</option></select></span>
-            <span>Students per page</span>
-          </div>
-          <div className={styles.paginationButtons}>
-            <button type="button" disabled={page === 1} onClick={() => setPage(current => current - 1)} aria-label="Previous page"><ChevronLeft size={18} /></button>
-            <button type="button" className={styles.currentPage}>{page}</button>
-            <button type="button" disabled={page === totalPages} onClick={() => setPage(current => current + 1)} aria-label="Next page"><ChevronRight size={18} /></button>
-          </div>
-        </div>
+        <DataTable ariaLabel="Students eligible for internship assignment" columns={columns} rows={visibleAssignments} rowKey={(assignment) => assignment.id} minWidth={760} emptyMessage="No accepted offers are awaiting assignment." filteredEmptyMessage="No accepted offers match your search." hasActiveFilters={Boolean(search.trim())} footer={<TablePagination page={page} pageSize={perPage} totalRecords={filteredAssignments.length} onPageChange={setPage} onPageSizeChange={(value) => { setPerPage(value); resetPage() }} />} />
       </section>
     </main>
   )

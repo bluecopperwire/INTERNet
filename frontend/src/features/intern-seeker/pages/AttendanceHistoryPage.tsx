@@ -62,7 +62,7 @@ function AttendanceHistoryPage() {
     onStatusChange={(value) => { setStatus(value as '' | AttendanceStatus); setPage(1) }}
     page={page}
     limit={limit}
-    totalPages={data.meta.totalPages}
+    totalRecords={data.meta.total}
     pageSizes={PAGE_SIZES}
     onPageChange={setPage}
     onLimitChange={(value) => { setLimit(value); setPage(1) }}

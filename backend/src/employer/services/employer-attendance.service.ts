@@ -25,6 +25,7 @@ export interface DailyAttendanceRow {
   internshipAssignmentId: number;
   studentId: number;
   studentFullName: string;
+  studentAccountCode: string | null;
   jobTitle: string;
   strandProgram: string | null;
   date: string;
@@ -215,6 +216,7 @@ export class EmployerAttendanceService {
       `
         SELECT ia.internship_assignment_id, ia.working_days,
                s.student_id,
+               ua.account_code AS student_account_code,
                concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS student_full_name,
                sai.strand_program, o.title AS job_title,
                ar.attendance_record_id, ar.time_in, ar.time_out,
@@ -224,6 +226,7 @@ export class EmployerAttendanceService {
         JOIN public.application a ON a.application_id = r.application_id
         JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
         JOIN public.student s ON s.student_id = a.student_id
+        JOIN public.user_account ua ON ua.user_account_id = s.user_account_id
         LEFT JOIN public.student_academic_information sai ON sai.student_id = s.student_id
         LEFT JOIN public.attendance_record ar
           ON ar.internship_assignment_id = ia.internship_assignment_id
@@ -257,6 +260,7 @@ export class EmployerAttendanceService {
           internshipAssignmentId: asNumber(row.internship_assignment_id),
           studentId: asNumber(row.student_id),
           studentFullName: String(row.student_full_name),
+          studentAccountCode: typeof row.student_account_code === 'string' ? row.student_account_code : null,
           jobTitle: String(row.job_title),
           strandProgram:
             typeof row.strand_program === 'string' ? row.strand_program : null,

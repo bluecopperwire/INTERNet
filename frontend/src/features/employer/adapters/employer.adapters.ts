@@ -2,6 +2,7 @@ import { publicUploadUrl } from '../../../utils/public-upload-url';
 import { formatTableDate, toDateOnly } from '../../../utils/date-only';
 import { formatAvailabilityDays } from '../../../utils/availability-days';
 import { formatYearLevel } from '../../../utils/year-level';
+import { normalizeDistrictOption } from '../../../utils/district';
 import type {
   EmployerDashboardMetricsDto,
   EmployerOpportunityDto,
@@ -9,6 +10,8 @@ import type {
   EmployerAttendanceItemDto,
   EmployerInternshipListItemDto,
   EmployerInternshipDetailDto,
+  EmployerProfileDto,
+  UpdateEmployerProfileRequest,
 } from '../../../types/api';
 import type {
   EmployerDashboardSummary,
@@ -29,20 +32,16 @@ export function adaptEmployerDashboardSummary(
   m: EmployerDashboardMetricsDto,
   companyName = 'Partner Company',
 ): EmployerDashboardSummary {
-  const total = m.totalApplicants || 0;
-  const acceptedPct =
-    total > 0 ? Math.round((m.acceptedCount / total) * 100) : 0;
-  const rejectedPct =
-    total > 0 ? Math.round((m.rejectedCount / total) * 100) : 0;
-
   return {
     companyName,
     activeOpportunities: m.activeOpportunities,
-    totalApplicants: m.totalApplicants,
-    acceptedPercentage: acceptedPct,
-    rejectedPercentage: rejectedPct,
-    pendingReviews: m.pendingReviews,
-    acceptanceRate: acceptedPct,
+    activeReferrals: 0,
+    activeInternships: 0,
+    awaitingReview: 0,
+    awaitingCompletion: 0,
+    totalReferrals: 0,
+    activePercentage: 0,
+    closedPercentage: 0,
   };
 }
 
@@ -107,6 +106,7 @@ export function adaptEmployerReferral(
 
   return {
     id: String(referralId),
+    accountCode: student.accountCode || r.studentAccountCode || undefined,
     name: fullName,
     opportunityId: String(oppId),
     opportunityTitle: oppTitle,
@@ -126,7 +126,7 @@ export function adaptEmployerReferral(
     email: student.contactEmail || 'N/A',
     phone: student.contactNumber || 'N/A',
     location: address,
-    school: student.schoolName || 'N/A',
+    school: student.schoolName || r.schoolName || 'N/A',
     preferredField: 'N/A',
     requiredHours: Number(internshipPref.requiredHours || 0),
     availabilityDays: formatAvailabilityDays(internshipPref.availableDays),
@@ -211,20 +211,20 @@ export function adaptEmployerInternship(
   };
 }
 
-export function adaptCompanyProfile(dto: any): CompanyProfile {
+export function adaptCompanyProfile(dto: EmployerProfileDto): CompanyProfile {
   const logoUrl = publicUploadUrl(dto.logoFilePath, dto.updatedAt);
 
   return {
     company_name: dto.companyName || '',
     company_type: dto.companyType === 'government' ? 'Government' : 'Private',
-    industry: String(dto.industryId || ''),
+    industry: dto.industryName || '',
     description: dto.description || '',
     website_url: dto.websiteUrl || null,
     year_established: dto.yearEstablished ? String(dto.yearEstablished) : null,
     company_size: dto.companySize ? String(dto.companySize) : null,
     address_line: dto.addressLine || '',
     address_barangay: dto.addressBarangay || '',
-    address_district: dto.addressDistrict || null,
+    address_district: normalizeDistrictOption(dto.addressDistrict) || null,
     address_city: dto.addressCity || '',
     contact_email: dto.contactEmail || '',
     contact_number: dto.contactNumber || '',
@@ -233,5 +233,35 @@ export function adaptCompanyProfile(dto: any): CompanyProfile {
     contact_person_last_name: dto.contactPersonLastName || '',
     contact_person_extension_name: dto.contactPersonExtensionName || null,
     logoUrl,
+  };
+}
+
+const nullableText = (value: string | null | undefined) =>
+  value === undefined ? undefined : value?.trim() || null;
+
+const nullableNumber = (value: string | null | undefined) =>
+  value === undefined ? undefined : value === null || value === '' ? null : Number(value);
+
+export function mapCompanyProfileUpdateRequest(
+  profile: Partial<CompanyProfile>,
+): UpdateEmployerProfileRequest {
+  return {
+    companyName: profile.company_name,
+    companyType: profile.company_type?.toLowerCase() as UpdateEmployerProfileRequest['companyType'],
+    industryName: profile.industry,
+    description: profile.description,
+    websiteUrl: nullableText(profile.website_url),
+    yearEstablished: nullableNumber(profile.year_established),
+    companySize: nullableNumber(profile.company_size),
+    addressLine: profile.address_line,
+    addressBarangay: profile.address_barangay,
+    addressDistrict: normalizeDistrictOption(profile.address_district) || undefined,
+    addressCity: profile.address_city,
+    contactEmail: profile.contact_email,
+    contactNumber: profile.contact_number,
+    contactPersonFirstName: profile.contact_person_first_name,
+    contactPersonMiddleName: nullableText(profile.contact_person_middle_name),
+    contactPersonLastName: profile.contact_person_last_name,
+    contactPersonExtensionName: nullableText(profile.contact_person_extension_name),
   };
 }

@@ -13,6 +13,8 @@ import type {
   EmployerAttendanceSummaryDto,
   EmployerAttendanceHistoryDto,
   EmployerAssignmentCandidateDto,
+  EmployerProfileDto,
+  UpdateEmployerProfileRequest,
   PaginatedResponse,
 } from '../../../types/api';
 
@@ -24,13 +26,13 @@ export const employerApiService = {
     return response.data;
   },
 
-  async getProfile(): Promise<any> {
-    const response = await api.get('/employer/profile');
+  async getProfile(): Promise<EmployerProfileDto> {
+    const response = await api.get<EmployerProfileDto>('/employer/profile');
     return response.data;
   },
 
-  async updateProfile(payload: any): Promise<any> {
-    const response = await api.patch('/employer/profile', payload);
+  async updateProfile(payload: UpdateEmployerProfileRequest): Promise<EmployerProfileDto> {
+    const response = await api.patch<EmployerProfileDto>('/employer/profile', payload);
     return response.data;
   },
 

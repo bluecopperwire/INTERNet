@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import {
   AdminDashboardMetricsDto,
@@ -27,13 +22,14 @@ export class AdminDashboardService {
     const sql = `
       SELECT account_status, COUNT(*) AS count
       FROM public.user_account
-      WHERE user_role = $1 AND deleted_at IS NULL
+      WHERE user_role = $1
       GROUP BY account_status
     `;
     const rows = await this.dataSource.query(sql, [userRole]);
 
     let activeAccounts = 0;
-    let deactivatedAccounts = 0;
+    let suspendedAccounts = 0;
+    let archivedAccounts = 0;
     let totalRegistered = 0;
 
     for (const row of rows) {
@@ -41,18 +37,18 @@ export class AdminDashboardService {
       totalRegistered += count;
       if (row.account_status === 'active') {
         activeAccounts += count;
-      } else if (
-        row.account_status === 'suspended' ||
-        row.account_status === 'archived'
-      ) {
-        deactivatedAccounts += count;
+      } else if (row.account_status === 'suspended') {
+        suspendedAccounts += count;
+      } else if (row.account_status === 'archived') {
+        archivedAccounts += count;
       }
     }
 
     return {
       totalRegistered,
       activeAccounts,
-      deactivatedAccounts,
+      suspendedAccounts,
+      archivedAccounts,
     };
   }
 

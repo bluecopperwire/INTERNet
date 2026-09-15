@@ -3,18 +3,21 @@ import {
   Building2,
   Camera,
   GraduationCap,
+  LockKeyhole,
   Mail,
   MapPin,
   UserRound,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import headerImage from '../../../assets/requirements-header-image.png'
+import { PageHero } from '../../../components/PageHero'
 import { useInternshipPortal } from '../hooks/useInternshipPortal'
 import styles from './DashboardPage.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
 import { formatPreferredIndustries } from '../../../utils/preferred-industry-display'
 import { formatAvailabilityDays } from '../../../utils/availability-days'
 import { formatYearLevel } from '../../../utils/year-level'
+import { districtAddressPart } from '../../../utils/district'
+import { useAuthStore } from '../../../stores/useAuthStore'
 
 const displayValue = (value: string | number | null | undefined) =>
   value || 'Not provided'
@@ -22,6 +25,7 @@ const displayValue = (value: string | number | null | undefined) =>
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate()
   const { profile, isLoading, uploadProfilePicture } = useInternshipPortal()
+  const account = useAuthStore((state) => state.user)
   const toast = useToastStore()
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
@@ -41,7 +45,7 @@ export const DashboardPage: React.FC = () => {
   const fullAddress = [
     profile.address.street,
     profile.address.barangay,
-    profile.address.district && `District ${profile.address.district}`,
+    districtAddressPart(profile.address.district),
     profile.address.city,
   ]
     .filter(Boolean)
@@ -84,10 +88,7 @@ export const DashboardPage: React.FC = () => {
         onChange={handleAvatarChange}
       />
 
-      <header className={styles.hero}>
-        <img className={styles.heroImage} src={headerImage} alt="" />
-        <div className={styles.heroOverlay} />
-      </header>
+      <PageHero />
 
       <section className={styles.profileHeader}>
         <div className={styles.headerContent}>
@@ -155,7 +156,7 @@ export const DashboardPage: React.FC = () => {
           title="Contact Information"
           items={[
             ['Email Address', profile.email],
-            ['Mobile Number', profile.contactNumber],
+            ['Contact Number', profile.contactNumber],
             ['LinkedIn', profile.linkedinUrl],
           ]}
         />
@@ -205,6 +206,14 @@ export const DashboardPage: React.FC = () => {
                   ? 'Yes'
                   : 'No',
             ],
+          ]}
+        />
+        <ProfileCard
+          icon={<LockKeyhole />}
+          title="Account Information"
+          items={[
+            ['Account Email Address', account?.email ?? ''],
+            ['Account User Code', account?.accountCode ?? ''],
           ]}
         />
       </section>

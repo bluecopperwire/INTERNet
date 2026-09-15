@@ -357,18 +357,11 @@
   background: #df1c22;
 }
 
-.error,
 .feedback {
   max-width: var(--tracking-content-width);
   margin: 0 auto;
   padding: 30px;
   text-align: center;
-}
-
-.error {
-  margin-bottom: 18px;
-  color: #a51d1d;
-  background: #fff0f0;
 }
 
 @media (max-width: 1050px) {

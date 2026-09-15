@@ -1,6 +1,7 @@
 import { useQCPesoStore } from '../stores/useQCPesoStore';
 import { qcpesoApiService } from './qcpeso-api.service';
 import { referenceService } from '../../../services/reference.service';
+import { normalizeDistrictOption } from '../../../utils/district';
 import {
   adaptMonitoredStudent,
   adaptMonitoredCompany,
@@ -21,6 +22,8 @@ import type {
   StudentApplication,
   QCPesoOpportunity,
   CreateEmployerPayload,
+  QCPesoInternshipHistorySummary,
+  QCPesoFinalizationSummary,
 } from '../types/qcpeso.types';
 import { todayDateOnly } from '../../../utils/date-only';
 
@@ -29,11 +32,17 @@ export const qcpesoService = {
     const store = useQCPesoStore.getState();
     await store.fetchMetrics();
     return (
-      store.metrics || {
+      useQCPesoStore.getState().metrics || {
         pendingApplications: 0,
         activeEmployers: 0,
         verifiedRequirements: 0,
         availableOpportunities: 0,
+        activeInternships: 0,
+        awaitingFinalization: 0,
+        totalApplications: 0,
+        activeApplications: 0,
+        activePercentage: 0,
+        closedPercentage: 0,
       }
     );
   },
@@ -66,6 +75,14 @@ export const qcpesoService = {
       page++;
     } while (true);
     return records;
+  },
+
+  async getInternshipHistorySummary(): Promise<QCPesoInternshipHistorySummary> {
+    return qcpesoApiService.getInternshipHistorySummary();
+  },
+
+  async getFinalizationSummary(): Promise<QCPesoFinalizationSummary> {
+    return qcpesoApiService.getFinalizationSummary();
   },
 
   async getReviewApplicant(id: string): Promise<QCPesoReviewApplicant | null> {
@@ -143,9 +160,15 @@ export const qcpesoService = {
   },
 
   async getStudentUsers(): Promise<MonitoredStudentUser[]> {
-    const store = useQCPesoStore.getState();
-    await store.fetchStudents();
-    return useQCPesoStore.getState().students;
+    const records: MonitoredStudentUser[] = [];
+    let page = 1;
+    do {
+      const result = await qcpesoApiService.getStudents({ page, limit: 100 });
+      records.push(...result.data.map(adaptMonitoredStudent));
+      if (page >= result.meta.totalPages) break;
+      page++;
+    } while (true);
+    return records;
   },
 
   async getMonitoredStudents(): Promise<MonitoredStudentUser[]> {
@@ -158,9 +181,15 @@ export const qcpesoService = {
   },
 
   async getCompanyUsers(): Promise<MonitoredCompanyUser[]> {
-    const store = useQCPesoStore.getState();
-    await store.fetchCompanies();
-    return useQCPesoStore.getState().companies;
+    const records: MonitoredCompanyUser[] = [];
+    let page = 1;
+    do {
+      const result = await qcpesoApiService.getEmployers({ page, limit: 100 });
+      records.push(...result.data.map(adaptMonitoredCompany));
+      if (page >= result.meta.totalPages) break;
+      page++;
+    } while (true);
+    return records;
   },
 
   async getMonitoredCompanies(): Promise<MonitoredCompanyUser[]> {
@@ -200,7 +229,7 @@ export const qcpesoService = {
       websiteUrl,
       addressLine: payload.addressLine.trim(),
       addressBarangay: payload.barangay.trim(),
-      addressDistrict: payload.district?.trim() || null,
+      addressDistrict: normalizeDistrictOption(payload.district),
       addressCity: payload.city.trim(),
       contactPersonFirstName: payload.contactFirstName.trim(),
       contactPersonMiddleName: payload.contactMiddleName?.trim() || null,

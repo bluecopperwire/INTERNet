@@ -6,7 +6,8 @@ import { useInternshipPortal } from '../hooks/useInternshipPortal'
 import type { UserProfile } from '../types/internship.types'
 import { birthdateMaximum, todayDateOnly } from '../../../utils/date-only'
 import { AVAILABILITY_DAYS } from '../../../utils/availability-days'
-import { getContactNumberError, sanitizeContactNumberInput } from '../../../utils/input-validation'
+import { CONTACT_NUMBER_PLACEHOLDER, getContactNumberError, sanitizeContactNumberInput } from '../../../utils/input-validation'
+import { DistrictSelect } from '../../../components/DistrictSelect'
 
 const INDUSTRIES = [
   'Office Administration',
@@ -135,22 +136,22 @@ export const ProfileEditorPage: React.FC = () => {
             </div>
             <div className={styles.sectionBody}>
               <div className={`${styles.fieldGrid} ${styles.nameGrid}`}>
-                <Field label="First Name" required><input required name="firstName" placeholder="Enter first name" value={formData.firstName ?? ''} onChange={handleChange} /></Field>
-                <Field label="Middle Name"><input name="middleName" placeholder="Enter middle name" value={formData.middleName ?? ''} onChange={handleChange} /></Field>
-                <Field label="Last Name" required><input required name="lastName" placeholder="Enter last name" value={formData.lastName ?? ''} onChange={handleChange} /></Field>
+                <Field label="First Name" required><input required name="firstName" placeholder="e.g., Juan" value={formData.firstName ?? ''} onChange={handleChange} /></Field>
+                <Field label="Middle Name"><input name="middleName" placeholder="e.g., Santos" value={formData.middleName ?? ''} onChange={handleChange} /></Field>
+                <Field label="Last Name" required><input required name="lastName" placeholder="e.g., Dela Cruz" value={formData.lastName ?? ''} onChange={handleChange} /></Field>
                 <Field label="Suffix"><input name="extensionName" placeholder="e.g., Jr." value={formData.extensionName ?? ''} onChange={handleChange} /></Field>
               </div>
 
               <div className={`${styles.fieldGrid} ${styles.addressGrid}`}>
-                <Field label="House / Block No. / Street" required><input required name="address.street" placeholder="Enter house / block no. / street" value={formData.address?.street ?? ''} onChange={handleChange} /></Field>
+                <Field label="House / Block No. / Street" required><input required name="address.street" placeholder="e.g., 200 Development Avenue" value={formData.address?.street ?? ''} onChange={handleChange} /></Field>
                 <Field label="Barangay" required>
-                  <input required name="address.barangay" placeholder="Enter barangay" value={formData.address?.barangay ?? ''} onChange={handleChange} />
+                  <input required name="address.barangay" placeholder="e.g., Central" value={formData.address?.barangay ?? ''} onChange={handleChange} />
                 </Field>
                 <Field label="District" required>
-                  <input required name="address.district" placeholder="If none, type N/A" value={formData.address?.district ?? ''} onChange={handleChange} />
+                  <DistrictSelect name="address.district" value={formData.address?.district} onChange={handleChange} />
                 </Field>
                 <Field label="City" required>
-                  <input required name="address.city" placeholder="Enter city" value={formData.address?.city ?? ''} onChange={handleChange} />
+                  <input required name="address.city" placeholder="e.g., Quezon City" value={formData.address?.city ?? ''} onChange={handleChange} />
                 </Field>
               </div>
 
@@ -173,9 +174,9 @@ export const ProfileEditorPage: React.FC = () => {
             </div>
             <div className={styles.sectionBody}>
               <div className={styles.fieldGrid}>
-                <Field label="Email" required><input required type="email" name="email" placeholder="Enter email address" value={formData.email ?? ''} onChange={handleChange} /></Field>
-                <Field label="Mobile Number" required><input required type="tel" name="contactNumber" placeholder="e.g. 09123456789" value={formData.contactNumber ?? ''} onChange={(event) => setFormData((current) => ({ ...current, contactNumber: sanitizeContactNumberInput(event.target.value) }))} /></Field>
-                <Field label="LinkedIn"><input type="url" name="linkedinUrl" placeholder="Enter LinkedIn profile address" value={formData.linkedinUrl ?? ''} onChange={handleChange} /></Field>
+                <Field label="Email" required><input required type="email" name="email" placeholder="e.g., juan.delacruz@example.com" value={formData.email ?? ''} onChange={handleChange} /></Field>
+                <Field label="Contact Number" required><input required type="tel" name="contactNumber" placeholder={CONTACT_NUMBER_PLACEHOLDER} value={formData.contactNumber ?? ''} onChange={(event) => setFormData((current) => ({ ...current, contactNumber: sanitizeContactNumberInput(event.target.value) }))} /></Field>
+                <Field label="LinkedIn"><input type="url" name="linkedinUrl" placeholder="e.g., https://linkedin.com/in/juan-dela-cruz" value={formData.linkedinUrl ?? ''} onChange={handleChange} /></Field>
               </div>
             </div>
           </section>
@@ -187,13 +188,13 @@ export const ProfileEditorPage: React.FC = () => {
             </div>
             <div className={styles.sectionBody}>
               <div className={`${styles.fieldGrid} ${styles.academicGrid}`}>
-                <Field label="School" required><input required name="academic.schoolName" placeholder="Enter school name" value={formData.academic?.schoolName ?? ''} onChange={handleChange} /></Field>
+                <Field label="School" required><input required name="academic.schoolName" placeholder="e.g., Quezon City University" value={formData.academic?.schoolName ?? ''} onChange={handleChange} /></Field>
                 <Field label="Year Level" required>
                   <select required name="academic.yearLevel" value={formData.academic?.yearLevel ?? ''} onChange={handleChange}>
                     <option value="">Select year level</option><option value="Grade 11">Grade 11</option><option value="Grade 12">Grade 12</option><option value="First Year College">First Year College</option><option value="Second Year College">Second Year College</option><option value="Third Year College">Third Year College</option><option value="Fourth Year College">Fourth Year College</option>
                   </select>
                 </Field>
-                <Field label="Program / Strand" required><input required name="academic.program" placeholder="Enter program / strand" value={formData.academic?.program ?? ''} onChange={handleChange} /></Field>
+                <Field label="Program / Strand" required><input required name="academic.program" placeholder="e.g., BS Information Technology" value={formData.academic?.program ?? ''} onChange={handleChange} /></Field>
               </div>
             </div>
           </section>
@@ -205,7 +206,7 @@ export const ProfileEditorPage: React.FC = () => {
             </div>
             <div className={styles.sectionBody}>
               <div className={`${styles.fieldGrid} ${styles.preferenceTopGrid}`}>
-                <Field label="Internship Required Hours" required><input required min="1" type="number" name="preferences.requiredHours" placeholder="Enter required hours" value={formData.preferences?.requiredHours ?? ''} onChange={handleChange} /></Field>
+                <Field label="Internship Required Hours" required><input required min="1" type="number" name="preferences.requiredHours" placeholder="e.g., 500" value={formData.preferences?.requiredHours ?? ''} onChange={handleChange} /></Field>
                 <Field label="Preferred Host Organization Type" required>
                   <select required name="preferences.hostOrgType" value={formData.preferences?.hostOrgType ?? ''} onChange={handleChange}>
                     <option value="">Select Organization Type</option><option value="Government">Government</option><option value="Private">Private</option>
@@ -232,7 +233,7 @@ export const ProfileEditorPage: React.FC = () => {
                       <input type="checkbox" checked={formData.preferences?.preferredIndustries?.includes('Other') ?? false} onChange={() => togglePreference('Other')} />
                       Other
                     </label>
-                    <input type="text" aria-label="Other preferred internship field" required={formData.preferences?.preferredIndustries?.includes('Other') ?? false} disabled={!(formData.preferences?.preferredIndustries?.includes('Other') ?? false)} name="preferences.otherPreferredField" placeholder="Please specify" value={formData.preferences?.otherPreferredField ?? ''} onChange={handleChange} />
+                    <input type="text" aria-label="Other preferred internship field" required={formData.preferences?.preferredIndustries?.includes('Other') ?? false} disabled={!(formData.preferences?.preferredIndustries?.includes('Other') ?? false)} name="preferences.otherPreferredField" placeholder="Please Specify" value={formData.preferences?.otherPreferredField ?? ''} onChange={handleChange} />
                   </div>
                 </div>
               </fieldset>

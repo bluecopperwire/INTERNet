@@ -29,7 +29,6 @@ import {
 } from '../dto/peso-dashboard.dto';
 import { QcInternshipWorkflowService } from '../services/qc-internship-workflow.service';
 import { DateFilterDto } from '../../common/dto/date-filter.dto';
-import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @Controller('dashboard/peso')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -245,7 +244,7 @@ export class PesoDashboardController {
   }
 
   @Get('students')
-  getStudents(@Query() queryDto: PaginationDto & { search?: string }) {
+  getStudents(@Query() queryDto: QueryCompanyEmployersDto) {
     return this.pesoService.getStudents(queryDto);
   }
 
@@ -260,7 +259,10 @@ export class PesoDashboardController {
   }
 
   @Post('employers')
-  createEmployer(@Body() dto: CreateAdminEmployerDto) {
-    return this.pesoService.createEmployer(dto);
+  createEmployer(
+    @CurrentUser('userAccountId') userAccountId: number,
+    @Body() dto: CreateAdminEmployerDto,
+  ) {
+    return this.pesoService.createEmployer(dto, userAccountId);
   }
 }

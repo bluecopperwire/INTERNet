@@ -43,6 +43,7 @@ describe('EmployerReferralService workflows', () => {
           application_id: 20,
           application_status: 'withdrawn',
           student_response: 'pending',
+          school_name: 'Quezon City University',
         },
         {
           referral_id: 11,
@@ -62,13 +63,20 @@ describe('EmployerReferralService workflows', () => {
 
     expect(result.data).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ referralId: 10, referralStatus: 'withdrawn' }),
+        expect.objectContaining({
+          referralId: 10,
+          referralStatus: 'withdrawn',
+          schoolName: 'Quezon City University',
+        }),
         expect.objectContaining({ referralId: 11, referralStatus: 'expired' }),
       ]),
     );
-    const sql = query.mock.calls.map(([statement]) => String(statement)).join('\n');
+    const sql = query.mock.calls
+      .map(([statement]) => String(statement))
+      .join('\n');
     expect(sql).not.toContain("r.referral_status IN ('sent', 'under_review')");
     expect(sql).toContain('rv.employer_hidden_at IS NOT NULL');
+    expect(sql).toContain('sai.school_name');
   });
 
   it.each(['pending', 'for_interview'])(
@@ -81,7 +89,9 @@ describe('EmployerReferralService workflows', () => {
         company_response: companyResponse,
       });
       const service = new EmployerReferralService(dataSource, resolver);
-      jest.spyOn(service, 'getById').mockResolvedValue({ accepted: true } as any);
+      jest
+        .spyOn(service, 'getById')
+        .mockResolvedValue({ accepted: true } as any);
 
       await expect(service.accept(70, 4)).resolves.toEqual({ accepted: true });
 
@@ -90,7 +100,7 @@ describe('EmployerReferralService workflows', () => {
         statements.some((sql) =>
           sql.includes("referral_status = 'under_review'"),
         ),
-      ).toBe(companyResponse === 'pending');
+      ).toBe(true);
       expect(
         statements.some((sql) => sql.includes("company_response = 'accepted'")),
       ).toBe(true);
@@ -98,7 +108,10 @@ describe('EmployerReferralService workflows', () => {
   );
 
   it('enforces the employer review queue in both count and data queries', async () => {
-    const query = jest.fn().mockResolvedValueOnce([{ total: '0' }]).mockResolvedValueOnce([]);
+    const query = jest
+      .fn()
+      .mockResolvedValueOnce([{ total: '0' }])
+      .mockResolvedValueOnce([]);
     const service = new EmployerReferralService(
       { query } as unknown as DataSource,
       resolver,
@@ -113,7 +126,9 @@ describe('EmployerReferralService workflows', () => {
     for (const [sql] of query.mock.calls) {
       expect(String(sql)).toContain("r.referral_status = 'sent'");
       expect(String(sql)).toContain("r.referral_status = 'under_review'");
-      expect(String(sql)).toContain("r.company_response IN ('pending', 'for_interview')");
+      expect(String(sql)).toContain(
+        "r.company_response IN ('pending', 'for_interview')",
+      );
     }
   });
 

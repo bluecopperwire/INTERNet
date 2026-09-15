@@ -4,6 +4,7 @@ import type { UserProfile } from '../types/internship.types'
 import { formatPreferredIndustries } from '../../../utils/preferred-industry-display'
 import { formatAvailabilityDays } from '../../../utils/availability-days'
 import { formatYearLevel } from '../../../utils/year-level'
+import { districtAddressPart } from '../../../utils/district'
 
 interface ProfileDetailsModalProps {
   isOpen: boolean
@@ -50,8 +51,9 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({ isOpen
               <div className={styles.field}>
                 <label>Full Address</label>
                 <span>
-                  {profile.address.street}, {profile.address.barangay}, 
-                  District {profile.address.district}, {profile.address.city}
+                  {[profile.address.street, profile.address.barangay, districtAddressPart(profile.address.district), profile.address.city]
+                    .filter(Boolean)
+                    .join(', ')}
                 </span>
               </div>
               <div className={styles.field}>

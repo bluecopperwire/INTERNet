@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Roles } from '../../auth/decorators/roles.decorator';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { UserRole } from '../../users/entities/account.entities';
@@ -37,8 +38,11 @@ export class AdminEmployerController {
   }
 
   @Post()
-  create(@Body() dto: CreateAdminEmployerDto) {
-    return this.service.createEmployer(dto);
+  create(
+    @CurrentUser('userAccountId') adminAccountId: number,
+    @Body() dto: CreateAdminEmployerDto,
+  ) {
+    return this.service.createEmployer(dto, adminAccountId);
   }
 
   @Patch(':companyId')

@@ -22,6 +22,7 @@ import { CompanyType } from '../../common/enums/company-type.enum';
 import { NullableTrim, Trim } from '../../employer/dto/common.dto';
 import {
   IsStrongPassword,
+  IsValidDistrict,
   IsValidContactNumber,
 } from '../../common/validation/input-validation';
 
@@ -80,7 +81,7 @@ export class UpdateAdminStudentDto {
 
   @IsOptional() @Trim() @IsString() @IsNotEmpty() addressLine?: string;
   @IsOptional() @Trim() @IsString() @IsNotEmpty() addressBarangay?: string;
-  @IsOptional() @Trim() @IsString() @IsNotEmpty() addressDistrict?: string;
+  @IsOptional() @Trim() @IsString() @IsNotEmpty() @IsValidDistrict() addressDistrict?: string;
   @IsOptional() @Trim() @IsString() @IsNotEmpty() addressCity?: string;
 
   @IsOptional() @Trim() @IsEmail() contactEmail?: string;
@@ -142,7 +143,7 @@ export class CreateAdminEmployerDto {
   @Trim() @IsString() @IsNotEmpty() description: string;
   @Trim() @IsString() @IsNotEmpty() addressLine: string;
   @Trim() @IsString() @IsNotEmpty() addressBarangay: string;
-  @IsOptional() @NullableTrim() @IsString() addressDistrict?: string | null;
+  @Trim() @IsString() @IsNotEmpty() @IsValidDistrict() addressDistrict: string;
   @Trim() @IsString() @IsNotEmpty() addressCity: string;
   @Trim() @IsString() @IsNotEmpty() contactPersonFirstName: string;
   @IsOptional() @NullableTrim() @IsString() contactPersonMiddleName?:
@@ -177,7 +178,7 @@ export class UpdateAdminEmployerDto {
   @IsOptional() @Trim() @IsString() @IsNotEmpty() description?: string;
   @IsOptional() @Trim() @IsString() @IsNotEmpty() addressLine?: string;
   @IsOptional() @Trim() @IsString() @IsNotEmpty() addressBarangay?: string;
-  @IsOptional() @NullableTrim() @IsString() addressDistrict?: string | null;
+  @IsOptional() @Trim() @IsString() @IsNotEmpty() @IsValidDistrict() addressDistrict?: string;
   @IsOptional() @Trim() @IsString() @IsNotEmpty() addressCity?: string;
   @IsOptional()
   @Trim()
@@ -211,7 +212,7 @@ export class CreateAdminPesoPersonnelDto {
   @IsOptional() @NullableTrim() @IsString() extensionName?: string | null;
   @Trim() @IsString() @IsNotEmpty() addressLine: string;
   @Trim() @IsString() @IsNotEmpty() addressBarangay: string;
-  @Trim() @IsString() @IsNotEmpty() addressDistrict: string;
+  @Trim() @IsString() @IsNotEmpty() @IsValidDistrict() addressDistrict: string;
   @Trim() @IsString() @IsNotEmpty() addressCity: string;
   @IsDateString({ strict: true }) birthDate: string;
   @Trim() @IsString() @IsNotEmpty() sex: string;
@@ -235,7 +236,7 @@ export class UpdateAdminPesoPersonnelDto {
   @IsOptional() @Trim() @IsString() @IsNotEmpty() sex?: string;
   @IsOptional() @Trim() @IsString() @IsNotEmpty() addressLine?: string;
   @IsOptional() @Trim() @IsString() @IsNotEmpty() addressBarangay?: string;
-  @IsOptional() @Trim() @IsString() @IsNotEmpty() addressDistrict?: string;
+  @IsOptional() @Trim() @IsString() @IsNotEmpty() @IsValidDistrict() addressDistrict?: string;
   @IsOptional() @Trim() @IsString() @IsNotEmpty() addressCity?: string;
   @IsOptional() @Trim() @IsEmail() contactEmail?: string;
   @IsOptional()

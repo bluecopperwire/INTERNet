@@ -50,6 +50,25 @@ export interface QCPesoDashboardSummary {
   activeEmployers: number;
   verifiedRequirements: number;
   availableOpportunities: number;
+  activeInternships: number;
+  awaitingFinalization: number;
+  totalApplications: number;
+  activeApplications: number;
+  activePercentage: number;
+  closedPercentage: number;
+}
+
+export interface QCPesoInternshipHistorySummary {
+  totalInternships: number;
+  activeInternships: number;
+  closedInternships: number;
+}
+
+export interface QCPesoFinalizationSummary {
+  awaitingFinalization: number;
+  completedInternships: number;
+  withdrawalInternships: number;
+  cancelledInternships: number;
 }
 
 export interface StudentApplication {
@@ -71,6 +90,7 @@ export type MonitorUserStatus = "Active" | "Suspended";
 
 export interface MonitoredStudentUser {
   id: string;
+  accountCode?: string;
   studentName: string;
   email: string;
   mobileNumber: string;
@@ -94,6 +114,7 @@ export interface MonitoredStudentUser {
 
 export interface MonitoredCompanyUser {
   id: string;
+  accountCode?: string;
   companyName: string;
   email: string;
   contactNumber: string;
@@ -145,6 +166,7 @@ export interface QCPesoDocument {
 export interface QCPesoReviewApplicant {
   id: string;
   studentName: string;
+  accountCode?: string;
   company: string;
   jobTitle: string;
   program: string;

@@ -176,14 +176,14 @@ describe('profile APIs', () => {
         companyName: ' Updated Employer ',
         industryName: 'engineering',
         websiteUrl: '   ',
-        addressDistrict: ' ',
+        addressDistrict: 'N/A',
       })
       .expect(200);
     expect(body).toMatchObject({
       companyName: 'Updated Employer',
       industryName: 'Engineering',
       websiteUrl: null,
-      addressDistrict: null,
+      addressDistrict: 'N/A',
       contactEmail: before.body.contactEmail,
     });
     const row = await db.query(

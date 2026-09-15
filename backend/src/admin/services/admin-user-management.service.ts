@@ -62,12 +62,14 @@ export class AdminUserManagementService {
         filter.params,
       ),
       this.dataSource.query(
-        `SELECT s.student_id AS "studentId", ua.user_account_id AS "userAccountId",
+        `SELECT s.student_id AS "studentId", ua.user_account_id AS "userAccountId", ua.account_code AS "accountCode",
                 concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS "fullName",
                 ua.email AS "accountEmail", ua.created_at AS "createdAt",
-                ua.account_status AS "accountStatus", ua.suspended_until AS "suspendedUntil"
+                ua.account_status AS "accountStatus", ua.suspended_until AS "suspendedUntil",
+                sai.strand_program AS "strandProgram"
          FROM public.user_account ua
          JOIN public.student s ON s.user_account_id = ua.user_account_id
+         LEFT JOIN public.student_academic_information sai ON sai.student_id = s.student_id
          WHERE ua.user_role = 'student' ${filter.sql}
          ORDER BY ua.created_at DESC, s.student_id DESC
          LIMIT $${filter.params.length + 1} OFFSET $${filter.params.length + 2}`,
@@ -80,7 +82,7 @@ export class AdminUserManagementService {
   async getStudent(studentId: number) {
     this.assertPositiveId(studentId, 'studentId');
     const rows = await this.dataSource.query(
-      `SELECT s.student_id AS "studentId", ua.user_account_id AS "userAccountId",
+      `SELECT s.student_id AS "studentId", ua.user_account_id AS "userAccountId", ua.account_code AS "accountCode",
               ua.email AS "accountEmail", ua.account_status AS "accountStatus", ua.suspended_until AS "suspendedUntil", ua.created_at AS "createdAt",
               s.first_name AS "firstName", s.middle_name AS "middleName", s.last_name AS "lastName",
               s.extension_name AS "extensionName",
@@ -224,10 +226,13 @@ export class AdminUserManagementService {
         filter.params,
       ),
       this.dataSource.query(
-        `SELECT c.company_id AS "companyId", ua.user_account_id AS "userAccountId",
+        `SELECT c.company_id AS "companyId", ua.user_account_id AS "userAccountId", ua.account_code AS "accountCode",
                 c.company_name AS "companyName", ua.email AS "accountEmail",
-                ua.created_at AS "createdAt", ua.account_status AS "accountStatus", ua.suspended_until AS "suspendedUntil"
-         FROM public.user_account ua JOIN public.company c ON c.user_account_id = ua.user_account_id
+                ua.created_at AS "createdAt", ua.account_status AS "accountStatus", ua.suspended_until AS "suspendedUntil",
+                i.industry_name AS "industryName"
+         FROM public.user_account ua
+         JOIN public.company c ON c.user_account_id = ua.user_account_id
+         LEFT JOIN public.industry i ON i.industry_id = c.industry_id
          WHERE ua.user_role = 'company' ${filter.sql}
          ORDER BY ua.created_at DESC, c.company_id DESC
          LIMIT $${filter.params.length + 1} OFFSET $${filter.params.length + 2}`,
@@ -240,7 +245,7 @@ export class AdminUserManagementService {
   async getEmployer(companyId: number) {
     this.assertPositiveId(companyId, 'companyId');
     const rows = await this.dataSource.query(
-      `SELECT c.company_id AS "companyId", ua.user_account_id AS "userAccountId",
+      `SELECT c.company_id AS "companyId", ua.user_account_id AS "userAccountId", ua.account_code AS "accountCode",
               ua.email AS "accountEmail", ua.account_status AS "accountStatus", ua.suspended_until AS "suspendedUntil", ua.created_at AS "createdAt",
               c.company_name AS "companyName", c.company_type AS "companyType",
               c.industry_id AS "industryId", i.industry_name AS "industryName",
@@ -266,30 +271,34 @@ export class AdminUserManagementService {
     return rows[0];
   }
 
-  async createEmployer(dto: CreateAdminEmployerDto) {
-    const companyId = await this.dataSource.transaction(async (manager) => {
-      await this.validateCompanyIndustry(manager, dto.industryId);
-      const duplicate = await manager.query(
-        'SELECT 1 FROM public.user_account WHERE lower(email) = lower($1)',
-        [dto.accountEmail],
-      );
-      if (duplicate.length)
-        throw new ConflictException('Account email is already in use.');
+  async createEmployer(dto: CreateAdminEmployerDto, actorAccountId: number) {
+    const companyId = await withStatusActor(
+      this.dataSource,
+      actorAccountId,
+      async (runner) => {
+        const manager = runner.manager;
+        await this.validateCompanyIndustry(manager, dto.industryId);
+        const duplicate = await manager.query(
+          'SELECT 1 FROM public.user_account WHERE lower(email) = lower($1)',
+          [dto.accountEmail],
+        );
+        if (duplicate.length)
+          throw new ConflictException('Account email is already in use.');
 
-      const accounts = await manager.query(
-        `INSERT INTO public.user_account (email, user_role)
+        const accounts = await manager.query(
+          `INSERT INTO public.user_account (email, user_role)
          VALUES (lower($1), 'company')
          RETURNING user_account_id`,
-        [dto.accountEmail],
-      );
-      const userAccountId = Number(accounts[0].user_account_id);
-      await manager.query(
-        `INSERT INTO public.local_authentication_credential (user_account_id, password_hash)
+          [dto.accountEmail],
+        );
+        const userAccountId = Number(accounts[0].user_account_id);
+        await manager.query(
+          `INSERT INTO public.local_authentication_credential (user_account_id, password_hash)
          VALUES ($1, $2)`,
-        [userAccountId, await bcrypt.hash(dto.initialPassword, 10)],
-      );
-      const companies = await manager.query(
-        `INSERT INTO public.company (
+          [userAccountId, await bcrypt.hash(dto.initialPassword, 10)],
+        );
+        const companies = await manager.query(
+          `INSERT INTO public.company (
            user_account_id, industry_id, company_name, company_type,
            description, website_url, year_established, company_size,
            contact_email, contact_number, contact_person_first_name,
@@ -300,29 +309,30 @@ export class AdminUserManagementService {
            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
            $14, $15, $16, $17, $18, NULL
          ) RETURNING company_id`,
-        [
-          userAccountId,
-          dto.industryId,
-          dto.companyName,
-          dto.companyType,
-          dto.description,
-          dto.websiteUrl ?? null,
-          dto.yearEstablished ?? null,
-          dto.companySize ?? null,
-          dto.contactEmail,
-          dto.contactNumber,
-          dto.contactPersonFirstName,
-          dto.contactPersonMiddleName ?? null,
-          dto.contactPersonLastName,
-          dto.contactPersonExtensionName ?? null,
-          dto.addressLine,
-          dto.addressBarangay,
-          dto.addressDistrict ?? null,
-          dto.addressCity,
-        ],
-      );
-      return Number(companies[0].company_id);
-    });
+          [
+            userAccountId,
+            dto.industryId,
+            dto.companyName,
+            dto.companyType,
+            dto.description,
+            dto.websiteUrl ?? null,
+            dto.yearEstablished ?? null,
+            dto.companySize ?? null,
+            dto.contactEmail,
+            dto.contactNumber,
+            dto.contactPersonFirstName,
+            dto.contactPersonMiddleName ?? null,
+            dto.contactPersonLastName,
+            dto.contactPersonExtensionName ?? null,
+            dto.addressLine,
+            dto.addressBarangay,
+            dto.addressDistrict ?? null,
+            dto.addressCity,
+          ],
+        );
+        return Number(companies[0].company_id);
+      },
+    );
 
     const contactPersonName = [
       dto.contactPersonFirstName,
@@ -421,7 +431,7 @@ export class AdminUserManagementService {
         filter.params,
       ),
       this.dataSource.query(
-        `SELECT p.peso_personnel_id AS "pesoPersonnelId", ua.user_account_id AS "userAccountId",
+        `SELECT p.peso_personnel_id AS "pesoPersonnelId", ua.user_account_id AS "userAccountId", ua.account_code AS "accountCode",
                 concat_ws(' ', p.first_name, p.middle_name, p.last_name, p.extension_name) AS "fullName",
                 ua.email AS "accountEmail", p.employee_id AS "employeeId",
                 ua.created_at AS "createdAt", ua.account_status AS "accountStatus", ua.suspended_until AS "suspendedUntil"
@@ -438,7 +448,7 @@ export class AdminUserManagementService {
   async getPesoPersonnel(pesoPersonnelId: number) {
     this.assertPositiveId(pesoPersonnelId, 'pesoPersonnelId');
     const rows = await this.dataSource.query(
-      `SELECT p.peso_personnel_id AS "pesoPersonnelId", ua.user_account_id AS "userAccountId",
+      `SELECT p.peso_personnel_id AS "pesoPersonnelId", ua.user_account_id AS "userAccountId", ua.account_code AS "accountCode",
               ua.email AS "accountEmail", ua.account_status AS "accountStatus", ua.suspended_until AS "suspendedUntil", ua.created_at AS "createdAt",
               p.first_name AS "firstName", p.middle_name AS "middleName", p.last_name AS "lastName",
               p.extension_name AS "extensionName",
@@ -459,10 +469,16 @@ export class AdminUserManagementService {
     return rows[0];
   }
 
-  async createPesoPersonnel(dto: CreateAdminPesoPersonnelDto) {
+  async createPesoPersonnel(
+    dto: CreateAdminPesoPersonnelDto,
+    actorAccountId: number,
+  ) {
     this.assertPastBirthDate(dto.birthDate);
-    const pesoPersonnelId = await this.dataSource.transaction(
-      async (manager) => {
+    const pesoPersonnelId = await withStatusActor(
+      this.dataSource,
+      actorAccountId,
+      async (runner) => {
+        const manager = runner.manager;
         const duplicate = await manager.query(
           `SELECT 1
            WHERE EXISTS (
@@ -819,5 +835,4 @@ export class AdminUserManagementService {
       message: `Account status transition ${from} -> ${to} is not allowed.`,
     });
   }
-
 }

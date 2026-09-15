@@ -1,11 +1,14 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Search, SlidersHorizontal, ChevronLeft, ChevronRight, Eye, Trash2 } from 'lucide-react'
+import { Search, SlidersHorizontal, Eye, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { EmployerHero } from '../components/EmployerHero'
+import { DataTable, TABLE_COLUMN_WIDTHS, type DataTableColumn } from '../../../components/DataTable'
+import { StatusBadge, TableActions, TableCellStack } from '../../../components/TablePrimitives'
 import { employerService } from '../services/employer.service'
 import type { Applicant } from '../types/employer.types'
 import styles from './ApplicantsPage.module.css'
 import { ConfirmDeleteModal } from '../../../components/feedback/ConfirmDeleteModal'
+import { TablePagination } from '../../../components/TablePagination'
 import { useToastStore } from '../../../stores/useToastStore'
 import { getErrorMessage } from '../../../utils/error-message'
 import { openReferralForReview } from '../services/employer-review-flow'
@@ -38,6 +41,12 @@ export function ApplicantsPage() {
   // Extract unique values for filter dropdowns
   const uniqueStatuses = ['All', 'For Review', 'Under Review', 'For Interview']
 
+  const reviewSummary = useMemo(() => ({
+    forReview: applicants.filter((app) => app.reviewStatus === 'For Review').length,
+    underReview: applicants.filter((app) => app.reviewStatus === 'Under Review').length,
+    forInterview: applicants.filter((app) => app.reviewStatus === 'For Interview').length,
+  }), [applicants])
+
   const filteredApplicants = useMemo(() => {
     return applicants.filter((app) => {
       let matches = true
@@ -65,14 +74,6 @@ export function ApplicantsPage() {
   const indexOfFirstItem = indexOfLastItem - itemsPerPage
   const currentItems = filteredApplicants.slice(indexOfFirstItem, indexOfLastItem)
 
-  const handlePrevPage = () => {
-    if (currentPage > 1) setCurrentPage(currentPage - 1)
-  }
-
-  const handleNextPage = () => {
-    if (currentPage < totalPages) setCurrentPage(currentPage + 1)
-  }
-
   const handleOpenReferral = async (referral: Applicant) => {
     await openReferralForReview(referral, {
       markUnderReview: employerService.markApplicantUnderReview,
@@ -81,13 +82,14 @@ export function ApplicantsPage() {
     })
   }
 
-  if (isLoading) {
-    return (
-      <main className={styles.pageContainer}>
-        <div style={{ padding: '2rem', textAlign: 'center' }}>Loading Referrals...</div>
-      </main>
-    )
-  }
+  const columns: DataTableColumn<Applicant>[] = [
+    { key: 'applicant', header: 'Applicant', minWidth: TABLE_COLUMN_WIDTHS.identity, render: (app) => <TableCellStack primary={app.name} secondary={app.accountCode} code /> },
+    { key: 'academic', header: 'Academic Information', minWidth: TABLE_COLUMN_WIDTHS.academic, render: (app) => <TableCellStack primary={app.school} secondary={app.course} truncateSecondary /> },
+    { key: 'opportunity', header: 'Opportunity', minWidth: TABLE_COLUMN_WIDTHS.opportunity, render: (app) => app.opportunityTitle },
+    { key: 'timeline', header: 'Timeline', minWidth: TABLE_COLUMN_WIDTHS.timeline, noWrap: true, render: (app) => <TableCellStack primary={`Applied: ${app.applicationDate || '—'}`} secondary={`Referred: ${app.referralDate || '—'}`} /> },
+    { key: 'status', header: 'Status', width: TABLE_COLUMN_WIDTHS.status, align: 'center', render: (app) => <StatusBadge value={app.reviewStatus} /> },
+    { key: 'actions', header: 'Actions', width: TABLE_COLUMN_WIDTHS.actions, align: 'center', headerAlign: 'center', render: (app) => <TableActions><button className={styles.reviewBtn} type="button" onClick={() => void handleOpenReferral(app)} aria-label={`Review ${app.name}'s referral`}><Eye size={16} aria-hidden="true" /><span>Review</span></button></TableActions> },
+  ]
 
   return (
     <main className={styles.pageContainer}>
@@ -98,6 +100,12 @@ export function ApplicantsPage() {
       />
 
       <section className={styles.mainContent}>
+        <SummaryCards items={[
+          ['For Review Referrals', reviewSummary.forReview],
+          ['Under Review Referrals', reviewSummary.underReview],
+          ['For Interview Referrals', reviewSummary.forInterview],
+        ]} />
+
         <div className={styles.toolbar}>
           <div className={styles.searchBox}>
             <Search size={18} color="#160e6f" />
@@ -105,7 +113,7 @@ export function ApplicantsPage() {
               type="text" 
               placeholder="Search referrals..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1) }}
             />
           </div>
           <div className={styles.statusFilter}>
@@ -116,98 +124,7 @@ export function ApplicantsPage() {
           </div>
         </div>
 
-        <div className={styles.tableCard}>
-          <div className={styles.tableWrapper}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Student Name</th>
-                  <th>Job Title</th>
-                  <th>Program / Strand</th>
-                  <th>Application Date</th>
-                  <th>Referral Date</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {currentItems.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} style={{ textAlign: 'center', padding: '24px' }}>No referrals found.</td>
-                  </tr>
-                ) : (
-                  currentItems.map((app) => (
-                    <tr key={app.id}>
-                      <td>{app.name}</td>
-                      <td>{app.opportunityTitle}</td>
-                      <td>{app.course}</td>
-                      <td>{app.applicationDate}</td>
-                      <td>{app.referralDate}</td>
-                      <td>
-                        <span className={`${styles.statusPill} ${
-                          app.reviewStatus === 'For Interview' ? styles.underReview :
-                          ['Under Review', 'For Review'].includes(app.reviewStatus ?? '') ? styles.underReview :
-                          ''
-                        }`}>
-                          {app.reviewStatus}
-                        </span>
-                      </td>
-                      <td>
-                        <div className={styles.actionButtons}>
-                          <button className={styles.reviewBtn} onClick={() => void handleOpenReferral(app)}>
-                            <Eye size={16} />
-                            <span>Review</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className={styles.paginationRow}>
-          <div className={styles.leftControls}>
-            <span className={styles.viewLabel}>View</span>
-            <div className={styles.viewSelectBox}>
-              <select 
-                className={styles.viewSelect}
-                value={itemsPerPage}
-                onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value))
-                  setCurrentPage(1)
-                }}
-              >
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={15}>15</option>
-              </select>
-            </div>
-            <span className={styles.perPageLabel}>Students per page</span>
-          </div>
-
-          <div className={styles.pagination}>
-            <button 
-              className={styles.pageBtn} 
-              onClick={handlePrevPage}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <button className={`${styles.pageBtn} ${styles.active}`}>
-              {currentPage}
-            </button>
-            <button 
-              className={styles.pageBtn} 
-              onClick={handleNextPage}
-              disabled={currentPage === totalPages}
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
+        <DataTable ariaLabel="Referrals awaiting company review" columns={columns} rows={currentItems} rowKey={(app) => app.id} minWidth={1420} loading={isLoading} emptyMessage="No referrals are awaiting review." filteredEmptyMessage="No referrals match the selected filters." hasActiveFilters={Boolean(searchQuery.trim()) || statusFilter !== 'All'} footer={<TablePagination page={currentPage} pageSize={itemsPerPage} totalRecords={filteredApplicants.length} onPageChange={setCurrentPage} onPageSizeChange={(value) => { setItemsPerPage(value); setCurrentPage(1) }} />} />
       </section>
     </main>
   )
@@ -228,6 +145,20 @@ export function ReferralsHistoryPage() {
     employerService.getReferralHistory().then(setReferrals)
   }, [])
 
+  const historySummary = useMemo(() => ({
+    total: referrals.length,
+    active: referrals.filter((referral) =>
+      REFERRAL_ONGOING_STATUSES.includes(
+        referral.historyStatus ?? 'For Review (Employer)',
+      ),
+    ).length,
+    closed: referrals.filter((referral) =>
+      REFERRAL_CLOSED_STATUSES.includes(
+        referral.historyStatus ?? 'For Review (Employer)',
+      ),
+    ).length,
+  }), [referrals])
+
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase()
     return referrals.filter((referral) => {
@@ -235,7 +166,7 @@ export function ReferralsHistoryPage() {
         `${referral.name} ${referral.opportunityTitle} ${referral.course} ${referral.historyStatus}`
           .toLowerCase().includes(query)
       const matchesStatus = status === 'All' ||
-        (status === 'Ongoing' && REFERRAL_ONGOING_STATUSES.includes(referral.historyStatus ?? 'For Review (Employer)')) ||
+        (status === 'Active' && REFERRAL_ONGOING_STATUSES.includes(referral.historyStatus ?? 'For Review (Employer)')) ||
         (status === 'Closed' && REFERRAL_CLOSED_STATUSES.includes(referral.historyStatus ?? 'For Review (Employer)')) ||
         referral.historyStatus === status
       return matchesSearch && matchesStatus
@@ -263,26 +194,41 @@ export function ReferralsHistoryPage() {
       setIsDeleting(false)
     }
   }
+  const columns: DataTableColumn<Applicant>[] = [
+    { key: 'applicant', header: 'Applicant', minWidth: TABLE_COLUMN_WIDTHS.identity, render: (referral) => <TableCellStack primary={referral.name} secondary={referral.accountCode} code /> },
+    { key: 'academic', header: 'Academic Information', minWidth: TABLE_COLUMN_WIDTHS.academic, render: (referral) => <TableCellStack primary={referral.school} secondary={referral.course} truncateSecondary /> },
+    { key: 'opportunity', header: 'Opportunity', minWidth: TABLE_COLUMN_WIDTHS.opportunity, render: (referral) => referral.opportunityTitle },
+    { key: 'timeline', header: 'Timeline', minWidth: TABLE_COLUMN_WIDTHS.timeline, noWrap: true, render: (referral) => <TableCellStack primary={`Applied: ${referral.applicationDate || '—'}`} secondary={`Referred: ${referral.referralDate || '—'}`} /> },
+    { key: 'status', header: 'Status', width: TABLE_COLUMN_WIDTHS.status, align: 'center', render: (referral) => <StatusBadge value={referral.historyStatus} /> },
+    { key: 'actions', header: 'Actions', width: TABLE_COLUMN_WIDTHS.actions, align: 'center', headerAlign: 'center', render: (referral) => <TableActions><button className={styles.reviewBtn} type="button" onClick={() => navigate(`/employer/referrals-history/${referral.id}`)} aria-label={`View ${referral.name}'s referral`}><Eye size={16} aria-hidden="true" />View</button>{referral.canHide && <button className={styles.deleteBtn} type="button" onClick={() => setDeleteTarget(referral)} aria-label={`Delete ${referral.name}'s referral`}><Trash2 size={16} aria-hidden="true" />Delete</button>}</TableActions> },
+  ]
 
   return <main className={styles.pageContainer}>
     <EmployerHero title="Referrals History" subtitle="View the complete lifecycle of every referral sent to your company." comfortableSpacing />
     <section className={styles.mainContent}>
+      <SummaryCards items={[
+        ['Total Referrals', historySummary.total],
+        ['Active Referrals', historySummary.active],
+        ['Closed Referrals', historySummary.closed],
+      ]} />
+
       <div className={styles.toolbar}>
         <div className={styles.searchBox}><Search size={18} color="#160e6f" /><input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1) }} placeholder="Search referrals..." /></div>
-        <div className={styles.statusFilter}><SlidersHorizontal size={18} /><select value={status} onChange={(event) => { setStatus(event.target.value); setPage(1) }} aria-label="Filter referral history by status"><option value="All">All</option><option>Ongoing</option><option>Closed</option>{REFERRAL_HISTORY_STATUSES.map((value) => <option key={value}>{value}</option>)}</select></div>
+        <div className={styles.statusFilter}><SlidersHorizontal size={18} /><select value={status} onChange={(event) => { setStatus(event.target.value); setPage(1) }} aria-label="Filter referral history by status"><option value="All">All</option><option>Active</option><option>Closed</option>{REFERRAL_HISTORY_STATUSES.map((value) => <option key={value}>{value}</option>)}</select></div>
       </div>
-      <div className={styles.tableCard}><div className={styles.tableWrapper}><table className={styles.table}>
-        <thead><tr><th>Student Name</th><th>Job Title</th><th>Program / Strand</th><th>Application Date</th><th>Referral Date</th><th>Status</th><th>Action</th></tr></thead>
-        <tbody>{rows.length === 0 ? <tr><td colSpan={7} style={{ textAlign: 'center', padding: 24 }}>No referral history found.</td></tr> : rows.map((referral) => <tr key={referral.id}>
-          <td>{referral.name}</td><td>{referral.opportunityTitle}</td><td>{referral.course}</td><td>{referral.applicationDate}</td><td>{referral.referralDate}</td>
-          <td><span className={`${styles.statusPill} ${REFERRAL_CLOSED_STATUSES.includes(referral.historyStatus ?? 'For Review (Employer)') ? styles.rejected : styles.underReview}`}>{referral.historyStatus}</span></td>
-          <td><div className={styles.actionButtons}><button className={styles.reviewBtn} onClick={() => navigate(`/employer/referrals-history/${referral.id}`)}><Eye size={16} />View</button>{referral.canHide && <button className={styles.deleteBtn} onClick={() => setDeleteTarget(referral)}><Trash2 size={16} />Delete</button>}</div></td>
-        </tr>)}</tbody>
-      </table></div></div>
-      <div className={styles.paginationRow}><div className={styles.leftControls}><span className={styles.viewLabel}>View</span><div className={styles.viewSelectBox}><select className={styles.viewSelect} value={perPage} onChange={(event) => { setPerPage(Number(event.target.value)); setPage(1) }}><option value={5}>5</option><option value={10}>10</option><option value={15}>15</option></select></div><span className={styles.perPageLabel}>Students per page</span></div><div className={styles.pagination}><button className={styles.pageBtn} disabled={page === 1} onClick={() => setPage((current) => current - 1)}><ChevronLeft size={16} /></button><button className={`${styles.pageBtn} ${styles.active}`}>{page}</button><button className={styles.pageBtn} disabled={page === totalPages} onClick={() => setPage((current) => current + 1)}><ChevronRight size={16} /></button></div></div>
+      <DataTable ariaLabel="Referral history" columns={columns} rows={rows} rowKey={(referral) => referral.id} minWidth={1420} emptyMessage="No referral history is available yet." filteredEmptyMessage="No referrals match the selected filters." hasActiveFilters={Boolean(search.trim()) || status !== 'All'} footer={<TablePagination page={page} pageSize={perPage} totalRecords={filtered.length} onPageChange={setPage} onPageSizeChange={(value) => { setPerPage(value); setPage(1) }} />} />
     </section>
     {deleteTarget && <ConfirmDeleteModal subject={`${deleteTarget.name}'s referral`} isDeleting={isDeleting} onClose={() => setDeleteTarget(null)} onConfirm={() => void deleteReferral()} />}
   </main>
+}
+
+function SummaryCards({ items }: { items: Array<[string, number]> }) {
+  return <div className={styles.summaryGrid}>
+    {items.map(([label, value]) => <article className={styles.summaryCard} key={label}>
+      <h2>{label}</h2>
+      <p>{String(value).padStart(2, '0')}</p>
+    </article>)}
+  </div>
 }
 
 export default ApplicantsPage

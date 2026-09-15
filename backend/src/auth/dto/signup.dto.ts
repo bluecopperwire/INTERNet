@@ -9,6 +9,7 @@ import {
 } from 'class-validator';
 import {
   IsStrongPassword,
+  IsValidDistrict,
   IsValidContactNumber,
 } from '../../common/validation/input-validation';
 
@@ -23,7 +24,7 @@ export class StudentProfileDto {
   @IsOptional() @IsString() linkedinUrl?: string;
   @IsString() @IsNotEmpty() addressLine: string;
   @IsString() @IsNotEmpty() addressBarangay: string;
-  @IsString() @IsNotEmpty() addressDistrict: string;
+  @IsString() @IsNotEmpty() @IsValidDistrict() addressDistrict: string;
   @IsString() @IsNotEmpty() addressCity: string;
   @IsIn(['walk_in', 'online', 'phone_call', 'school'])
   inquiryMethod: 'walk_in' | 'online' | 'phone_call' | 'school';

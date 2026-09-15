@@ -29,6 +29,9 @@ import detailStyles from '../../employer/pages/ReviewApplicantPage.module.css'
 import { API_BASE_URL } from '../../../services/api'
 import { getApplicantReviewDetail, openApplicantForReview } from '../services/qcpeso-review-flow'
 import { ConfirmDeleteModal } from '../../../components/feedback/ConfirmDeleteModal'
+import { DataTable, TABLE_COLUMN_WIDTHS, type DataTableColumn } from '../../../components/DataTable'
+import { StatusBadge, TableActions, TableCellStack } from '../../../components/TablePrimitives'
+import { TablePagination } from '../../../components/TablePagination'
 import {
   APPLICATION_CLOSED_STATUSES,
   APPLICATION_HISTORY_STATUSES,
@@ -105,13 +108,6 @@ async function handleDownloadFile(filePath: string, fileName: string) {
   }
 }
 
-function statusClass(status: string) {
-  if (status.includes('Accepted')) return tableStyles.accepted
-  if (['Rejected', 'Withdrawn', 'Expired', 'Declined'].some((value) => status.includes(value))) return tableStyles.rejected
-  if (['For Review', 'Under Review', 'Interview Scheduled', 'Offer Received', 'Endorsed'].includes(status)) return tableStyles.underReview
-  return ''
-}
-
 function detailStatusClass(status: string) {
   if (status === 'Accepted') return detailStyles.accepted
   if (['Rejected', 'Withdrawn', 'Expired', 'Offer Declined'].includes(status)) return detailStyles.rejected
@@ -119,38 +115,14 @@ function detailStatusClass(status: string) {
   return ''
 }
 
-function Pagination({ itemName, page, totalPages, perPage, onPageChange, onPerPageChange }: {
-  itemName: string
+function Pagination({ page, totalRecords, perPage, onPageChange, onPerPageChange }: {
   page: number
-  totalPages: number
+  totalRecords: number
   perPage: number
   onPageChange: (page: number) => void
   onPerPageChange: (perPage: number) => void
 }) {
-  return (
-    <div className={tableStyles.paginationRow}>
-      <div className={tableStyles.leftControls}>
-        <span className={tableStyles.viewLabel}>View</span>
-        <div className={tableStyles.viewSelectBox}>
-          <select className={tableStyles.viewSelect} value={perPage} onChange={(event) => onPerPageChange(Number(event.target.value))}>
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={15}>15</option>
-          </select>
-        </div>
-        <span className={tableStyles.perPageLabel}>{itemName} per page</span>
-      </div>
-      <div className={tableStyles.pagination}>
-        <button className={tableStyles.pageBtn} disabled={page === 1} onClick={() => onPageChange(page - 1)}>
-          ‹
-        </button>
-        <button className={`${tableStyles.pageBtn} ${tableStyles.active}`}>{page}</button>
-        <button className={tableStyles.pageBtn} disabled={page === totalPages} onClick={() => onPageChange(page + 1)}>
-          ›
-        </button>
-      </div>
-    </div>
-  )
+  return <TablePagination page={page} pageSize={perPage} totalRecords={totalRecords} onPageChange={onPageChange} onPageSizeChange={onPerPageChange} />
 }
 
 export function ReviewApplicantsPage() {
@@ -182,8 +154,15 @@ export function ReviewApplicantsPage() {
       onMutationError: (error) => toast.error(getErrorMessage(error, 'Failed to start applicant review.')),
     })
   }
-  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
   const displayed = filtered.slice((page - 1) * perPage, page * perPage)
+  const columns: DataTableColumn<QCPesoReviewApplicant>[] = [
+    { key: 'applicant', header: 'Applicant', minWidth: TABLE_COLUMN_WIDTHS.identity, render: (record) => <TableCellStack primary={record.studentName} secondary={record.accountCode} code /> },
+    { key: 'academic', header: 'Academic Information', minWidth: TABLE_COLUMN_WIDTHS.academic, render: (record) => <TableCellStack primary={record.school} secondary={record.program} truncateSecondary /> },
+    { key: 'opportunity', header: 'Opportunity', minWidth: TABLE_COLUMN_WIDTHS.opportunity, render: (record) => <TableCellStack primary={record.jobTitle} secondary={record.company} /> },
+    { key: 'submitted', header: 'Submitted', width: TABLE_COLUMN_WIDTHS.registered, minWidth: TABLE_COLUMN_WIDTHS.registered, noWrap: true, render: (record) => record.dateApplied },
+    { key: 'status', header: 'Status', width: TABLE_COLUMN_WIDTHS.status, align: 'center', render: (record) => <StatusBadge value={record.status} /> },
+    { key: 'actions', header: 'Actions', width: TABLE_COLUMN_WIDTHS.actions, align: 'center', headerAlign: 'center', render: (record) => <TableActions><button className={tableStyles.reviewBtn} type="button" onClick={() => void handleOpenApplicant(record)} aria-label={`Review ${record.studentName}'s application`}><Eye size={16} aria-hidden="true" />Review</button></TableActions> },
+  ]
 
   return (
     <main className={tableStyles.pageContainer}>
@@ -202,46 +181,7 @@ export function ReviewApplicantsPage() {
             />
           </label>
         </div>
-        <div className={tableStyles.tableCard}>
-          <div className={tableStyles.tableWrapper}>
-            <table className={tableStyles.table}>
-              <thead>
-                <tr>
-                  <th>Student Name</th>
-                  <th>Company</th>
-                  <th>Job Title</th>
-                  <th>Program / Strand</th>
-                  <th>Application Date</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {displayed.map((record) => (
-                  <tr key={record.id}>
-                    <td>{record.studentName}</td>
-                    <td>{record.company}</td>
-                    <td>{record.jobTitle}</td>
-                    <td>{record.program}</td>
-                    <td>{record.dateApplied}</td>
-                    <td>
-                      <div className={tableStyles.actionButtons}>
-                        <button className={tableStyles.reviewBtn} onClick={() => void handleOpenApplicant(record)}><Eye size={16} />Review</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {displayed.length === 0 && (
-                  <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', padding: 24 }}>
-                      No applicants found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <Pagination itemName="Students" page={page} totalPages={totalPages} perPage={perPage} onPageChange={setPage} onPerPageChange={(value) => { setPerPage(value); setPage(1) }} />
+        <DataTable ariaLabel="Applications awaiting QC PESO review" columns={columns} rows={displayed} rowKey={(record) => record.id} minWidth={1360} emptyMessage="No applications are awaiting review." filteredEmptyMessage="No applicants match your search." hasActiveFilters={Boolean(search.trim())} footer={<Pagination page={page} totalRecords={filtered.length} perPage={perPage} onPageChange={setPage} onPerPageChange={(value) => { setPerPage(value); setPage(1) }} />} />
       </section>
     </main>
   )
@@ -262,13 +202,27 @@ export function ApplicationsHistoryPage() {
     qcpesoService.getApplicationHistory().then(setRecords)
   }, [])
 
+  const historySummary = useMemo(() => ({
+    total: records.length,
+    active: records.filter((record) =>
+      APPLICATION_ONGOING_STATUSES.includes(
+        record.historyStatus ?? 'For Review (QC PESO)',
+      ),
+    ).length,
+    closed: records.filter((record) =>
+      APPLICATION_CLOSED_STATUSES.includes(
+        record.historyStatus ?? 'For Review (QC PESO)',
+      ),
+    ).length,
+  }), [records])
+
   const filtered = useMemo(
     () =>
       records.filter(
         (record) =>
           (record.studentName + record.company + record.jobTitle + record.program).toLowerCase().includes(search.toLowerCase()) &&
           (response === 'All' ||
-            (response === 'Ongoing' && APPLICATION_ONGOING_STATUSES.includes(record.historyStatus ?? 'For Review (QC PESO)')) ||
+            (response === 'Active' && APPLICATION_ONGOING_STATUSES.includes(record.historyStatus ?? 'For Review (QC PESO)')) ||
             (response === 'Closed' && APPLICATION_CLOSED_STATUSES.includes(record.historyStatus ?? 'For Review (QC PESO)')) ||
             record.historyStatus === response),
       ),
@@ -289,13 +243,33 @@ export function ApplicationsHistoryPage() {
       setIsDeleting(false)
     }
   }
-  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
   const displayed = filtered.slice((page - 1) * perPage, page * perPage)
+  const columns: DataTableColumn<QCPesoReviewApplicant>[] = [
+    { key: 'applicant', header: 'Applicant', minWidth: TABLE_COLUMN_WIDTHS.identity, render: (record) => <TableCellStack primary={record.studentName} secondary={record.accountCode} code /> },
+    { key: 'academic', header: 'Academic Information', minWidth: TABLE_COLUMN_WIDTHS.academic, render: (record) => <TableCellStack primary={record.school} secondary={record.program} truncateSecondary /> },
+    { key: 'opportunity', header: 'Opportunity', minWidth: TABLE_COLUMN_WIDTHS.opportunity, render: (record) => <TableCellStack primary={record.jobTitle} secondary={record.company} /> },
+    { key: 'timeline', header: 'Timeline', width: TABLE_COLUMN_WIDTHS.timeline, minWidth: TABLE_COLUMN_WIDTHS.timeline, noWrap: true, render: (record) => <TableCellStack primary={`Applied: ${record.dateApplied}`} secondary={`Referred: ${record.referralDate || '—'}`} /> },
+    { key: 'status', header: 'Status', width: TABLE_COLUMN_WIDTHS.status, align: 'center', render: (record) => <StatusBadge value={record.historyStatus} /> },
+    { key: 'actions', header: 'Actions', width: TABLE_COLUMN_WIDTHS.actions, align: 'center', headerAlign: 'center', render: (record) => <TableActions><button className={tableStyles.reviewBtn} type="button" onClick={() => navigate(`/qcpeso/manage-applicants/history/${record.id}`)} aria-label={`View ${record.studentName}'s application`}><Eye size={16} aria-hidden="true" />View</button>{record.canHide && <button className={tableStyles.deleteBtn} type="button" onClick={() => setDeleteTarget(record)} aria-label={`Delete ${record.studentName}'s application`}><Trash2 size={16} aria-hidden="true" />Delete</button>}</TableActions> },
+  ]
 
   return (
     <main className={tableStyles.pageContainer}>
       <QCPesoHero title="Applications History" subtitle="View the complete lifecycle of every student application." />
       <section className={tableStyles.mainContent}>
+        <div className={tableStyles.summaryGrid}>
+          {[
+            ['Total Applications', historySummary.total],
+            ['Active Applications', historySummary.active],
+            ['Closed Applications', historySummary.closed],
+          ].map(([label, value]) => (
+            <article className={tableStyles.summaryCard} key={label}>
+              <h2>{label}</h2>
+              <p>{String(value).padStart(2, '0')}</p>
+            </article>
+          ))}
+        </div>
+
         <div className={tableStyles.toolbar}>
           <label className={tableStyles.searchBox}>
             <Search size={18} />
@@ -309,57 +283,13 @@ export function ApplicationsHistoryPage() {
             <SlidersHorizontal size={18} />
             <select value={response} onChange={(event) => { setResponse(event.target.value); setPage(1) }}>
               <option value="All">All</option>
-              <option>Ongoing</option>
+              <option>Active</option>
               <option>Closed</option>
               {APPLICATION_HISTORY_STATUSES.map((value) => <option key={value}>{value}</option>)}
             </select>
           </label>
         </div>
-        <div className={tableStyles.tableCard}>
-          <div className={tableStyles.tableWrapper}>
-            <table className={`${tableStyles.table} ${tableStyles.applicationsHistoryTable}`}>
-              <thead>
-                <tr>
-                  <th>Student Name</th>
-                  <th>Company</th>
-                  <th>Job Title</th>
-                  <th>Program / Strand</th>
-                  <th>Application Date</th>
-                  <th>Referral Date</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {displayed.map((record) => (
-                  <tr key={record.id}>
-                    <td>{record.studentName}</td>
-                    <td>{record.company}</td>
-                    <td>{record.jobTitle}</td>
-                    <td>{record.program}</td>
-                    <td>{record.dateApplied}</td>
-                    <td>{record.referralDate}</td>
-                    <td><span className={`${tableStyles.statusPill} ${statusClass(record.historyStatus ?? 'For Review (QC PESO)')}`}>{record.historyStatus}</span></td>
-                    <td>
-                      <div className={tableStyles.actionButtons}>
-                        <button className={tableStyles.reviewBtn} onClick={() => navigate(`/qcpeso/manage-applicants/history/${record.id}`)}><Eye size={16} />View</button>
-                        {record.canHide && <button className={tableStyles.deleteBtn} onClick={() => setDeleteTarget(record)}><Trash2 size={16} />Delete</button>}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {displayed.length === 0 && (
-                  <tr>
-                    <td colSpan={8} style={{ textAlign: 'center', padding: 24 }}>
-                      No applications found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <Pagination itemName="Students" page={page} totalPages={totalPages} perPage={perPage} onPageChange={setPage} onPerPageChange={(value) => { setPerPage(value); setPage(1) }} />
+        <DataTable ariaLabel="Application history" columns={columns} rows={displayed} rowKey={(record) => record.id} minWidth={1420} emptyMessage="No application history is available yet." filteredEmptyMessage="No applications match the selected filters." hasActiveFilters={Boolean(search.trim()) || response !== 'All'} footer={<Pagination page={page} totalRecords={filtered.length} perPage={perPage} onPageChange={setPage} onPerPageChange={(value) => { setPerPage(value); setPage(1) }} />} />
       </section>
       {deleteTarget && <ConfirmDeleteModal subject={`${deleteTarget.studentName}'s application`} isDeleting={isDeleting} onClose={() => setDeleteTarget(null)} onConfirm={() => void handleDelete()} />}
     </main>

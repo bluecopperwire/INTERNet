@@ -19,7 +19,7 @@ import { YearLevel } from '../../common/enums/year-level.enum';
 import { CompanyType } from '../../common/enums/company-type.enum';
 import { InquiryMethod } from '../../common/enums/student-inquiry-method.enum';
 import { StudentResponse } from '../../common/enums/student-response.enum';
-import { IsValidContactNumber } from '../../common/validation/input-validation';
+import { IsValidContactNumber, IsValidDistrict } from '../../common/validation/input-validation';
 
 // DTO layer: request/response contract for the API, not the database model.
 export class StudentAcademicProfileDto {
@@ -120,6 +120,7 @@ export class StudentProfileUpdateDto {
 
   @IsString()
   @IsNotEmpty()
+  @IsValidDistrict()
   addressDistrict!: string;
 
   @IsString()

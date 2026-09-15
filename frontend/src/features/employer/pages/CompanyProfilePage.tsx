@@ -4,12 +4,8 @@ import {
   Building2,
   User,
   Mail,
-  Phone,
-  Globe,
-  Calendar,
-  Users,
   Camera,
-  Tag,
+  LockKeyhole,
 } from 'lucide-react'
 import { EmployerHero } from '../components/EmployerHero'
 import { employerService } from '../services/employer.service'
@@ -17,12 +13,14 @@ import type { CompanyProfile } from '../types/employer.types'
 import styles from './CompanyProfilePage.module.css'
 import { useNavigate } from 'react-router-dom'
 import { useToastStore } from '../../../stores/useToastStore'
+import { districtAddressPart } from '../../../utils/district'
+import { useAuthStore } from '../../../stores/useAuthStore'
 
 const formatAddress = (profile: CompanyProfile) =>
   [
     profile.address_line,
     profile.address_barangay,
-    profile.address_district,
+    districtAddressPart(profile.address_district),
     profile.address_city,
   ]
     .filter(Boolean)
@@ -44,6 +42,7 @@ export function CompanyProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
   const toast = useToastStore()
+  const account = useAuthStore((state) => state.user)
 
   const fetchProfile = async () => {
     setIsLoading(true)
@@ -183,37 +182,30 @@ export function CompanyProfilePage() {
           >
             <div className={styles.detailsList}>
               <DetailItem
-                icon={<Building2 size={20} />}
                 label="Company Name"
                 value={profile.company_name}
               />
               <DetailItem
-                icon={<Tag size={20} />}
                 label="Company Type"
                 value={profile.company_type}
               />
               <DetailItem
-                icon={<Tag size={20} />}
                 label="Industry"
                 value={profile.industry}
               />
               <DetailItem
-                icon={<MapPin size={20} />}
                 label="Company Address"
                 value={formatAddress(profile)}
               />
               <DetailItem
-                icon={<Users size={20} />}
                 label="Company Size"
                 value={profile.company_size ?? 'Not provided'}
               />
               <DetailItem
-                icon={<Calendar size={20} />}
                 label="Company Year Established"
                 value={profile.year_established ?? 'Not provided'}
               />
               <DetailItem
-                icon={<Globe size={20} />}
                 label="Website URL"
                 value={profile.website_url ?? 'Not provided'}
               />
@@ -223,20 +215,24 @@ export function CompanyProfilePage() {
           <ProfileSection icon={<User size={24} />} title="Contact Information">
             <div className={styles.detailsList}>
               <DetailItem
-                icon={<User size={20} />}
                 label="Contact Person"
                 value={formatContactPerson(profile)}
               />
               <DetailItem
-                icon={<Mail size={20} />}
                 label="Contact Email"
                 value={profile.contact_email}
               />
               <DetailItem
-                icon={<Phone size={20} />}
                 label="Contact Number"
                 value={profile.contact_number}
               />
+            </div>
+          </ProfileSection>
+
+          <ProfileSection icon={<LockKeyhole size={24} />} title="Account Information">
+            <div className={styles.detailsList}>
+              <DetailItem label="Account Email Address" value={account?.email ?? 'Not provided'} />
+              <DetailItem label="Account User Code" value={account?.accountCode || 'Not provided'} />
             </div>
           </ProfileSection>
         </div>
@@ -268,21 +264,16 @@ function ProfileSection({
 }
 
 function DetailItem({
-  icon,
   label,
   value,
 }: {
-  icon: React.ReactNode
   label: string
   value: string
 }) {
   return (
     <div className={styles.detailItem}>
-      <div className={styles.itemLabelGroup}>
-        <span className={styles.itemIcon}>{icon}</span>
-        <span className={styles.itemLabel}>{label}</span>
-      </div>
-      <span className={styles.itemValue}>{value}</span>
+      <span className={styles.itemLabel}>{label}</span>
+      <strong className={styles.itemValue}>{value}</strong>
     </div>
   )
 }

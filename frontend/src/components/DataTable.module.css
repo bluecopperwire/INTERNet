@@ -1,0 +1,254 @@
+.root {
+  width: 100%;
+  color: #26324a;
+}
+
+.desktopViewport {
+  width: 100%;
+  max-height: clamp(360px, 68vh, 720px);
+  overflow-x: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  border: 1px solid rgba(22, 14, 111, 0.18);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 5px 16px rgba(22, 14, 111, 0.06);
+  scrollbar-color: rgba(22, 14, 111, 0.35) transparent;
+}
+
+.table {
+  width: 100%;
+  min-width: var(--data-table-min-width, 860px);
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto;
+}
+
+.table th {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  padding: 15px 18px;
+  border-bottom: 2px solid #21167b;
+  color: #160e6f;
+  background: #f7f8fc;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.table thead {
+  position: relative;
+  z-index: 2;
+}
+
+.table td {
+  padding: 16px 18px;
+  border-bottom: 1px solid #e4e6ef;
+  color: #26324a;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.45;
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.table tbody tr:not(.loadingRow):hover td {
+  background: #fbfbfe;
+}
+
+.alignLeft { text-align: left; }
+.alignCenter { text-align: center; }
+.alignRight { text-align: right; }
+.noWrap { white-space: nowrap; }
+
+.footer {
+  padding-top: 24px;
+}
+
+.compact .table th {
+  padding: 13px 16px;
+}
+
+.compact .table td {
+  padding: 14px 16px;
+}
+
+.modal .desktopViewport {
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.modal .table th,
+.modal .table td {
+  padding: 13px 15px;
+}
+
+.emptyState {
+  height: 112px;
+  color: #77738e !important;
+  text-align: center !important;
+}
+
+.loadingRow td {
+  height: 64px;
+}
+
+.skeleton,
+.mobileSkeleton,
+.mobileSkeletonShort {
+  display: block;
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #eef0f5 25%, #f7f8fb 50%, #eef0f5 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.35s linear infinite;
+}
+
+.skeleton { width: min(100%, 150px); }
+
+.errorState {
+  display: flex;
+  min-height: 104px;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid #e45058;
+  border-radius: 10px;
+  color: #a91e26;
+  background: #fff6f6;
+}
+
+.errorState > div {
+  display: grid;
+  flex: 1;
+  gap: 3px;
+}
+
+.errorState strong { color: #8d1d24; font-size: 14px; }
+.errorState span { font-size: 13px; }
+
+.errorState button {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  color: inherit;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mobileList { display: none; }
+
+.print .desktopViewport {
+  max-height: none;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.print .table {
+  min-width: 0;
+}
+
+.print .table th {
+  position: static;
+}
+
+@keyframes shimmer {
+  to { background-position: -200% 0; }
+}
+
+@media (max-width: 720px) {
+  .root:not(.print) .desktopViewport { display: none; }
+
+  .mobileList {
+    display: grid;
+    gap: 12px;
+  }
+
+  .mobileCard,
+  .mobileEmpty {
+    border: 1px solid rgba(22, 14, 111, 0.17);
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(22, 14, 111, 0.05);
+  }
+
+  .mobileCard {
+    display: grid;
+    gap: 0;
+    padding: 4px 16px;
+  }
+
+  .mobileField {
+    display: grid;
+    grid-template-columns: minmax(105px, 38%) minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #ececf3;
+  }
+
+  .mobileField:last-child { border-bottom: 0; }
+
+  .mobileLabel {
+    color: #77738e;
+    font-size: 11px;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    line-height: 1.45;
+    text-transform: uppercase;
+  }
+
+  .mobileValue {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: 13px;
+  }
+
+  .mobileValue.alignCenter,
+  .mobileValue.alignRight {
+    text-align: left;
+  }
+
+  .footer {
+    padding-top: 20px;
+  }
+
+  .mobileEmpty {
+    padding: 34px 18px;
+    color: #77738e;
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .mobileSkeleton { width: 82%; margin: 16px 0 8px; }
+  .mobileSkeletonShort { width: 52%; margin: 8px 0 16px; }
+}
+
+@media print {
+  .desktopViewport {
+    max-height: none;
+    overflow: visible;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .table { min-width: 0; }
+  .table th { position: static; }
+  .mobileList { display: none !important; }
+}

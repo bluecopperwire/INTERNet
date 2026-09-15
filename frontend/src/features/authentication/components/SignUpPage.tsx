@@ -13,7 +13,9 @@ import {
 } from '../signup-options'
 import styles from './SignUpPage.module.css'
 import { birthdateMaximum } from '../../../utils/date-only'
+import { DISTRICT_OPTIONS } from '../../../utils/district'
 import {
+  CONTACT_NUMBER_PLACEHOLDER,
   getContactNumberError,
   getPasswordError,
   PASSWORD_REQUIREMENTS,
@@ -271,7 +273,7 @@ function AccountStep({ data, error, onChange, onSubmit }: StepProps) {
           label="Email Address"
           type="email"
           autoComplete="email"
-          placeholder="Enter email address"
+          placeholder="e.g., juan.delacruz@example.com"
           value={data.email}
           onChange={(value) => onChange('email', value)}
         />
@@ -280,7 +282,7 @@ function AccountStep({ data, error, onChange, onSubmit }: StepProps) {
           label="Password"
           type="password"
           autoComplete="new-password"
-          placeholder="Enter password"
+          placeholder="e.g., SecurePass123!"
           hint={PASSWORD_REQUIREMENTS}
           value={data.password}
           onChange={(value) => onChange('password', value)}
@@ -290,7 +292,7 @@ function AccountStep({ data, error, onChange, onSubmit }: StepProps) {
           label="Confirm Password"
           type="password"
           autoComplete="new-password"
-          placeholder="Enter password"
+          placeholder="e.g., SecurePass123!"
           value={data.confirmPassword}
           onChange={(value) => onChange('confirmPassword', value)}
         />
@@ -311,10 +313,10 @@ function BasicProfileStep({ data, error, onChange, onNameChange, onSubmit, onBac
         <p>Let us know who you are</p>
       </header>
       <form className={styles.form} onSubmit={onSubmit} noValidate>
-        <TextField id="first-name" label="First Name" required placeholder="Enter your first name" value={data.firstName} onChange={(value) => onNameChange?.('firstName', value)} />
-        <TextField id="middle-name" label="Middle Name" placeholder="Enter your middle name" value={data.middleName} onChange={(value) => onNameChange?.('middleName', value)} />
-        <TextField id="last-name" label="Last Name" required placeholder="Enter your last name" value={data.lastName} onChange={(value) => onNameChange?.('lastName', value)} />
-        <TextField id="extension-name" label="Extension Name" placeholder="Enter your extension name" value={data.extensionName} onChange={(value) => onNameChange?.('extensionName', value)} />
+        <TextField id="first-name" label="First Name" required placeholder="e.g., Juan" value={data.firstName} onChange={(value) => onNameChange?.('firstName', value)} />
+        <TextField id="middle-name" label="Middle Name" placeholder="e.g., Santos" value={data.middleName} onChange={(value) => onNameChange?.('middleName', value)} />
+        <TextField id="last-name" label="Last Name" required placeholder="e.g., Dela Cruz" value={data.lastName} onChange={(value) => onNameChange?.('lastName', value)} />
+        <TextField id="extension-name" label="Extension Name" placeholder="e.g., Jr." value={data.extensionName} onChange={(value) => onNameChange?.('extensionName', value)} />
         <SelectField id="sex" label="Sex" required value={data.sex} onChange={(value) => onChange('sex', value)} options={[...SIGNUP_SEX_OPTIONS]} />
         <TextField id="birth-date" label="Birth Date" required type="date" max={birthdateMaximum()} value={data.birthDate} onChange={(value) => onChange('birthDate', value)} />
         <FormError error={error} />
@@ -334,11 +336,11 @@ function LocationStep({ data, error, onChange, onSubmit, onBack }: StepProps) {
         <p>See jobs near you</p>
       </header>
       <form className={styles.form} onSubmit={onSubmit} noValidate>
-        <TextField id="contact-number" label="Contact Number" required type="tel" autoComplete="tel" placeholder="e.g. 09123456789" value={data.contactNumber} onChange={(value) => onChange('contactNumber', sanitizeContactNumberInput(value))} />
-        <TextField id="street-address" label="House/Block No./Street" required autoComplete="street-address" placeholder="Enter your street address" value={data.streetAddress} onChange={(value) => onChange('streetAddress', value)} />
-        <TextField id="barangay" label="Barangay" required autoComplete="address-level3" placeholder="Enter barangay" value={data.barangay} onChange={(value) => onChange('barangay', value)} />
-        <TextField id="district" label="District" required placeholder="Enter district" value={data.district} onChange={(value) => onChange('district', value)} />
-        <TextField id="city" label="City" required autoComplete="address-level2" placeholder="Enter city" value={data.city} onChange={(value) => onChange('city', value)} />
+        <TextField id="contact-number" label="Contact Number" required type="tel" autoComplete="tel" placeholder={CONTACT_NUMBER_PLACEHOLDER} value={data.contactNumber} onChange={(value) => onChange('contactNumber', sanitizeContactNumberInput(value))} />
+        <TextField id="street-address" label="House/Block No./Street" required autoComplete="street-address" placeholder="e.g., 200 Development Avenue" value={data.streetAddress} onChange={(value) => onChange('streetAddress', value)} />
+        <TextField id="barangay" label="Barangay" required autoComplete="address-level3" placeholder="e.g., Central" value={data.barangay} onChange={(value) => onChange('barangay', value)} />
+        <SelectField id="district" label="District" required value={data.district} onChange={(value) => onChange('district', value)} options={[...DISTRICT_OPTIONS]} />
+        <TextField id="city" label="City" required autoComplete="address-level2" placeholder="e.g., Quezon City" value={data.city} onChange={(value) => onChange('city', value)} />
         <SelectField id="inquiry-channel" label="Inquiry via" required value={data.inquiryChannel} onChange={(value) => onChange('inquiryChannel', value)} options={[...SIGNUP_INQUIRY_OPTIONS]} />
         <FormError error={error} />
         <button className={styles.primaryButton} type="submit">Save and Continue</button>

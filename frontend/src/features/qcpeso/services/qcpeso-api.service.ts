@@ -7,6 +7,10 @@ import type {
   PaginatedResponse,
   DashboardApplicationDto,
 } from "../../../types/api";
+import type {
+  QCPesoFinalizationSummary,
+  QCPesoInternshipHistorySummary,
+} from "../types/qcpeso.types";
 
 export const qcpesoApiService = {
   async getDashboardMetrics(): Promise<PesoStudentMetricsDto> {
@@ -129,7 +133,7 @@ export const qcpesoApiService = {
     return response.data;
   },
 
-  async getFinalizationSummary(): Promise<any> {
+  async getFinalizationSummary(): Promise<QCPesoFinalizationSummary> {
     return (await api.get('/dashboard/peso/internships/finalization/summary')).data;
   },
 
@@ -145,7 +149,7 @@ export const qcpesoApiService = {
     return (await api.patch(`/dashboard/peso/internships/finalization/${assignmentId}`, {})).data;
   },
 
-  async getInternshipHistorySummary(): Promise<any> {
+  async getInternshipHistorySummary(): Promise<QCPesoInternshipHistorySummary> {
     return (await api.get('/dashboard/peso/internships/history/summary')).data;
   },
 

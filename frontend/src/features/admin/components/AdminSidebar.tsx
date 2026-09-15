@@ -1,17 +1,24 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Grid2X2,
   ChevronDown,
   ChevronRight,
+  ExternalLink,
   Users,
-  Search,
   Settings,
+  UserRound,
+  GraduationCap,
+  Building2,
+  BriefcaseBusiness,
+  FileText,
   LogOut,
   Menu,
 } from 'lucide-react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import internetLogo from '../../../assets/internet-logo.svg'
 import { useAuthStore } from '../../../stores/useAuthStore'
+import { adminProfileService } from '../services/admin-profile.service'
+import type { AdminProfile } from '../types/admin-profile.types'
 import styles from './AdminSidebar.module.css'
 
 interface AdminSidebarProps {
@@ -20,10 +27,27 @@ interface AdminSidebarProps {
 }
 
 export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
+  const location = useLocation()
   const [search, setSearch] = useState('')
   const [isUserManagementOpen, setIsUserManagementOpen] = useState(false)
+  const [isAuditLogsOpen, setIsAuditLogsOpen] = useState(() =>
+    location.pathname.startsWith('/admin/audit-logs/'),
+  )
+  const [profile, setProfile] = useState<AdminProfile | null>(null)
   const navigate = useNavigate()
-  const { logout: authLogout } = useAuthStore()
+  const { user, logout: authLogout } = useAuthStore()
+
+  useEffect(() => {
+    let isMounted = true
+    void adminProfileService.getProfile()
+      .then((loadedProfile) => {
+        if (isMounted) setProfile(loadedProfile)
+      })
+      .catch(() => undefined)
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const logout = async () => {
     onClose()
@@ -35,6 +59,9 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
     if (!search.trim()) return true
     return text.toLowerCase().includes(search.trim().toLowerCase())
   }
+
+  const displayName = profile?.fullName || user?.email.split('@')[0] || 'Administrator'
+  const userInitials = displayName.substring(0, 2).toUpperCase()
 
   return (
     <aside
@@ -86,6 +113,20 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
             </NavLink>
           )}
 
+          {matchesSearch('Admin Profile') && (
+            <NavLink
+              className={({ isActive }) =>
+                `${styles.navItem} ${isActive ? styles.activeNavItem : ''}`
+              }
+              to="/admin/profile"
+              onClick={onClose}
+              tabIndex={isOpen ? 0 : -1}
+            >
+              <UserRound size={20} />
+              <span>Admin Profile</span>
+            </NavLink>
+          )}
+
           {(matchesSearch('User Management') ||
             matchesSearch('Manage Students') ||
             matchesSearch('Manage Employers') ||
@@ -111,20 +152,8 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                     onClick={onClose}
                     tabIndex={isOpen ? 0 : -1}
                   >
-                    Manage Students
-                  </NavLink>
-                )}
-
-                {matchesSearch('Manage Employers') && (
-                  <NavLink
-                    className={({ isActive }) =>
-                      `${styles.subItem} ${isActive ? styles.activeSubItem : ''}`
-                    }
-                    to="/admin/manage-employers"
-                    onClick={onClose}
-                    tabIndex={isOpen ? 0 : -1}
-                  >
-                    Manage Employers
+                    <GraduationCap size={17} aria-hidden="true" />
+                    <span>Manage Students</span>
                   </NavLink>
                 )}
 
@@ -137,62 +166,99 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                     onClick={onClose}
                     tabIndex={isOpen ? 0 : -1}
                   >
-                    Manage QC PESO
+                    <BriefcaseBusiness size={17} aria-hidden="true" />
+                    <span>Manage QC PESO</span>
+                  </NavLink>
+                )}
+
+                {matchesSearch('Manage Employers') && (
+                  <NavLink
+                    className={({ isActive }) =>
+                      `${styles.subItem} ${isActive ? styles.activeSubItem : ''}`
+                    }
+                    to="/admin/manage-employers"
+                    onClick={onClose}
+                    tabIndex={isOpen ? 0 : -1}
+                  >
+                    <Building2 size={17} aria-hidden="true" />
+                    <span>Manage Employers</span>
                   </NavLink>
                 )}
               </div>}
             </div>
           )}
 
-          {matchesSearch('Audit Logs') && (
-            <NavLink
-              className={({ isActive }) =>
-                `${styles.navItem} ${isActive ? styles.activeNavItem : ''}`
-              }
-              to="/admin/audit-logs"
-              onClick={onClose}
-              tabIndex={isOpen ? 0 : -1}
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className={styles.customNavIcon}
+          {(matchesSearch('Audit Logs') || matchesSearch('Accounts') ||
+            matchesSearch('Applications and Referrals') || matchesSearch('Internships')) && (
+            <div className={styles.userManagementSection}>
+              <button
+                type="button"
+                className={styles.navGroupHeader}
+                onClick={() => setIsAuditLogsOpen((current) => !current)}
+                aria-expanded={isAuditLogsOpen}
+                tabIndex={isOpen ? 0 : -1}
               >
-                <circle cx="6" cy="6" r="3.5" />
-                <polyline points="6 4 6 6 7.5 6" />
-                <line x1="12" y1="19" x2="12" y2="15" />
-                <line x1="16" y1="19" x2="16" y2="12" />
-                <line x1="20" y1="19" x2="20" y2="9" />
-              </svg>
-              <span>Audit Logs</span>
-            </NavLink>
+                <span className={styles.navGroupTitle}>
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="6" cy="6" r="3.5" />
+                    <polyline points="6 4 6 6 7.5 6" />
+                    <line x1="12" y1="19" x2="12" y2="15" />
+                    <line x1="16" y1="19" x2="16" y2="12" />
+                    <line x1="20" y1="19" x2="20" y2="9" />
+                  </svg>
+                  <span>Audit Logs</span>
+                </span>
+                {isAuditLogsOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+              </button>
+
+              {isAuditLogsOpen && <div className={styles.subItemsList}>
+                {matchesSearch('Accounts') && (
+                  <NavLink
+                    className={({ isActive }) => `${styles.subItem} ${isActive ? styles.activeSubItem : ''}`}
+                    to="/admin/audit-logs/accounts"
+                    onClick={onClose}
+                    tabIndex={isOpen ? 0 : -1}
+                  >
+                    <UserRound size={17} aria-hidden="true" />
+                    <span>Accounts</span>
+                  </NavLink>
+                )}
+                {matchesSearch('Applications and Referrals') && (
+                  <NavLink
+                    className={({ isActive }) => `${styles.subItem} ${isActive ? styles.activeSubItem : ''}`}
+                    to="/admin/audit-logs/applications-referrals"
+                    onClick={onClose}
+                    tabIndex={isOpen ? 0 : -1}
+                  >
+                    <FileText size={17} aria-hidden="true" />
+                    <span>Applications and Referrals</span>
+                  </NavLink>
+                )}
+                {matchesSearch('Internships') && (
+                  <NavLink
+                    className={({ isActive }) => `${styles.subItem} ${isActive ? styles.activeSubItem : ''}`}
+                    to="/admin/audit-logs/internships"
+                    onClick={onClose}
+                    tabIndex={isOpen ? 0 : -1}
+                  >
+                    <BriefcaseBusiness size={17} aria-hidden="true" />
+                    <span>Internships</span>
+                  </NavLink>
+                )}
+              </div>}
+            </div>
           )}
 
-          {matchesSearch('Backups and Maintenance') && (
-            <NavLink
-              className={({ isActive }) =>
-                `${styles.navItem} ${isActive ? styles.activeNavItem : ''}`
-              }
-              to="/admin/backups-maintenance"
-              onClick={onClose}
-              tabIndex={isOpen ? 0 : -1}
-            >
-              <Search size={20} />
-              <span className={styles.multilineText}>
-                Backups and<br />Maintenance
-              </span>
-            </NavLink>
-          )}
-        </div>
-
-        {/* Bottom Section: Settings & Log Out */}
-        <div className={styles.bottomNavGroup}>
           {matchesSearch('Settings') && (
             <NavLink
               className={({ isActive }) =>
@@ -206,6 +272,25 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
               <span>Settings</span>
             </NavLink>
           )}
+        </div>
+
+        {/* Bottom Section: Profile shortcut and Log Out */}
+        <div className={styles.bottomNavGroup}>
+          <button
+            type="button"
+            className={styles.userSummary}
+            onClick={() => { onClose(); navigate('/admin/profile') }}
+            tabIndex={isOpen ? 0 : -1}
+          >
+            <span className={styles.avatar} aria-hidden="true">
+              {profile?.avatarUrl ? <img src={profile.avatarUrl} alt="" /> : userInitials}
+            </span>
+            <span className={styles.userText}>
+              <strong>{displayName}</strong>
+              <small>{user?.email}</small>
+            </span>
+            <ExternalLink aria-hidden="true" />
+          </button>
 
           <button
             type="button"

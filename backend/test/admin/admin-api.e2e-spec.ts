@@ -43,7 +43,7 @@ const pesoBody = {
   extensionName: null,
   addressLine: '309 Katipunan Ave',
   addressBarangay: 'Loyola Heights',
-  addressDistrict: '3',
+  addressDistrict: 'District 3',
   addressCity: 'Quezon City',
   birthDate: '1990-08-20',
   sex: 'Female',

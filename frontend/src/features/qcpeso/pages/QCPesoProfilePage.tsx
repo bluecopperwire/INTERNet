@@ -1,17 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { Building2, Camera, Mail, MapPin, UserRound } from 'lucide-react'
+import { Building2, Camera, LockKeyhole, Mail, MapPin, UserRound } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { EmployerHero } from '../../employer/components/EmployerHero'
 import { qcpesoService } from '../services/qcpeso.service'
 import type { QCPesoProfile } from '../types/qcpeso.types'
 import styles from './QCPesoProfilePage.module.css'
 import { useToastStore } from '../../../stores/useToastStore'
+import { districtAddressPart } from '../../../utils/district'
+import { useAuthStore } from '../../../stores/useAuthStore'
 
 const formatAddress = (profile: QCPesoProfile) =>
   [
     profile.addressLine,
     profile.barangay,
-    profile.district && `District ${profile.district}`,
+    districtAddressPart(profile.district),
     profile.city,
   ]
     .filter(Boolean)
@@ -23,6 +25,7 @@ export function QCPesoProfilePage() {
   const [profile, setProfile] = useState<QCPesoProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const toast = useToastStore()
+  const account = useAuthStore((state) => state.user)
 
   useEffect(() => {
     qcpesoService
@@ -151,7 +154,7 @@ export function QCPesoProfilePage() {
           <ProfileSection icon={<Mail size={22} />} title="Contact Information">
             <DetailsList>
               <DetailItem label="Email Address" value={profile.email} />
-              <DetailItem label="Mobile Number" value={profile.mobileNumber} />
+              <DetailItem label="Contact Number" value={profile.mobileNumber} />
             </DetailsList>
           </ProfileSection>
 
@@ -167,6 +170,17 @@ export function QCPesoProfilePage() {
               />
               <DetailItem label="Department" value={profile.department} />
               <DetailItem label="Position" value={profile.position} />
+            </DetailsList>
+          </ProfileSection>
+
+          <ProfileSection
+            icon={<LockKeyhole size={22} />}
+            title="Account Information"
+            fullWidth
+          >
+            <DetailsList>
+              <DetailItem label="Account Email Address" value={account?.email ?? 'Not provided'} />
+              <DetailItem label="Account User Code" value={account?.accountCode || 'Not provided'} />
             </DetailsList>
           </ProfileSection>
         </div>

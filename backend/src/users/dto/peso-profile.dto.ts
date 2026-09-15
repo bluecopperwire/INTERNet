@@ -5,7 +5,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { IsValidContactNumber } from '../../common/validation/input-validation';
+import { IsValidContactNumber, IsValidDistrict } from '../../common/validation/input-validation';
 
 export class UpdatePesoProfileDto {
   @IsOptional()
@@ -47,6 +47,7 @@ export class UpdatePesoProfileDto {
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @IsValidDistrict()
   addressDistrict?: string;
 
   @IsOptional()

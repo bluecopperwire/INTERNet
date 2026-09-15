@@ -9,7 +9,7 @@ function section(source: string, start: string, end: string): string {
 }
 
 function headings(source: string): string[] {
-  return [...source.matchAll(/<th>([^<]+)<\/th>/g)].map((match) => match[1])
+  return [...source.matchAll(/header:\s*['"]([^'"]+)['"]/g)].map((match) => match[1])
 }
 
 function cssRule(source: string, selector: string): string {
@@ -22,10 +22,10 @@ describe('workflow page responsibility boundaries', () => {
     const source = readSource('../qcpeso/pages/ApplicantManagementPages.tsx')
     const queue = section(source, 'export function ReviewApplicantsPage', 'export function ApplicationsHistoryPage')
     expect(headings(queue)).toEqual([
-      'Student Name', 'Company', 'Job Title', 'Program / Strand', 'Application Date', 'Action',
+      'Applicant', 'Academic Information', 'Opportunity', 'Submitted', 'Status', 'Actions',
     ])
     expect(queue).toContain("['submitted', 'under_review']")
-    expect(queue).toContain('<Eye size={16} />Review')
+    expect(queue).toContain('Review ${record.studentName}\'s application')
     expect(queue).not.toContain('Delete</button>')
   })
 
@@ -40,12 +40,11 @@ describe('workflow page responsibility boundaries', () => {
     expect(app).toContain('path="manage-applicants/referrals" element={<Navigate to="/qcpeso/manage-applicants/history" replace />}')
     expect(app).toContain('path="manage-applicants/referrals/:id" element={<Navigate to="/qcpeso/manage-applicants/history" replace />}')
     expect(headings(history)).toEqual([
-      'Student Name', 'Company', 'Job Title', 'Program / Strand',
-      'Application Date', 'Referral Date', 'Status', 'Action',
+      'Applicant', 'Academic Information', 'Opportunity', 'Timeline', 'Status', 'Actions',
     ])
     expect(history).toContain('APPLICATION_ONGOING_STATUSES.includes')
     expect(history).toContain('APPLICATION_CLOSED_STATUSES.includes')
-    expect(history).toContain('<Eye size={16} />View')
+    expect(history).toContain('View ${record.studentName}\'s application')
     expect(pageSource).toContain('return <ReviewApplicantDetailsPage readOnly />')
   })
 
@@ -53,8 +52,7 @@ describe('workflow page responsibility boundaries', () => {
     const source = readSource('../employer/pages/ApplicantsPage.tsx')
     const queue = section(source, 'export function ApplicantsPage', 'export function ReferralsHistoryPage')
     expect(headings(queue)).toEqual([
-      'Student Name', 'Job Title', 'Program / Strand', 'Application Date',
-      'Referral Date', 'Status', 'Action',
+      'Applicant', 'Academic Information', 'Opportunity', 'Timeline', 'Status', 'Actions',
     ])
     expect(queue).toContain("['All', 'For Review', 'Under Review', 'For Interview']")
     expect(queue).toContain('<span>Review</span>')
@@ -66,8 +64,7 @@ describe('workflow page responsibility boundaries', () => {
     const history = listSource.slice(listSource.indexOf('export function ReferralsHistoryPage'))
     const details = readSource('../employer/pages/ReviewApplicantPage.tsx')
     expect(headings(history)).toEqual([
-      'Student Name', 'Job Title', 'Program / Strand', 'Application Date',
-      'Referral Date', 'Status', 'Action',
+      'Applicant', 'Academic Information', 'Opportunity', 'Timeline', 'Status', 'Actions',
     ])
     expect(history).toContain('REFERRAL_ONGOING_STATUSES.includes')
     expect(history).toContain('REFERRAL_CLOSED_STATUSES.includes')
@@ -80,7 +77,7 @@ describe('workflow page responsibility boundaries', () => {
     const source = readSource('../employer/pages/InternshipWorkflowPages.tsx')
     const queue = section(source, 'export function CreateInternshipAssignmentPage', 'export function ReviewInternshipAssignmentPage')
     expect(headings(queue)).toEqual([
-      'Student Name', 'Job Title', 'Program / Strand', 'Acceptance Date', 'Action',
+      'Student', 'Opportunity', 'Offer Accepted', 'Actions',
     ])
     expect(queue).toContain('>Create</button>')
     expect(queue).not.toContain('Student Response')
@@ -93,7 +90,6 @@ describe('workflow page responsibility boundaries', () => {
       ['../employer/pages/InternshipWorkflowPages.module.css', ['.reviewButton {']],
       ['../employer/pages/MonitorInternshipPage.module.css', ['.viewButton {']],
       ['../employer/pages/AttendanceMonitoringPage.module.css', ['.actionBtn {']],
-      ['../employer/components/ViewApplicantsModal.module.css', ['.reviewBtn {']],
       ['../qcpeso/pages/MonitorUsersPage.module.css', ['.viewButton {']],
       ['../qcpeso/pages/ReportsDocumentsPage.module.css', ['.actionBtn {']],
       ['../qcpeso/pages/QCPesoDashboardPage.module.css', ['.actionBtn {']],
@@ -107,6 +103,41 @@ describe('workflow page responsibility boundaries', () => {
         expect(rule).toContain('box-sizing: border-box')
         expect(rule).toContain('width: 120px')
       }
+    }
+  })
+
+  it('keeps opportunity referrals in the dedicated workflow instead of a modal', () => {
+    const opportunities = readSource('../employer/pages/OpportunitiesPage.tsx')
+    const review = readSource('../employer/pages/ReviewApplicantPage.tsx')
+    const service = readSource('../employer/services/employer.service.ts')
+
+    expect(opportunities).not.toContain('View Referrals')
+    expect(opportunities).not.toContain('ViewApplicantsModal')
+    expect(opportunities).not.toContain('viewApplicants')
+    expect(review).not.toContain('viewApplicants')
+    expect(review).toContain("navigate('/employer/applicants')")
+    expect(service).not.toContain('getApplicantsForOpportunity')
+  })
+
+  it('standardizes Admin User Management summaries and table columns', () => {
+    const students = readSource('../admin/pages/ManageStudentsPage.tsx')
+    const employers = readSource('../admin/pages/ManageEmployersPage.tsx')
+    const personnel = readSource('../admin/pages/ManageQCPesoPage.tsx')
+
+    expect(headings(students)).toEqual(['Student', 'Account', 'Registered', 'Status', 'Actions'])
+    expect(headings(employers)).toEqual(['Employer', 'Account', 'Registered', 'Status', 'Actions'])
+    expect(headings(personnel)).toEqual(['Personnel', 'Account', 'Registered', 'Status', 'Actions'])
+
+    for (const source of [students, employers, personnel]) {
+      expect(source).toContain("padStart(2, '0')")
+      expect(source).toContain('TableCellStack')
+      expect(source).toContain('accountCode')
+      expect(source).not.toMatch(/<strong>\{(?:student\.fullName|employer\.companyName|record\.fullName)\}<\/strong>/)
+      expect(source).not.toMatch(/(?:peopleIcon|suitcaseIcon)/)
+    }
+
+    for (const source of [students, employers, personnel]) {
+      expect(source).not.toMatch(/(?:Total|Active|Suspended|Deactivated) [^'"]* Accounts/)
     }
   })
 
