@@ -123,9 +123,9 @@ describe('profile and dashboard labels', () => {
     expect(adminSidebar).toContain('<span>Admin Profile</span>')
     expect(adminSidebar).toContain('className={styles.userSummary}')
     expect(adminSidebar).toContain("navigate('/admin/profile')")
-    expect(adminSidebar.indexOf('Backups and<br />Maintenance')).toBeLessThan(
-      adminSidebar.indexOf('to="/admin/settings"'),
-    )
+    expect(adminSidebar).not.toContain('Backups and<br />Maintenance')
+    expect(adminSidebar).not.toContain('/admin/backups-maintenance')
+    expect(adminSidebar).toContain('to="/admin/settings"')
   })
 
   it('highlights only the selected Student tracking child and aligns Admin settings', () => {

@@ -125,6 +125,43 @@ export interface AccountStatusSummary {
   deactivated: number
 }
 
+export type AdminAuditLogCategory =
+  | 'accounts'
+  | 'applications-referrals'
+  | 'internships'
+
+export interface AdminAuditLogItem {
+  auditEventId: string
+  actionCode: string
+  action: string
+  entityEmail: string
+  entityCode: string
+  previousStatus: string | null
+  newStatus: string
+  actorEmail: string
+  actorCode: string | null
+  occurredAt: string
+}
+
+export interface AdminAuditLogResponse {
+  data: AdminAuditLogItem[]
+  meta: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
+}
+
+export interface AdminAuditLogQuery {
+  page?: number
+  limit?: 5 | 10 | 15
+  search?: string
+  action?: string
+  dateFrom?: string
+  dateTo?: string
+}
+
 export interface AdminDashboardSummary {
   totalAccounts: number
   studentAccounts: AccountStatusSummary
@@ -138,17 +175,4 @@ export interface AdminNotification {
   message: string
   timeAgo: string
   isRead: boolean
-}
-
-export type BackupTriggerType = 'Automated' | 'Manual'
-export type BackupStatus = 'Successful' | 'In Progress' | 'Failed'
-
-export interface BackupRecord {
-  id: string
-  filename: string
-  timestamp: string
-  triggerType: BackupTriggerType
-  fileSize: string
-  status: BackupStatus
-  downloadUrl?: string
 }

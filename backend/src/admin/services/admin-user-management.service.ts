@@ -266,30 +266,34 @@ export class AdminUserManagementService {
     return rows[0];
   }
 
-  async createEmployer(dto: CreateAdminEmployerDto) {
-    const companyId = await this.dataSource.transaction(async (manager) => {
-      await this.validateCompanyIndustry(manager, dto.industryId);
-      const duplicate = await manager.query(
-        'SELECT 1 FROM public.user_account WHERE lower(email) = lower($1)',
-        [dto.accountEmail],
-      );
-      if (duplicate.length)
-        throw new ConflictException('Account email is already in use.');
+  async createEmployer(dto: CreateAdminEmployerDto, actorAccountId: number) {
+    const companyId = await withStatusActor(
+      this.dataSource,
+      actorAccountId,
+      async (runner) => {
+        const manager = runner.manager;
+        await this.validateCompanyIndustry(manager, dto.industryId);
+        const duplicate = await manager.query(
+          'SELECT 1 FROM public.user_account WHERE lower(email) = lower($1)',
+          [dto.accountEmail],
+        );
+        if (duplicate.length)
+          throw new ConflictException('Account email is already in use.');
 
-      const accounts = await manager.query(
-        `INSERT INTO public.user_account (email, user_role)
+        const accounts = await manager.query(
+          `INSERT INTO public.user_account (email, user_role)
          VALUES (lower($1), 'company')
          RETURNING user_account_id`,
-        [dto.accountEmail],
-      );
-      const userAccountId = Number(accounts[0].user_account_id);
-      await manager.query(
-        `INSERT INTO public.local_authentication_credential (user_account_id, password_hash)
+          [dto.accountEmail],
+        );
+        const userAccountId = Number(accounts[0].user_account_id);
+        await manager.query(
+          `INSERT INTO public.local_authentication_credential (user_account_id, password_hash)
          VALUES ($1, $2)`,
-        [userAccountId, await bcrypt.hash(dto.initialPassword, 10)],
-      );
-      const companies = await manager.query(
-        `INSERT INTO public.company (
+          [userAccountId, await bcrypt.hash(dto.initialPassword, 10)],
+        );
+        const companies = await manager.query(
+          `INSERT INTO public.company (
            user_account_id, industry_id, company_name, company_type,
            description, website_url, year_established, company_size,
            contact_email, contact_number, contact_person_first_name,
@@ -300,29 +304,30 @@ export class AdminUserManagementService {
            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
            $14, $15, $16, $17, $18, NULL
          ) RETURNING company_id`,
-        [
-          userAccountId,
-          dto.industryId,
-          dto.companyName,
-          dto.companyType,
-          dto.description,
-          dto.websiteUrl ?? null,
-          dto.yearEstablished ?? null,
-          dto.companySize ?? null,
-          dto.contactEmail,
-          dto.contactNumber,
-          dto.contactPersonFirstName,
-          dto.contactPersonMiddleName ?? null,
-          dto.contactPersonLastName,
-          dto.contactPersonExtensionName ?? null,
-          dto.addressLine,
-          dto.addressBarangay,
-          dto.addressDistrict ?? null,
-          dto.addressCity,
-        ],
-      );
-      return Number(companies[0].company_id);
-    });
+          [
+            userAccountId,
+            dto.industryId,
+            dto.companyName,
+            dto.companyType,
+            dto.description,
+            dto.websiteUrl ?? null,
+            dto.yearEstablished ?? null,
+            dto.companySize ?? null,
+            dto.contactEmail,
+            dto.contactNumber,
+            dto.contactPersonFirstName,
+            dto.contactPersonMiddleName ?? null,
+            dto.contactPersonLastName,
+            dto.contactPersonExtensionName ?? null,
+            dto.addressLine,
+            dto.addressBarangay,
+            dto.addressDistrict ?? null,
+            dto.addressCity,
+          ],
+        );
+        return Number(companies[0].company_id);
+      },
+    );
 
     const contactPersonName = [
       dto.contactPersonFirstName,
@@ -459,10 +464,16 @@ export class AdminUserManagementService {
     return rows[0];
   }
 
-  async createPesoPersonnel(dto: CreateAdminPesoPersonnelDto) {
+  async createPesoPersonnel(
+    dto: CreateAdminPesoPersonnelDto,
+    actorAccountId: number,
+  ) {
     this.assertPastBirthDate(dto.birthDate);
-    const pesoPersonnelId = await this.dataSource.transaction(
-      async (manager) => {
+    const pesoPersonnelId = await withStatusActor(
+      this.dataSource,
+      actorAccountId,
+      async (runner) => {
+        const manager = runner.manager;
         const duplicate = await manager.query(
           `SELECT 1
            WHERE EXISTS (
@@ -819,5 +830,4 @@ export class AdminUserManagementService {
       message: `Account status transition ${from} -> ${to} is not allowed.`,
     });
   }
-
 }

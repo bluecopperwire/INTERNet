@@ -235,23 +235,4 @@ export const MOCK_AUDIT_LOGS: AuditLog[] = [
       changedBy: 'Super Admin - Root',
     },
   },
-  {
-    id: 'LOG-004',
-    timestamp: '2026-08-14T10:00:00Z',
-    userId: 'SYS-BCK-09',
-    userFullName: 'Automated Backup Engine',
-    userEmail: 'system@qcpeso.gov.ph',
-    role: 'System',
-    actionType: 'DATABASE_BACKUP',
-    actionPerformed: 'Full PostgreSQL snapshot generated (142.5 MB).',
-    ipAddress: '127.0.0.1',
-    accountStatus: 'Active',
-    historyTable: 'SYSTEM_MAINTENANCE',
-    moduleName: 'Backups',
-    performedBy: 'Cron Daemon',
-    details: {
-      newStatus: 'Completed',
-      changedBy: 'System Cron',
-    },
-  },
 ]

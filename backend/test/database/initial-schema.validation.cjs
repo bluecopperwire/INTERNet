@@ -48,6 +48,11 @@ async function main() {
       'AssignmentLifecycleFoundation1788566400000',
       'AttendanceStudentWorkflow1788652800000',
       'QcAssignmentVisibility1788739200000',
+      'StudentAvailabilityDays1788825600000',
+      'ApplicationRejectionRemarkOnly1788912000000',
+      'AccountUserCode1788998400000',
+      'AdminProfile1789084800000',
+      'AdminAuditLogs1789171200000',
     ];
     const recognizedHistoricalMigrations = new Set([
       'AuthAlignmentV31786125600000',
@@ -80,6 +85,39 @@ async function main() {
       pass('recognized historical migration AuthAlignmentV31786125600000 is present and valid');
     }
     pass('required migrations are recorded');
+
+    const auditInfrastructure = await client.query(`
+      SELECT
+        to_regclass('public.audit_event') IS NOT NULL AS audit_table,
+        to_regprocedure('public.fn_append_audit_event(text,text,integer,integer,text,text,timestamp with time zone,text,integer,text)') IS NOT NULL AS append_function,
+        to_regprocedure('public.fn_block_audit_event_mutation()') IS NOT NULL AS append_only_function,
+        (SELECT count(*)::integer
+         FROM pg_trigger
+         WHERE tgname IN (
+           'trg_account_canonical_audit',
+           'trg_application_canonical_audit',
+           'trg_referral_canonical_audit',
+           'trg_internship_canonical_audit'
+         ) AND NOT tgisinternal AND tgenabled <> 'D') AS capture_triggers,
+        EXISTS (
+          SELECT 1 FROM pg_trigger
+          WHERE tgrelid = 'public.audit_event'::regclass
+            AND tgname = 'trg_audit_event_append_only'
+            AND NOT tgisinternal AND tgenabled <> 'D'
+        ) AS append_only_trigger,
+        (SELECT count(*) = count(DISTINCT provenance_key)
+         FROM public.audit_event
+         WHERE provenance_key IS NOT NULL) AS provenance_unique
+    `);
+    assert.deepEqual(auditInfrastructure.rows[0], {
+      audit_table: true,
+      append_function: true,
+      append_only_function: true,
+      capture_triggers: 4,
+      append_only_trigger: true,
+      provenance_unique: true,
+    });
+    pass('canonical audit store is append-only and all capture triggers are enabled');
 
     const qcAssignmentVisibility = await client.query(`
       SELECT column_name

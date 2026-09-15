@@ -41,8 +41,8 @@ export class PesoDashboardService {
     private readonly emailQueueService: EmailQueueService,
   ) {}
 
-  async createEmployer(dto: CreateAdminEmployerDto) {
-    return this.adminUserManagementService.createEmployer(dto);
+  async createEmployer(dto: CreateAdminEmployerDto, userAccountId: number) {
+    return this.adminUserManagementService.createEmployer(dto, userAccountId);
   }
 
   // A1. Student dashboard metrics
@@ -1036,8 +1036,11 @@ export class PesoDashboardService {
     if (!rows || rows.length === 0) {
       throw new NotFoundException('Student not found');
     }
-    const { user_account_id: _userAccountId, deleted_at: _deletedAt, ...studentProfile } =
-      rows[0];
+    const {
+      user_account_id: _userAccountId,
+      deleted_at: _deletedAt,
+      ...studentProfile
+    } = rows[0];
     return studentProfile;
   }
 

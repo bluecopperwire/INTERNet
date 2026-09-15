@@ -121,18 +121,15 @@ export class EmployerReferralService {
           'Only pending or for_interview referrals can be accepted.',
         );
       }
-      if (row.referral_status === 'sent') {
-        await runner.query(
-          `UPDATE public.referral SET referral_status = 'under_review' WHERE referral_id = $1`,
-          [referralId],
-        );
-      } else if (row.referral_status !== 'under_review') {
+      if (!['sent', 'under_review'].includes(String(row.referral_status))) {
         throw new ConflictException('Referral is not in an actionable state.');
       }
       await runner.query(
         `
           UPDATE public.referral
-          SET company_response = 'accepted', company_responded_at = CURRENT_TIMESTAMP
+          SET referral_status = 'under_review',
+              company_response = 'accepted',
+              company_responded_at = CURRENT_TIMESTAMP
           WHERE referral_id = $1
         `,
         [referralId],
@@ -183,16 +180,12 @@ export class EmployerReferralService {
       if (!['sent', 'under_review'].includes(String(row.referral_status))) {
         throw new ConflictException('Referral is not in an actionable state.');
       }
-      if (row.referral_status === 'sent') {
-        await runner.query(
-          `UPDATE public.referral SET referral_status = 'under_review' WHERE referral_id = $1`,
-          [referralId],
-        );
-      }
       await runner.query(
         `
           UPDATE public.referral
-          SET company_response = 'for_interview', company_responded_at = CURRENT_TIMESTAMP
+          SET referral_status = 'under_review',
+              company_response = 'for_interview',
+              company_responded_at = CURRENT_TIMESTAMP
           WHERE referral_id = $1
         `,
         [referralId],
@@ -245,9 +238,7 @@ export class EmployerReferralService {
         true,
       );
       if (
-        !['pending', 'for_interview'].includes(
-          String(row.company_response),
-        )
+        !['pending', 'for_interview'].includes(String(row.company_response))
       ) {
         throw new ConflictException(
           'Only pending or for_interview referrals can be rejected.',
@@ -255,8 +246,13 @@ export class EmployerReferralService {
       }
       if (row.referral_status === 'sent') {
         await runner.query(
-          `UPDATE public.referral SET referral_status = 'under_review' WHERE referral_id = $1`,
-          [referralId],
+          `UPDATE public.referral
+           SET referral_status = 'under_review',
+               company_response = 'rejected',
+               company_responded_at = CURRENT_TIMESTAMP,
+               remark = $2
+           WHERE referral_id = $1`,
+          [referralId, remark],
         );
       } else if (row.referral_status !== 'under_review') {
         throw new ConflictException('Referral is not in an actionable state.');

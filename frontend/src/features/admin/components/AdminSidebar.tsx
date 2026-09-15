@@ -5,13 +5,12 @@ import {
   ChevronRight,
   ExternalLink,
   Users,
-  Search,
   Settings,
   UserRound,
   LogOut,
   Menu,
 } from 'lucide-react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import internetLogo from '../../../assets/internet-logo.svg'
 import { useAuthStore } from '../../../stores/useAuthStore'
 import { adminProfileService } from '../services/admin-profile.service'
@@ -24,8 +23,12 @@ interface AdminSidebarProps {
 }
 
 export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
+  const location = useLocation()
   const [search, setSearch] = useState('')
   const [isUserManagementOpen, setIsUserManagementOpen] = useState(false)
+  const [isAuditLogsOpen, setIsAuditLogsOpen] = useState(() =>
+    location.pathname.startsWith('/admin/audit-logs/'),
+  )
   const [profile, setProfile] = useState<AdminProfile | null>(null)
   const navigate = useNavigate()
   const { user, logout: authLogout } = useAuthStore()
@@ -178,50 +181,72 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
             </div>
           )}
 
-          {matchesSearch('Audit Logs') && (
-            <NavLink
-              className={({ isActive }) =>
-                `${styles.navItem} ${isActive ? styles.activeNavItem : ''}`
-              }
-              to="/admin/audit-logs"
-              onClick={onClose}
-              tabIndex={isOpen ? 0 : -1}
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className={styles.customNavIcon}
+          {(matchesSearch('Audit Logs') || matchesSearch('Accounts') ||
+            matchesSearch('Applications and Referrals') || matchesSearch('Internships')) && (
+            <div className={styles.userManagementSection}>
+              <button
+                type="button"
+                className={styles.navGroupHeader}
+                onClick={() => setIsAuditLogsOpen((current) => !current)}
+                aria-expanded={isAuditLogsOpen}
+                tabIndex={isOpen ? 0 : -1}
               >
-                <circle cx="6" cy="6" r="3.5" />
-                <polyline points="6 4 6 6 7.5 6" />
-                <line x1="12" y1="19" x2="12" y2="15" />
-                <line x1="16" y1="19" x2="16" y2="12" />
-                <line x1="20" y1="19" x2="20" y2="9" />
-              </svg>
-              <span>Audit Logs</span>
-            </NavLink>
-          )}
+                <span className={styles.navGroupTitle}>
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="6" cy="6" r="3.5" />
+                    <polyline points="6 4 6 6 7.5 6" />
+                    <line x1="12" y1="19" x2="12" y2="15" />
+                    <line x1="16" y1="19" x2="16" y2="12" />
+                    <line x1="20" y1="19" x2="20" y2="9" />
+                  </svg>
+                  <span>Audit Logs</span>
+                </span>
+                {isAuditLogsOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+              </button>
 
-          {matchesSearch('Backups and Maintenance') && (
-            <NavLink
-              className={({ isActive }) =>
-                `${styles.navItem} ${isActive ? styles.activeNavItem : ''}`
-              }
-              to="/admin/backups-maintenance"
-              onClick={onClose}
-              tabIndex={isOpen ? 0 : -1}
-            >
-              <Search size={20} />
-              <span className={styles.multilineText}>
-                Backups and<br />Maintenance
-              </span>
-            </NavLink>
+              {isAuditLogsOpen && <div className={styles.subItemsList}>
+                {matchesSearch('Accounts') && (
+                  <NavLink
+                    className={({ isActive }) => `${styles.subItem} ${isActive ? styles.activeSubItem : ''}`}
+                    to="/admin/audit-logs/accounts"
+                    onClick={onClose}
+                    tabIndex={isOpen ? 0 : -1}
+                  >
+                    Accounts
+                  </NavLink>
+                )}
+                {matchesSearch('Applications and Referrals') && (
+                  <NavLink
+                    className={({ isActive }) => `${styles.subItem} ${isActive ? styles.activeSubItem : ''}`}
+                    to="/admin/audit-logs/applications-referrals"
+                    onClick={onClose}
+                    tabIndex={isOpen ? 0 : -1}
+                  >
+                    Applications and Referrals
+                  </NavLink>
+                )}
+                {matchesSearch('Internships') && (
+                  <NavLink
+                    className={({ isActive }) => `${styles.subItem} ${isActive ? styles.activeSubItem : ''}`}
+                    to="/admin/audit-logs/internships"
+                    onClick={onClose}
+                    tabIndex={isOpen ? 0 : -1}
+                  >
+                    Internships
+                  </NavLink>
+                )}
+              </div>}
+            </div>
           )}
 
           {matchesSearch('Settings') && (

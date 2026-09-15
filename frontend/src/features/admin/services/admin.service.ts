@@ -280,9 +280,6 @@ export const adminService = {
     return [];
   },
 
-  triggerManualBackup: async (): Promise<{ success: boolean; message: string }> => {
-    return { success: false, message: 'Database backup is not configured on this server.' };
-  },
 };
 
 export default adminService;

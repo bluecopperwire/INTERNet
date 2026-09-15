@@ -172,10 +172,6 @@
   stroke-width: 1.8;
 }
 
-.multilineText {
-  line-height: 1.25;
-}
-
 .userManagementSection {
   display: flex;
   flex-direction: column;

@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { DataSource } from 'typeorm';
+import { withStatusActor } from '../database/status-actor.transaction';
 import {
   AccountStatus,
   AdminProfile,
@@ -37,8 +38,10 @@ export class AccountManagementService {
 
   async createCompany(
     dto: CreateCompanyAccountDto,
+    actorAccountId: number,
   ): Promise<{ userAccountId: number; companyId: number }> {
-    return this.dataSource.transaction(async (manager) => {
+    return withStatusActor(this.dataSource, actorAccountId, async (runner) => {
+      const manager = runner.manager;
       const industry = await manager.findOne(Industry, {
         where: { industryId: dto.industryId },
       });
@@ -104,12 +107,12 @@ export class AccountManagementService {
     dto: CreatePesoPersonnelAccountDto,
     adminAccountId: number,
   ): Promise<{ userAccountId: number; pesoPersonnelId: number }> {
-    void adminAccountId;
     assertValidDate(dto.birthDate, 'birthDate');
     if (dto.birthDate >= currentManilaDate()) {
       throw new BadRequestException('birthDate must be in the past.');
     }
-    return this.dataSource.transaction(async (manager) => {
+    return withStatusActor(this.dataSource, adminAccountId, async (runner) => {
+      const manager = runner.manager;
       const existing = await manager
         .getRepository(UserAccount)
         .createQueryBuilder('a')
@@ -276,7 +279,9 @@ export class AccountManagementService {
     const accountRepo = this.dataSource.getRepository(UserAccount);
     const [profile, account] = await Promise.all([
       adminRepo.findOne({ where: { userAccountId } }),
-      accountRepo.findOne({ where: { userAccountId, userRole: UserRole.ADMIN } }),
+      accountRepo.findOne({
+        where: { userAccountId, userRole: UserRole.ADMIN },
+      }),
     ]);
     if (!profile || !account) {
       throw new NotFoundException('Admin profile not found');
@@ -303,10 +308,7 @@ export class AccountManagementService {
     };
   }
 
-  async updateAdminProfile(
-    userAccountId: number,
-    dto: UpdateAdminProfileDto,
-  ) {
+  async updateAdminProfile(userAccountId: number, dto: UpdateAdminProfileDto) {
     if (dto.birthDate) {
       assertValidDate(dto.birthDate, 'birthDate');
       if (dto.birthDate >= currentManilaDate()) {

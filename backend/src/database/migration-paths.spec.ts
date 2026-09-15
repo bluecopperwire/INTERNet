@@ -84,6 +84,7 @@ describe('Database migration paths and behavioral validation', () => {
       'ApplicationRejectionRemarkOnly1788912000000',
       'AccountUserCode1788998400000',
       'AdminProfile1789084800000',
+      'AdminAuditLogs1789171200000',
     ]);
 
     // Validate redesigned columns
@@ -186,6 +187,12 @@ describe('Database migration paths and behavioral validation', () => {
       `SELECT industry_name FROM public.industry WHERE is_custom_text = true`,
     );
     expect(customIndustries).toEqual([{ industry_name: 'Other' }]);
+
+    await dataSource.undoLastMigration();
+    const [auditAfterRevert] = await dataSource.query(`
+      SELECT to_regclass('public.audit_event') AS audit_event
+    `);
+    expect(auditAfterRevert.audit_event).toBeNull();
 
     await dataSource.undoLastMigration();
     const [adminProfileAfterRevert] = await dataSource.query(`
@@ -486,6 +493,9 @@ describe('Database migration paths and behavioral validation', () => {
       'QcAssignmentVisibility1788739200000',
       'StudentAvailabilityDays1788825600000',
       'ApplicationRejectionRemarkOnly1788912000000',
+      'AccountUserCode1788998400000',
+      'AdminProfile1789084800000',
+      'AdminAuditLogs1789171200000',
     ]);
 
     const migratedPreference = await dataSource.query(`

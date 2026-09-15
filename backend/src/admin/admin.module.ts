@@ -4,6 +4,8 @@ import { AdminAccountStatusController } from './controllers/admin-account-status
 import { AdminEmployerController } from './controllers/admin-employer.controller';
 import { AdminQcPesoController } from './controllers/admin-qc-peso.controller';
 import { AdminStudentController } from './controllers/admin-student.controller';
+import { AdminAuditLogController } from './controllers/admin-audit-log.controller';
+import { AdminAuditLogService } from './services/admin-audit-log.service';
 import { AdminUserManagementService } from './services/admin-user-management.service';
 
 @Module({
@@ -13,8 +15,9 @@ import { AdminUserManagementService } from './services/admin-user-management.ser
     AdminEmployerController,
     AdminQcPesoController,
     AdminAccountStatusController,
+    AdminAuditLogController,
   ],
-  providers: [AdminUserManagementService],
+  providers: [AdminUserManagementService, AdminAuditLogService],
   exports: [AdminUserManagementService],
 })
 export class AdminModule {}

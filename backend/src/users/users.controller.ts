@@ -34,8 +34,11 @@ export class UsersController {
 
   @Roles(UserRole.ADMIN)
   @Post('companies')
-  createCompany(@Body() dto: CreateCompanyAccountDto) {
-    return this.accounts.createCompany(dto);
+  createCompany(
+    @CurrentUser('userAccountId') adminId: number,
+    @Body() dto: CreateCompanyAccountDto,
+  ) {
+    return this.accounts.createCompany(dto, adminId);
   }
 
   @Roles(UserRole.ADMIN)
