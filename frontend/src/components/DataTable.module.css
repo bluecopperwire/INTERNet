@@ -5,7 +5,11 @@
 
 .desktopViewport {
   width: 100%;
+  max-height: clamp(360px, 68vh, 720px);
   overflow-x: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   border: 1px solid rgba(22, 14, 111, 0.18);
   border-radius: 10px;
   background: #fff;
@@ -34,6 +38,11 @@
   letter-spacing: 0.01em;
   line-height: 1.35;
   white-space: nowrap;
+}
+
+.table thead {
+  position: relative;
+  z-index: 2;
 }
 
 .table td {
@@ -145,6 +154,7 @@
 .mobileList { display: none; }
 
 .print .desktopViewport {
+  max-height: none;
   overflow: visible;
   border: 0;
   border-radius: 0;
@@ -232,6 +242,7 @@
 
 @media print {
   .desktopViewport {
+    max-height: none;
     overflow: visible;
     border: 0;
     box-shadow: none;
