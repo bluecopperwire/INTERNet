@@ -1,6 +1,36 @@
 require('dotenv').config();
+require('ts-node/register/transpile-only');
 const bcrypt = require('bcrypt');
 const { Client } = require('pg');
+const {
+  DEVELOPMENT_COMPANY_FIXTURES,
+  DEVELOPMENT_STUDENT_FIXTURES,
+  DEVELOPMENT_WORKFLOW_TIMELINE,
+} = require('../../src/database/seeds/development.seed.fixtures.ts');
+
+const legacySeedOwnedEmails = [
+  'student.dev@example.com',
+  'company.dev@example.com',
+  'peso.dev@example.com',
+  'admin.dev@example.com',
+  'admin.dev@internet.local',
+  'student.manual@internet.local',
+  'student.google@internet.local',
+  'student.dual@internet.local',
+  'company.tech@internet.local',
+  'company.hospitality@internet.local',
+  'peso.approved@internet.local',
+  'peso.pending@internet.local',
+  'peso.rejected@internet.local',
+];
+const newCompanyEmails = DEVELOPMENT_COMPANY_FIXTURES.map(
+  (fixture) => fixture.loginEmail,
+);
+const newStudentEmails = DEVELOPMENT_STUDENT_FIXTURES.map(
+  (fixture) => fixture.loginEmail,
+);
+const newLocalEmails = [...newCompanyEmails, ...newStudentEmails];
+const seedOwnedEmails = [...legacySeedOwnedEmails, ...newLocalEmails];
 
 const approvedIndustries = [
   'Accounting/ Finance',
@@ -15,6 +45,21 @@ const approvedIndustries = [
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+function dateOnly(value) {
+  return value instanceof Date
+    ? value.toISOString().slice(0, 10)
+    : String(value).slice(0, 10);
+}
+
+function expectedRenderedMinutes(timeIn, timeOut) {
+  if (timeIn === null || timeOut === null) return 0;
+  const toMinutes = (value) => {
+    const [hours, minutes] = value.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+  return Math.max(0, toMinutes(timeOut) - toMinutes(timeIn) - 60);
 }
 
 async function main() {
@@ -43,6 +88,7 @@ async function main() {
 
     const accounts = await client.query(
       `SELECT ua.email, ua.user_role, ua.account_status,
+              lac.password_hash,
               (lac.user_account_id IS NOT NULL) AS has_local,
               (eai.external_authentication_identity_id IS NOT NULL) AS has_google,
               (s.student_id IS NOT NULL) AS has_student,
@@ -57,13 +103,12 @@ async function main() {
          LEFT JOIN public.company c ON c.user_account_id = ua.user_account_id
          LEFT JOIN public.peso_personnel pp
            ON pp.user_account_id = ua.user_account_id
-        WHERE ua.email LIKE '%@internet.local'
-          AND (ua.email LIKE 'student.%' OR ua.email LIKE 'company.%'
-            OR ua.email LIKE 'peso.%' OR ua.email = 'admin.dev@internet.local')`,
+        WHERE ua.email = ANY($1::text[])`,
+      [seedOwnedEmails],
     );
     assert(
-      accounts.rowCount === 9,
-      'Expected exactly nine seed-owned accounts.',
+      accounts.rowCount === 49,
+      'Expected the 13 preserved accounts and 36 new local demo accounts.',
     );
     const byEmail = new Map(accounts.rows.map((row) => [row.email, row]));
     const expected = {
@@ -149,6 +194,76 @@ async function main() {
         `Provider/profile matrix mismatch for ${email}.`,
       );
       assert(row.account_status === 'active', `${email} must be active.`);
+    }
+
+    const password = process.env.DEV_SEED_PASSWORD;
+    assert(
+      password,
+      'DEV_SEED_PASSWORD is required to validate local credentials.',
+    );
+    for (const fixture of DEVELOPMENT_COMPANY_FIXTURES) {
+      const row = byEmail.get(fixture.loginEmail);
+      assert(row, `Missing company login ${fixture.loginEmail}.`);
+      assert(
+        row.user_role === 'company',
+        `${fixture.loginEmail} must be company.`,
+      );
+      assert(
+        row.account_status === 'active',
+        `${fixture.loginEmail} must be active.`,
+      );
+      assert(
+        row.has_local,
+        `${fixture.loginEmail} requires local authentication.`,
+      );
+      assert(
+        row.password_hash,
+        `${fixture.loginEmail} requires a local password hash.`,
+      );
+      assert(
+        await bcrypt.compare(password, row.password_hash),
+        `${fixture.loginEmail} local credential must match DEV_SEED_PASSWORD.`,
+      );
+      assert(
+        !row.has_google,
+        `${fixture.loginEmail} must not have Google auth.`,
+      );
+      assert(
+        row.has_company && !row.has_student && !row.has_personnel,
+        `${fixture.loginEmail} must have only its company profile.`,
+      );
+    }
+    for (const fixture of DEVELOPMENT_STUDENT_FIXTURES) {
+      const row = byEmail.get(fixture.loginEmail);
+      assert(row, `Missing student login ${fixture.loginEmail}.`);
+      assert(
+        row.user_role === 'student',
+        `${fixture.loginEmail} must be student.`,
+      );
+      assert(
+        row.account_status === 'active',
+        `${fixture.loginEmail} must be active.`,
+      );
+      assert(
+        row.has_local,
+        `${fixture.loginEmail} requires local authentication.`,
+      );
+      assert(
+        row.password_hash,
+        `${fixture.loginEmail} requires a local password hash.`,
+      );
+      assert(
+        await bcrypt.compare(password, row.password_hash),
+        `${fixture.loginEmail} local credential must match DEV_SEED_PASSWORD.`,
+      );
+      assert(
+        !row.has_google,
+        `${fixture.loginEmail} must not have Google auth.`,
+      );
+      assert(
+        row.has_student && !row.has_company && !row.has_personnel,
+        `${fixture.loginEmail} must have only its student profile.`,
+      );
     }
 
     const canonicalAccounts = {
@@ -241,7 +356,6 @@ async function main() {
       canonicalProfiles.rowCount === 4,
       'Each canonical development account must exist exactly once.',
     );
-    const password = process.env.DEV_SEED_PASSWORD;
     assert(
       password,
       'DEV_SEED_PASSWORD is required to validate canonical local credentials.',
@@ -323,20 +437,28 @@ async function main() {
          FROM public.student s
          JOIN public.student_academic_information sai USING (student_id)
          JOIN public.internship_preference ip USING (student_id)
-        WHERE s.contact_email LIKE 'student.%@internet.local'
+        WHERE s.contact_email = ANY($1::text[])
           AND EXISTS (SELECT 1 FROM public.student_preferred_industry spi
                        WHERE spi.student_id = s.student_id)`,
+      [newStudentEmails],
     );
     assert(
-      completedProfiles.rows[0].count === 3,
-      'All three students need complete profiles.',
+      completedProfiles.rows[0].count === 27,
+      'All 27 new students need complete academic, preference, and industry profiles.',
     );
 
     const personnel = await client.query(
       `SELECT ua.email, pp.employee_id
-         FROM public.peso_personnel pp
+        FROM public.peso_personnel pp
          JOIN public.user_account ua ON ua.user_account_id = pp.user_account_id
-        WHERE ua.email LIKE 'peso.%@internet.local'`,
+        WHERE ua.email = ANY($1::text[])`,
+      [
+        [
+          'peso.approved@internet.local',
+          'peso.pending@internet.local',
+          'peso.rejected@internet.local',
+        ],
+      ],
     );
     assert(
       personnel.rowCount === 3 &&
@@ -348,9 +470,10 @@ async function main() {
       `SELECT
          (SELECT count(*)::integer FROM public.authentication_session s
            JOIN public.user_account ua USING (user_account_id)
-          WHERE ua.email LIKE '%@internet.local') AS sessions,
+          WHERE ua.email = ANY($1::text[])) AS sessions,
          (SELECT count(*)::integer FROM public.registration_onboarding
-          WHERE provider_subject LIKE 'dev-seed-%') AS onboarding`,
+          WHERE verified_email = ANY($1::text[])) AS onboarding`,
+      [seedOwnedEmails],
     );
     assert(
       noTransientAuth.rows[0].sessions === 0,
@@ -359,6 +482,429 @@ async function main() {
     assert(
       noTransientAuth.rows[0].onboarding === 0,
       'Development seed must not create onboarding rows.',
+    );
+
+    const companyProfiles = await client.query(
+      `SELECT ua.email, ua.account_status, ua.created_at AS account_created_at,
+              c.created_at AS company_created_at,
+              (SELECT min(lac.created_at)
+                 FROM public.local_authentication_credential lac
+                WHERE lac.user_account_id = ua.user_account_id)
+                AS credential_created_at,
+              c.company_id, c.company_name,
+              c.company_type, c.description, c.website_url, c.year_established,
+              c.company_size, c.contact_email, c.contact_number,
+              c.contact_person_first_name, c.contact_person_middle_name,
+              c.contact_person_last_name, c.address_line, c.address_barangay,
+              c.address_district, c.address_city, i.industry_name,
+              (SELECT count(*)::integer FROM public.local_authentication_credential lac
+                WHERE lac.user_account_id = ua.user_account_id) AS local_count,
+              (SELECT count(*)::integer FROM public.company duplicate
+                WHERE duplicate.user_account_id = ua.user_account_id) AS profile_count
+         FROM public.user_account ua
+         JOIN public.company c USING (user_account_id)
+         JOIN public.industry i USING (industry_id)
+        WHERE ua.email = ANY($1::text[])`,
+      [newCompanyEmails],
+    );
+    assert(
+      companyProfiles.rowCount === 9,
+      'All nine new company profiles are required.',
+    );
+    for (const fixture of DEVELOPMENT_COMPANY_FIXTURES) {
+      const row = companyProfiles.rows.find(
+        (candidate) => candidate.email === fixture.loginEmail,
+      );
+      assert(row, `Missing company profile ${fixture.companyName}.`);
+      for (const createdAt of [
+        row.account_created_at,
+        row.company_created_at,
+        row.credential_created_at,
+      ]) {
+        assert(
+          new Date(createdAt) <
+            new Date(DEVELOPMENT_WORKFLOW_TIMELINE.applicationSubmittedAt),
+          `${fixture.loginEmail} account/profile rows must predate applications.`,
+        );
+      }
+      for (const [field, expectedValue] of Object.entries({
+        account_status: 'active',
+        company_name: fixture.companyName,
+        company_type: fixture.companyType,
+        description: fixture.description,
+        website_url: fixture.websiteUrl,
+        year_established: fixture.yearEstablished,
+        company_size: fixture.companySize,
+        contact_email: fixture.contactEmail,
+        contact_number: fixture.contactNumber,
+        contact_person_first_name: fixture.contactPersonFirstName,
+        contact_person_middle_name: fixture.contactPersonMiddleName,
+        contact_person_last_name: fixture.contactPersonLastName,
+        address_line: fixture.addressLine,
+        address_barangay: fixture.addressBarangay,
+        address_district: fixture.addressDistrict,
+        address_city: fixture.addressCity,
+        industry_name: fixture.industryName,
+        local_count: 1,
+        profile_count: 1,
+      })) {
+        assert(
+          row[field] === expectedValue,
+          `${fixture.loginEmail} ${field} must match the fixture.`,
+        );
+      }
+    }
+
+    const demoOpportunities = await client.query(
+      `SELECT c.company_name, o.opportunity_id, o.title, o.department,
+              o.description, o.qualification,
+              (o.allowance IS NOT NULL) AS has_allowance, o.allowance,
+              o.minimum_required_hours, o.work_arrangement, o.offered_slots,
+              (o.application_deadline AT TIME ZONE 'Asia/Manila')::date::text
+                AS local_deadline,
+              o.created_at, o.application_deadline AS deadline_timestamp
+         FROM public.opportunity o
+         JOIN public.company c USING (company_id)
+        WHERE c.user_account_id IN (
+          SELECT user_account_id FROM public.user_account
+           WHERE email = ANY($1::text[])
+        )`,
+      [newCompanyEmails],
+    );
+    const expectedOpportunities = DEVELOPMENT_COMPANY_FIXTURES.flatMap(
+      (company) =>
+        company.opportunities.map((opportunity) => ({ company, opportunity })),
+    );
+    assert(
+      demoOpportunities.rowCount === 27,
+      'All 27 supplied opportunities are required.',
+    );
+    for (const { company, opportunity } of expectedOpportunities) {
+      const row = demoOpportunities.rows.find(
+        (candidate) =>
+          candidate.company_name === company.companyName &&
+          candidate.title === opportunity.title,
+      );
+      assert(
+        row,
+        `Missing opportunity ${company.companyName}: ${opportunity.title}.`,
+      );
+      for (const [field, expectedValue] of Object.entries({
+        department: opportunity.department,
+        description: opportunity.description,
+        qualification: opportunity.qualification,
+        has_allowance: opportunity.allowance !== null,
+        allowance: opportunity.allowance,
+        minimum_required_hours: opportunity.minimumRequiredHours,
+        work_arrangement: opportunity.workArrangement,
+        offered_slots: opportunity.offeredSlots,
+        local_deadline: opportunity.applicationDeadline.slice(0, 10),
+      })) {
+        assert(
+          row[field] === expectedValue,
+          `${company.companyName}: ${opportunity.title} ${field} must match the fixture.`,
+        );
+      }
+      assert(
+        new Date(row.created_at) < new Date(row.deadline_timestamp),
+        `${opportunity.title} must be created before its deadline.`,
+      );
+    }
+
+    const demoStudents = await client.query(
+      `SELECT ua.email, ua.account_status,
+              ua.created_at AS account_created_at,
+              s.created_at AS student_created_at,
+              sai.created_at AS academic_created_at,
+              s.student_id, s.first_name,
+              s.middle_name, s.last_name, s.contact_number, s.contact_email,
+              s.address_line, s.address_barangay, s.address_district, s.address_city,
+              sai.strand_program, ip.required_hours,
+              ip.start_date::text AS preference_start_date,
+              ip.created_at AS preference_created_at, c.company_name,
+              o.title AS opportunity_title, ci.industry_name AS company_industry,
+              (SELECT array_agg(pi.industry_name ORDER BY pi.industry_name)
+                 FROM public.student_preferred_industry spi
+                 JOIN public.industry pi USING (industry_id)
+                WHERE spi.student_id = s.student_id) AS preferred_industries,
+              (SELECT min(spi.created_at)
+                 FROM public.student_preferred_industry spi
+                WHERE spi.student_id = s.student_id)
+                AS preferred_industry_created_at,
+              a.application_id, a.application_status, a.student_response,
+              a.submitted_at, o.created_at AS opportunity_created_at,
+              o.application_deadline,
+              r.referral_id, r.referral_status, r.company_response,
+              i.interview_id, i.interview_mode, i.created_at AS interview_created_at,
+              i.scheduled_at, ia.internship_assignment_id, ia.assignment_status,
+              to_char(ia.start_date, 'YYYY-MM-DD') AS start_date,
+              to_char(ia.expected_end_date, 'YYYY-MM-DD') AS expected_end_date,
+              count(ar.attendance_record_id)::integer AS attendance_count
+         FROM public.user_account ua
+         JOIN public.student s USING (user_account_id)
+         JOIN public.student_academic_information sai USING (student_id)
+         JOIN public.internship_preference ip USING (student_id)
+         LEFT JOIN public.application a USING (student_id)
+         LEFT JOIN public.opportunity o USING (opportunity_id)
+         LEFT JOIN public.company c USING (company_id)
+         LEFT JOIN public.industry ci ON ci.industry_id = c.industry_id
+         LEFT JOIN public.referral r USING (application_id)
+         LEFT JOIN public.interview i USING (referral_id)
+         LEFT JOIN public.internship_assignment ia USING (referral_id)
+         LEFT JOIN public.attendance_record ar USING (internship_assignment_id)
+        WHERE ua.email = ANY($1::text[])
+        GROUP BY ua.email, ua.account_status, ua.created_at, s.student_id,
+                 s.created_at, sai.created_at, sai.strand_program,
+                 ip.required_hours, ip.start_date, ip.created_at,
+                 c.company_name, o.title, ci.industry_name,
+                 a.application_id, a.application_status, a.student_response,
+                 a.submitted_at, o.created_at, o.application_deadline,
+                 r.referral_id, r.referral_status, r.company_response,
+                 i.interview_id, i.interview_mode, i.created_at, i.scheduled_at,
+                 ia.internship_assignment_id, ia.assignment_status,
+                 ia.start_date, ia.expected_end_date`,
+      [newStudentEmails],
+    );
+    assert(
+      demoStudents.rowCount === 27,
+      'All 27 student demo accounts are required.',
+    );
+    const demoStudentsByEmail = new Map(
+      demoStudents.rows.map((row) => [row.email, row]),
+    );
+    const companyByKey = new Map(
+      DEVELOPMENT_COMPANY_FIXTURES.map((fixture) => [fixture.key, fixture]),
+    );
+    for (const fixture of DEVELOPMENT_STUDENT_FIXTURES) {
+      const row = demoStudentsByEmail.get(fixture.loginEmail);
+      const company = companyByKey.get(fixture.companyKey);
+      const opportunity = company?.opportunities.find(
+        (item) => item.key === fixture.opportunityKey,
+      );
+      assert(row, `Missing student profile ${fixture.loginEmail}.`);
+      assert(
+        company && opportunity,
+        `${fixture.loginEmail} must target a fixture opportunity.`,
+      );
+      for (const createdAt of [
+        row.account_created_at,
+        row.student_created_at,
+        row.academic_created_at,
+        row.preference_created_at,
+        row.preferred_industry_created_at,
+      ]) {
+        assert(
+          new Date(createdAt) <
+            new Date(DEVELOPMENT_WORKFLOW_TIMELINE.applicationSubmittedAt),
+          `${fixture.loginEmail} account/profile rows must predate applications.`,
+        );
+      }
+      for (const [field, expectedValue] of Object.entries({
+        account_status: 'active',
+        first_name: fixture.firstName,
+        middle_name: fixture.middleName,
+        last_name: fixture.lastName,
+        contact_number: fixture.contactNumber,
+        contact_email: fixture.loginEmail,
+        address_line: fixture.addressLine,
+        address_barangay: fixture.addressBarangay,
+        address_district: fixture.addressDistrict,
+        address_city: fixture.addressCity,
+        strand_program: fixture.program,
+        required_hours: opportunity.minimumRequiredHours,
+        preference_start_date:
+          DEVELOPMENT_WORKFLOW_TIMELINE.preferenceStartDate,
+        company_name: company.companyName,
+        opportunity_title: opportunity.title,
+        company_industry: company.industryName,
+      })) {
+        assert(
+          row[field] === expectedValue,
+          `${fixture.loginEmail} ${field} must match its fixture.`,
+        );
+      }
+      assert(
+        row.preferred_industries?.includes(company.industryName),
+        `${fixture.loginEmail} requires its target industry preference.`,
+      );
+      assert(
+        new Date(row.preference_created_at) <
+          new Date(row.preference_start_date),
+        `${fixture.loginEmail} preference dates must be deterministic and valid.`,
+      );
+      assert(
+        row.application_id,
+        `${fixture.loginEmail} requires an application.`,
+      );
+      assert(
+        new Date(row.opportunity_created_at) <
+          new Date(row.application_deadline),
+        `${fixture.loginEmail} opportunity must be created before its deadline.`,
+      );
+      assert(
+        new Date(row.submitted_at) < new Date(row.application_deadline),
+        `${fixture.loginEmail} application must be submitted before its deadline.`,
+      );
+
+      if (fixture.workflowStage === 'applicant') {
+        assert(
+          ['submitted', 'under_review'].includes(row.application_status),
+          `${fixture.loginEmail} must be an applicant.`,
+        );
+        assert(
+          row.application_status === fixture.applicationStatus,
+          `${fixture.loginEmail} application status must match its fixture.`,
+        );
+        assert(
+          !row.referral_id &&
+            !row.interview_id &&
+            !row.internship_assignment_id,
+          `${fixture.loginEmail} applicant must not have later workflow records.`,
+        );
+        assert(
+          row.attendance_count === 0,
+          `${fixture.loginEmail} applicant must have no attendance.`,
+        );
+      } else if (fixture.workflowStage === 'interview') {
+        assert(
+          row.application_status === 'approved_for_referral',
+          `${fixture.loginEmail} must be approved for referral.`,
+        );
+        assert(
+          row.referral_id &&
+            row.referral_status === 'under_review' &&
+            row.company_response === 'for_interview',
+          `${fixture.loginEmail} requires an interview-stage referral.`,
+        );
+        assert(
+          row.interview_id && row.interview_mode === fixture.interviewMode,
+          `${fixture.loginEmail} requires its scheduled interview.`,
+        );
+        assert(
+          new Date(row.interview_created_at) < new Date(row.scheduled_at),
+          `${fixture.loginEmail} interview must be created before it is scheduled.`,
+        );
+        assert(
+          !row.internship_assignment_id && row.attendance_count === 0,
+          `${fixture.loginEmail} interview candidate must not have an assignment.`,
+        );
+      } else {
+        assert(
+          row.application_status === 'closed' &&
+            row.student_response === 'accepted',
+          `${fixture.loginEmail} requires an accepted application.`,
+        );
+        assert(
+          row.referral_id &&
+            row.referral_status === 'closed' &&
+            row.company_response === 'accepted',
+          `${fixture.loginEmail} requires an accepted referral.`,
+        );
+        assert(
+          row.internship_assignment_id && row.assignment_status === 'ongoing',
+          `${fixture.loginEmail} requires an ongoing assignment.`,
+        );
+        assert(
+          String(row.start_date).slice(0, 10) === '2026-09-01',
+          `${fixture.loginEmail} assignment must use the historical start date.`,
+        );
+        assert(
+          row.attendance_count === 8,
+          `${fixture.loginEmail} must have eight attendance entries.`,
+        );
+      }
+    }
+    for (const [stage, expectedCount] of [
+      ['applicant', 9],
+      ['interview', 9],
+      ['intern', 9],
+    ]) {
+      assert(
+        DEVELOPMENT_STUDENT_FIXTURES.filter(
+          (fixture) => fixture.workflowStage === stage,
+        ).length === expectedCount,
+        `Expected ${expectedCount} ${stage} fixtures.`,
+      );
+    }
+
+    const demoAttendance = await client.query(
+      `SELECT ua.email, ar.attendance_date::text AS attendance_date,
+              ar.attendance_status, ar.rendered_minutes,
+              to_char(ar.time_in, 'HH24:MI') AS time_in,
+              CASE WHEN ar.time_out IS NULL THEN NULL
+                   ELSE to_char(ar.time_out, 'HH24:MI') END AS time_out,
+              to_char(ia.start_date, 'YYYY-MM-DD') AS start_date,
+              to_char(ia.expected_end_date, 'YYYY-MM-DD') AS expected_end_date
+         FROM public.attendance_record ar
+         JOIN public.internship_assignment ia USING (internship_assignment_id)
+         JOIN public.referral r USING (referral_id)
+         JOIN public.application a USING (application_id)
+         JOIN public.student s USING (student_id)
+         JOIN public.user_account ua USING (user_account_id)
+        WHERE ua.email = ANY($1::text[])
+        ORDER BY ua.email, ar.attendance_date`,
+      [
+        DEVELOPMENT_STUDENT_FIXTURES.filter(
+          (fixture) => fixture.workflowStage === 'intern',
+        ).map((fixture) => fixture.loginEmail),
+      ],
+    );
+    assert(demoAttendance.rowCount === 72, 'Expected 72 intern DTR rows.');
+    assert(
+      demoAttendance.rows.every(
+        (row) =>
+          dateOnly(row.attendance_date) >= dateOnly(row.start_date) &&
+          dateOnly(row.attendance_date) <= dateOnly(row.expected_end_date),
+      ),
+      'DTR dates must fall within the internship period.',
+    );
+    assert(
+      demoAttendance.rows.every((row) => Number(row.rendered_minutes) >= 0),
+      'Attendance trigger must derive nonnegative rendered minutes.',
+    );
+    assert(
+      demoAttendance.rows.every(
+        (row) =>
+          Number(row.rendered_minutes) ===
+          expectedRenderedMinutes(row.time_in, row.time_out),
+      ),
+      'Attendance trigger must derive minutes from punch times minus lunch.',
+    );
+
+    const attendanceSummaries = await client.query(
+      `SELECT ua.email, v.attendance_record_count, v.total_rendered_minutes,
+              v.present_count, v.incomplete_count,
+              (SELECT sum(ar.rendered_minutes)::bigint
+                 FROM public.attendance_record ar
+                WHERE ar.internship_assignment_id = v.internship_assignment_id)
+                AS raw_total
+         FROM public.vw_attendance_summary v
+         JOIN public.internship_assignment ia
+           ON ia.internship_assignment_id = v.internship_assignment_id
+         JOIN public.referral r ON r.referral_id = ia.referral_id
+         JOIN public.application a ON a.application_id = r.application_id
+         JOIN public.student s ON s.student_id = a.student_id
+         JOIN public.user_account ua ON ua.user_account_id = s.user_account_id
+        WHERE ua.email = ANY($1::text[])`,
+      [
+        DEVELOPMENT_STUDENT_FIXTURES.filter(
+          (fixture) => fixture.workflowStage === 'intern',
+        ).map((fixture) => fixture.loginEmail),
+      ],
+    );
+    assert(
+      attendanceSummaries.rowCount === 9,
+      'Every seeded intern must appear in vw_attendance_summary.',
+    );
+    assert(
+      attendanceSummaries.rows.every(
+        (row) =>
+          Number(row.attendance_record_count) === 8 &&
+          Number(row.present_count) === 7 &&
+          Number(row.incomplete_count) === 1 &&
+          Number(row.total_rendered_minutes) === Number(row.raw_total),
+      ),
+      'Attendance summary counts and rendered minutes must reflect trigger-derived DTR rows.',
     );
 
     const opportunities = await client.query(
@@ -509,9 +1055,7 @@ async function main() {
          JOIN public.opportunity o USING (opportunity_id)
         WHERE o.title = 'DEV Remote Healthcare Internship'
           AND ia.assignment_status = 'ongoing'
-          AND ar.attendance_date BETWEEN
-            (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date - 4
-            AND (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date - 1`,
+          AND ar.attendance_date BETWEEN DATE '2026-09-01' AND DATE '2026-09-04'`,
     );
     assert(
       attendance.rowCount === 4,
