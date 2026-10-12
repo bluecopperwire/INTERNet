@@ -1,4 +1,12 @@
 import type { DataSource, EntityManager, QueryRunner } from 'typeorm';
+import {
+  DEVELOPMENT_COMPANY_FIXTURES,
+  DEVELOPMENT_STUDENT_FIXTURES,
+  DEVELOPMENT_WORKFLOW_TIMELINE,
+  type DevelopmentCompanyFixture,
+  type DevelopmentOpportunityFixture,
+  type DevelopmentStudentFixture,
+} from './development.seed.fixtures';
 import { seedReferenceData } from './reference.seed';
 import {
   DEV_PREFIX,
@@ -21,6 +29,8 @@ type SeedIds = {
   students: Record<'manual' | 'google' | 'dual', number>;
   companies: Record<'technology' | 'hospitality', number>;
   personnel: Record<'approved' | 'pending' | 'rejected', number>;
+  demoCompanies: Record<string, number>;
+  demoStudents: Record<string, number>;
 };
 
 const canonicalAccounts = {
@@ -45,6 +55,7 @@ async function ensureAccount(
   manager: EntityManager,
   email: string,
   role: AccountRole,
+  createdAt?: string,
 ): Promise<number> {
   const rows = await manager.query(
     `SELECT user_account_id, user_role, account_status, deleted_at
@@ -66,14 +77,15 @@ async function ensureAccount(
         `Seed account ${email} is not active; refusing to bypass account workflow.`,
       );
     }
-    return account.user_account_id;
+    // Migration 012 makes account.created_at immutable after account-code assignment.
+    return Number(account.user_account_id);
   }
   return oneId(
     manager,
-    `INSERT INTO public.user_account (email, user_role)
-     VALUES (lower($1), $2)
+    `INSERT INTO public.user_account (email, user_role, created_at)
+     VALUES (lower($1), $2, COALESCE($3::timestamptz, CURRENT_TIMESTAMP))
      RETURNING user_account_id`,
-    [email, role],
+    [email, role, createdAt ?? null],
     'user_account_id',
   );
 }
@@ -82,15 +94,18 @@ async function ensureLocalCredential(
   manager: EntityManager,
   accountId: number,
   passwordHash: string,
+  createdAt?: string,
 ): Promise<void> {
   await manager.query(
-    `INSERT INTO public.local_authentication_credential
-       (user_account_id, password_hash)
-     VALUES ($1, $2)
+    `INSERT INTO public.local_authentication_credential AS current_credential
+       (user_account_id, password_hash, password_changed_at, created_at)
+     VALUES ($1, $2, COALESCE($3::timestamptz, CURRENT_TIMESTAMP),
+             COALESCE($3::timestamptz, CURRENT_TIMESTAMP))
      ON CONFLICT (user_account_id) DO UPDATE
        SET password_hash = EXCLUDED.password_hash,
-           password_changed_at = CURRENT_TIMESTAMP`,
-    [accountId, passwordHash],
+           password_changed_at = COALESCE($3::timestamptz, CURRENT_TIMESTAMP),
+           created_at = COALESCE($3::timestamptz, current_credential.created_at)`,
+    [accountId, passwordHash, createdAt ?? null],
   );
 }
 
@@ -237,7 +252,8 @@ async function ensureStudent(
     `INSERT INTO public.internship_preference
        (student_id, required_hours, available_days,
         allows_outside_preferred_field, start_date, preferred_company_type)
-     VALUES ($1, 400, ARRAY[1, 2, 3, 4, 5]::smallint[], true, CURRENT_DATE + 14, 'private')
+     VALUES ($1, 400, ARRAY[1, 2, 3, 4, 5]::smallint[], true,
+             CURRENT_DATE + 14, 'private')
      ON CONFLICT (student_id) DO UPDATE SET
        required_hours = EXCLUDED.required_hours,
        available_days = EXCLUDED.available_days,
@@ -300,6 +316,172 @@ async function ensureCompany(
     ],
     'company_id',
   );
+}
+
+async function ensureDemoCompany(
+  manager: EntityManager,
+  accountId: number,
+  fixture: DevelopmentCompanyFixture,
+): Promise<number> {
+  await assertAccountProfileShape(manager, accountId, 'company');
+  return oneId(
+    manager,
+    `INSERT INTO public.company
+       (user_account_id, industry_id, company_name, company_type, description,
+        website_url, year_established, company_size, contact_email,
+        contact_number, contact_person_first_name, contact_person_middle_name,
+        contact_person_last_name, address_line, address_barangay,
+        address_district, address_city, logo_file_path, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+             $14, $15, $16, $17, $18, $19::timestamptz)
+     ON CONFLICT (user_account_id) DO UPDATE SET
+       industry_id = EXCLUDED.industry_id,
+       company_name = EXCLUDED.company_name,
+       company_type = EXCLUDED.company_type,
+       description = EXCLUDED.description,
+       website_url = EXCLUDED.website_url,
+       year_established = EXCLUDED.year_established,
+       company_size = EXCLUDED.company_size,
+       contact_email = EXCLUDED.contact_email,
+       contact_number = EXCLUDED.contact_number,
+       contact_person_first_name = EXCLUDED.contact_person_first_name,
+       contact_person_middle_name = EXCLUDED.contact_person_middle_name,
+       contact_person_last_name = EXCLUDED.contact_person_last_name,
+       address_line = EXCLUDED.address_line,
+       address_barangay = EXCLUDED.address_barangay,
+       address_district = EXCLUDED.address_district,
+       address_city = EXCLUDED.address_city,
+       logo_file_path = EXCLUDED.logo_file_path,
+       created_at = EXCLUDED.created_at
+     RETURNING company_id`,
+    [
+      accountId,
+      await industryId(manager, fixture.industryName),
+      fixture.companyName,
+      fixture.companyType,
+      fixture.description,
+      fixture.websiteUrl,
+      fixture.yearEstablished,
+      fixture.companySize,
+      fixture.contactEmail,
+      fixture.contactNumber,
+      fixture.contactPersonFirstName,
+      fixture.contactPersonMiddleName,
+      fixture.contactPersonLastName,
+      fixture.addressLine,
+      fixture.addressBarangay,
+      fixture.addressDistrict,
+      fixture.addressCity,
+      `${DEV_PREFIX}companies/${fixture.key}/logo.png`,
+      DEVELOPMENT_WORKFLOW_TIMELINE.accountCreatedAt,
+    ],
+    'company_id',
+  );
+}
+
+async function ensureDemoStudent(
+  manager: EntityManager,
+  accountId: number,
+  fixture: DevelopmentStudentFixture,
+  requiredHours: number,
+  preferredCompanyType: 'government' | 'private',
+  preferredIndustryName: string,
+): Promise<number> {
+  await assertAccountProfileShape(manager, accountId, 'student');
+  const studentId = await oneId(
+    manager,
+    `INSERT INTO public.student
+       (user_account_id, first_name, middle_name, last_name, sex, birth_date,
+        contact_number, contact_email, address_line, address_barangay,
+        address_district, address_city, inquiry_method, photo_file_path,
+        created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
+             'online', $13, $14::timestamptz)
+     ON CONFLICT (user_account_id) DO UPDATE SET
+       first_name = EXCLUDED.first_name,
+       middle_name = EXCLUDED.middle_name,
+       last_name = EXCLUDED.last_name,
+       sex = EXCLUDED.sex,
+       birth_date = EXCLUDED.birth_date,
+       contact_number = EXCLUDED.contact_number,
+       contact_email = EXCLUDED.contact_email,
+       address_line = EXCLUDED.address_line,
+       address_barangay = EXCLUDED.address_barangay,
+       address_district = EXCLUDED.address_district,
+       address_city = EXCLUDED.address_city,
+       inquiry_method = EXCLUDED.inquiry_method,
+       photo_file_path = EXCLUDED.photo_file_path,
+       created_at = EXCLUDED.created_at
+     RETURNING student_id`,
+    [
+      accountId,
+      fixture.firstName,
+      fixture.middleName,
+      fixture.lastName,
+      fixture.sex,
+      fixture.birthDate,
+      fixture.contactNumber,
+      fixture.loginEmail,
+      fixture.addressLine,
+      fixture.addressBarangay,
+      fixture.addressDistrict,
+      fixture.addressCity,
+      `${DEV_PREFIX}students/${fixture.key}/photo.jpg`,
+      DEVELOPMENT_WORKFLOW_TIMELINE.accountCreatedAt,
+    ],
+    'student_id',
+  );
+  await manager.query(
+    `INSERT INTO public.student_academic_information
+       (student_id, school_name, year_level, strand_program, created_at)
+     VALUES ($1, 'Development State University', 'fourth_year_college', $2,
+             $3::timestamptz)
+     ON CONFLICT (student_id) DO UPDATE SET
+       school_name = EXCLUDED.school_name,
+       year_level = EXCLUDED.year_level,
+       strand_program = EXCLUDED.strand_program,
+       created_at = EXCLUDED.created_at`,
+    [
+      studentId,
+      fixture.program,
+      DEVELOPMENT_WORKFLOW_TIMELINE.accountCreatedAt,
+    ],
+  );
+  await manager.query(
+    `INSERT INTO public.internship_preference
+       (student_id, required_hours, available_days,
+        allows_outside_preferred_field, start_date, preferred_company_type,
+        created_at)
+     VALUES ($1, $2, ARRAY[1, 2, 3, 4, 5]::smallint[], false, $3::date, $4,
+             $5::timestamptz)
+     ON CONFLICT (student_id) DO UPDATE SET
+       required_hours = EXCLUDED.required_hours,
+       available_days = EXCLUDED.available_days,
+       allows_outside_preferred_field = EXCLUDED.allows_outside_preferred_field,
+       start_date = EXCLUDED.start_date,
+       preferred_company_type = EXCLUDED.preferred_company_type,
+       created_at = EXCLUDED.created_at`,
+    [
+      studentId,
+      requiredHours,
+      DEVELOPMENT_WORKFLOW_TIMELINE.preferenceStartDate,
+      preferredCompanyType,
+      DEVELOPMENT_WORKFLOW_TIMELINE.preferenceCreatedAt,
+    ],
+  );
+  await manager.query(
+    `INSERT INTO public.student_preferred_industry
+       (student_id, industry_id, created_at)
+     VALUES ($1, $2, $3::timestamptz)
+     ON CONFLICT (student_id, industry_id) DO UPDATE SET
+       created_at = EXCLUDED.created_at`,
+    [
+      studentId,
+      await industryId(manager, preferredIndustryName),
+      DEVELOPMENT_WORKFLOW_TIMELINE.accountCreatedAt,
+    ],
+  );
+  return studentId;
 }
 
 async function ensurePersonnel(
@@ -379,7 +561,8 @@ async function ensureCanonicalStudent(
     `INSERT INTO public.internship_preference
        (student_id, required_hours, available_days, allows_outside_preferred_field,
         start_date, preferred_company_type)
-     VALUES ($1, 400, ARRAY[1, 2, 3, 4, 5]::smallint[], true, CURRENT_DATE + 14, 'private')
+     VALUES ($1, 400, ARRAY[1, 2, 3, 4, 5]::smallint[], true,
+             CURRENT_DATE + 14, 'private')
      ON CONFLICT (student_id) DO UPDATE SET required_hours = EXCLUDED.required_hours,
        available_days = EXCLUDED.available_days,
        allows_outside_preferred_field = EXCLUDED.allows_outside_preferred_field,
@@ -542,6 +725,66 @@ async function seedAccounts(
       personnel[key] = await ensurePersonnel(manager, accountId, key);
     }
 
+    const demoCompanies: Record<string, number> = {};
+    for (const fixture of DEVELOPMENT_COMPANY_FIXTURES) {
+      const accountId = await ensureAccount(
+        manager,
+        fixture.loginEmail,
+        'company',
+        DEVELOPMENT_WORKFLOW_TIMELINE.accountCreatedAt,
+      );
+      await ensureLocalCredential(
+        manager,
+        accountId,
+        passwordHash,
+        DEVELOPMENT_WORKFLOW_TIMELINE.accountCreatedAt,
+      );
+      await removeGoogleIdentity(manager, accountId);
+      seedOwnedAccountIds.push(accountId);
+      demoCompanies[fixture.key] = await ensureDemoCompany(
+        manager,
+        accountId,
+        fixture,
+      );
+    }
+
+    const demoStudents: Record<string, number> = {};
+    for (const fixture of DEVELOPMENT_STUDENT_FIXTURES) {
+      const companyFixture = DEVELOPMENT_COMPANY_FIXTURES.find(
+        (company) => company.key === fixture.companyKey,
+      );
+      const opportunityFixture = companyFixture?.opportunities.find(
+        (opportunity) => opportunity.key === fixture.opportunityKey,
+      );
+      if (!companyFixture || !opportunityFixture) {
+        throw new Error(
+          `Development student fixture ${fixture.key} references an unknown company or opportunity.`,
+        );
+      }
+      const accountId = await ensureAccount(
+        manager,
+        fixture.loginEmail,
+        'student',
+        DEVELOPMENT_WORKFLOW_TIMELINE.accountCreatedAt,
+      );
+      await ensureLocalCredential(
+        manager,
+        accountId,
+        passwordHash,
+        DEVELOPMENT_WORKFLOW_TIMELINE.accountCreatedAt,
+      );
+      await removeGoogleIdentity(manager, accountId);
+      seedOwnedAccountIds.push(accountId);
+      demoStudents[fixture.key] = await ensureDemoStudent(
+        manager,
+        accountId,
+        fixture,
+        opportunityFixture.minimumRequiredHours,
+        companyFixture.companyType,
+        companyFixture.industryName,
+      );
+    }
+
     await manager.query(
       `DELETE FROM public.authentication_session
         WHERE user_account_id = ANY($1::integer[])`,
@@ -550,10 +793,22 @@ async function seedAccounts(
     await manager.query(
       `DELETE FROM public.registration_onboarding
         WHERE verified_email = ANY($1::text[])`,
-      [Object.values(canonicalAccounts)],
+      [
+        [
+          ...Object.values(canonicalAccounts),
+          ...DEVELOPMENT_STUDENT_FIXTURES.map((student) => student.loginEmail),
+        ],
+      ],
     );
 
-    return { adminAccountId, students, companies, personnel };
+    return {
+      adminAccountId,
+      students,
+      companies,
+      personnel,
+      demoCompanies,
+      demoStudents,
+    };
   });
 }
 
@@ -584,7 +839,7 @@ async function ensureOpportunity(
       [
         existing[0].opportunity_id,
         arrangement,
-        hasAllowance ? 'PHP 5,000 monthly' : null,
+        hasAllowance ? '₱5,000/month' : null,
         minimumRequiredHours,
         offeredSlots,
       ],
@@ -605,10 +860,79 @@ async function ensureOpportunity(
       companyId,
       title,
       `Synthetic ${title} used only for development and tests.`,
-      hasAllowance ? 'PHP 5,000 monthly' : null,
+      hasAllowance ? '₱5,000/month' : null,
       minimumRequiredHours,
       arrangement,
       offeredSlots,
+    ],
+    'opportunity_id',
+  );
+}
+
+async function ensureDemoOpportunity(
+  manager: EntityManager,
+  companyId: number,
+  fixture: DevelopmentOpportunityFixture,
+): Promise<number> {
+  const existing = await manager.query(
+    `SELECT opportunity_id FROM public.opportunity
+      WHERE company_id = $1 AND title = $2 FOR UPDATE`,
+    [companyId, fixture.title],
+  );
+  if (existing.length > 1) {
+    throw new Error(`Duplicate development opportunity: ${fixture.title}`);
+  }
+
+  if (existing.length === 1) {
+    await manager.query(
+      `UPDATE public.opportunity
+          SET department = $2,
+              description = $3,
+              qualification = $4,
+              allowance = $5,
+              minimum_required_hours = $6,
+              work_arrangement = $7,
+              offered_slots = $8,
+              application_deadline = $9::timestamptz,
+              created_at = $10::timestamptz
+        WHERE opportunity_id = $1`,
+      [
+        existing[0].opportunity_id,
+        fixture.department,
+        fixture.description,
+        fixture.qualification,
+        fixture.allowance,
+        fixture.minimumRequiredHours,
+        fixture.workArrangement,
+        fixture.offeredSlots,
+        fixture.applicationDeadline,
+        DEVELOPMENT_WORKFLOW_TIMELINE.opportunityCreatedAt,
+      ],
+    );
+    return Number(existing[0].opportunity_id);
+  }
+
+  return oneId(
+    manager,
+    `INSERT INTO public.opportunity
+       (company_id, title, department, description, qualification, allowance,
+        minimum_required_hours, work_arrangement, offered_slots,
+        application_deadline, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::timestamptz,
+             $11::timestamptz)
+     RETURNING opportunity_id`,
+    [
+      companyId,
+      fixture.title,
+      fixture.department,
+      fixture.description,
+      fixture.qualification,
+      fixture.allowance,
+      fixture.minimumRequiredHours,
+      fixture.workArrangement,
+      fixture.offeredSlots,
+      fixture.applicationDeadline,
+      DEVELOPMENT_WORKFLOW_TIMELINE.opportunityCreatedAt,
     ],
     'opportunity_id',
   );
@@ -630,9 +954,9 @@ async function transitionApplication(
   for (const status of paths[desired]) {
     await runner.query(
       `UPDATE public.application
-       SET application_status = $2,
+       SET application_status = $2::public.application_status_enum,
            remark = CASE
-             WHEN $2 = 'rejected_for_referral' THEN $3
+             WHEN $2::public.application_status_enum = 'rejected_for_referral' THEN $3
              ELSE NULL
            END
         WHERE application_id = $1`,
@@ -647,15 +971,21 @@ async function ensureApplication(
   opportunityId: number,
   desired: ApplicationStatus,
   adminAccountId: number,
+  submittedAt?: string,
 ): Promise<number> {
   const exact = (await runner.query(
     `SELECT application_id FROM public.application
       WHERE student_id = $1 AND opportunity_id = $2
         AND application_status = $3
-      ORDER BY application_id LIMIT 1`,
+      ORDER BY application_id`,
     [studentId, opportunityId, desired],
   )) as Array<{ application_id: number }>;
-  if (exact.length) return exact[0].application_id;
+  if (exact.length > 1) {
+    throw new Error(
+      `Duplicate ${desired} development applications for student ${studentId} and opportunity ${opportunityId}.`,
+    );
+  }
+  if (exact.length) return Number(exact[0].application_id);
 
   if (desired === 'approved_for_referral') {
     const completed = (await runner.query(
@@ -664,22 +994,33 @@ async function ensureApplication(
        JOIN public.referral r ON r.application_id = a.application_id
        WHERE a.student_id = $1 AND a.opportunity_id = $2
          AND a.application_status = 'closed'
-       ORDER BY a.application_id LIMIT 1`,
+      ORDER BY a.application_id`,
       [studentId, opportunityId],
     )) as Array<{ application_id: number }>;
-    if (completed.length) return completed[0].application_id;
+    if (completed.length > 1) {
+      throw new Error(
+        `Ambiguous completed development applications for student ${studentId} and opportunity ${opportunityId}.`,
+      );
+    }
+    if (completed.length) return Number(completed[0].application_id);
   }
 
   const active = (await runner.query(
     `SELECT application_id, application_status FROM public.application
       WHERE student_id = $1 AND opportunity_id = $2
         AND application_status IN ('submitted', 'under_review', 'approved_for_referral')
-      ORDER BY application_id LIMIT 1`,
+      ORDER BY application_id`,
     [studentId, opportunityId],
   )) as Array<{
     application_id: number;
     application_status: ApplicationStatus;
   }>;
+
+  if (active.length > 1) {
+    throw new Error(
+      `Ambiguous active development applications for student ${studentId} and opportunity ${opportunityId}.`,
+    );
+  }
 
   if (active.length) {
     const app = active[0];
@@ -702,9 +1043,10 @@ async function ensureApplication(
   await setActor(runner, adminAccountId);
   const applicationId = await oneId(
     runner.manager,
-    `INSERT INTO public.application (student_id, opportunity_id)
-     VALUES ($1, $2) RETURNING application_id`,
-    [studentId, opportunityId],
+    `INSERT INTO public.application (student_id, opportunity_id, submitted_at)
+     VALUES ($1, $2, COALESCE($3::timestamptz, CURRENT_TIMESTAMP))
+     RETURNING application_id`,
+    [studentId, opportunityId, submittedAt ?? null],
     'application_id',
   );
   await transitionApplication(runner, applicationId, desired);
@@ -715,21 +1057,32 @@ async function ensureReferral(
   manager: EntityManager,
   applicationId: number,
   personnelId: number,
+  referredAt?: string,
 ): Promise<number> {
   const existing = await manager.query<Array<{ referral_id: number }>>(
     `SELECT referral_id FROM public.referral WHERE application_id = $1`,
     [applicationId],
   );
-  if (existing.length) return existing[0].referral_id;
+  if (existing.length > 1) {
+    throw new Error(
+      `Duplicate development referrals for application ${applicationId}.`,
+    );
+  }
+  if (existing.length) return Number(existing[0].referral_id);
   return oneId(
     manager,
     `INSERT INTO public.referral
-       (application_id, peso_personnel_id, referral_document_file_path)
-     VALUES ($1, $2, $3)
+       (application_id, peso_personnel_id, referral_document_file_path, referred_at)
+     VALUES ($1, $2, $3, COALESCE($4::timestamptz, CURRENT_TIMESTAMP))
      ON CONFLICT (application_id) DO UPDATE SET
        referral_document_file_path = EXCLUDED.referral_document_file_path
      RETURNING referral_id`,
-    [applicationId, personnelId, `${DEV_PREFIX}referrals/${applicationId}.pdf`],
+    [
+      applicationId,
+      personnelId,
+      `${DEV_PREFIX}referrals/${applicationId}.pdf`,
+      referredAt ?? null,
+    ],
     'referral_id',
   );
 }
@@ -740,6 +1093,7 @@ async function setReferralResponse(
   response: 'pending' | 'for_interview' | 'accepted' | 'rejected',
   adminAccountId: number,
   studentAccepts = false,
+  responseAt?: string,
 ): Promise<void> {
   const rows = (await runner.query(
     `SELECT referral_status, company_response FROM public.referral
@@ -756,25 +1110,26 @@ async function setReferralResponse(
     await runner.query(
       `UPDATE public.referral
           SET referral_status = 'under_review', company_response = $2,
-              company_responded_at = CURRENT_TIMESTAMP
+              company_responded_at = COALESCE($3::timestamptz, CURRENT_TIMESTAMP)
         WHERE referral_id = $1`,
-      [referralId, response],
+      [referralId, response, responseAt ?? null],
     );
   } else if (response === 'accepted') {
     await runner.query(
       `UPDATE public.referral
           SET referral_status = 'under_review', company_response = $2,
-              company_responded_at = CURRENT_TIMESTAMP
+              company_responded_at = COALESCE($3::timestamptz, CURRENT_TIMESTAMP)
         WHERE referral_id = $1`,
-      [referralId, response],
+      [referralId, response, responseAt ?? null],
     );
     if (studentAccepts) {
       await runner.query(
         `UPDATE public.application a
-            SET student_response = 'accepted', student_responded_at = CURRENT_TIMESTAMP
+            SET student_response = 'accepted',
+                student_responded_at = COALESCE($2::timestamptz, CURRENT_TIMESTAMP)
            FROM public.referral r
           WHERE r.referral_id = $1 AND a.application_id = r.application_id`,
-        [referralId],
+        [referralId, responseAt ?? null],
       );
       await runner.query(
         `UPDATE public.referral SET referral_status = 'closed'
@@ -815,31 +1170,46 @@ async function ensureInterview(
   manager: EntityManager,
   referralId: number,
   mode: 'physical' | 'online',
+  timeline?: { createdAt: string; scheduledAt: string },
 ): Promise<void> {
   await manager.query(
     `INSERT INTO public.interview
        (referral_id, scheduled_at, interview_mode, physical_location,
-        online_meeting_url, remark)
-     VALUES ($1, CURRENT_TIMESTAMP + INTERVAL '30 days', $2, $3, $4,
-             'Synthetic upcoming interview.')
+        online_meeting_url, remark, created_at)
+     VALUES ($1, COALESCE($2::timestamptz, CURRENT_TIMESTAMP + INTERVAL '30 days'),
+             $3, $4, $5, 'Development demo interview.',
+             COALESCE($6::timestamptz, CURRENT_TIMESTAMP))
      ON CONFLICT (referral_id) DO UPDATE SET
+       scheduled_at = EXCLUDED.scheduled_at,
        interview_mode = EXCLUDED.interview_mode,
        physical_location = EXCLUDED.physical_location,
-       online_meeting_url = EXCLUDED.online_meeting_url`,
+       online_meeting_url = EXCLUDED.online_meeting_url,
+       remark = EXCLUDED.remark,
+       created_at = EXCLUDED.created_at`,
     [
       referralId,
+      timeline?.scheduledAt ?? null,
       mode,
       mode === 'physical' ? 'DevSeed Office, Quezon City' : null,
       mode === 'online' ? 'https://meet.dev-seed.invalid/interview' : null,
+      timeline?.createdAt ?? null,
     ],
   );
 }
+
+type AssignmentTimeline = {
+  requiredMinutes: number;
+  startDate: string;
+  expectedEndDate: string;
+  createdAt: string;
+};
 
 async function ensureAssignment(
   runner: QueryRunner,
   referralId: number,
   desired: 'pending' | 'ongoing' | 'completed',
   adminAccountId: number,
+  timeline?: AssignmentTimeline,
 ): Promise<number> {
   const existing = (await runner.query(
     `SELECT internship_assignment_id, assignment_status
@@ -855,21 +1225,54 @@ async function ensureAssignment(
     assignmentId = existing[0].internship_assignment_id;
     status = existing[0].assignment_status;
   } else {
-    const startDateSql =
-      desired === 'pending' ? 'CURRENT_DATE + 14' : 'CURRENT_DATE - 60';
-    const requiredMinutes = desired === 'completed' ? 480 : 24_000;
+    const startDate =
+      timeline?.startDate ??
+      (desired === 'pending'
+        ? '2026-10-23'
+        : desired === 'ongoing'
+          ? '2026-09-01'
+          : '2026-08-01');
+    const expectedEndDate = timeline?.expectedEndDate ?? '2026-12-31';
+    const requiredMinutes =
+      timeline?.requiredMinutes ?? (desired === 'completed' ? 480 : 24_000);
+    const createdAt =
+      timeline?.createdAt ??
+      (desired === 'completed'
+        ? '2026-07-30T09:00:00+08:00'
+        : '2026-08-26T09:00:00+08:00');
     assignmentId = await oneId(
       runner.manager,
       `INSERT INTO public.internship_assignment
          (referral_id, required_minutes, start_date, expected_end_date,
-          working_days, start_shift, end_shift)
-       VALUES ($1, $2, ${startDateSql}, CURRENT_DATE + 90,
-               ARRAY[1, 2, 3, 4, 5]::smallint[], TIME '09:00', TIME '17:00')
+          working_days, start_shift, end_shift, created_at)
+       VALUES ($1, $2, $3::date, $4::date, ARRAY[1, 2, 3, 4, 5]::smallint[],
+               TIME '09:00',
+               TIME '17:00', COALESCE($5::timestamptz, CURRENT_TIMESTAMP))
        RETURNING internship_assignment_id`,
-      [referralId, requiredMinutes],
+      [referralId, requiredMinutes, startDate, expectedEndDate, createdAt],
       'internship_assignment_id',
     );
     status = 'pending';
+  }
+  if (timeline && existing.length) {
+    await runner.query(
+      `UPDATE public.internship_assignment
+          SET required_minutes = $2,
+              start_date = $3::date,
+              expected_end_date = $4::date,
+              working_days = ARRAY[1, 2, 3, 4, 5]::smallint[],
+              start_shift = TIME '09:00',
+              end_shift = TIME '17:00',
+              created_at = $5::timestamptz
+        WHERE internship_assignment_id = $1`,
+      [
+        assignmentId,
+        timeline.requiredMinutes,
+        timeline.startDate,
+        timeline.expectedEndDate,
+        timeline.createdAt,
+      ],
+    );
   }
   await setActor(runner, adminAccountId);
   if (
@@ -887,8 +1290,8 @@ async function ensureAssignment(
     await runner.query(
       `INSERT INTO public.attendance_record (
          internship_assignment_id, attendance_date, attendance_status,
-         time_in, time_out, rendered_minutes
-       ) VALUES ($1, CURRENT_DATE - 1, 'present', TIME '08:00', TIME '17:00', 0)
+         time_in, time_out
+       ) VALUES ($1, DATE '2026-08-28', 'present', TIME '08:00', TIME '17:00')
        ON CONFLICT (internship_assignment_id, attendance_date) DO NOTHING`,
       [assignmentId],
     );
@@ -931,11 +1334,129 @@ async function ensureAssignment(
   return assignmentId;
 }
 
+async function seedDemonstrationScenarios(
+  runner: QueryRunner,
+  ids: SeedIds,
+  opportunityIds: Record<string, Record<string, number>>,
+): Promise<void> {
+  const timeline = DEVELOPMENT_WORKFLOW_TIMELINE;
+
+  for (const fixture of DEVELOPMENT_STUDENT_FIXTURES) {
+    const company = DEVELOPMENT_COMPANY_FIXTURES.find(
+      (candidate) => candidate.key === fixture.companyKey,
+    );
+    const opportunity = company?.opportunities.find(
+      (candidate) => candidate.key === fixture.opportunityKey,
+    );
+    const studentId = ids.demoStudents[fixture.key];
+    const opportunityId =
+      opportunityIds[fixture.companyKey]?.[fixture.opportunityKey];
+    if (!company || !opportunity || !studentId || !opportunityId) {
+      throw new Error(
+        `Development workflow fixture ${fixture.key} references missing seeded data.`,
+      );
+    }
+
+    const applicationId = await ensureApplication(
+      runner,
+      studentId,
+      opportunityId,
+      fixture.workflowStage === 'applicant'
+        ? (fixture.applicationStatus ?? 'submitted')
+        : 'approved_for_referral',
+      ids.adminAccountId,
+      timeline.applicationSubmittedAt,
+    );
+    if (fixture.workflowStage === 'applicant') continue;
+
+    const referralId = await ensureReferral(
+      runner.manager,
+      applicationId,
+      ids.personnel.approved,
+      timeline.referralCreatedAt,
+    );
+    if (fixture.workflowStage === 'interview') {
+      await setReferralResponse(
+        runner,
+        referralId,
+        'for_interview',
+        ids.adminAccountId,
+        false,
+        timeline.interviewCreatedAt,
+      );
+      await ensureInterview(
+        runner.manager,
+        referralId,
+        fixture.interviewMode ?? 'online',
+        {
+          createdAt: timeline.interviewCreatedAt,
+          scheduledAt: timeline.interviewScheduledAt,
+        },
+      );
+      continue;
+    }
+
+    await setReferralResponse(
+      runner,
+      referralId,
+      'accepted',
+      ids.adminAccountId,
+      true,
+      timeline.companyAcceptedAt,
+    );
+    const assignmentId = await ensureAssignment(
+      runner,
+      referralId,
+      'ongoing',
+      ids.adminAccountId,
+      {
+        requiredMinutes: opportunity.minimumRequiredHours * 60,
+        startDate: timeline.assignmentStartDate,
+        expectedEndDate: timeline.assignmentExpectedEndDate,
+        createdAt: timeline.assignmentCreatedAt,
+      },
+    );
+    for (const attendance of timeline.attendance) {
+      await runner.query(
+        `INSERT INTO public.attendance_record
+           (internship_assignment_id, attendance_date, attendance_status,
+            time_in, time_out)
+         VALUES ($1, $2::date, $3::public.attendance_status_enum,
+                 $4::time, $5::time)
+         ON CONFLICT (internship_assignment_id, attendance_date) DO UPDATE SET
+           attendance_status = EXCLUDED.attendance_status,
+           time_in = EXCLUDED.time_in,
+           time_out = EXCLUDED.time_out`,
+        [
+          assignmentId,
+          attendance.date,
+          attendance.status,
+          attendance.timeIn,
+          attendance.timeOut,
+        ],
+      );
+    }
+  }
+}
+
 async function seedDomain(dataSource: DataSource, ids: SeedIds): Promise<void> {
   const runner = dataSource.createQueryRunner();
   await runner.connect();
   await runner.startTransaction();
   try {
+    const demoOpportunityIds: Record<string, Record<string, number>> = {};
+    for (const company of DEVELOPMENT_COMPANY_FIXTURES) {
+      const companyId = ids.demoCompanies[company.key];
+      if (!companyId) {
+        throw new Error(`Missing seeded company profile: ${company.key}`);
+      }
+      demoOpportunityIds[company.key] = {};
+      for (const opportunity of company.opportunities) {
+        demoOpportunityIds[company.key][opportunity.key] =
+          await ensureDemoOpportunity(runner.manager, companyId, opportunity);
+      }
+    }
+
     const openTechnology = await ensureOpportunity(
       runner.manager,
       ids.companies.technology,
@@ -1171,24 +1692,24 @@ async function seedDomain(dataSource: DataSource, ids: SeedIds): Promise<void> {
     );
 
     const attendance = [
-      [-4, '09:00', '17:00'],
-      [-3, '09:30', '16:00'],
-      [-2, '08:45', '18:00'],
-      [-1, '09:15', null],
+      ['2026-09-01', '09:00', '17:00'],
+      ['2026-09-02', '09:30', '16:00'],
+      ['2026-09-03', '08:45', '18:00'],
+      ['2026-09-04', '09:15', null],
     ] as const;
-    for (const [dayOffset, timeIn, timeOut] of attendance) {
+    for (const [attendanceDate, timeIn, timeOut] of attendance) {
       await runner.query(
         `INSERT INTO public.attendance_record
            (internship_assignment_id, attendance_date, attendance_status,
-            time_in, time_out, rendered_minutes)
-         VALUES ($1, (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date + $2::integer,
+            time_in, time_out)
+         VALUES ($1, $2::date,
                  CASE WHEN $4::time IS NULL THEN 'incomplete'::public.attendance_status_enum ELSE 'present'::public.attendance_status_enum END,
-                 $3, $4, 0)
+                 $3, $4)
          ON CONFLICT (internship_assignment_id, attendance_date) DO UPDATE SET
            attendance_status = EXCLUDED.attendance_status,
            time_in = EXCLUDED.time_in,
            time_out = EXCLUDED.time_out`,
-        [ongoingAssignment, dayOffset, timeIn, timeOut],
+        [ongoingAssignment, attendanceDate, timeIn, timeOut],
       );
     }
     await runner.query(
@@ -1237,6 +1758,20 @@ async function seedDomain(dataSource: DataSource, ids: SeedIds): Promise<void> {
         }
       }
     }
+
+    await seedDemonstrationScenarios(runner, ids, demoOpportunityIds);
+    const allDemoOpportunityIds = Object.values(demoOpportunityIds).flatMap(
+      (companyOpportunities) => Object.values(companyOpportunities),
+    );
+    await setActor(runner, ids.adminAccountId);
+    await runner.query(
+      `UPDATE public.opportunity
+          SET opportunity_status = 'closed'
+        WHERE opportunity_id = ANY($1::integer[])
+          AND opportunity_status = 'open'
+          AND application_deadline <= CURRENT_TIMESTAMP`,
+      [allDemoOpportunityIds],
+    );
     await runner.commitTransaction();
   } catch (error) {
     await runner.rollbackTransaction();
@@ -1254,33 +1789,41 @@ export async function seedDevelopmentData(
   const passwordHash = await hashDevelopmentPassword(password);
   const ids = await seedAccounts(dataSource, passwordHash);
   await seedDomain(dataSource, ids);
-  console.log(
-    'Development seed completed (13 accounts; no sessions/onboarding).',
+  const accountsByRole = {
+    COMPANIES: [
+      canonicalAccounts.company,
+      'company.tech@internet.local',
+      'company.hospitality@internet.local',
+      ...DEVELOPMENT_COMPANY_FIXTURES.map((company) => company.loginEmail),
+    ],
+    STUDENTS: [
+      canonicalAccounts.student,
+      'student.manual@internet.local',
+      'student.dual@internet.local',
+      ...DEVELOPMENT_STUDENT_FIXTURES.map((student) => student.loginEmail),
+    ],
+    'PESO PERSONNEL': [
+      canonicalAccounts.personnel,
+      'peso.approved@internet.local',
+      'peso.pending@internet.local',
+      'peso.rejected@internet.local',
+    ],
+    ADMINS: [canonicalAccounts.admin, 'admin.dev@internet.local'],
+  };
+  const googleOnlyAccounts = ['student.google@internet.local'];
+  const accountCount = Object.values(accountsByRole).reduce(
+    (count, emails) => count + emails.length,
+    googleOnlyAccounts.length,
   );
-  console.log('Usable development accounts (password: DEV_SEED_PASSWORD):');
-  console.log('- student.dev@example.com | student | active | local');
-  console.log('- company.dev@example.com | company | active | local');
-  console.log('- peso.dev@example.com | peso_personnel | active | local');
-  console.log('- admin.dev@example.com | admin | active | local');
-  console.log('- admin.dev@internet.local | admin | active | local');
-  console.log('- student.manual@internet.local | student | active | local');
+
   console.log(
-    '- student.google@internet.local | student | active | Google only',
+    `Development seed completed (${accountCount} seed-owned accounts; seed-owned sessions and student onboarding cleaned).`,
   );
-  console.log(
-    '- student.dual@internet.local | student | active | local + Google',
-  );
-  console.log('- company.tech@internet.local | company | active | local');
-  console.log(
-    '- company.hospitality@internet.local | company | active | local',
-  );
-  console.log(
-    '- peso.approved@internet.local | peso_personnel | active | local',
-  );
-  console.log(
-    '- peso.pending@internet.local | peso_personnel | active | local',
-  );
-  console.log(
-    '- peso.rejected@internet.local | peso_personnel | active | local',
-  );
+  for (const [role, emails] of Object.entries(accountsByRole)) {
+    console.log(`${role}:`);
+    for (const email of emails) console.log(`- ${email}`);
+  }
+  console.log('GOOGLE ONLY (no local password):');
+  for (const email of googleOnlyAccounts) console.log(`- ${email}`);
+  console.log('Password: value from DEV_SEED_PASSWORD');
 }
