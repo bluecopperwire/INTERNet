@@ -10,6 +10,7 @@ import { getErrorMessage } from '../../../utils/error-message'
 import { CONTACT_NUMBER_PLACEHOLDER, getContactNumberError, sanitizeContactNumberInput } from '../../../utils/input-validation'
 import { DistrictSelect } from '../../../components/DistrictSelect'
 import { districtAddressPart } from '../../../utils/district'
+import { CompanyAvatar } from '../../../components/CompanyAvatar'
 
 const INDUSTRIES = [
   'Office Administration',
@@ -107,9 +108,13 @@ export function AdminEmployerDetailsPage() {
 
           <div className={detailStyles.body}>
             <section className={detailStyles.summary}>
-              <span className={detailStyles.avatar}>
-                {record.profileImageUrl ? <img src={record.profileImageUrl} alt={`${record.companyName} profile`} /> : <Building2 size={30} />}
-              </span>
+              <CompanyAvatar
+                name={record.companyName}
+                src={record.profileImageUrl}
+                size={70}
+                fontSize={28}
+                className={detailStyles.avatar}
+              />
               <div className={detailStyles.summaryInfo}>
                 <h2>{record.companyName}</h2>
                 <div>

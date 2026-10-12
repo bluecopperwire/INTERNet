@@ -5,6 +5,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { qcpesoService } from '../services/qcpeso.service'
 import type { MonitoredCompanyUser, MonitoredStudentUser, MonitorUserStatus } from '../types/qcpeso.types'
 import { formatYearLevel } from '../../../utils/year-level'
+import { CompanyAvatar } from '../../../components/CompanyAvatar'
 import styles from './MonitorUserDetailsPage.module.css'
 
 type MonitoredUser = MonitoredStudentUser | MonitoredCompanyUser
@@ -55,7 +56,21 @@ function StudentProfile({ student }: { student: MonitoredStudentUser }) {
 
 function CompanyProfile({ company }: { company: MonitoredCompanyUser }) {
   return <div className={styles.body}>
-    <ProfileSummary imageUrl={company.profileImageUrl} icon={<Building2 size={30} />} name={company.companyName} email={company.email} phone={company.contactNumber} address={company.address} status={company.status} />
+    <section className={styles.summary}>
+      <CompanyAvatar
+        name={company.companyName}
+        src={company.profileImageUrl}
+        size={70}
+        fontSize={28}
+        className={styles.avatar}
+      />
+      <div className={styles.summaryInfo}>
+        <h2>{company.companyName}</h2>
+        <div><span><Mail size={16} />{company.email}</span><span><Phone size={16} />{company.contactNumber}</span></div>
+        <span><MapPin size={16} />{company.address}</span>
+      </div>
+      <StatusPill status={company.status} />
+    </section>
     <InfoCard icon={<Building2 size={21} />} title="About Company" description={company.description} />
     <InfoCard icon={<Building2 size={21} />} title="Company Information" items={[["Company Name", company.companyName], ["Company Type", company.companyType], ["Industry", company.industry], ["Company Address", company.address], ["Company Size", company.companySize], ["Company Year Established", company.yearEstablished], ["Website URL", company.websiteUrl], ["Date Registered", company.dateRegistered]]} />
     <InfoCard icon={<UserRound size={21} />} title="Contact Information" items={[["Contact Person", company.contactPerson], ["Contact Email", company.email], ["Contact Number", company.contactNumber]]} />

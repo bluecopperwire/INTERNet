@@ -177,11 +177,11 @@
   align-items: center;
   justify-content: center;
   flex: none;
-  border: 1px solid #dfe2e7;
+  border: 1px solid #bfdbfe;
   border-radius: 50%;
-  background: #edf0f7;
-  color: #21167b;
-  font-size: 11px;
+  background: #e0edff;
+  color: #160e6f;
+  font-size: 15px;
   font-weight: 700;
 }
 

@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom'
 import { useInternshipPortal } from '../hooks/useInternshipPortal'
 import type { InternshipOpportunity, PartnerCompany } from '../types/internship.types'
 import OpportunityDetail from '../components/OpportunityDetail'
+import { CompanyAvatar } from '../../../components/CompanyAvatar'
 import styles from './InternshipPortalPage.module.css'
 
 const SLIDE_COUNT = 3
@@ -185,24 +186,15 @@ function SectionHeading({ id, title, light = false, onPrevious, onNext }: Sectio
 }
 
 function OpportunityCard({ opportunity, onSelect }: { opportunity: InternshipOpportunity; onSelect: (opportunity: InternshipOpportunity) => void }) {
-  const companyInitials = opportunity.companyName
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map(part => part[0])
-    .join('')
-    .toUpperCase()
-
   return (
     <button className={styles.opportunityCard} type="button" onClick={() => onSelect(opportunity)}>
       <div className={styles.cardCompanyRow}>
-        <span className={styles.companyMark} aria-hidden="true">
-          {opportunity.companyLogoUrl ? (
-            <img src={opportunity.companyLogoUrl} alt="" />
-          ) : (
-            companyInitials
-          )}
-        </span>
+        <CompanyAvatar
+          name={opportunity.companyName}
+          src={opportunity.companyLogoUrl}
+          size={37}
+          className={styles.companyMark}
+        />
         <span className={styles.cardCompanyName} title={opportunity.companyName}>
           {opportunity.companyName}
         </span>
@@ -218,13 +210,6 @@ function OpportunityCard({ opportunity, onSelect }: { opportunity: InternshipOpp
 }
 
 function CompanyCard({ company, onSelect }: { company: PartnerCompany; onSelect: (company: PartnerCompany) => void }) {
-  const companyInitials = company.name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map(part => part[0])
-    .join('')
-    .toUpperCase()
   const companyNameClass = company.name.length > 42
     ? styles.veryLongCompanyName
     : company.name.length > 28
@@ -233,9 +218,12 @@ function CompanyCard({ company, onSelect }: { company: PartnerCompany; onSelect:
 
   return (
     <button className={styles.companyCard} type="button" onClick={() => onSelect(company)}>
-      <span className={styles.companyLogoPlaceholder} aria-hidden="true">
-        {company.logoUrl ? <img src={company.logoUrl} alt="" /> : companyInitials}
-      </span>
+      <CompanyAvatar
+        name={company.name}
+        src={company.logoUrl}
+        size={70}
+        className={styles.companyLogoPlaceholder}
+      />
       <h3 className={companyNameClass}>{company.name}</h3>
       <p className={styles.companyIndustry}>{company.industry}</p>
       <p className={styles.companyDescription}>{company.about}</p>

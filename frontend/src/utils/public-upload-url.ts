@@ -5,6 +5,7 @@ export function publicUploadUrl(
   version?: string | Date | null,
 ): string | undefined {
   if (!storedPath) return undefined
+  if (storedPath.startsWith('dev-seed/')) return undefined
   if (/^(?:https?:|data:|blob:)/i.test(storedPath)) return storedPath
 
   const url = `${API_BASE_URL}/${storedPath.replace(/^\/+/, '')}`

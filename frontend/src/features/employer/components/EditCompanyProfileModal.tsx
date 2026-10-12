@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { X, Upload, Building2 } from 'lucide-react'
+import { X, Upload } from 'lucide-react'
 import type { CompanyProfile } from '../types/employer.types'
 import styles from './EditCompanyProfileModal.module.css'
 import {
@@ -9,6 +9,7 @@ import {
 } from '../../../utils/input-validation'
 import { useToastStore } from '../../../stores/useToastStore'
 import { DistrictSelect } from '../../../components/DistrictSelect'
+import { CompanyAvatar } from '../../../components/CompanyAvatar'
 
 interface EditCompanyProfileModalProps {
   profile: CompanyProfile
@@ -100,30 +101,15 @@ export function EditCompanyProfileModal({
                   marginTop: '4px',
                 }}
               >
-                <div
+                <CompanyAvatar
+                  name={formData.company_name}
+                  src={formData.logoUrl}
+                  size={64}
+                  fontSize={26}
                   style={{
-                    width: '64px',
-                    height: '64px',
-                    borderRadius: '50%',
                     border: '2px solid #160e6f',
-                    overflow: 'hidden',
-                    background: '#f3f4f6',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
                   }}
-                >
-                  {formData.logoUrl ? (
-                    <img
-                      src={formData.logoUrl}
-                      alt="Logo Preview"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  ) : (
-                    <Building2 size={28} color="#6b7280" />
-                  )}
-                </div>
+                />
                 <input
                   type="file"
                   ref={fileInputRef}

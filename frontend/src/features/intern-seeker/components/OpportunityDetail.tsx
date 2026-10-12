@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Building2, Check } from 'lucide-react'
+import { Check } from 'lucide-react'
 import type { InternshipOpportunity } from '../types/internship.types'
 import { useStudentStore } from '../stores/useStudentStore'
 import { useStudentTrackingStore } from '../stores/useStudentTrackingStore'
@@ -7,6 +7,7 @@ import { ApplyOpportunityModal } from './ApplyOpportunityModal'
 import { studentApiService } from '../services/student-api.service'
 import { useAuthStore } from '../../../stores/useAuthStore'
 import { useToastStore } from '../../../stores/useToastStore'
+import { CompanyAvatar } from '../../../components/CompanyAvatar'
 import styles from './OpportunityDetail.module.css'
 
 const ELIGIBILITY_CHECK_FAILED = 'Application eligibility could not be verified. Please refresh the page.'
@@ -64,14 +65,6 @@ function OpportunityDetail({ opportunity }: { opportunity: InternshipOpportunity
     }
   }, [studentId])
 
-  const companyInitials = opportunity.companyName
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase()
-
   const facts = [
     ['Address', details.workplace],
     ['Department', details.department],
@@ -98,9 +91,12 @@ function OpportunityDetail({ opportunity }: { opportunity: InternshipOpportunity
         <header className={styles.detailHeader}>
           <div className={styles.headerCopy}>
             <div className={styles.companyRow}>
-              <span className={styles.companyImage}>
-                {opportunity.companyLogoUrl ? <img src={opportunity.companyLogoUrl} alt={`${opportunity.companyName} logo`} /> : companyInitials || <Building2 aria-hidden="true" />}
-              </span>
+              <CompanyAvatar
+                name={opportunity.companyName}
+                src={opportunity.companyLogoUrl}
+                size={30}
+                className={styles.companyImage}
+              />
               <span>{opportunity.companyName}</span>
             </div>
             <h1>{opportunity.position}</h1>

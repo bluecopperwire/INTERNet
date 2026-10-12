@@ -10,6 +10,7 @@ import {
 import { EmployerHero } from '../components/EmployerHero'
 import { employerService } from '../services/employer.service'
 import type { CompanyProfile } from '../types/employer.types'
+import { CompanyAvatar } from '../../../components/CompanyAvatar'
 import styles from './CompanyProfilePage.module.css'
 import { useNavigate } from 'react-router-dom'
 import { useToastStore } from '../../../stores/useToastStore'
@@ -122,17 +123,13 @@ export function CompanyProfilePage() {
               role="button"
               tabIndex={0}
             >
-              {profile.logoUrl ? (
-                <img
-                  src={profile.logoUrl}
-                  alt={profile.company_name}
-                  className={styles.pfpImage}
-                />
-              ) : (
-                <div className={styles.pfpPlaceholder}>
-                  <Building2 size={68} />
-                </div>
-              )}
+              <CompanyAvatar
+                name={profile.company_name}
+                src={profile.logoUrl}
+                size={160}
+                fontSize={64}
+                className={styles.pfpImage}
+              />
               {/* Permanent camera badge icon at bottom right */}
               <div className={styles.cameraBadge}>
                 <Camera size={18} />

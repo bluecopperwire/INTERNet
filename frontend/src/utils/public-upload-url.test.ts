@@ -19,5 +19,6 @@ describe('publicUploadUrl', () => {
       'https://cdn.example.test/avatar.png',
     )
     expect(publicUploadUrl(null)).toBeUndefined()
+    expect(publicUploadUrl('dev-seed/companies/qcpeso/logo.png')).toBeUndefined()
   })
 })

@@ -127,16 +127,20 @@
 }
 
 .applicationIcon {
-  display: grid;
+  display: inline-flex;
   position: relative;
   width: 58px;
   height: 58px;
   flex: none;
-  place-items: center;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
   border-radius: 10px;
-  background: #e8ebf3;
-  color: #777fa0;
+  background: #e0edff;
+  color: #160e6f;
+  border: 1px solid #bfdbfe;
+  font-size: 24px;
+  font-weight: 700;
 }
 
 .applicationIcon img {

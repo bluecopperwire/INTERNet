@@ -19,6 +19,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import internetLogo from '../../../assets/internet-logo.svg'
 import { useAuthStore } from '../../../stores/useAuthStore'
 import { useEmployerStore } from '../stores/useEmployerStore'
+import { CompanyAvatar } from '../../../components/CompanyAvatar'
 import styles from './EmployerSidebar.module.css'
 
 interface EmployerSidebarProps {
@@ -63,7 +64,6 @@ export function EmployerSidebar({ isOpen, onClose }: EmployerSidebarProps) {
   }, [fetchProfile, profile])
 
   const displayName = profile?.company_name || user?.email.split('@')[0] || 'Partner Company'
-  const companyInitials = displayName.substring(0, 2).toUpperCase()
 
   return (
     <aside
@@ -218,9 +218,13 @@ export function EmployerSidebar({ isOpen, onClose }: EmployerSidebarProps) {
           onClick={() => { onClose(); navigate('/employer/profile') }}
           tabIndex={isOpen ? 0 : -1}
         >
-          <span className={styles.avatar} aria-hidden="true">
-            {profile?.logoUrl ? <img src={profile.logoUrl} alt="" /> : companyInitials}
-          </span>
+          <CompanyAvatar
+            name={displayName}
+            src={profile?.logoUrl}
+            size={38}
+            fontSize={15}
+            className={styles.avatar}
+          />
           <span className={styles.userText}>
             <strong>{displayName}</strong>
             <small>{user?.email}</small>
