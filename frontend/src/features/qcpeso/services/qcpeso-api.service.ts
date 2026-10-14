@@ -1,4 +1,4 @@
-import { api } from '../../../services/api';
+import { api } from "../../../services/api";
 import type {
   PesoStudentMetricsDto,
   PesoReferralDto,
@@ -6,32 +6,48 @@ import type {
   PesoDtrEntryDto,
   PaginatedResponse,
   DashboardApplicationDto,
-} from '../../../types/api';
+} from "../../../types/api";
+import type {
+  QCPesoFinalizationSummary,
+  QCPesoInternshipHistorySummary,
+} from "../types/qcpeso.types";
 
 export const qcpesoApiService = {
   async getDashboardMetrics(): Promise<PesoStudentMetricsDto> {
     const response = await api.get<PesoStudentMetricsDto>(
-      '/dashboard/peso/students/metrics',
+      "/dashboard/peso/students/metrics",
     );
     return response.data;
   },
 
-  async getApplications(params?: any): Promise<PaginatedResponse<DashboardApplicationDto>> {
+  async getApplications(
+    params?: any,
+  ): Promise<PaginatedResponse<DashboardApplicationDto>> {
     const response = await api.get<PaginatedResponse<DashboardApplicationDto>>(
-      '/dashboard/peso/applications',
+      "/dashboard/peso/applications",
       { params },
     );
     return response.data;
   },
 
   async getApplicationDetail(applicationId: number): Promise<any> {
-    const response = await api.get(`/dashboard/peso/applications/${applicationId}`);
+    const response = await api.get(
+      `/dashboard/peso/applications/${applicationId}`,
+    );
+    return response.data;
+  },
+
+  async markApplicationUnderReview(applicationId: number): Promise<any> {
+    const response = await api.patch(
+      `/dashboard/peso/applications/${applicationId}/review`,
+      {},
+    );
     return response.data;
   },
 
   async updateApplicationStatus(
     applicationId: number,
-    status: 'approved_for_referral' | 'rejected_for_referral',
+    status: "approved_for_referral" | "rejected_for_referral",
     remark?: string,
   ): Promise<any> {
     const response = await api.patch(
@@ -41,9 +57,13 @@ export const qcpesoApiService = {
     return response.data;
   },
 
+  async hideApplication(applicationId: number): Promise<void> {
+    await api.delete(`/dashboard/peso/applications/${applicationId}`);
+  },
+
   async getEmployers(params?: any): Promise<PaginatedResponse<any>> {
     const response = await api.get<PaginatedResponse<any>>(
-      '/dashboard/peso/employers',
+      "/dashboard/peso/employers",
       { params },
     );
     return response.data;
@@ -54,9 +74,16 @@ export const qcpesoApiService = {
     return response.data;
   },
 
-  async getReferrals(params?: any): Promise<PaginatedResponse<PesoReferralDto>> {
+  async createEmployer(payload: any): Promise<any> {
+    const response = await api.post("/dashboard/peso/employers", payload);
+    return response.data;
+  },
+
+  async getReferrals(
+    params?: any,
+  ): Promise<PaginatedResponse<PesoReferralDto>> {
     const response = await api.get<PaginatedResponse<PesoReferralDto>>(
-      '/dashboard/peso/referrals',
+      "/dashboard/peso/referrals",
       { params },
     );
     return response.data;
@@ -67,22 +94,32 @@ export const qcpesoApiService = {
     return response.data;
   },
 
-  async getInterns(params?: any): Promise<PaginatedResponse<PesoInternSummaryDto>> {
+  async hideReferral(referralId: number): Promise<void> {
+    await api.delete(`/dashboard/peso/referrals/${referralId}`);
+  },
+
+  async getInterns(
+    params?: any,
+  ): Promise<PaginatedResponse<PesoInternSummaryDto>> {
     const response = await api.get<PaginatedResponse<PesoInternSummaryDto>>(
-      '/dashboard/peso/interns',
+      "/dashboard/peso/interns",
       { params },
     );
     return response.data;
   },
 
   async getInternDetail(internshipAssignmentId: number): Promise<any> {
-    const response = await api.get(`/dashboard/peso/interns/${internshipAssignmentId}`);
+    const response = await api.get(
+      `/dashboard/peso/interns/${internshipAssignmentId}`,
+    );
     return response.data;
   },
 
-  async getAttendance(params?: any): Promise<PaginatedResponse<PesoDtrEntryDto>> {
+  async getAttendance(
+    params?: any,
+  ): Promise<PaginatedResponse<PesoDtrEntryDto>> {
     const response = await api.get<PaginatedResponse<PesoDtrEntryDto>>(
-      '/dashboard/peso/attendance',
+      "/dashboard/peso/attendance",
       { params },
     );
     return response.data;
@@ -96,9 +133,53 @@ export const qcpesoApiService = {
     return response.data;
   },
 
+  async getFinalizationSummary(): Promise<QCPesoFinalizationSummary> {
+    return (await api.get('/dashboard/peso/internships/finalization/summary')).data;
+  },
+
+  async getFinalizationQueue(params?: any): Promise<any> {
+    return (await api.get('/dashboard/peso/internships/finalization', { params })).data;
+  },
+
+  async getFinalizationDetail(assignmentId: number): Promise<any> {
+    return (await api.get(`/dashboard/peso/internships/finalization/${assignmentId}`)).data;
+  },
+
+  async finalizeInternship(assignmentId: number): Promise<any> {
+    return (await api.patch(`/dashboard/peso/internships/finalization/${assignmentId}`, {})).data;
+  },
+
+  async getInternshipHistorySummary(): Promise<QCPesoInternshipHistorySummary> {
+    return (await api.get('/dashboard/peso/internships/history/summary')).data;
+  },
+
+  async getInternshipHistory(params?: any): Promise<any> {
+    return (await api.get('/dashboard/peso/internships/history', { params })).data;
+  },
+
+  async getInternshipHistoryDetail(assignmentId: number): Promise<any> {
+    return (await api.get(`/dashboard/peso/internships/history/${assignmentId}`)).data;
+  },
+
+  async hideFinalizedInternship(assignmentId: number): Promise<void> {
+    await api.delete(`/dashboard/peso/internships/history/${assignmentId}`);
+  },
+
+  async getInternshipAttendanceSummary(date: string): Promise<any> {
+    return (await api.get('/dashboard/peso/internship-attendance/summary', { params: { date } })).data;
+  },
+
+  async getInternshipAttendance(params?: any): Promise<any> {
+    return (await api.get('/dashboard/peso/internship-attendance', { params })).data;
+  },
+
+  async getInternshipAttendanceHistory(assignmentId: number, params?: any): Promise<any> {
+    return (await api.get(`/dashboard/peso/internship-attendance/${assignmentId}`, { params })).data;
+  },
+
   async getStudents(params?: any): Promise<PaginatedResponse<any>> {
     const response = await api.get<PaginatedResponse<any>>(
-      '/dashboard/peso/students',
+      "/dashboard/peso/students",
       { params },
     );
     return response.data;
@@ -110,12 +191,19 @@ export const qcpesoApiService = {
   },
 
   async getOwnProfile(): Promise<any> {
-    const response = await api.get('/users/peso/profile');
+    const response = await api.get("/users/peso/profile");
     return response.data;
   },
 
   async updateOwnProfile(payload: any): Promise<any> {
-    const response = await api.patch('/users/peso/profile', payload);
+    const response = await api.patch("/users/peso/profile", payload);
+    return response.data;
+  },
+
+  async uploadProfilePicture(file: File): Promise<Record<string, unknown>> {
+    const formData = new FormData();
+    formData.append("image", file);
+    const response = await api.put("/users/peso/profile/image", formData);
     return response.data;
   },
 };

@@ -91,7 +91,7 @@ curl -X GET http://localhost:3000/students/1/profile \
     "internship_preference_id": 1,
     "student_id": 1,
     "required_hours": 486,
-    "available_days": "weekdays",
+    "available_days": [1, 2, 3, 4, 5],
     "allows_outside_preferred_field": true,
     "start_date": "2026-09-14T16:00:00.000Z",
     "preferred_company_type": "private",
@@ -187,7 +187,7 @@ curl -X POST http://localhost:3000/students/1/profile \
     },
     "internshipPreference": {
       "requiredHours": 486,
-      "availableDays": "weekdays",
+      "availableDays": [1, 2, 3, 4, 5],
       "preferredCompanyType": "private",
       "startDate": "2026-09-15",
       "allowsOutsidePreferredField": true
@@ -236,7 +236,7 @@ curl -X POST http://localhost:3000/students/1/profile \
     "internship_preference_id": 1,
     "student_id": 1,
     "required_hours": 486,
-    "available_days": "weekdays",
+    "available_days": [1, 2, 3, 4, 5],
     "allows_outside_preferred_field": true,
     "start_date": "2026-09-14T16:00:00.000Z",
     "preferred_company_type": "private",
@@ -469,7 +469,7 @@ curl -X GET http://localhost:3000/students/1/applications \
     "applicationId": 1,
     "submittedAt": "2026-08-10T07:08:23.039Z",
     "applicationStatus": "submitted",
-    "applicationRemark": "dev-seed/submitted",
+    "applicationRemark": null,
     "studentResponse": "pending",
     "studentRespondedAt": null,
     "opportunity": {
@@ -512,7 +512,7 @@ curl -X GET http://localhost:3000/students/1/applications/1/status \
   "studentResponse": "pending",
   "studentRespondedAt": null,
   "submittedAt": "2026-08-10T07:08:23.039Z",
-  "remark": "dev-seed/submitted",
+  "remark": null,
   "opportunity": {
     "opportunityId": 1,
     "title": "DEV Open Technology Internship",
@@ -545,8 +545,7 @@ curl -X POST http://localhost:3000/students/1/applications \
   -H "Authorization: Bearer <STUDENT_1_ACCESS_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{
-    "opportunityId": 2,
-    "remark": "Excited to apply for this software engineering role."
+    "opportunityId": 2
   }'
 ```
 
@@ -559,8 +558,7 @@ curl -X POST http://localhost:3000/students/1/applications \
   "applicationStatus": "submitted",
   "studentResponse": "pending",
   "submittedAt": "2026-08-24T02:45:00.000Z",
-  "updatedAt": "2026-08-24T02:45:00.000Z",
-  "remark": "Excited to apply for this software engineering role."
+  "updatedAt": "2026-08-24T02:45:00.000Z"
 }
 ```
 

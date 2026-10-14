@@ -14,7 +14,12 @@ import { Roles } from '../../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { UserRole } from '../../users/entities/account.entities';
-import { InternshipListQueryDto, UpdateAssignmentDto } from '../dto';
+import {
+  AssignmentRemarkDto,
+  InternshipHistoryQueryDto,
+  InternshipListQueryDto,
+  UpdateAssignmentDto,
+} from '../dto';
 import { EmployerInternshipService } from '../services/employer-internship.service';
 import type { EmployerCurrentUser } from '../types/employer.types';
 
@@ -27,6 +32,31 @@ export class EmployerInternshipController {
   @Get('summary')
   summary(@CurrentUser() user: EmployerCurrentUser) {
     return this.internshipService.summary(user.userAccountId);
+  }
+
+  @Get('history/summary')
+  historySummary(@CurrentUser() user: EmployerCurrentUser) {
+    return this.internshipService.historySummary(user.userAccountId);
+  }
+
+  @Get('history')
+  history(
+    @CurrentUser() user: EmployerCurrentUser,
+    @Query() query: InternshipHistoryQueryDto,
+  ) {
+    return this.internshipService.history(user.userAccountId, query);
+  }
+
+  @Get('history/:internshipAssignmentId')
+  historyDetail(
+    @CurrentUser() user: EmployerCurrentUser,
+    @Param('internshipAssignmentId', ParseIntPipe)
+    internshipAssignmentId: number,
+  ) {
+    return this.internshipService.getHistoryById(
+      user.userAccountId,
+      internshipAssignmentId,
+    );
   }
 
   @Get()
@@ -68,10 +98,12 @@ export class EmployerInternshipController {
     @CurrentUser() user: EmployerCurrentUser,
     @Param('internshipAssignmentId', ParseIntPipe)
     internshipAssignmentId: number,
+    @Body() dto: AssignmentRemarkDto,
   ) {
     return this.internshipService.cancel(
       user.userAccountId,
       internshipAssignmentId,
+      dto,
     );
   }
 
@@ -80,10 +112,12 @@ export class EmployerInternshipController {
     @CurrentUser() user: EmployerCurrentUser,
     @Param('internshipAssignmentId', ParseIntPipe)
     internshipAssignmentId: number,
+    @Body() dto: AssignmentRemarkDto,
   ) {
     return this.internshipService.complete(
       user.userAccountId,
       internshipAssignmentId,
+      dto,
     );
   }
 

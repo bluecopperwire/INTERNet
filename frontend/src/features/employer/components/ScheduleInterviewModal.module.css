@@ -91,7 +91,7 @@
   font-weight: 600;
 }
 
-.field > input, .field textarea, .inputWithIcon input {
+.field > input, .field textarea, .inputWithIcon input, .pickerControl input {
   box-sizing: border-box;
   width: 100%;
   min-height: 42px;
@@ -106,17 +106,33 @@
   font-weight: 400;
 }
 
-.field > input {
+.field > input, .pickerControl input {
   padding-right: 42px;
 }
 
-.field > svg {
+.pickerControl {
+  position: relative;
+  cursor: pointer;
+}
+
+.pickerControl button {
   position: absolute;
   right: 13px;
-  bottom: 11px;
+  bottom: 4px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  color: #160e6f;
+  background: transparent;
+  cursor: pointer;
+}
+
+.pickerControl button svg {
   width: 18px;
   height: 18px;
-  pointer-events: none;
 }
 
 .field textarea {
@@ -124,13 +140,15 @@
   resize: vertical;
 }
 
-.field > input:focus, .field textarea:focus, .inputWithIcon input:focus {
+.field > input:focus, .field textarea:focus, .inputWithIcon input:focus, .pickerControl input:focus {
   border-color: #160e6f;
   box-shadow: 0 0 0 3px rgba(22, 14, 111, .08);
 }
 
 .field > input[type='date']::-webkit-calendar-picker-indicator,
-.field > input[type='time']::-webkit-calendar-picker-indicator {
+.field > input[type='time']::-webkit-calendar-picker-indicator,
+.pickerControl input[type='date']::-webkit-calendar-picker-indicator,
+.pickerControl input[type='time']::-webkit-calendar-picker-indicator {
   opacity: 0;
 }
 

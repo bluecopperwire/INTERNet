@@ -1,0 +1,41 @@
+.toolbar {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.clearButton {
+  display: inline-flex;
+  min-height: 42px;
+  flex: none;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border: 1px solid rgba(22, 14, 111, 0.28);
+  border-radius: 6px;
+  color: #625d7d;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 550;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.clearButton:hover {
+  border-color: #160e6f;
+  color: #160e6f;
+}
+
+@media (max-width: 720px) {
+  .toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .clearButton {
+    justify-content: center;
+  }
+}

@@ -40,6 +40,19 @@ async function main() {
     const requiredMigrations = [
       'InitialSchema1785860400000',
       'ApprovedDatabaseRedesign1787788800000',
+      'AddStudentCustomIndustry1788134400000',
+      'ApplicationWorkflowAlignment1788220800000',
+      'ApplicationInitialStatusHistory1788307200000',
+      'RemoveAcceptedReferralReversal1788393600000',
+      'OpportunityLifecycleRules1788480000000',
+      'AssignmentLifecycleFoundation1788566400000',
+      'AttendanceStudentWorkflow1788652800000',
+      'QcAssignmentVisibility1788739200000',
+      'StudentAvailabilityDays1788825600000',
+      'ApplicationRejectionRemarkOnly1788912000000',
+      'AccountUserCode1788998400000',
+      'AdminProfile1789084800000',
+      'AdminAuditLogs1789171200000',
     ];
     const recognizedHistoricalMigrations = new Set([
       'AuthAlignmentV31786125600000',
@@ -71,7 +84,62 @@ async function main() {
       assert.equal(authCount, 1, 'Historical AuthAlignmentV31786125600000 cannot appear more than once.');
       pass('recognized historical migration AuthAlignmentV31786125600000 is present and valid');
     }
-    pass('initial and approved-redesign migrations are recorded');
+    pass('required migrations are recorded');
+
+    const auditInfrastructure = await client.query(`
+      SELECT
+        to_regclass('public.audit_event') IS NOT NULL AS audit_table,
+        to_regprocedure('public.fn_append_audit_event(text,text,integer,integer,text,text,timestamp with time zone,text,integer,text)') IS NOT NULL AS append_function,
+        to_regprocedure('public.fn_block_audit_event_mutation()') IS NOT NULL AS append_only_function,
+        (SELECT count(*)::integer
+         FROM pg_trigger
+         WHERE tgname IN (
+           'trg_account_canonical_audit',
+           'trg_application_canonical_audit',
+           'trg_referral_canonical_audit',
+           'trg_internship_canonical_audit'
+         ) AND NOT tgisinternal AND tgenabled <> 'D') AS capture_triggers,
+        EXISTS (
+          SELECT 1 FROM pg_trigger
+          WHERE tgrelid = 'public.audit_event'::regclass
+            AND tgname = 'trg_audit_event_append_only'
+            AND NOT tgisinternal AND tgenabled <> 'D'
+        ) AS append_only_trigger,
+        (SELECT count(*) = count(DISTINCT provenance_key)
+         FROM public.audit_event
+         WHERE provenance_key IS NOT NULL) AS provenance_unique
+    `);
+    assert.deepEqual(auditInfrastructure.rows[0], {
+      audit_table: true,
+      append_function: true,
+      append_only_function: true,
+      capture_triggers: 4,
+      append_only_trigger: true,
+      provenance_unique: true,
+    });
+    pass('canonical audit store is append-only and all capture triggers are enabled');
+
+    const qcAssignmentVisibility = await client.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'internship_assignment_visibility'
+        AND column_name IN ('qc_peso_hidden_at', 'qc_peso_hidden_by_user_account_id')
+    `);
+    assert.equal(qcAssignmentVisibility.rowCount, 2, 'QC PESO assignment soft-hide columns must exist.');
+    pass('QC PESO assignment visibility is present');
+
+    const customIndustries = await client.query(`
+      SELECT industry_name
+      FROM public.industry
+      WHERE is_custom_text = true
+    `);
+    assert.deepEqual(
+      customIndustries.rows,
+      [{ industry_name: 'Other' }],
+      'Exactly one designated Other industry is required for custom student preferences.',
+    );
+    pass('custom student preference industry is present');
 
     const canonicalAuthTables = await client.query(`
       SELECT table_name
@@ -200,10 +268,37 @@ async function main() {
       functions.rows.map((row) => [row.proname, row.definition.toLowerCase()]),
     );
     assert.ok(definitions.has('fn_derive_attendance'), 'missing fn_derive_attendance function');
-    assert.match(definitions.get('fn_derive_attendance'), /interval '1 hour'/, 'fn_derive_attendance missing 1 hour deduction');
+    assert.match(definitions.get('fn_derive_attendance'), /actual_minutes[\s\S]*- 60/, 'fn_derive_attendance missing 60-minute lunch deduction');
     assert.ok(definitions.has('fn_validate_referral'), 'missing fn_validate_referral function');
-    assert.match(definitions.get('fn_validate_referral'), /accepted.*rejected/s, 'fn_validate_referral missing accepted -> rejected transition');
-    pass('attendance deduction and accepted-to-rejected referral transition are installed');
+    assert.doesNotMatch(
+      definitions.get('fn_validate_referral'),
+      /OLD\.company_response\s*=\s*'accepted'[\s\S]*NEW\.company_response\s*=\s*'rejected'/,
+      'fn_validate_referral still allows accepted -> rejected',
+    );
+    pass('attendance deduction is installed and accepted-to-rejected referral reversal is blocked');
+
+    const attendanceModel = await client.query(`
+      SELECT
+        (SELECT array_agg(e.enumlabel ORDER BY e.enumsortorder)
+         FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid
+         WHERE t.typname = 'attendance_status_enum') AS statuses,
+        (SELECT is_nullable FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = 'attendance_record'
+           AND column_name = 'time_in') AS time_in_nullable,
+        (SELECT is_nullable FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = 'attendance_record'
+           AND column_name = 'rendered_minutes') AS rendered_minutes_nullable
+    `);
+    assert.equal(String(attendanceModel.rows[0].statuses), '{present,absent,incomplete}');
+    assert.equal(attendanceModel.rows[0].time_in_nullable, 'YES');
+    assert.equal(attendanceModel.rows[0].rendered_minutes_nullable, 'NO');
+    const obsoleteAttendanceColumns = await client.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'attendance_record'
+        AND column_name IN ('time_in_status', 'rendered_hours_status', 'photo_file_path', 'hours_rendered')
+    `);
+    assert.equal(obsoleteAttendanceColumns.rowCount, 0);
+    pass('final attendance status model and nullable Clock In are installed');
 
     const suspensionConstraint = await client.query(`
       SELECT conname, pg_get_constraintdef(oid) AS def
@@ -221,6 +316,164 @@ async function main() {
     `);
     assert.ok(softDeleteIndex.rowCount > 0, 'internship_assignment soft-delete index is required');
     pass('internship-assignment soft-delete index is present');
+
+    const workflowRemarkGaps = await client.query(`
+      SELECT
+        (SELECT count(*)::integer FROM public.application
+         WHERE application_status = 'rejected_for_referral'
+           AND (remark IS NULL OR btrim(remark) = '')) AS applications,
+        (SELECT count(*)::integer FROM public.application
+         WHERE application_status <> 'rejected_for_referral'
+           AND remark IS NOT NULL) AS non_rejection_application_remarks,
+        (SELECT count(*)::integer FROM public.referral
+         WHERE company_response = 'rejected'
+           AND (remark IS NULL OR btrim(remark) = '')) AS referrals
+    `);
+    assert.deepEqual(workflowRemarkGaps.rows[0], {
+      applications: 0,
+      non_rejection_application_remarks: 0,
+      referrals: 0,
+    });
+    pass('application remarks are reserved for QC PESO rejections');
+
+    const workflowConstraints = await client.query(`
+      SELECT conname FROM pg_constraint
+      WHERE convalidated AND conname IN (
+        'ck_application_rejection_remark_required',
+        'ck_application_remark_rejection_only',
+        'ck_referral_rejection_remark_required'
+      )
+      ORDER BY conname
+    `);
+    assert.deepEqual(workflowConstraints.rows.map((row) => row.conname), [
+      'ck_application_rejection_remark_required',
+      'ck_application_remark_rejection_only',
+      'ck_referral_rejection_remark_required',
+    ]);
+    pass('conditional workflow rejection-remark constraints are validated');
+
+    const visibilityObjects = await client.query(`
+      SELECT
+        (SELECT count(*)::integer FROM information_schema.tables
+         WHERE table_schema = 'public' AND table_name IN (
+           'application_visibility', 'referral_visibility',
+           'internship_assignment_visibility'
+         )) AS tables,
+        (SELECT count(*)::integer FROM pg_indexes
+         WHERE schemaname = 'public' AND indexname IN (
+           'ix_application_visibility_student_hidden',
+           'ix_application_visibility_qc_hidden',
+           'ix_referral_visibility_qc_hidden',
+           'ix_referral_visibility_employer_hidden',
+           'ix_assignment_visibility_student_hidden',
+           'ix_assignment_visibility_employer_hidden'
+         )) AS indexes
+    `);
+    assert.deepEqual(visibilityObjects.rows[0], { tables: 3, indexes: 6 });
+    pass('role-scoped visibility tables and indexes are present');
+
+    const workflowTriggers = await client.query(`
+      SELECT tgname, tgenabled FROM pg_trigger
+      WHERE tgrelid IN ('public.application'::regclass, 'public.referral'::regclass)
+        AND NOT tgisinternal
+    `);
+    assert.ok(workflowTriggers.rowCount > 0, 'application/referral workflow triggers are required');
+    assert.ok(
+      workflowTriggers.rows.every((row) => row.tgenabled !== 'D'),
+      'application/referral workflow triggers must remain enabled',
+    );
+    pass('application and referral workflow triggers remain enabled');
+
+    const initialApplicationHistory = await client.query(`
+      SELECT
+        (SELECT is_nullable FROM information_schema.columns
+         WHERE table_schema = 'public'
+           AND table_name = 'application_status_history'
+           AND column_name = 'previous_application_status') AS previous_status_nullable,
+        to_regprocedure('public.fn_record_application_initial_status_history()') IS NOT NULL AS history_function,
+        EXISTS (
+          SELECT 1 FROM pg_trigger
+          WHERE tgrelid = 'public.application'::regclass
+            AND tgname = 'trg_application_initial_status_history'
+            AND NOT tgisinternal
+            AND tgenabled <> 'D'
+        ) AS history_trigger
+    `);
+    assert.deepEqual(initialApplicationHistory.rows[0], {
+      previous_status_nullable: 'YES',
+      history_function: true,
+      history_trigger: true,
+    });
+    pass('new applications record their initial submitted status history');
+
+    const assignmentFoundation = await client.query(`
+      SELECT
+        (SELECT array_agg(enumlabel::text ORDER BY enumsortorder)
+         FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid
+         WHERE t.typname = 'assignment_status_enum') AS statuses,
+        (SELECT data_type FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = 'internship_assignment'
+           AND column_name = 'working_days') AS working_days_type,
+        (SELECT data_type FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = 'internship_preference'
+           AND column_name = 'available_days') AS available_days_type,
+        (SELECT is_nullable FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = 'internship_assignment_status_history'
+           AND column_name = 'previous_assignment_status') AS initial_history_nullable,
+        to_regprocedure('public.fn_valid_working_days(smallint[])') IS NOT NULL AS working_days_validator
+    `);
+    assert.deepEqual(assignmentFoundation.rows[0].statuses, [
+      'pending', 'ongoing', 'complete_company', 'complete_student',
+      'withdrawn', 'cancelled', 'finalized',
+    ]);
+    assert.equal(assignmentFoundation.rows[0].working_days_type, 'ARRAY');
+    assert.equal(assignmentFoundation.rows[0].available_days_type, 'ARRAY');
+    assert.equal(assignmentFoundation.rows[0].initial_history_nullable, 'YES');
+    assert.equal(assignmentFoundation.rows[0].working_days_validator, true);
+
+    const legacyAssignmentColumns = await client.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND (
+        (table_name = 'internship_assignment' AND column_name = 'required_hours')
+        OR (table_name = 'attendance_record' AND column_name = 'hours_rendered')
+      )
+    `);
+    assert.equal(legacyAssignmentColumns.rowCount, 0);
+    const invalidAssignmentData = await client.query(`
+      SELECT
+        (SELECT count(*)::integer FROM public.internship_assignment
+         WHERE NOT public.fn_valid_working_days(working_days)
+           OR required_minutes <= 0 OR required_minutes % 60 <> 0) AS assignments,
+        (SELECT count(*)::integer FROM public.internship_assignment ia
+         WHERE NOT EXISTS (
+           SELECT 1 FROM public.internship_assignment_status_history h
+           WHERE h.internship_assignment_id = ia.internship_assignment_id
+             AND h.previous_assignment_status IS NULL
+             AND h.new_assignment_status = 'pending'
+         )) AS missing_initial_history
+    `);
+    assert.deepEqual(invalidAssignmentData.rows[0], {
+      assignments: 0,
+      missing_initial_history: 0,
+    });
+    pass('assignment lifecycle foundation schema and migrated data are valid');
+
+    const alignedFunctions = await client.query(`
+      SELECT p.proname, pg_get_functiondef(p.oid) AS definition
+      FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+      WHERE n.nspname = 'public' AND p.proname IN (
+        'fn_validate_opportunity_transition',
+        'fn_validate_application',
+        'fn_check_referral_consistency'
+      )
+    `);
+    const alignedDefinitions = new Map(
+      alignedFunctions.rows.map((row) => [row.proname, row.definition.toLowerCase()]),
+    );
+    assert.match(alignedDefinitions.get('fn_validate_opportunity_transition'), /open.*closed.*archived/s);
+    assert.match(alignedDefinitions.get('fn_validate_application'), /approved_for_referral.*closed.*withdrawn.*expired/s);
+    assert.match(alignedDefinitions.get('fn_check_referral_consistency'), /accepted.*under_review.*closed.*withdrawn.*expired/s);
+    pass('aligned opportunity, application, and referral functions are installed');
 
     console.log(`\n${passed.length} final-schema validation checks passed.`);
   } finally {

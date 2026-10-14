@@ -9,6 +9,10 @@ import type {
 } from '../types/admin.types'
 import { adminService } from '../services/admin.service'
 import styles from './ManageRecordModal.module.css'
+import { AVAILABILITY_DAYS, formatAvailabilityDays } from '../../../utils/availability-days'
+import { formatYearLevel } from '../../../utils/year-level'
+import { getContactNumberError, sanitizeContactNumberInput } from '../../../utils/input-validation'
+import { useToastStore } from '../../../stores/useToastStore'
 
 interface ManageRecordModalProps {
   recordId: string
@@ -17,6 +21,7 @@ interface ManageRecordModalProps {
 }
 
 export function ManageRecordModal({ recordId, recordRole, onClose }: ManageRecordModalProps) {
+  const toast = useToastStore()
   const [record, setRecord] = useState<AdminRecord | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
@@ -63,7 +68,10 @@ export function ManageRecordModal({ recordId, recordRole, onClose }: ManageRecor
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
-    setEditForm((prev) => ({ ...prev, [name]: value }))
+    setEditForm((prev) => ({
+      ...prev,
+      [name]: name === 'contactNumber' ? sanitizeContactNumberInput(value) : value,
+    }))
   }
 
   const handleArrayChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
@@ -74,7 +82,24 @@ export function ManageRecordModal({ recordId, recordRole, onClose }: ManageRecor
     }))
   }
 
+  const toggleStudentAvailabilityDay = (day: number) => {
+    setEditForm((previous) => {
+      const currentDays = (previous as Partial<StudentRecord>).scheduleAvailability ?? []
+      const scheduleAvailability = currentDays.includes(day)
+        ? currentDays.filter((item) => item !== day)
+        : [...currentDays, day].sort((a, b) => a - b)
+      return { ...previous, scheduleAvailability }
+    })
+  }
+
   const handleSave = async () => {
+    const contactNumberError = getContactNumberError(
+      String((editForm as Partial<StudentRecord>).contactNumber ?? ''),
+    )
+    if (contactNumberError) {
+      toast.error(contactNumberError)
+      return
+    }
     setIsSaving(true)
     const updated = await adminService.updateRecord(recordId, recordRole, editForm)
     setRecord(updated)
@@ -133,7 +158,7 @@ export function ManageRecordModal({ recordId, recordRole, onClose }: ManageRecor
         {renderEditableText('Inquiry via', 'inquiryVia', data.inquiryVia)}
         {renderEditableText('School Name', 'schoolName', data.schoolName)}
         {renderEditableText('Program / Strand', 'programStrand', data.programStrand)}
-        {renderEditableText('Year Level', 'yearLevel', data.yearLevel)}
+        {renderEditableText('Year Level', 'yearLevel', formatYearLevel(data.yearLevel))}
         {renderEditableText('Required Hours', 'requiredHours', data.requiredHours)}
         
         <div className={styles.infoGroup}>
@@ -171,15 +196,11 @@ export function ManageRecordModal({ recordId, recordRole, onClose }: ManageRecor
         <div className={styles.infoGroup} style={{ gridColumn: 'span 2' }}>
           <span className={styles.infoLabel}>Schedule Availability</span>
           {isEditing ? (
-            <input 
-              type="text" 
-              className={styles.editInput} 
-              value={((editForm as StudentRecord).scheduleAvailability || []).join(', ')} 
-              onChange={(e) => handleArrayChange(e, 'scheduleAvailability')}
-              placeholder="Comma separated..."
-            />
+            <div className={styles.dayOptions}>
+              {AVAILABILITY_DAYS.map((day, index) => <label key={day}><input type="checkbox" aria-label={day} checked={(editForm as StudentRecord).scheduleAvailability?.includes(index) ?? false} onChange={() => toggleStudentAvailabilityDay(index)} />{day.slice(0, 3)}</label>)}
+            </div>
           ) : (
-            <span className={styles.infoValue}>{data.scheduleAvailability?.join(', ') || 'N/A'}</span>
+            <span className={styles.infoValue}>{formatAvailabilityDays(data.scheduleAvailability, 'N/A')}</span>
           )}
         </div>
 

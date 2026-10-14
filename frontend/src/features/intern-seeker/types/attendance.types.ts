@@ -1,4 +1,4 @@
-export type AttendanceDayStatus = 'present' | 'absent' | 'late'
+export type AttendanceDayStatus = 'present' | 'absent' | 'incomplete'
 
 export interface AttendanceRecord {
   date: string
@@ -19,6 +19,7 @@ export interface TodayAttendance {
 }
 
 export interface InternshipDetails {
+  assignmentId: number
   companyName: string
   jobTitle: string
   workingDays: string
@@ -35,9 +36,9 @@ export interface InternshipDetails {
 
 export interface AttendanceSummary {
   daysPresent: number
-  absences: number
-  lateArrivals: number
-  attendanceRate: number
+  daysAbsent: number
+  renderedMinutes: number
+  remainingMinutes: number
 }
 
 export interface AttendanceMonth {

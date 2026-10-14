@@ -17,28 +17,21 @@ export class AttendanceRecord {
   @Column({ name: 'attendance_date', type: 'date' })
   attendanceDate: Date;
 
-  @Column({ name: 'time_in', type: 'time' })
-  timeIn: string;
+  @Column({
+    name: 'attendance_status',
+    type: 'enum',
+    enum: ['present', 'absent', 'incomplete'],
+  })
+  attendanceStatus: 'present' | 'absent' | 'incomplete';
 
-  @Column({ name: 'time_in_status', type: 'enum', enum: ['on_time', 'late'] })
-  timeInStatus: string;
+  @Column({ name: 'time_in', type: 'time', nullable: true })
+  timeIn: string | null;
 
   @Column({ name: 'time_out', type: 'time', nullable: true })
   timeOut: string | null;
 
-  @Column({ name: 'hours_rendered', type: 'numeric', nullable: true })
-  hoursRendered: number | null;
-
-  @Column({
-    name: 'rendered_hours_status',
-    type: 'enum',
-    enum: ['complete', 'undertime', 'overtime', 'incomplete'],
-    default: 'incomplete',
-  })
-  renderedHoursStatus: string;
-
-  @Column({ name: 'photo_file_path', type: 'text', nullable: true })
-  photoFilePath: string | null;
+  @Column({ name: 'rendered_minutes', type: 'int', default: 0 })
+  renderedMinutes: number;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;

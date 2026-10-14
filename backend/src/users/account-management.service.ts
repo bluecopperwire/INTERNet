@@ -1,12 +1,15 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { DataSource } from 'typeorm';
+import { withStatusActor } from '../database/status-actor.transaction';
 import {
   AccountStatus,
+  AdminProfile,
   Company,
   Industry,
   LocalAuthenticationCredential,
@@ -18,15 +21,27 @@ import {
   CreateCompanyAccountDto,
   CreatePesoPersonnelAccountDto,
 } from './dto/account-management.dto';
+import { UpdatePesoProfileDto } from './dto/peso-profile.dto';
+import { UpdateAdminProfileDto } from './dto/admin-profile.dto';
+import { ProfilePictureStorageService } from '../storage/profile-picture-storage.service';
+import {
+  assertValidDate,
+  currentManilaDate,
+} from '../employer/utils/time.utils';
 
 @Injectable()
 export class AccountManagementService {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly profilePictures: ProfilePictureStorageService,
+  ) {}
 
   async createCompany(
     dto: CreateCompanyAccountDto,
+    actorAccountId: number,
   ): Promise<{ userAccountId: number; companyId: number }> {
-    return this.dataSource.transaction(async (manager) => {
+    return withStatusActor(this.dataSource, actorAccountId, async (runner) => {
+      const manager = runner.manager;
       const industry = await manager.findOne(Industry, {
         where: { industryId: dto.industryId },
       });
@@ -92,8 +107,12 @@ export class AccountManagementService {
     dto: CreatePesoPersonnelAccountDto,
     adminAccountId: number,
   ): Promise<{ userAccountId: number; pesoPersonnelId: number }> {
-    void adminAccountId;
-    return this.dataSource.transaction(async (manager) => {
+    assertValidDate(dto.birthDate, 'birthDate');
+    if (dto.birthDate >= currentManilaDate()) {
+      throw new BadRequestException('birthDate must be in the past.');
+    }
+    return withStatusActor(this.dataSource, adminAccountId, async (runner) => {
+      const manager = runner.manager;
       const existing = await manager
         .getRepository(UserAccount)
         .createQueryBuilder('a')
@@ -174,12 +193,20 @@ export class AccountManagementService {
       position: peso.position,
       department: peso.department,
       photoFilePath: peso.photoFilePath,
+      updatedAt: peso.updatedAt,
       email: account?.email,
+      accountCode: account?.accountCode,
       accountStatus: account?.accountStatus,
     };
   }
 
-  async updatePesoProfile(userAccountId: number, dto: any) {
+  async updatePesoProfile(userAccountId: number, dto: UpdatePesoProfileDto) {
+    if (dto.birthDate) {
+      assertValidDate(dto.birthDate, 'birthDate');
+      if (dto.birthDate >= currentManilaDate()) {
+        throw new BadRequestException('birthDate must be in the past.');
+      }
+    }
     const pesoRepo = this.dataSource.getRepository(PesoPersonnel);
     const peso = await pesoRepo.findOne({ where: { userAccountId } });
     if (!peso) {
@@ -189,10 +216,10 @@ export class AccountManagementService {
     const updates: Partial<PesoPersonnel> = {};
     if (dto.firstName !== undefined) updates.firstName = dto.firstName;
     if (dto.middleName !== undefined)
-      updates.middleName = dto.middleName ?? null;
+      updates.middleName = dto.middleName?.trim() || null;
     if (dto.lastName !== undefined) updates.lastName = dto.lastName;
     if (dto.extensionName !== undefined)
-      updates.extensionName = dto.extensionName ?? null;
+      updates.extensionName = dto.extensionName?.trim() || null;
     if (dto.sex !== undefined) updates.sex = dto.sex;
     if (dto.birthDate !== undefined) updates.birthDate = dto.birthDate;
     if (dto.addressLine !== undefined) updates.addressLine = dto.addressLine;
@@ -204,6 +231,7 @@ export class AccountManagementService {
     if (dto.contactNumber !== undefined)
       updates.contactNumber = dto.contactNumber;
     if (dto.contactEmail !== undefined) updates.contactEmail = dto.contactEmail;
+    if (dto.employeeId !== undefined) updates.employeeId = dto.employeeId;
     if (dto.position !== undefined) updates.position = dto.position;
     if (dto.department !== undefined) updates.department = dto.department;
     if (dto.photoFilePath !== undefined)
@@ -211,5 +239,140 @@ export class AccountManagementService {
 
     await pesoRepo.update({ userAccountId }, updates);
     return this.getPesoProfile(userAccountId);
+  }
+
+  async replacePesoProfilePicture(
+    userAccountId: number,
+    file: Express.Multer.File,
+  ) {
+    const pesoRepo = this.dataSource.getRepository(PesoPersonnel);
+    const peso = await pesoRepo.findOne({ where: { userAccountId } });
+    if (!peso) {
+      throw new NotFoundException('PESO personnel profile not found');
+    }
+
+    const oldPath = peso.photoFilePath;
+    const newPath = await this.profilePictures.storePerson(file, {
+      userAccountId,
+      firstName: peso.firstName,
+      lastName: peso.lastName,
+    });
+    try {
+      await pesoRepo.update({ userAccountId }, { photoFilePath: newPath });
+    } catch (error) {
+      if (oldPath !== newPath) await this.profilePictures.delete(newPath);
+      throw error;
+    }
+
+    if (oldPath !== newPath) {
+      try {
+        await this.profilePictures.delete(oldPath);
+      } catch {
+        // The new DB reference remains valid if an obsolete file cannot be removed.
+      }
+    }
+    return this.getPesoProfile(userAccountId);
+  }
+
+  async getAdminProfile(userAccountId: number) {
+    const adminRepo = this.dataSource.getRepository(AdminProfile);
+    const accountRepo = this.dataSource.getRepository(UserAccount);
+    const [profile, account] = await Promise.all([
+      adminRepo.findOne({ where: { userAccountId } }),
+      accountRepo.findOne({
+        where: { userAccountId, userRole: UserRole.ADMIN },
+      }),
+    ]);
+    if (!profile || !account) {
+      throw new NotFoundException('Admin profile not found');
+    }
+    return {
+      adminProfileId: profile.adminProfileId,
+      userAccountId,
+      firstName: profile.firstName,
+      middleName: profile.middleName,
+      lastName: profile.lastName,
+      extensionName: profile.extensionName,
+      sex: profile.sex,
+      birthDate: profile.birthDate,
+      addressLine: profile.addressLine,
+      addressBarangay: profile.addressBarangay,
+      addressDistrict: profile.addressDistrict,
+      addressCity: profile.addressCity,
+      contactEmail: profile.contactEmail,
+      contactNumber: profile.contactNumber,
+      photoFilePath: profile.photoFilePath,
+      updatedAt: profile.updatedAt,
+      accountEmail: account.email,
+      accountCode: account.accountCode,
+    };
+  }
+
+  async updateAdminProfile(userAccountId: number, dto: UpdateAdminProfileDto) {
+    if (dto.birthDate) {
+      assertValidDate(dto.birthDate, 'birthDate');
+      if (dto.birthDate >= currentManilaDate()) {
+        throw new BadRequestException('birthDate must be in the past.');
+      }
+    }
+    const repo = this.dataSource.getRepository(AdminProfile);
+    const profile = await repo.findOne({ where: { userAccountId } });
+    if (!profile) throw new NotFoundException('Admin profile not found');
+
+    const updates: Partial<AdminProfile> = {};
+    if (dto.firstName !== undefined) updates.firstName = dto.firstName.trim();
+    if (dto.middleName !== undefined)
+      updates.middleName = dto.middleName.trim() || null;
+    if (dto.lastName !== undefined) updates.lastName = dto.lastName.trim();
+    if (dto.extensionName !== undefined)
+      updates.extensionName = dto.extensionName.trim() || null;
+    if (dto.sex !== undefined) updates.sex = dto.sex;
+    if (dto.birthDate !== undefined) updates.birthDate = dto.birthDate;
+    if (dto.addressLine !== undefined)
+      updates.addressLine = dto.addressLine.trim();
+    if (dto.addressBarangay !== undefined)
+      updates.addressBarangay = dto.addressBarangay.trim();
+    if (dto.addressDistrict !== undefined)
+      updates.addressDistrict = dto.addressDistrict;
+    if (dto.addressCity !== undefined)
+      updates.addressCity = dto.addressCity.trim();
+    if (dto.contactEmail !== undefined)
+      updates.contactEmail = dto.contactEmail.trim().toLowerCase();
+    if (dto.contactNumber !== undefined)
+      updates.contactNumber = dto.contactNumber.trim();
+
+    await repo.update({ userAccountId }, updates);
+    return this.getAdminProfile(userAccountId);
+  }
+
+  async replaceAdminProfilePicture(
+    userAccountId: number,
+    file: Express.Multer.File,
+  ) {
+    const repo = this.dataSource.getRepository(AdminProfile);
+    const profile = await repo.findOne({ where: { userAccountId } });
+    if (!profile) throw new NotFoundException('Admin profile not found');
+
+    const oldPath = profile.photoFilePath;
+    const newPath = await this.profilePictures.storePerson(file, {
+      userAccountId,
+      firstName: profile.firstName || 'admin',
+      lastName: profile.lastName || 'profile',
+    });
+    try {
+      await repo.update({ userAccountId }, { photoFilePath: newPath });
+    } catch (error) {
+      if (oldPath !== newPath) await this.profilePictures.delete(newPath);
+      throw error;
+    }
+
+    if (oldPath !== newPath) {
+      try {
+        await this.profilePictures.delete(oldPath);
+      } catch {
+        // The new DB reference remains valid if an obsolete file cannot be removed.
+      }
+    }
+    return this.getAdminProfile(userAccountId);
   }
 }

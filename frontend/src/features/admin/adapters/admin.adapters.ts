@@ -10,25 +10,41 @@ import type {
   QCPesoRecord,
   AdminDashboardSummary,
 } from '../types/admin.types';
+import { publicUploadUrl } from '../../../utils/public-upload-url';
+import { toDateOnly } from '../../../utils/date-only';
+import { normalizeAvailabilityDays } from '../../../utils/availability-days';
+import { formatYearLevel } from '../../../utils/year-level';
+import { districtAddressPart, normalizeDistrictOption } from '../../../utils/district';
 
 export function adaptAdminDashboardSummary(
   studentMetrics: AdminMetricsDto,
   employerMetrics: AdminMetricsDto,
-  _pesoMetrics: AdminMetricsDto,
+  pesoMetrics: AdminMetricsDto,
 ): AdminDashboardSummary {
+  const studentAccounts = {
+    total: studentMetrics.totalRegistered,
+    active: studentMetrics.activeAccounts,
+    suspended: studentMetrics.suspendedAccounts,
+    deactivated: studentMetrics.archivedAccounts,
+  };
+  const employerAccounts = {
+    total: employerMetrics.totalRegistered,
+    active: employerMetrics.activeAccounts,
+    suspended: employerMetrics.suspendedAccounts,
+    deactivated: employerMetrics.archivedAccounts,
+  };
+  const pesoAccounts = {
+    total: pesoMetrics.totalRegistered,
+    active: pesoMetrics.activeAccounts,
+    suspended: pesoMetrics.suspendedAccounts,
+    deactivated: pesoMetrics.archivedAccounts,
+  };
+
   return {
-    totalStudents: studentMetrics.totalRegistered,
-    activeStudents: studentMetrics.activeAccounts,
-    totalEmployers: employerMetrics.totalRegistered,
-    totalAvailableOpportunities: employerMetrics.activeAccounts,
-    systemHealth: {
-      serverStatus: 'Operational',
-      uptime: '99.9%',
-      databaseLoad: 'Normal',
-      activeSessions: studentMetrics.activeAccounts + employerMetrics.activeAccounts,
-      lastBackup: 'N/A',
-      storageUsedPercent: 25,
-    },
+    totalAccounts: studentAccounts.total + pesoAccounts.total + employerAccounts.total,
+    studentAccounts,
+    pesoAccounts,
+    employerAccounts,
   };
 }
 
@@ -47,36 +63,41 @@ export function adaptAdminStudentItem(dto: AdminStudentListItemDto): StudentReco
   return {
     id: String(dto.studentId),
     userAccountId: String(dto.userAccountId),
+    accountCode: dto.accountCode,
     studentId: String(dto.studentId),
     fullName: dto.fullName,
     email: dto.accountEmail,
     status: statusMap[dto.accountStatus] || 'Active',
     suspensionDaysRemaining: remainingDays(data.suspendedUntil),
-    dateCreated: new Date(dto.createdAt).toLocaleDateString(),
+    dateCreated: formatTableDate(dto.createdAt),
     role: 'Student',
+    profileImageUrl: publicUploadUrl(
+      data.photoFilePath,
+      data.profileUpdatedAt,
+    ),
     firstName: data.firstName,
     middleName: data.middleName || '',
     lastName: data.lastName,
     suffix: data.extensionName || '',
     sex: data.sex === 'Male' || data.sex === 'Female' ? data.sex : 'Other',
-    birthdate: data.birthDate || 'N/A',
+    birthdate: toDateOnly(data.birthDate) || 'N/A',
     contactNumber: data.contactNumber || 'N/A',
-    fullAddress: [data.addressLine, data.addressBarangay, data.addressDistrict, data.addressCity].filter(Boolean).join(', ') || 'Quezon City',
+    fullAddress: [data.addressLine, data.addressBarangay, districtAddressPart(data.addressDistrict), data.addressCity].filter(Boolean).join(', ') || 'Quezon City',
     addressStreet: data.addressLine || '',
     addressBarangay: data.addressBarangay || '',
-    addressDistrict: data.addressDistrict || '',
+    addressDistrict: normalizeDistrictOption(data.addressDistrict),
     addressCity: data.addressCity || '',
     linkedinUrl: data.linkedinUrl || '',
     inquiryVia: 'online',
     schoolName: data.schoolName || 'N/A',
     programStrand: data.strandProgram || 'N/A',
-    yearLevel: yearLevelToUi(data.yearLevel),
+    yearLevel: formatYearLevel(data.yearLevel),
     requiredHours: String(data.requiredHours || 0),
     flexibleAssignment: Boolean(data.allowsOutsidePreferredField),
     preferredIndustries: preferred.map((item: any) => item.customIndustryName ? 'Other' : item.industryName),
     otherPreferredField: custom?.customIndustryName || '',
-    scheduleAvailability: [scheduleToUi(data.availableDays)],
-    startDate: data.startDate || 'N/A',
+    scheduleAvailability: normalizeAvailabilityDays(data.availableDays),
+    startDate: toDateOnly(data.startDate) || 'N/A',
     hostOrgType: data.preferredCompanyType === 'government' ? 'Government' : 'Private',
   };
 }
@@ -92,20 +113,25 @@ export function adaptAdminEmployerItem(dto: AdminEmployerListItemDto): EmployerR
   return {
     id: String(dto.companyId),
     userAccountId: String(dto.userAccountId),
+    accountCode: dto.accountCode,
     companyId: String(dto.companyId),
     fullName: dto.companyName,
     companyName: dto.companyName,
     email: dto.accountEmail,
     status: statusMap[dto.accountStatus] || 'Active',
     suspensionDaysRemaining: remainingDays(data.suspendedUntil),
-    dateCreated: new Date(dto.createdAt).toLocaleDateString(),
+    dateCreated: formatTableDate(dto.createdAt),
     role: 'Employer',
+    profileImageUrl: publicUploadUrl(
+      data.logoFilePath,
+      data.profileUpdatedAt,
+    ),
     industry: data.industryName || 'N/A',
     companyType: data.companyType === 'government' ? 'Government' : 'Private',
-    location: [data.addressLine, data.addressBarangay, data.addressDistrict, data.addressCity].filter(Boolean).join(', ') || 'Quezon City',
+    location: [data.addressLine, data.addressBarangay, districtAddressPart(data.addressDistrict), data.addressCity].filter(Boolean).join(', ') || 'Quezon City',
     addressLine: data.addressLine || '',
     addressBarangay: data.addressBarangay || '',
-    addressDistrict: data.addressDistrict || '',
+    addressDistrict: normalizeDistrictOption(data.addressDistrict),
     addressCity: data.addressCity || '',
     description: data.description || '',
     companyWebsite: data.websiteUrl || '',
@@ -133,22 +159,27 @@ export function adaptAdminPesoItem(dto: AdminPesoListItemDto): QCPesoRecord {
   return {
     id: String(dto.pesoPersonnelId),
     userAccountId: String(dto.userAccountId),
+    accountCode: dto.accountCode,
     fullName: dto.fullName,
     email: dto.accountEmail,
     employeeId: dto.employeeId,
     status: statusMap[dto.accountStatus] || 'Active',
     suspensionDaysRemaining: remainingDays(data.suspendedUntil),
-    dateCreated: new Date(dto.createdAt).toLocaleDateString(),
+    dateCreated: formatTableDate(dto.createdAt),
     role: 'QC PESO Personnel',
+    profileImageUrl: publicUploadUrl(
+      data.photoFilePath,
+      data.profileUpdatedAt,
+    ),
     firstName: data.firstName || dto.fullName.split(' ')[0] || '',
     middleName: data.middleName || '',
     lastName: data.lastName || dto.fullName.split(' ').slice(1).join(' ') || '',
     suffix: data.extensionName || '',
-    birthdate: data.birthDate || 'N/A',
+    birthdate: toDateOnly(data.birthDate) || 'N/A',
     sex: data.sex === 'Male' || data.sex === 'Female' ? data.sex : 'Other',
     addressLine: data.addressLine || '',
     barangay: data.addressBarangay || '',
-    district: data.addressDistrict || '',
+    district: normalizeDistrictOption(data.addressDistrict),
     city: data.addressCity || '',
     position: data.position || 'PESO Officer',
     department: data.department || 'PESO',
@@ -162,23 +193,4 @@ function remainingDays(value?: string | null): number | undefined {
   return Math.max(0, Math.ceil((new Date(value).getTime() - Date.now()) / 86_400_000));
 }
 
-function yearLevelToUi(value?: string): string {
-  const labels: Record<string, string> = {
-    grade_11: 'Grade 11',
-    grade_12: 'Grade 12',
-    first_year_college: '1st Year',
-    second_year_college: '2nd Year',
-    third_year_college: '3rd Year',
-    fourth_year_college: '4th Year',
-  };
-  return value ? labels[value] || value : 'N/A';
-}
-
-function scheduleToUi(value?: string): string {
-  const labels: Record<string, string> = {
-    weekdays: 'Weekdays',
-    weekends: 'Weekends',
-    flexible: 'Flexible',
-  };
-  return value ? labels[value] || value : 'Weekdays';
-}
+import { formatTableDate } from '../../../utils/date-only'

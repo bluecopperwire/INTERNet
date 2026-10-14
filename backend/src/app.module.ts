@@ -6,6 +6,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 
 import databaseConfig from './config/database.config';
+import emailConfig from './config/email.config';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ApplicationsModule } from './applications/applications.module';
@@ -14,12 +15,13 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { EmployerModule } from './employer/employer.module';
 import { AdminModule } from './admin/admin.module';
 import { ReferenceModule } from './reference/reference.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [databaseConfig],
+      load: [databaseConfig, emailConfig],
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -43,6 +45,7 @@ import { ReferenceModule } from './reference/reference.module';
     EmployerModule,
     AdminModule,
     ReferenceModule,
+    EmailModule,
   ],
   providers: [
     {

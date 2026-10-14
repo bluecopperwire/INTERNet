@@ -29,9 +29,13 @@ interface StudentState {
 
   fetchProfile: () => Promise<UserProfile | null>;
   saveProfile: (payload: any) => Promise<void>;
-  fetchOpportunities: (filters?: OpportunityFilters, signal?: AbortSignal) => Promise<void>;
+  uploadProfilePicture: (file: File) => Promise<UserProfile>;
+  fetchOpportunities: (
+    filters?: OpportunityFilters,
+    signal?: AbortSignal,
+  ) => Promise<void>;
   fetchOpportunityById: (id: number) => Promise<InternshipOpportunity | null>;
-  submitApplication: (opportunityId: number, remark?: string) => Promise<void>;
+  submitApplication: (opportunityId: number) => Promise<void>;
 }
 
 export const useStudentStore = create<StudentState>((set) => ({
@@ -56,7 +60,7 @@ export const useStudentStore = create<StudentState>((set) => ({
       const adapted = adaptStudentProfile(data);
       set({ profile: adapted, isProfileLoading: false });
       return adapted;
-    } catch (err: any) {
+    } catch (err: unknown) {
       const norm = normalizeApiError(err);
       set({ error: norm.message, isProfileLoading: false });
       return null;
@@ -81,7 +85,30 @@ export const useStudentStore = create<StudentState>((set) => ({
     }
   },
 
-  fetchOpportunities: async (filters?: OpportunityFilters, signal?: AbortSignal) => {
+  uploadProfilePicture: async (file: File) => {
+    const studentId = useAuthStore.getState().user?.studentId;
+    if (!studentId) throw new Error('Student ID not found');
+
+    set({ isProfileLoading: true, error: null });
+    try {
+      const data = await studentApiService.uploadProfilePicture(
+        studentId,
+        file,
+      );
+      const adapted = adaptStudentProfile(data);
+      set({ profile: adapted, isProfileLoading: false });
+      return adapted;
+    } catch (err: unknown) {
+      const norm = normalizeApiError(err);
+      set({ error: norm.message, isProfileLoading: false });
+      throw new Error(norm.message);
+    }
+  },
+
+  fetchOpportunities: async (
+    filters?: OpportunityFilters,
+    signal?: AbortSignal,
+  ) => {
     set({ isLoading: true, error: null });
     try {
       const res = await studentApiService.getOpportunities(filters, signal);
@@ -94,9 +121,10 @@ export const useStudentStore = create<StudentState>((set) => ({
           companyMap.set(opp.companyId, {
             id: opp.companyId,
             name: opp.companyName,
-            summary: `${opp.tags[0] || 'Company'} in ${opp.location}`,
-            description: opp.details.description || '',
+            industry: opp.companyIndustry,
+            about: opp.companyDescription,
             tags: opp.tags,
+            logoUrl: opp.companyLogoUrl,
           });
         }
       });
@@ -127,12 +155,12 @@ export const useStudentStore = create<StudentState>((set) => ({
     }
   },
 
-  submitApplication: async (opportunityId: number, remark?: string) => {
+  submitApplication: async (opportunityId: number) => {
     const studentId = useAuthStore.getState().user?.studentId;
     if (!studentId) throw new Error('Student ID not found');
 
     try {
-      await studentApiService.submitApplication(studentId, opportunityId, remark);
+      await studentApiService.submitApplication(studentId, opportunityId);
       // Mark card as applied locally
       set((state) => ({
         opportunities: state.opportunities.map((opp) =>

@@ -1,10 +1,11 @@
 import {
+  IsDateString,
   IsEmail,
-  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
 } from 'class-validator';
+import { IsValidContactNumber, IsValidDistrict } from '../../common/validation/input-validation';
 
 export class UpdatePesoProfileDto {
   @IsOptional()
@@ -30,7 +31,7 @@ export class UpdatePesoProfileDto {
   sex?: string;
 
   @IsOptional()
-  @IsString()
+  @IsDateString({ strict: true })
   birthDate?: string;
 
   @IsOptional()
@@ -46,6 +47,7 @@ export class UpdatePesoProfileDto {
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @IsValidDistrict()
   addressDistrict?: string;
 
   @IsOptional()
@@ -56,11 +58,16 @@ export class UpdatePesoProfileDto {
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @IsValidContactNumber()
   contactNumber?: string;
 
   @IsOptional()
   @IsEmail()
   contactEmail?: string;
+
+  @IsOptional()
+  @IsString()
+  employeeId?: string;
 
   @IsOptional()
   @IsString()

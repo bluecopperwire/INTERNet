@@ -92,6 +92,14 @@ export class EmployerOpportunityController {
     return this.opportunityService.close(user.userAccountId, opportunityId);
   }
 
+  @Patch(':opportunityId/reopen')
+  reopen(
+    @CurrentUser() user: EmployerCurrentUser,
+    @Param('opportunityId', ParseIntPipe) opportunityId: number,
+  ) {
+    return this.opportunityService.reopen(user.userAccountId, opportunityId);
+  }
+
   @Delete(':opportunityId')
   archive(
     @CurrentUser() user: EmployerCurrentUser,

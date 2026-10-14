@@ -1,6 +1,10 @@
 import React from 'react'
 import styles from './ProfileDetailsModal.module.css'
 import type { UserProfile } from '../types/internship.types'
+import { formatPreferredIndustries } from '../../../utils/preferred-industry-display'
+import { formatAvailabilityDays } from '../../../utils/availability-days'
+import { formatYearLevel } from '../../../utils/year-level'
+import { districtAddressPart } from '../../../utils/district'
 
 interface ProfileDetailsModalProps {
   isOpen: boolean
@@ -47,8 +51,9 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({ isOpen
               <div className={styles.field}>
                 <label>Full Address</label>
                 <span>
-                  {profile.address.street}, {profile.address.barangay}, 
-                  District {profile.address.district}, {profile.address.city}
+                  {[profile.address.street, profile.address.barangay, districtAddressPart(profile.address.district), profile.address.city]
+                    .filter(Boolean)
+                    .join(', ')}
                 </span>
               </div>
               <div className={styles.field}>
@@ -71,7 +76,7 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({ isOpen
               </div>
               <div className={styles.field}>
                 <label>Year Level</label>
-                <span>{profile.academic.yearLevel || 'N/A'}</span>
+                <span>{formatYearLevel(profile.academic.yearLevel)}</span>
               </div>
             </div>
           </section>
@@ -89,11 +94,11 @@ export const ProfileDetailsModal: React.FC<ProfileDetailsModalProps> = ({ isOpen
               </div>
               <div className={styles.field}>
                 <label>Preferred Industries</label>
-                <span>{profile.preferences.preferredIndustries?.length > 0 ? profile.preferences.preferredIndustries.join(', ') : 'N/A'}</span>
+                <span>{profile.preferences.preferredIndustries?.length > 0 ? formatPreferredIndustries(profile.preferences.preferredIndustries, profile.preferences.otherPreferredField) : 'N/A'}</span>
               </div>
               <div className={styles.field}>
                 <label>Schedule Availability</label>
-                <span>{profile.preferences.schedule?.length > 0 ? profile.preferences.schedule.join(', ') : 'N/A'}</span>
+                <span>{formatAvailabilityDays(profile.preferences.schedule, 'N/A')}</span>
               </div>
               <div className={styles.field}>
                 <label>Start Date</label>

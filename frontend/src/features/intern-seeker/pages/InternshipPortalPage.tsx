@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom'
 import { useInternshipPortal } from '../hooks/useInternshipPortal'
 import type { InternshipOpportunity, PartnerCompany } from '../types/internship.types'
 import OpportunityDetail from '../components/OpportunityDetail'
+import { CompanyAvatar } from '../../../components/CompanyAvatar'
 import styles from './InternshipPortalPage.module.css'
 
 const SLIDE_COUNT = 3
@@ -185,21 +186,20 @@ function SectionHeading({ id, title, light = false, onPrevious, onNext }: Sectio
 }
 
 function OpportunityCard({ opportunity, onSelect }: { opportunity: InternshipOpportunity; onSelect: (opportunity: InternshipOpportunity) => void }) {
-  const companyInitials = opportunity.companyName
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map(part => part[0])
-    .join('')
-    .toUpperCase()
-
   return (
     <button className={styles.opportunityCard} type="button" onClick={() => onSelect(opportunity)}>
       <div className={styles.cardCompanyRow}>
-        <span className={styles.companyMark} aria-hidden="true">{companyInitials}</span>
-        <span>{opportunity.companyName}</span>
+        <CompanyAvatar
+          name={opportunity.companyName}
+          src={opportunity.companyLogoUrl}
+          size={37}
+          className={styles.companyMark}
+        />
+        <span className={styles.cardCompanyName} title={opportunity.companyName}>
+          {opportunity.companyName}
+        </span>
       </div>
-      <h3>{opportunity.position}</h3>
+      <h3 title={opportunity.position}>{opportunity.position}</h3>
       <p className={styles.cardLocation}>{opportunity.location}</p>
       <div className={styles.cardFooter}>
         <div className={styles.tags}><span>{opportunity.workSetup}</span></div>
@@ -210,20 +210,23 @@ function OpportunityCard({ opportunity, onSelect }: { opportunity: InternshipOpp
 }
 
 function CompanyCard({ company, onSelect }: { company: PartnerCompany; onSelect: (company: PartnerCompany) => void }) {
-  const companyInitials = company.name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map(part => part[0])
-    .join('')
-    .toUpperCase()
+  const companyNameClass = company.name.length > 42
+    ? styles.veryLongCompanyName
+    : company.name.length > 28
+      ? styles.longCompanyName
+      : ''
 
   return (
     <button className={styles.companyCard} type="button" onClick={() => onSelect(company)}>
-      <span className={styles.companyLogoPlaceholder} aria-hidden="true">{companyInitials}</span>
-      <h3>{company.name}</h3>
-      <p className={styles.companySummary}>{company.summary}</p>
-      <p className={styles.companyDescription}>{company.description}</p>
+      <CompanyAvatar
+        name={company.name}
+        src={company.logoUrl}
+        size={70}
+        className={styles.companyLogoPlaceholder}
+      />
+      <h3 className={companyNameClass}>{company.name}</h3>
+      <p className={styles.companyIndustry}>{company.industry}</p>
+      <p className={styles.companyDescription}>{company.about}</p>
     </button>
   )
 }

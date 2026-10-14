@@ -35,7 +35,7 @@
   width: 160px;
   height: 160px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+  background: #e0edff;
   border: 4px solid #ffffff;
   box-shadow: 0 10px 25px rgba(22, 14, 111, 0.15);
   display: flex;
@@ -67,8 +67,10 @@
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: linear-gradient(135deg, #eef2f6 0%, #e2e8f0 100%);
+  background: #e0edff;
   color: #160e6f;
+  font-size: 64px;
+  font-weight: 700;
 }
 
 /* Permanent camera icon badge at bottom right of avatar */
@@ -135,14 +137,15 @@
 .contactDetails {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 16px;
+  gap: 0;
+  margin-top: 0;
 }
 
 .contactDetails span {
   display: flex;
   align-items: center;
   gap: 6px;
+  margin-top: 8px;
   color: #160e6f;
   font-size: 14px;
   line-height: 1.35;
@@ -272,27 +275,14 @@
   border-bottom: 0;
 }
 
-.itemLabelGroup {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.itemIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #160e6f;
-  width: 24px;
-}
-
 .itemLabel {
+  color: #65718a;
   font-size: 14px;
-  font-weight: 600;
-  color: #160e6f;
+  font-weight: 400;
 }
 
 .itemValue {
+  max-width: 64%;
   min-width: 0;
   font-size: 14px;
   font-weight: 600;
@@ -350,5 +340,16 @@
   }
   .companyTitle {
     font-size: 28px;
+  }
+
+  .detailItem {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .itemValue {
+    max-width: 100%;
+    text-align: left;
   }
 }

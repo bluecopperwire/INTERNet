@@ -1,10 +1,12 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
   Patch,
+  Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -14,20 +16,96 @@ import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { UserRole } from '../../users/entities/account.entities';
 import { PesoDashboardService } from '../services/peso-dashboard.service';
+import { CreateAdminEmployerDto } from '../../admin/dto/admin-user-management.dto';
 import {
+  QcAttendanceHistoryQueryDto,
+  QcAttendanceListQueryDto,
+  QcInternshipListQueryDto,
   QueryApplicationsDto,
+  QueryAttendanceDto,
   QueryCompanyEmployersDto,
   QueryReferralsDto,
   UpdateApplicationStatusDto,
 } from '../dto/peso-dashboard.dto';
+import { QcInternshipWorkflowService } from '../services/qc-internship-workflow.service';
 import { DateFilterDto } from '../../common/dto/date-filter.dto';
-import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @Controller('dashboard/peso')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.PESO_PERSONNEL)
 export class PesoDashboardController {
-  constructor(private readonly pesoService: PesoDashboardService) {}
+  constructor(
+    private readonly pesoService: PesoDashboardService,
+    private readonly internshipWorkflow: QcInternshipWorkflowService,
+  ) {}
+
+  @Get('internships/finalization/summary')
+  getFinalizationSummary() {
+    return this.internshipWorkflow.finalizationSummary();
+  }
+
+  @Get('internships/finalization')
+  getFinalizationQueue(@Query() query: QcInternshipListQueryDto) {
+    return this.internshipWorkflow.finalizationList(query);
+  }
+
+  @Get('internships/finalization/:assignmentId')
+  getFinalizationDetail(
+    @Param('assignmentId', ParseIntPipe) assignmentId: number,
+  ) {
+    return this.internshipWorkflow.finalizationDetail(assignmentId);
+  }
+
+  @Patch('internships/finalization/:assignmentId')
+  finalizeAssignment(
+    @CurrentUser('userAccountId') userAccountId: number,
+    @Param('assignmentId', ParseIntPipe) assignmentId: number,
+  ) {
+    return this.internshipWorkflow.finalize(userAccountId, assignmentId);
+  }
+
+  @Get('internships/history/summary')
+  getInternshipHistorySummary() {
+    return this.internshipWorkflow.historySummary();
+  }
+
+  @Get('internships/history')
+  getInternshipHistory(@Query() query: QcInternshipListQueryDto) {
+    return this.internshipWorkflow.history(query);
+  }
+
+  @Get('internships/history/:assignmentId')
+  getInternshipHistoryDetail(
+    @Param('assignmentId', ParseIntPipe) assignmentId: number,
+  ) {
+    return this.internshipWorkflow.historyDetail(assignmentId);
+  }
+
+  @Delete('internships/history/:assignmentId')
+  hideFinalizedInternship(
+    @CurrentUser('userAccountId') userAccountId: number,
+    @Param('assignmentId', ParseIntPipe) assignmentId: number,
+  ) {
+    return this.internshipWorkflow.hideFinalized(userAccountId, assignmentId);
+  }
+
+  @Get('internship-attendance/summary')
+  getInternshipAttendanceSummary(@Query('date') date?: string) {
+    return this.internshipWorkflow.attendanceSummary(date);
+  }
+
+  @Get('internship-attendance')
+  getInternshipAttendance(@Query() query: QcAttendanceListQueryDto) {
+    return this.internshipWorkflow.attendance(query);
+  }
+
+  @Get('internship-attendance/:assignmentId')
+  getInternshipAttendanceHistory(
+    @Param('assignmentId', ParseIntPipe) assignmentId: number,
+    @Query() query: QcAttendanceHistoryQueryDto,
+  ) {
+    return this.internshipWorkflow.attendanceHistory(assignmentId, query);
+  }
 
   // A1. Student dashboard metrics
   @Get('students/metrics')
@@ -79,8 +157,8 @@ export class PesoDashboardController {
 
   // D3. GET all DTR entries
   @Get('attendance')
-  getAllDtrEntries(@Query() dateFilterDto: DateFilterDto) {
-    return this.pesoService.getAllDtrEntries(dateFilterDto, dateFilterDto);
+  getAllDtrEntries(@Query() queryDto: QueryAttendanceDto) {
+    return this.pesoService.getAllDtrEntries(queryDto, queryDto);
   }
 
   // D4. GET DTR entry per student
@@ -113,9 +191,36 @@ export class PesoDashboardController {
     );
   }
 
+  @Patch('applications/:applicationId/review')
+  markApplicationUnderReview(
+    @CurrentUser('userAccountId') userAccountId: number,
+    @Param('applicationId', ParseIntPipe) applicationId: number,
+  ) {
+    return this.pesoService.markApplicationUnderReview(
+      userAccountId,
+      applicationId,
+    );
+  }
+
+  @Delete('applications/:applicationId')
+  hideApplication(
+    @CurrentUser('userAccountId') userAccountId: number,
+    @Param('applicationId', ParseIntPipe) applicationId: number,
+  ) {
+    return this.pesoService.hideApplication(userAccountId, applicationId);
+  }
+
   @Get('referrals/:referralId')
   getReferralDetail(@Param('referralId', ParseIntPipe) referralId: number) {
     return this.pesoService.getReferralDetail(referralId);
+  }
+
+  @Delete('referrals/:referralId')
+  hideReferral(
+    @CurrentUser('userAccountId') userAccountId: number,
+    @Param('referralId', ParseIntPipe) referralId: number,
+  ) {
+    return this.pesoService.hideReferral(userAccountId, referralId);
   }
 
   @Get('interns/:internshipAssignmentId')
@@ -126,8 +231,20 @@ export class PesoDashboardController {
     return this.pesoService.getInternDetail(internshipAssignmentId);
   }
 
+  @Patch('interns/:internshipAssignmentId/finalize')
+  finalizeInternship(
+    @CurrentUser('userAccountId') userAccountId: number,
+    @Param('internshipAssignmentId', ParseIntPipe)
+    internshipAssignmentId: number,
+  ) {
+    return this.pesoService.finalizeAssignment(
+      userAccountId,
+      internshipAssignmentId,
+    );
+  }
+
   @Get('students')
-  getStudents(@Query() queryDto: PaginationDto & { search?: string }) {
+  getStudents(@Query() queryDto: QueryCompanyEmployersDto) {
     return this.pesoService.getStudents(queryDto);
   }
 
@@ -139,5 +256,13 @@ export class PesoDashboardController {
   @Get('employers/:companyId')
   getEmployerDetail(@Param('companyId', ParseIntPipe) companyId: number) {
     return this.pesoService.getEmployerDetail(companyId);
+  }
+
+  @Post('employers')
+  createEmployer(
+    @CurrentUser('userAccountId') userAccountId: number,
+    @Body() dto: CreateAdminEmployerDto,
+  ) {
+    return this.pesoService.createEmployer(dto, userAccountId);
   }
 }

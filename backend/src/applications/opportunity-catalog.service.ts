@@ -7,9 +7,11 @@ export interface OpportunityCatalogItem {
   companyId: number;
   companyName: string;
   companyType: string;
+  companyDescription: string;
   industryId: number;
   industryName: string;
   companyLogoFilePath: string | null;
+  companyProfileUpdatedAt: string;
   companyAddressCity: string;
   title: string;
   department: string;
@@ -97,8 +99,25 @@ export class OpportunityCatalogService {
     const queryParams = [...params];
     if (studentId) {
       appliedSelect = `EXISTS (
-        SELECT 1 FROM public.application app 
-        WHERE app.opportunity_id = o.opportunity_id AND app.student_id = $${paramIndex}
+        SELECT 1
+        FROM public.application app
+        LEFT JOIN public.referral referral
+          ON referral.application_id = app.application_id
+        WHERE app.opportunity_id = o.opportunity_id
+          AND app.student_id = $${paramIndex}
+          AND NOT (
+            app.application_status = 'withdrawn'
+            OR app.application_status = 'rejected_for_referral'
+            OR (
+              app.application_status = 'closed'
+              AND referral.company_response = 'rejected'
+            )
+            OR (
+              app.application_status = 'closed'
+              AND referral.company_response = 'accepted'
+              AND app.student_response = 'declined'
+            )
+          )
       ) AS has_applied`;
       queryParams.push(studentId);
       paramIndex++;
@@ -113,6 +132,8 @@ export class OpportunityCatalogService {
         o.industry_id,
         o.industry_name,
         o.company_logo_file_path,
+        c.updated_at AS company_profile_updated_at,
+        c.description AS company_description,
         o.company_address_city,
         o.title,
         o.department,
@@ -122,7 +143,7 @@ export class OpportunityCatalogService {
         o.work_arrangement,
         o.offered_slots,
         o.allowance,
-        o.application_deadline,
+        (o.application_deadline AT TIME ZONE 'Asia/Manila')::date::text AS application_deadline,
         o.opportunity_status,
         o.created_at,
         o.updated_at,
@@ -146,9 +167,13 @@ export class OpportunityCatalogService {
       companyId: Number(row.company_id),
       companyName: row.company_name,
       companyType: row.company_type,
+      companyDescription: row.company_description,
       industryId: Number(row.industry_id),
       industryName: row.industry_name,
       companyLogoFilePath: row.company_logo_file_path,
+      companyProfileUpdatedAt: new Date(
+        row.company_profile_updated_at,
+      ).toISOString(),
       companyAddressCity: row.company_address_city,
       title: row.title,
       department: row.department,
@@ -159,9 +184,7 @@ export class OpportunityCatalogService {
       offeredSlots: Number(row.offered_slots),
       hasAllowance: row.allowance !== null,
       allowance: row.allowance !== null ? String(row.allowance) : null,
-      applicationDeadline: row.application_deadline instanceof Date 
-        ? row.application_deadline.toISOString().split('T')[0]
-        : String(row.application_deadline),
+      applicationDeadline: String(row.application_deadline),
       opportunityStatus: row.opportunity_status,
       createdAt: new Date(row.created_at).toISOString(),
       updatedAt: new Date(row.updated_at).toISOString(),
@@ -190,8 +213,25 @@ export class OpportunityCatalogService {
     const params: any[] = [opportunityId];
     if (studentId) {
       appliedSelect = `EXISTS (
-        SELECT 1 FROM public.application app 
-        WHERE app.opportunity_id = o.opportunity_id AND app.student_id = $2
+        SELECT 1
+        FROM public.application app
+        LEFT JOIN public.referral referral
+          ON referral.application_id = app.application_id
+        WHERE app.opportunity_id = o.opportunity_id
+          AND app.student_id = $2
+          AND NOT (
+            app.application_status = 'withdrawn'
+            OR app.application_status = 'rejected_for_referral'
+            OR (
+              app.application_status = 'closed'
+              AND referral.company_response = 'rejected'
+            )
+            OR (
+              app.application_status = 'closed'
+              AND referral.company_response = 'accepted'
+              AND app.student_response = 'declined'
+            )
+          )
       ) AS has_applied`;
       params.push(studentId);
     }
@@ -205,6 +245,8 @@ export class OpportunityCatalogService {
         o.industry_id,
         o.industry_name,
         o.company_logo_file_path,
+        c.updated_at AS company_profile_updated_at,
+        c.description AS company_description,
         o.company_address_city,
         o.title,
         o.department,
@@ -214,7 +256,7 @@ export class OpportunityCatalogService {
         o.work_arrangement,
         o.offered_slots,
         o.allowance,
-        o.application_deadline,
+        (o.application_deadline AT TIME ZONE 'Asia/Manila')::date::text AS application_deadline,
         o.opportunity_status,
         o.created_at,
         o.updated_at,
@@ -238,9 +280,13 @@ export class OpportunityCatalogService {
       companyId: Number(row.company_id),
       companyName: row.company_name,
       companyType: row.company_type,
+      companyDescription: row.company_description,
       industryId: Number(row.industry_id),
       industryName: row.industry_name,
       companyLogoFilePath: row.company_logo_file_path,
+      companyProfileUpdatedAt: new Date(
+        row.company_profile_updated_at,
+      ).toISOString(),
       companyAddressCity: row.company_address_city,
       title: row.title,
       department: row.department,
@@ -251,9 +297,7 @@ export class OpportunityCatalogService {
       offeredSlots: Number(row.offered_slots),
       hasAllowance: row.allowance !== null,
       allowance: row.allowance !== null ? String(row.allowance) : null,
-      applicationDeadline: row.application_deadline instanceof Date 
-        ? row.application_deadline.toISOString().split('T')[0]
-        : String(row.application_deadline),
+      applicationDeadline: String(row.application_deadline),
       opportunityStatus: row.opportunity_status,
       createdAt: new Date(row.created_at).toISOString(),
       updatedAt: new Date(row.updated_at).toISOString(),

@@ -7,6 +7,7 @@ import {
   adaptPesoIntern,
   adaptPesoDtr,
   adaptPesoProfile,
+  adaptToPesoProfilePayload,
   adaptMonitoredStudent,
   adaptMonitoredCompany,
 } from '../adapters/qcpeso.adapters';
@@ -58,6 +59,7 @@ interface QCPesoState {
   fetchCompanies: (params?: any) => Promise<void>;
   fetchProfile: () => Promise<void>;
   updateProfile: (payload: any) => Promise<void>;
+  uploadProfilePicture: (file: File) => Promise<QCPesoProfile>;
   updateApplicationStatus: (
     applicationId: number,
     status: 'approved_for_referral' | 'rejected_for_referral',
@@ -96,8 +98,11 @@ export const useQCPesoStore = create<QCPesoState>((set) => ({
     set({ isLoadingMetrics: true, error: null });
     try {
       const data = await qcpesoApiService.getDashboardMetrics();
-      set({ metrics: adaptPesoDashboardMetrics(data), isLoadingMetrics: false });
-    } catch (err: any) {
+      set({
+        metrics: adaptPesoDashboardMetrics(data),
+        isLoadingMetrics: false,
+      });
+    } catch (err: unknown) {
       const norm = normalizeApiError(err);
       set({ error: norm.message, isLoadingMetrics: false });
     }
@@ -213,12 +218,27 @@ export const useQCPesoStore = create<QCPesoState>((set) => ({
   updateProfile: async (payload: any) => {
     set({ isLoadingProfile: true, error: null });
     try {
-      const raw = await qcpesoApiService.updateOwnProfile(payload);
+      const apiPayload = adaptToPesoProfilePayload(payload);
+      const raw = await qcpesoApiService.updateOwnProfile(apiPayload);
       set({ profile: adaptPesoProfile(raw), isLoadingProfile: false });
     } catch (err: any) {
       const norm = normalizeApiError(err);
       set({ error: norm.message, isLoadingProfile: false });
       throw err;
+    }
+  },
+
+  uploadProfilePicture: async (file: File) => {
+    set({ isLoadingProfile: true, error: null });
+    try {
+      const raw = await qcpesoApiService.uploadProfilePicture(file);
+      const profile = adaptPesoProfile(raw);
+      set({ profile, isLoadingProfile: false });
+      return profile;
+    } catch (err: unknown) {
+      const norm = normalizeApiError(err);
+      set({ error: norm.message, isLoadingProfile: false });
+      throw new Error(norm.message);
     }
   },
 

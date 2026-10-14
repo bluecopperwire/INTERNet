@@ -59,7 +59,7 @@ Query/body: none.
   "contactPersonMiddleName": null,
   "contactPersonLastName": "Santos",
   "contactPersonExtensionName": null,
-  "logoFilePath": "/uploads/company-logos/generated.png"
+  "logoFilePath": "/uploads/profile_pictures/42-example-corporation-pfp.png"
 }
 ```
 
@@ -95,13 +95,13 @@ The response is the same shape as endpoint 1. `companySize` must be positive, th
 
 ### 3. PUT `/employer/profile/image`
 
-Replaces the company logo. Content type is `multipart/form-data`; the field name is `image`. JPEG, PNG, WebP, and GIF are accepted up to 5 MiB. The server generates the filename, stores the new file before changing `company.logo_file_path`, removes the new file if the DB update fails, and only then attempts cleanup of the old managed logo.
+Replaces the company logo. Content type is `multipart/form-data`; the field name is `image`. JPEG, PNG, WebP, and GIF are accepted up to 5 MiB. The server names the file `<user-account-id>-<company-name>-pfp.<extension>`, stores the new file under `uploads/profile_pictures` before changing `company.logo_file_path`, removes the new file if the DB update fails, and only then attempts cleanup of the old managed logo.
 
 ```json
-{ "logoFilePath": "/uploads/company-logos/generated-uuid.png" }
+{ "logoFilePath": "/uploads/profile_pictures/42-example-corporation-pfp.png" }
 ```
 
-Client-supplied paths are never accepted. Storage paths are constrained to the generated company-logo directory.
+Client-supplied paths are never accepted. Storage paths are constrained to the managed profile-picture directory.
 
 ## Opportunities
 
@@ -246,7 +246,7 @@ Returns the aggregated review model:
   },
   "internshipPreference": {
     "requiredHours": 400,
-    "availableDays": "weekdays",
+    "availableDays": [1, 2, 3, 4, 5],
     "startDate": "2026-09-01"
   },
   "opportunity": { "opportunityId": 44, "title": "Software Developer Intern" },
@@ -344,9 +344,7 @@ The raw student enum is `declined` (a UI may label it “Rejected”).
 
 Response uses the endpoint 25 detail shape.
 
-### 19. PATCH `/employer/referrals/:referralId/withdraw-acceptance`
-
-The employer withdraws a previously accepted referral, transitioning company response from `accepted -> rejected`. In one transaction, `referral.company_response` is set to `'rejected'`, `company_responded_at` is updated, and status history records the authenticated employer actor. Response returns `200` with the updated referral model.
+The former `PATCH /employer/referrals/:referralId/withdraw-acceptance` endpoint has been removed. Employer acceptance is final while the student response is pending. Opportunity archival is the supported way to expire an active accepted workflow when the opportunity becomes unavailable.
 
 ## Attendance
 
@@ -550,8 +548,6 @@ Referral interview: sent -> under_review
 Referral accept:    pending|for_interview -> accepted (under_review)
 Referral reject:    sent -> under_review -> closed
                     pending|for_interview -> rejected
-Referral withdraw:  accepted -> rejected
-
 Assignment: pending -> ongoing (scheduler)
             pending|ongoing -> cancelled
             ongoing -> completed (hours requirement met)

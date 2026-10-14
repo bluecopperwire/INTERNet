@@ -43,6 +43,11 @@ export function currentManilaMinutes(now = new Date()): number {
   );
 }
 
+export function currentManilaTime(now = new Date()): string {
+  const parts = manilaParts(now);
+  return `${parts.hour}:${parts.minute}:${parts.second}`;
+}
+
 export function assertValidDate(value: string, field = 'date'): void {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     throw new BadRequestException(`${field} must be YYYY-MM-DD`);
@@ -96,9 +101,14 @@ export function manilaDateTimeToIso(date: string, time: string): string {
   return new Date(`${date}T${time}:00+08:00`).toISOString();
 }
 
-export function isScheduledWorkday(date: string, workingDays: string): boolean {
+export function isScheduledWorkday(
+  date: string,
+  workingDays: readonly number[] | string,
+): boolean {
   assertValidDate(date);
   const day = new Date(`${date}T00:00:00.000Z`).getUTCDay();
+  if (Array.isArray(workingDays)) return workingDays.includes(day);
+  // Transitional read compatibility for pre-migration unit fixtures only.
   if (workingDays === 'weekdays') return day >= 1 && day <= 5;
   if (workingDays === 'weekends') return day === 0 || day === 6;
   return false;

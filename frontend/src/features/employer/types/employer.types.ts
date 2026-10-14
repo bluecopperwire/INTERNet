@@ -1,3 +1,10 @@
+import type { ApplicationStatus, CompanyResponse, ReferralStatus, StudentResponse } from '../../../types/api'
+import type {
+  EmployerReviewStatus,
+  ReferralHistoryStatus,
+  WorkflowDisplayStatus,
+} from '../../workflow/status-mappings'
+
 export interface Opportunity {
   id: string
   title: string
@@ -15,13 +22,23 @@ export interface Opportunity {
 
 export interface Applicant {
   id: string
+  accountCode?: string
   name: string
   opportunityId: string
   opportunityTitle: string
   course: string
   yearLevel: string
   dateApplied: string
-  status: 'Pending' | 'For Interview' | 'For Review' | 'Under Review' | 'Shortlisted' | 'Accepted' | 'Rejected'
+  applicationDate?: string
+  referralDate?: string
+  status: WorkflowDisplayStatus
+  reviewStatus?: EmployerReviewStatus
+  historyStatus?: ReferralHistoryStatus
+  applicationStatus?: ApplicationStatus
+  referralStatus?: ReferralStatus
+  companyResponse?: CompanyResponse
+  studentResponse?: StudentResponse
+  canHide: boolean
   email: string
   phone: string
   location: string
@@ -30,6 +47,7 @@ export interface Applicant {
   requiredHours: number
   availabilityDays: string
   availabilityDate: string
+  profileImageUrl?: string
   rejectionRemark?: string
   documents?: Array<{
     submissionId?: number
@@ -67,11 +85,13 @@ export interface CompanyProfile {
 export interface EmployerDashboardSummary {
   companyName: string
   activeOpportunities: number
-  totalApplicants: number
-  acceptedPercentage: number
-  rejectedPercentage: number
-  pendingReviews: number
-  acceptanceRate: number
+  activeReferrals: number
+  activeInternships: number
+  awaitingReview: number
+  awaitingCompletion: number
+  totalReferrals: number
+  activePercentage: number
+  closedPercentage: number
 }
 
 export interface EmployerNotification {
@@ -91,7 +111,7 @@ export interface EmployerAttendanceRecord {
   date: string
   timeIn: string
   timeOut: string
-  status: 'Present' | 'Absent' | 'Late'
+  status: 'Present' | 'Absent' | 'Incomplete'
   hoursRendered: number
   requiredHours: number
 }
@@ -107,7 +127,8 @@ export interface EmployerInternshipDetails {
   expectedEndDate: string
   shiftStartTime: string
   shiftEndTime: string
-  status: 'On Going' | 'Completed' | 'Awaiting Completion' | 'Withdrawn by Student' | 'Cancelled'
+  status: 'Pending' | 'On Going' | 'Completed' | 'Complete (Company)' | 'Complete (Student)' | 'Awaiting Completion' | 'Withdrawn by Student' | 'Cancelled' | 'Finalized'
+  transitionRemark?: string
   renderedHours: number
 }
 
@@ -117,10 +138,12 @@ export interface InternshipAssignment {
   referralId: number
   internshipAssignmentId: number | null
   studentName: string
+  studentAccountCode?: string
+  strandProgram: string
   company: string
   jobTitle: string
   acceptanceDate: string
-  studentResponse: 'Pending Response' | 'Accepted' | 'Declined' | 'Unknown'
+  studentResponse: 'Pending' | 'Accepted' | 'Rejected' | 'Unknown'
   workingDays: string
   requiredHours: number
   startDate: string

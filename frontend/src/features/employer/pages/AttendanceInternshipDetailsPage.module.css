@@ -21,6 +21,13 @@
   margin: 0 auto;
 }
 
+.wrap > div,
+.wrap > section {
+  margin-bottom: 20px;
+}
+
+.detailsToolbar { justify-content: flex-end; }
+
 .backButton {
   display: inline-flex;
   align-items: center;
@@ -113,7 +120,7 @@
   width: 100%;
   min-width: 840px;
   border-collapse: collapse;
-  text-align: left;
+  table-layout: auto;
 }
 
 .attendanceTable th {
@@ -122,7 +129,8 @@
   background: #f8fafc;
   font-size: 14px;
   font-weight: 600;
-  white-space: nowrap;
+  text-align: center;
+  white-space: normal;
 }
 
 .attendanceTable td {
@@ -130,6 +138,9 @@
   border-bottom: 1px solid #e2e8f0;
   color: #28314e;
   font-size: 14px;
+  text-align: center;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
 }
 
 .attendanceTable tbody tr:last-child td { border-bottom: 0; }
@@ -143,13 +154,9 @@
   font-weight: 600;
 }
 
-.ontime,
-.complete { color: #16876c; background: #eaf9f5; }
-.late { color: #a56600; background: #fff4e6; }
+.present { color: #16876c; background: #eaf9f5; }
 .absent,
 .incomplete { color: #e25555; background: #fff0ef; }
-.undertime { color: #a56600; background: #fff4e6; }
-.overtime { color: #6557a8; background: #f0eef9; }
 
 .noRecords {
   margin: 0;

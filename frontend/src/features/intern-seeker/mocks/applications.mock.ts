@@ -17,6 +17,7 @@ const pendingStages = (): ApplicationProgress[] => [
 export const MOCK_APPLICATIONS: UserApplication[] = [
   {
     id: 'app-1', companyName: 'Meta Company', position: 'Frontend Developer Intern', industry: 'Information Technology', location: 'Quezon City', status: 'Endorsed to Company', appliedDate: 'July 20, 2026',
+    canWithdraw: true, canRespondToOffer: false, canHide: false,
     progress: [
       submitted(),
       { stage: 'QC PESO Endorsement', state: 'completed', timestamp: 'July 22, 2026 10:30 am', message: 'Your application has been endorsed by QC PESO.' },
@@ -25,10 +26,12 @@ export const MOCK_APPLICATIONS: UserApplication[] = [
   },
   {
     id: 'app-2', companyName: 'Nexa Solutions', position: 'Business Analyst Intern', industry: 'Business Services', location: 'Pasig City', status: 'For Review (QC PESO)', appliedDate: 'July 20, 2026',
+    canWithdraw: true, canRespondToOffer: false, canHide: false,
     progress: [submitted(), { stage: 'QC PESO Endorsement', state: 'current', message: 'Your application is under review by QC PESO.' }, ...pendingStages().slice(1)],
   },
   {
     id: 'app-3', companyName: 'CloudCore Systems', position: 'Software QA Intern', industry: 'Information Technology', location: 'Taguig City', status: 'Interview Scheduled', appliedDate: 'July 20, 2026',
+    canWithdraw: true, canRespondToOffer: false, canHide: false,
     progress: [
       submitted(),
       { stage: 'QC PESO Endorsement', state: 'completed', timestamp: 'July 22, 2026 10:30 am', message: 'Your application has been endorsed by QC PESO.' },
@@ -38,6 +41,7 @@ export const MOCK_APPLICATIONS: UserApplication[] = [
   },
   {
     id: 'app-4', companyName: 'PixelCraft Studio', position: 'Product Designer Intern', industry: 'Design and Technology', location: 'Makati City', status: 'Accepted', appliedDate: 'July 19, 2026',
+    canWithdraw: true, canRespondToOffer: true, canHide: false,
     progress: [
       submitted(),
       { stage: 'QC PESO Endorsement', state: 'completed', timestamp: 'July 21, 2026 9:00 am', message: 'Your application has been endorsed by QC PESO.' },
@@ -48,6 +52,7 @@ export const MOCK_APPLICATIONS: UserApplication[] = [
   },
   {
     id: 'app-5', companyName: 'BrightPath Media', position: 'Marketing Intern', industry: 'Marketing and Media', location: 'Manila City', status: 'Rejected', appliedDate: 'July 18, 2026',
+    canWithdraw: false, canRespondToOffer: false, canHide: true,
     progress: [
       submitted(),
       { stage: 'QC PESO Endorsement', state: 'rejected', timestamp: 'July 21, 2026 11:15 am', message: 'Your application has been rejected by QC PESO.', remark: 'Your submitted credentials are incomplete. Please upload the missing academic record before applying again.' },
@@ -56,6 +61,7 @@ export const MOCK_APPLICATIONS: UserApplication[] = [
   },
   {
     id: 'app-6', companyName: 'CivicWorks PH', position: 'Administrative Intern', industry: 'Public Service', location: 'Mandaluyong City', status: 'Rejected', appliedDate: 'July 17, 2026',
+    canWithdraw: false, canRespondToOffer: false, canHide: true,
     progress: [
       submitted(),
       { stage: 'QC PESO Endorsement', state: 'completed', timestamp: 'July 19, 2026 10:00 am', message: 'Your application has been endorsed by QC PESO.' },

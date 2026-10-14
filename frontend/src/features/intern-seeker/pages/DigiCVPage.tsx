@@ -2,18 +2,16 @@ import { type DragEvent, type ChangeEvent, useRef, useState } from 'react'
 import { BriefcaseBusiness, FileText } from 'lucide-react'
 import digicvBackground from '../../../assets/digicv-bg.svg'
 import qcLogos from '../../../assets/qc-logos.svg'
+import { useToastStore } from '../../../stores/useToastStore'
+import { getErrorMessage } from '../../../utils/error-message'
+import { useStudentTrackingStore } from '../stores/useStudentTrackingStore'
 import styles from './DigiCVPage.module.css'
 
-const ACCEPTED_EXTENSIONS = ['.pdf', '.docx']
-const ACCEPTED_MIME_TYPES = [
-  'application/pdf',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-]
+const RESUME_REQUIREMENT_TYPE = 'curriculum_vitae_resume'
+const RESUME_REQUIREMENT_NAME = 'Curriculum Vitae (CV) / Resume'
 
 function isAcceptedResume(file: File) {
-  const fileName = file.name.toLowerCase()
-  const hasAcceptedExtension = ACCEPTED_EXTENSIONS.some((extension) => fileName.endsWith(extension))
-  return hasAcceptedExtension && (!file.type || ACCEPTED_MIME_TYPES.includes(file.type))
+  return file.name.toLowerCase().endsWith('.pdf') && file.type === 'application/pdf'
 }
 
 function DigiCVPage() {
@@ -21,29 +19,44 @@ function DigiCVPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [error, setError] = useState('')
   const [isDragging, setIsDragging] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const uploadRequirement = useStudentTrackingStore((state) => state.uploadRequirement)
+  const toast = useToastStore()
 
-  const selectFile = (file: File | undefined) => {
-    if (!file) return
+  const selectFile = async (file: File | undefined) => {
+    if (!file || isUploading) return
 
     if (!isAcceptedResume(file)) {
       setSelectedFile(null)
-      setError('Please select a PDF or DOCX resume only.')
+      setError('Please select a PDF resume or curriculum vitae only.')
       return
     }
 
-    setSelectedFile(file)
     setError('')
+    setIsUploading(true)
+    try {
+      await uploadRequirement(file, RESUME_REQUIREMENT_TYPE, RESUME_REQUIREMENT_NAME)
+      setSelectedFile(file)
+      toast.success('Resume / Curriculum Vitae uploaded to My Requirements.')
+    } catch (uploadError: unknown) {
+      setSelectedFile(null)
+      const message = getErrorMessage(uploadError, 'Unable to upload your resume or curriculum vitae.')
+      setError(message)
+      toast.error(message)
+    } finally {
+      setIsUploading(false)
+    }
   }
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
-    selectFile(event.target.files?.[0])
+    void selectFile(event.target.files?.[0])
     event.target.value = ''
   }
 
   const handleDrop = (event: DragEvent<HTMLButtonElement>) => {
     event.preventDefault()
     setIsDragging(false)
-    selectFile(event.dataTransfer.files?.[0])
+    void selectFile(event.dataTransfer.files?.[0])
   }
 
   return (
@@ -53,8 +66,11 @@ function DigiCVPage() {
       <section className={styles.content} aria-labelledby="digicv-title">
         <header className={styles.heading}>
           <h1 id="digicv-title">DigiCV</h1>
-          <h2>Build a resume that gets you hired</h2>
-          <p><strong>Note:</strong> Upload your existing resume to edit it, or start fresh and create a polished one in minutes.</p>
+          <h2>Build a curriculum vitae that gets you hired!</h2>
+          <p>
+            <strong>Note:</strong> Upload your existing curriculum vitae or resume, or start from scratch<br />
+            and create a professional one in just a few minutes.
+          </p>
         </header>
 
         <div className={styles.actions}>
@@ -62,6 +78,7 @@ function DigiCVPage() {
             <button
               className={`${styles.actionCard} ${styles.uploadCard} ${isDragging ? styles.dragging : ''}`}
               type="button"
+              disabled={isUploading}
               onClick={() => fileInputRef.current?.click()}
               onDragEnter={(event) => { event.preventDefault(); setIsDragging(true) }}
               onDragOver={(event) => event.preventDefault()}
@@ -71,17 +88,16 @@ function DigiCVPage() {
               onDrop={handleDrop}
             >
               <FileText aria-hidden="true" />
-              <span className={styles.actionTitle}>Upload Resume</span>
-              <span className={styles.actionBadge}>PDF or DOCX</span>
-              <span className={styles.uploadHint}>
-                {selectedFile ? selectedFile.name : 'Click to browse or drag and drop'}
-              </span>
+              <span className={styles.actionTitle}>Upload Curriculum Vitae<br />or Resume</span>
+              <span className={styles.actionBadge}>{isUploading ? 'Uploading...' : 'PDF File'}</span>
+              {selectedFile && <span className={styles.uploadHint}>{selectedFile.name}</span>}
             </button>
             <input
               ref={fileInputRef}
               className={styles.fileInput}
               type="file"
-              accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              accept=".pdf,application/pdf"
+              disabled={isUploading}
               onChange={handleInputChange}
             />
             {error && <p className={styles.error} role="alert">{error}</p>}
@@ -94,13 +110,6 @@ function DigiCVPage() {
           </a>
         </div>
 
-        <div className={styles.steps} aria-label="DigiCV creation steps">
-          <span>01 Fill in your info</span>
-          <span aria-hidden="true">→</span>
-          <span>02 Customize sections</span>
-          <span aria-hidden="true">→</span>
-          <span>03 Export as PDF</span>
-        </div>
       </section>
     </main>
   )

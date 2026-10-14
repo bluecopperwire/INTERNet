@@ -1,9 +1,14 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
 import { PaginatedResponse } from '../../../common/interfaces/paginated-response.interface';
 import { DateFilterDto } from '../../../common/dto/date-filter.dto';
 import { getDateBoundaries } from '../../../common/helpers/date-filter.helper';
+import { currentManilaDate } from '../../../employer/utils/time.utils';
 
 @Injectable()
 export class AttendanceQueryService {
@@ -14,7 +19,10 @@ export class AttendanceQueryService {
     paginationDto: PaginationDto,
   ): Promise<PaginatedResponse<any>> {
     const page = Math.max(1, Number(paginationDto?.page) || 1);
-    const limit = Math.max(1, Math.min(100, Number(paginationDto?.limit) || 20));
+    const limit = Math.max(
+      1,
+      Math.min(100, Number(paginationDto?.limit) || 20),
+    );
     const offset = (page - 1) * limit;
 
     const countSql = `
@@ -38,11 +46,9 @@ export class AttendanceQueryService {
         required_hours AS "requiredHours",
         total_rendered_hours AS "totalRenderedHours",
         attendance_record_count AS "attendanceRecordCount",
-        complete_count AS "completeCount",
+        present_count AS "presentCount",
+        absent_count AS "absentCount",
         incomplete_count AS "incompleteCount",
-        late_count AS "lateCount",
-        undertime_count AS "undertimeCount",
-        overtime_count AS "overtimeCount",
         first_attendance_date AS "firstAttendanceDate",
         latest_attendance_date AS "latestAttendanceDate",
         completion_percentage AS "completionPercentage"
@@ -67,12 +73,19 @@ export class AttendanceQueryService {
   }
 
   async getAllDtrEntries(
-    dateFilterDto: DateFilterDto,
+    dateFilterDto: DateFilterDto & {
+      date?: string;
+      status?: string;
+      search?: string;
+    },
     paginationDto: PaginationDto,
     companyId?: number,
   ): Promise<PaginatedResponse<any>> {
     const page = Math.max(1, Number(paginationDto?.page) || 1);
-    const limit = Math.max(1, Math.min(100, Number(paginationDto?.limit) || 20));
+    const limit = Math.max(
+      1,
+      Math.min(100, Number(paginationDto?.limit) || 20),
+    );
     const offset = (page - 1) * limit;
 
     const whereClauses: string[] = ['ia.deleted_at IS NULL'];
@@ -84,19 +97,43 @@ export class AttendanceQueryService {
       params.push(companyId);
     }
 
-    const boundaries = getDateBoundaries(
-      dateFilterDto.datePreset,
-      dateFilterDto.startDate,
-      dateFilterDto.endDate,
-    );
+    if (dateFilterDto.date) {
+      whereClauses.push(`ar.attendance_date = $${paramIndex++}::date`);
+      params.push(dateFilterDto.date);
+    } else {
+      const boundaries = getDateBoundaries(
+        dateFilterDto.datePreset,
+        dateFilterDto.startDate,
+        dateFilterDto.endDate,
+      );
 
-    if (boundaries) {
-      const startStr = boundaries.start.toISOString().split('T')[0];
-      const endStr = boundaries.end.toISOString().split('T')[0];
-      whereClauses.push(`ar.attendance_date >= $${paramIndex++}`);
-      params.push(startStr);
-      whereClauses.push(`ar.attendance_date <= $${paramIndex++}`);
-      params.push(endStr);
+      if (boundaries) {
+        const startStr =
+          dateFilterDto.startDate || currentManilaDate(boundaries.start);
+        const endStr =
+          dateFilterDto.endDate || currentManilaDate(boundaries.end);
+        whereClauses.push(`ar.attendance_date >= $${paramIndex++}::date`);
+        params.push(startStr);
+        whereClauses.push(`ar.attendance_date <= $${paramIndex++}::date`);
+        params.push(endStr);
+      }
+    }
+
+    if (dateFilterDto.status && dateFilterDto.status !== 'All') {
+      const s = dateFilterDto.status.toLowerCase().trim();
+      if (['present', 'absent', 'incomplete'].includes(s)) {
+        whereClauses.push(`ar.attendance_status = $${paramIndex++}`);
+        params.push(s);
+      }
+    }
+
+    if (dateFilterDto.search && dateFilterDto.search.trim()) {
+      const term = `%${dateFilterDto.search.trim()}%`;
+      whereClauses.push(
+        `(concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) ILIKE $${paramIndex} OR c.company_name ILIKE $${paramIndex} OR o.title ILIKE $${paramIndex})`,
+      );
+      params.push(term);
+      paramIndex++;
     }
 
     const whereSql =
@@ -122,15 +159,19 @@ export class AttendanceQueryService {
         ar.attendance_record_id AS "attendanceRecordId",
         ar.internship_assignment_id AS "internshipAssignmentId",
         concat_ws(' ', s.first_name, s.middle_name, s.last_name, s.extension_name) AS "studentFullName",
+        concat_ws(' ', s.first_name, s.last_name) AS "studentName",
         o.title AS "role",
         o.department AS "department",
         c.company_name AS "company",
-        ar.attendance_date AS "dtrDate",
+        ar.attendance_date::text AS "dtrDate",
+        ar.attendance_date::text AS "date",
         ar.time_in AS "timeIn",
-        ar.time_in_status AS "timeInStatus",
+        ar.attendance_status AS "attendanceStatus",
         ar.time_out AS "timeOut",
-        ar.hours_rendered AS "totalHours",
-        ar.rendered_hours_status AS "status"
+        round(COALESCE(ar.rendered_minutes, 0)::numeric / 60, 2) AS "totalHours",
+        COALESCE(ar.rendered_minutes, 0) AS "totalMinutes",
+        ar.attendance_status AS "status",
+        NULL::text AS "photoFilePath"
       FROM public.attendance_record ar
       JOIN public.internship_assignment ia ON ia.internship_assignment_id = ar.internship_assignment_id
       JOIN public.referral r ON r.referral_id = ia.referral_id
@@ -170,19 +211,23 @@ export class AttendanceQueryService {
         o.title AS "role",
         o.department AS "department",
         o.company_id AS "companyId",
-        ia.start_date AS "startDate",
-        ia.expected_end_date AS "expectedEndDate",
-        ia.required_hours AS "targetHours",
-        COALESCE(sum(ar.hours_rendered), 0::numeric) AS "totalRenderedTime"
+        c.company_name AS "companyName",
+        ia.start_date::text AS "startDate",
+        ia.expected_end_date::text AS "expectedEndDate",
+        (ia.required_minutes / 60) AS "targetHours",
+        ia.required_minutes AS "targetMinutes",
+        round(COALESCE(sum(ar.rendered_minutes), 0::numeric) / 60, 2) AS "totalRenderedTime",
+        COALESCE(sum(ar.rendered_minutes), 0::bigint) AS "totalRenderedMinutes"
       FROM public.internship_assignment ia
       JOIN public.referral r ON r.referral_id = ia.referral_id
       JOIN public.application a ON a.application_id = r.application_id
       JOIN public.student s ON s.student_id = a.student_id
       JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
+      JOIN public.company c ON c.company_id = o.company_id
       LEFT JOIN public.attendance_record ar ON ar.internship_assignment_id = ia.internship_assignment_id
       WHERE ia.internship_assignment_id = $1
         AND ia.deleted_at IS NULL
-      GROUP BY ia.internship_assignment_id, s.first_name, s.middle_name, s.last_name, s.extension_name, o.title, o.department, o.company_id, ia.start_date, ia.expected_end_date, ia.required_hours
+      GROUP BY ia.internship_assignment_id, s.first_name, s.middle_name, s.last_name, s.extension_name, o.title, o.department, o.company_id, c.company_name, ia.start_date, ia.expected_end_date, ia.required_minutes
     `;
 
     const summaryRows = await this.dataSource.query(summarySql, [assignmentId]);
@@ -213,8 +258,8 @@ export class AttendanceQueryService {
     );
 
     if (boundaries) {
-      const startStr = boundaries.start.toISOString().split('T')[0];
-      const endStr = boundaries.end.toISOString().split('T')[0];
+      const startStr = currentManilaDate(boundaries.start);
+      const endStr = currentManilaDate(boundaries.end);
       whereClauses.push(`ar.attendance_date >= $${paramIndex++}`);
       params.push(startStr);
       whereClauses.push(`ar.attendance_date <= $${paramIndex++}`);
@@ -224,27 +269,33 @@ export class AttendanceQueryService {
     const entriesSql = `
       SELECT 
         ar.attendance_record_id AS "attendanceRecordId",
-        ar.attendance_date AS "date",
+        ar.attendance_date::text AS "date",
         ar.time_in AS "timeIn",
         ar.time_out AS "timeOut",
-        ar.hours_rendered AS "totalHours",
-        ar.time_in_status AS "timeInStatus",
-        ar.rendered_hours_status AS "renderedHoursStatus"
+        round(COALESCE(ar.rendered_minutes, 0)::numeric / 60, 2) AS "totalHours",
+        COALESCE(ar.rendered_minutes, 0) AS "totalMinutes",
+        ar.attendance_status AS "attendanceStatus"
       FROM public.attendance_record ar
       WHERE ${whereClauses.join(' AND ')}
       ORDER BY ar.attendance_date DESC, ar.time_in DESC
     `;
 
-    const entriesRows = await this.dataSource.query(entriesSql, params);
+    const entriesRows: Array<{
+      attendanceRecordId: number;
+      date: string;
+      timeIn: string | null;
+      timeOut: string | null;
+      totalHours: number;
+      attendanceStatus: 'present' | 'absent' | 'incomplete';
+    }> = await this.dataSource.query(entriesSql, params);
 
-    const entries = entriesRows.map((row: any) => ({
+    const entries = entriesRows.map((row) => ({
       attendanceRecordId: row.attendanceRecordId,
       date: row.date,
       timeIn: row.timeIn,
       timeOut: row.timeOut,
       totalHours: row.totalHours,
-      timeInStatus: row.timeInStatus,
-      renderedHoursStatus: row.renderedHoursStatus,
+      attendanceStatus: row.attendanceStatus,
       // NOTE: attendance_record does not currently have a 'remark' column.
       // Once remark column is added, replace with: remarks: row.remark || null
       remarks: null,

@@ -4,9 +4,13 @@ import { AUTH_REGISTRATION_ENTITIES } from './entities/account.entities';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { AccountManagementService } from './account-management.service';
+import { ProfilePictureStorageModule } from '../storage/profile-picture-storage.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([...AUTH_REGISTRATION_ENTITIES])],
+  imports: [
+    TypeOrmModule.forFeature([...AUTH_REGISTRATION_ENTITIES]),
+    ProfilePictureStorageModule,
+  ],
   controllers: [UsersController],
   providers: [UsersService, AccountManagementService],
   exports: [UsersService, TypeOrmModule],

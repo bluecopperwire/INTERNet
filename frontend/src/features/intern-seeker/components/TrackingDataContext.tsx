@@ -90,7 +90,6 @@ export function TrackingDataProvider({ children }: { children: ReactNode }) {
       setRequirements((current) => current?.map((item) => item.id === input.requirementId ? updatedRequirement : item) ?? [updatedRequirement])
       return updatedRequirement
     } catch {
-      setRequirementsError('The document could not be uploaded. Please try again.')
       throw new Error('Requirement upload failed.')
     }
   }, [])
@@ -102,34 +101,24 @@ export function TrackingDataProvider({ children }: { children: ReactNode }) {
       setRequirements((current) => current?.map((item) => item.id === requirementId ? updatedRequirement : item) ?? [updatedRequirement])
       return updatedRequirement
     } catch {
-      setRequirementsError('The document could not be deleted. Please try again.')
       throw new Error('Requirement deletion failed.')
     }
   }, [])
 
   const updateApplication = useCallback(async (action: (applicationId: string) => Promise<UserApplication>, applicationId: string) => {
     setApplicationsError(null)
-    try {
-      const updated = await action(applicationId)
-      setApplications((current) => current?.map((item) => item.id === applicationId ? updated : item) ?? [updated])
-      return updated
-    } catch {
-      setApplicationsError('Unable to update your application. Please try again.')
-      throw new Error('Application update failed.')
-    }
+    const updated = await action(applicationId)
+    const refreshed = await applicationsService.getMyApplications()
+    setApplications(refreshed.map((item) => item.id === applicationId ? updated : item))
+    return updated
   }, [])
 
   const withdrawApplication = useCallback((applicationId: string) => updateApplication(applicationsService.withdrawApplication, applicationId), [updateApplication])
   const respondToOffer = useCallback((applicationId: string, decision: 'accept' | 'reject') => updateApplication((id) => applicationsService.respondToOffer(id, decision), applicationId), [updateApplication])
   const deleteApplication = useCallback(async (applicationId: string) => {
     setApplicationsError(null)
-    try {
-      await applicationsService.deleteApplication(applicationId)
-      setApplications((current) => current?.filter((item) => item.id !== applicationId) ?? [])
-    } catch {
-      setApplicationsError('Unable to delete your application. Please try again.')
-      throw new Error('Application deletion failed.')
-    }
+    await applicationsService.deleteApplication(applicationId)
+    setApplications(await applicationsService.getMyApplications())
   }, [])
 
   const checkIn = useCallback(async () => {
@@ -139,7 +128,6 @@ export function TrackingDataProvider({ children }: { children: ReactNode }) {
       setToday(updatedToday)
       return updatedToday
     } catch {
-      setAttendanceError('Unable to check in.')
       throw new Error('Check-in failed.')
     }
   }, [])

@@ -5,7 +5,6 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { WorkSchedule } from '../../common/enums/work-schedule.enum';
 import { CompanyType } from '../../common/enums/company-type.enum';
 
 @Entity({ schema: 'public', name: 'internship_preference' })
@@ -19,8 +18,8 @@ export class InternshipPreference {
   @Column({ name: 'required_hours', type: 'int' })
   requiredHours: number;
 
-  @Column({ name: 'available_days', type: 'enum', enum: WorkSchedule })
-  availableDays: WorkSchedule;
+  @Column({ name: 'available_days', type: 'smallint', array: true })
+  availableDays: number[];
 
   @Column({ name: 'allows_outside_preferred_field', type: 'boolean' })
   allowsOutsidePreferredField: boolean;

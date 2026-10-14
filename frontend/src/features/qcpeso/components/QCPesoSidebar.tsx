@@ -20,6 +20,7 @@ import {
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import internetLogo from '../../../assets/internet-logo.svg'
 import { useAuthStore } from '../../../stores/useAuthStore'
+import { useQCPesoStore } from '../stores/useQCPesoStore'
 import styles from './QCPesoSidebar.module.css'
 
 interface QCPesoSidebarProps {
@@ -35,6 +36,11 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, logout: authLogout } = useAuthStore()
+  const { profile, fetchProfile } = useQCPesoStore()
+
+  useEffect(() => {
+    if (!profile) void fetchProfile()
+  }, [fetchProfile, profile])
 
   const monitorUsersActive = location.pathname.startsWith('/qcpeso/monitor-users')
   const manageApplicantsActive = location.pathname.startsWith('/qcpeso/manage-applicants')
@@ -60,7 +66,7 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
     navigate('/qcpeso/profile')
   }
 
-  const displayName = user?.email.split('@')[0] || 'PESO Personnel'
+  const displayName = profile?.fullName || user?.email.split('@')[0] || 'PESO Personnel'
   const userInitials = displayName.substring(0, 2).toUpperCase()
 
   return (
@@ -89,14 +95,15 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
           {matchesSearch('Employers') && <SubLink to="/qcpeso/monitor-users/employers" label="Employers" icon={<Building2 size={18} />} isOpen={isOpen} onClose={onClose} />}
         </NavigationGroup>
 
-        <NavigationGroup icon={<ClipboardCheck size={20} aria-hidden="true" />} label="Manage Applicants" isOpen={manageApplicantsOpen} onToggle={() => setManageApplicantsOpen((current) => !current)} visible={matchesSearch('Manage Applicants') || matchesSearch('Review Applicants') || matchesSearch('Track Referrals')}>
+        <NavigationGroup icon={<ClipboardCheck size={20} aria-hidden="true" />} label="Manage Applicants" isOpen={manageApplicantsOpen} onToggle={() => setManageApplicantsOpen((current) => !current)} visible={matchesSearch('Manage Applicants') || matchesSearch('Review Applicants') || matchesSearch('Applications History')}>
           {matchesSearch('Review Applicants') && <SubLink to="/qcpeso/manage-applicants/review" label="Review Applicants" icon={<Eye size={18} />} isOpen={isOpen} onClose={onClose} />}
-          {matchesSearch('Track Referrals') && <SubLink to="/qcpeso/manage-applicants/referrals" label="Track Referrals" icon={<Route size={18} />} isOpen={isOpen} onClose={onClose} />}
+          {matchesSearch('Applications History') && <SubLink to="/qcpeso/manage-applicants/history" label="Applications History" icon={<Route size={18} />} isOpen={isOpen} onClose={onClose} />}
         </NavigationGroup>
 
-        <NavigationGroup icon={<BriefcaseBusiness size={20} aria-hidden="true" />} label="Manage Interns" isOpen={manageInternsOpen} onToggle={() => setManageInternsOpen((current) => !current)} visible={matchesSearch('Manage Interns') || matchesSearch('Monitor Attendance') || matchesSearch('Manage Internship')}>
+        <NavigationGroup icon={<BriefcaseBusiness size={20} aria-hidden="true" />} label="Manage Interns" isOpen={manageInternsOpen} onToggle={() => setManageInternsOpen((current) => !current)} visible={matchesSearch('Manage Interns') || matchesSearch('Monitor Attendance') || matchesSearch('Finalize Internships') || matchesSearch('Internship History')}>
           {matchesSearch('Monitor Attendance') && <SubLink to="/qcpeso/manage-interns/attendance" label="Monitor Attendance" icon={<Clock size={18} />} isOpen={isOpen} onClose={onClose} />}
-          {matchesSearch('Manage Internship') && <SubLink to="/qcpeso/manage-interns/internships" label="Manage Internship" icon={<BriefcaseBusiness size={18} />} isOpen={isOpen} onClose={onClose} />}
+          {matchesSearch('Finalize Internships') && <SubLink to="/qcpeso/manage-interns/internships" label="Finalize Internships" icon={<BriefcaseBusiness size={18} />} isOpen={isOpen} onClose={onClose} />}
+          {matchesSearch('Internship History') && <SubLink to="/qcpeso/manage-interns/history" label="Internship History" icon={<Route size={18} />} isOpen={isOpen} onClose={onClose} />}
         </NavigationGroup>
 
         {matchesSearch('Settings') && <NavLink className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`} to="/qcpeso/settings" onClick={onClose} tabIndex={isOpen ? 0 : -1}><Settings size={20} aria-hidden="true" /><span>Settings</span></NavLink>}
@@ -104,7 +111,9 @@ function QCPesoSidebar({ isOpen, onClose }: QCPesoSidebarProps) {
 
       <div className={`${styles.userSummary} ${isProfileActive ? styles.userSummaryActive : ''}`} onClick={navigateToProfile} role="button" tabIndex={0}>
         <div className={styles.userLeft}>
-          <span className={styles.avatar} aria-hidden="true">{userInitials}</span>
+          <span className={styles.avatar} aria-hidden="true">
+            {profile?.avatarUrl ? <img src={profile.avatarUrl} alt="" /> : userInitials}
+          </span>
           <div className={styles.userText}><span className={styles.userName}>{displayName}</span><span className={styles.userEmail}>{user?.email}</span></div>
         </div>
         <ExternalLink size={16} aria-hidden="true" className={styles.externalIcon} />

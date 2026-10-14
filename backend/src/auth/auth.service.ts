@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -27,6 +28,10 @@ import {
   SignupDto,
   StudentProfileDto,
 } from './dto/signup.dto';
+import {
+  assertValidDate,
+  currentManilaDate,
+} from '../employer/utils/time.utils';
 
 export interface Tokens {
   accessToken: string;
@@ -169,6 +174,7 @@ export class AuthService {
   }
 
   async registerStudent(dto: SignupDto): Promise<Tokens> {
+    this.assertPastBirthDate(dto.birthDate);
     await this.ensureEmailAvailable(dto.email);
     return this.dataSource.transaction(async (manager) => {
       const account = await manager.save(
@@ -234,6 +240,7 @@ export class AuthService {
     rawToken: string,
     dto: GoogleStudentCompletionDto,
   ): Promise<Tokens> {
+    this.assertPastBirthDate(dto.birthDate);
     const [idText, secret] = rawToken.split('.', 2);
     const id = Number(idText);
     if (!id || !secret)
@@ -489,6 +496,13 @@ export class AuthService {
       inquiryMethod: dto.inquiryMethod,
       photoFilePath: dto.photoFilePath ?? null,
     });
+  }
+
+  private assertPastBirthDate(value: string) {
+    assertValidDate(value, 'birthDate');
+    if (value >= currentManilaDate()) {
+      throw new BadRequestException('birthDate must be in the past.');
+    }
   }
 
   private async ensureEmailAvailable(

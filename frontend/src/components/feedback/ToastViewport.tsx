@@ -1,51 +1,66 @@
-import React from 'react';
-import { useToastStore } from '../../stores/useToastStore';
-import type { ToastType } from '../../stores/useToastStore';
-import { CheckCircle2, AlertCircle, Info, AlertTriangle, X } from 'lucide-react';
+import type { ComponentType } from 'react'
+import { AlertCircle, AlertTriangle, CheckCircle2, Info, X } from 'lucide-react'
+import { useToastStore, type ToastItem, type ToastType } from '../../stores/useToastStore'
+import styles from './ToastViewport.module.css'
 
-const icons: Record<ToastType, React.ReactNode> = {
-  success: <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />,
-  error: <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" />,
-  warning: <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />,
-  info: <Info className="w-5 h-5 text-blue-500 shrink-0" />,
-};
+const toastIcons: Record<ToastType, ComponentType<{ size?: number; 'aria-hidden'?: boolean }>> = {
+  success: CheckCircle2,
+  error: AlertCircle,
+  warning: AlertTriangle,
+  info: Info,
+}
 
-const bgColors: Record<ToastType, string> = {
-  success: 'bg-white border-emerald-200 text-slate-800 shadow-emerald-500/10',
-  error: 'bg-white border-rose-200 text-slate-800 shadow-rose-500/10',
-  warning: 'bg-white border-amber-200 text-slate-800 shadow-amber-500/10',
-  info: 'bg-white border-blue-200 text-slate-800 shadow-blue-500/10',
-};
+const toastLabels: Record<ToastType, string> = {
+  success: 'Success',
+  error: 'Error',
+  warning: 'Warning',
+  info: 'Information',
+}
 
-export const ToastViewport: React.FC = () => {
-  const { toasts, removeToast } = useToastStore();
+interface ToastCardProps {
+  toast: ToastItem
+  onDismiss: (id: string) => void
+}
 
-  if (toasts.length === 0) return null;
+export function ToastCard({ toast, onDismiss }: ToastCardProps) {
+  const Icon = toastIcons[toast.type]
+  const isUrgent = toast.type === 'error' || toast.type === 'warning'
 
   return (
-    <div
-      aria-live="polite"
+    <article
+      className={`${styles.toast} ${styles[toast.type]} ${toast.isDismissing ? styles.dismissing : ''}`}
+      role={isUrgent ? 'alert' : 'status'}
+      aria-live={isUrgent ? 'assertive' : 'polite'}
       aria-atomic="true"
-      className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-md w-full pointer-events-none px-4"
     >
+      <Icon size={21} aria-hidden={true} />
+      <div className={styles.content}>
+        <strong>{toastLabels[toast.type]}</strong>
+        <p>{toast.message}</p>
+      </div>
+      <button
+        type="button"
+        className={styles.dismissButton}
+        onClick={() => onDismiss(toast.id)}
+        aria-label={`Dismiss ${toastLabels[toast.type].toLowerCase()} notification`}
+      >
+        <X size={17} aria-hidden={true} />
+      </button>
+    </article>
+  )
+}
+
+export function ToastViewport() {
+  const toasts = useToastStore((state) => state.toasts)
+  const dismissToast = useToastStore((state) => state.dismissToast)
+
+  if (toasts.length === 0) return null
+
+  return (
+    <section className={styles.viewport} aria-label="Notifications">
       {toasts.map((toast) => (
-        <div
-          key={toast.id}
-          className={`pointer-events-auto flex items-center justify-between gap-3 p-4 rounded-xl border shadow-lg transition-all duration-300 transform translate-y-0 ${bgColors[toast.type]}`}
-        >
-          <div className="flex items-center gap-3">
-            {icons[toast.type]}
-            <p className="text-sm font-medium leading-snug">{toast.message}</p>
-          </div>
-          <button
-            onClick={() => removeToast(toast.id)}
-            className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg hover:bg-slate-100"
-            aria-label="Dismiss notification"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+        <ToastCard key={toast.id} toast={toast} onDismiss={dismissToast} />
       ))}
-    </div>
-  );
-};
+    </section>
+  )
+}

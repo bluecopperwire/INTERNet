@@ -12,6 +12,7 @@ import { PaginatedResponse } from '../../common/interfaces/paginated-response.in
 import { ApplicationQueryService } from './shared/application-query.service';
 import { AttendanceQueryService } from './shared/attendance-query.service';
 import { getDateBoundaries } from '../../common/helpers/date-filter.helper';
+import { currentManilaDate } from '../../employer/utils/time.utils';
 
 @Injectable()
 export class EmployerDashboardService {
@@ -87,11 +88,7 @@ export class EmployerDashboardService {
     companyId: number,
     paginationDto: PaginationDto,
   ): Promise<PaginatedResponse<any>> {
-    return this.applicationQuery.getApplications(
-      {},
-      paginationDto,
-      companyId,
-    );
+    return this.applicationQuery.getApplications({}, paginationDto, companyId);
   }
 
   // E3. Employer reports dashboard
@@ -199,8 +196,8 @@ export class EmployerDashboardService {
       dateCond =
         'ar.attendance_date >= $2::date AND ar.attendance_date <= $3::date';
       dateParams.push(
-        boundaries.start.toISOString().split('T')[0],
-        boundaries.end.toISOString().split('T')[0],
+        currentManilaDate(boundaries.start),
+        currentManilaDate(boundaries.end),
       );
     }
 
@@ -234,25 +231,11 @@ export class EmployerDashboardService {
     const todayPresentCount = Number(todayPresentRes[0]?.count || 0);
     const totalAbsent = Math.max(0, totalActiveInterns - todayPresentCount);
 
-    // 4. Total late in the filtered period
-    const lateSql = `
-      SELECT COUNT(*) AS count
-      FROM public.attendance_record ar
-      JOIN public.internship_assignment ia ON ia.internship_assignment_id = ar.internship_assignment_id
-      JOIN public.referral r ON r.referral_id = ia.referral_id
-      JOIN public.application a ON a.application_id = r.application_id
-      JOIN public.opportunity o ON o.opportunity_id = a.opportunity_id
-      WHERE o.company_id = $1 AND ar.time_in_status = 'late' AND ${dateCond}
-        AND ia.deleted_at IS NULL
-    `;
-    const lateRes = await this.dataSource.query(lateSql, dateParams);
-    const totalLate = Number(lateRes[0]?.count || 0);
-
     return {
       totalActiveInterns,
       totalPresent,
       totalAbsent,
-      totalLate,
+      totalLate: 0,
     };
   }
 

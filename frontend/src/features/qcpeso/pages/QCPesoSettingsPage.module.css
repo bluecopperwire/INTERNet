@@ -104,6 +104,10 @@
   gap: 7px;
 }
 
+.passwordFields label.fullWidth {
+  grid-column: 1 / -1;
+}
+
 .passwordFields label > span {
   color: #4f5870;
   font-size: .83rem;

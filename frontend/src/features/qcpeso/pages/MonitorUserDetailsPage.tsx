@@ -4,6 +4,8 @@ import { ArrowLeft, Building2, GraduationCap, Mail, MapPin, Phone, UserRound } f
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { qcpesoService } from '../services/qcpeso.service'
 import type { MonitoredCompanyUser, MonitoredStudentUser, MonitorUserStatus } from '../types/qcpeso.types'
+import { formatYearLevel } from '../../../utils/year-level'
+import { CompanyAvatar } from '../../../components/CompanyAvatar'
 import styles from './MonitorUserDetailsPage.module.css'
 
 type MonitoredUser = MonitoredStudentUser | MonitoredCompanyUser
@@ -44,25 +46,39 @@ export function MonitorUserDetailsPage() {
 
 function StudentProfile({ student }: { student: MonitoredStudentUser }) {
   return <div className={styles.body}>
-    <ProfileSummary icon={<UserRound size={30} />} name={student.studentName} email={student.email} phone={student.mobileNumber} address={student.address} status={student.status} />
+    <ProfileSummary imageUrl={student.profileImageUrl} icon={<UserRound size={30} />} name={student.studentName} email={student.email} phone={student.mobileNumber} address={student.address} status={student.status} />
     <InfoCard icon={<UserRound size={21} />} title="Personal Information" items={[["Full Name", student.studentName], ["Address", student.address], ["Birthdate", student.birthdate], ["Sex", student.sex]]} />
-    <InfoCard icon={<Mail size={21} />} title="Contact Information" items={[["Email", student.email], ["Mobile Number", student.mobileNumber], ["LinkedIn", student.linkedIn]]} />
-    <InfoCard icon={<GraduationCap size={21} />} title="Current Academic Information" items={[["School", student.school], ["Year Level", student.yearLevel], ["Program / Strand", student.program]]} />
+    <InfoCard icon={<Mail size={21} />} title="Contact Information" items={[["Email", student.email], ["Contact Number", student.mobileNumber], ["LinkedIn", student.linkedIn]]} />
+    <InfoCard icon={<GraduationCap size={21} />} title="Current Academic Information" items={[["School", student.school], ["Year Level", formatYearLevel(student.yearLevel)], ["Program / Strand", student.program]]} />
     <InfoCard icon={<Building2 size={21} />} title="Internship Preferences" items={[["Internship Required Hours", student.requiredHours], ["Preferred Host Organization Type", student.preferredHostOrganizationType], ["Internship Days Availability", student.internshipDaysAvailability], ["Internship Start Date Availability", student.internshipStartDateAvailability], ["Preferred Field of Internship", student.preferredField], ["Willing to Be Assigned Outside Preferred Field", student.willingOutsidePreferredField]]} />
   </div>
 }
 
 function CompanyProfile({ company }: { company: MonitoredCompanyUser }) {
   return <div className={styles.body}>
-    <ProfileSummary icon={<Building2 size={30} />} name={company.companyName} email={company.email} phone={company.contactNumber} address={company.address} status={company.status} />
+    <section className={styles.summary}>
+      <CompanyAvatar
+        name={company.companyName}
+        src={company.profileImageUrl}
+        size={70}
+        fontSize={28}
+        className={styles.avatar}
+      />
+      <div className={styles.summaryInfo}>
+        <h2>{company.companyName}</h2>
+        <div><span><Mail size={16} />{company.email}</span><span><Phone size={16} />{company.contactNumber}</span></div>
+        <span><MapPin size={16} />{company.address}</span>
+      </div>
+      <StatusPill status={company.status} />
+    </section>
     <InfoCard icon={<Building2 size={21} />} title="About Company" description={company.description} />
     <InfoCard icon={<Building2 size={21} />} title="Company Information" items={[["Company Name", company.companyName], ["Company Type", company.companyType], ["Industry", company.industry], ["Company Address", company.address], ["Company Size", company.companySize], ["Company Year Established", company.yearEstablished], ["Website URL", company.websiteUrl], ["Date Registered", company.dateRegistered]]} />
     <InfoCard icon={<UserRound size={21} />} title="Contact Information" items={[["Contact Person", company.contactPerson], ["Contact Email", company.email], ["Contact Number", company.contactNumber]]} />
   </div>
 }
 
-function ProfileSummary({ icon, name, email, phone, address, status }: { icon: ReactNode; name: string; email: string; phone: string; address: string; status: MonitorUserStatus }) {
-  return <section className={styles.summary}><span className={styles.avatar}>{icon}</span><div className={styles.summaryInfo}><h2>{name}</h2><div><span><Mail size={16} />{email}</span><span><Phone size={16} />{phone}</span></div><span><MapPin size={16} />{address}</span></div><StatusPill status={status} /></section>
+function ProfileSummary({ icon, imageUrl, name, email, phone, address, status }: { icon: ReactNode; imageUrl?: string; name: string; email: string; phone: string; address: string; status: MonitorUserStatus }) {
+  return <section className={styles.summary}><span className={styles.avatar}>{imageUrl ? <img src={imageUrl} alt={`${name} profile`} /> : icon}</span><div className={styles.summaryInfo}><h2>{name}</h2><div><span><Mail size={16} />{email}</span><span><Phone size={16} />{phone}</span></div><span><MapPin size={16} />{address}</span></div><StatusPill status={status} /></section>
 }
 
 function InfoCard({ icon, title, items = [], description }: { icon: ReactNode; title: string; items?: [string, string][]; description?: string }) {

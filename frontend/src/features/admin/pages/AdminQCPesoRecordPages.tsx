@@ -1,17 +1,23 @@
 import React, { useEffect, useState } from 'react'
-import { ArrowLeft, BriefcaseBusiness, Edit3, Mail, MapPin, Phone, UserRound, X } from 'lucide-react'
+import { ArrowLeft, BriefcaseBusiness, Edit3, LockKeyhole, Mail, MapPin, Phone, UserRound, X } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { adminService } from '../services/admin.service'
 import type { QCPesoRecord } from '../types/admin.types'
 import detailStyles from './AdminStudentDetailsPage.module.css'
 import formStyles from '../../intern-seeker/pages/ProfileEditorPage.module.css'
+import { useToastStore } from '../../../stores/useToastStore'
+import { getErrorMessage } from '../../../utils/error-message'
+import { birthdateMaximum } from '../../../utils/date-only'
+import { CONTACT_NUMBER_PLACEHOLDER, getContactNumberError, sanitizeContactNumberInput } from '../../../utils/input-validation'
+import { DistrictSelect } from '../../../components/DistrictSelect'
+import { districtAddressPart } from '../../../utils/district'
 
 const fullNameOf = (record: QCPesoRecord) =>
   [record.firstName, record.middleName, record.lastName, record.suffix].filter(Boolean).join(' ') ||
   record.fullName
 
 const addressOf = (record: QCPesoRecord) =>
-  [record.addressLine, record.barangay, record.district && `District ${record.district}`, record.city]
+  [record.addressLine, record.barangay, districtAddressPart(record.district), record.city]
     .filter(Boolean)
     .join(', ')
 
@@ -46,6 +52,7 @@ export function AdminQCPesoDetailsPage() {
   const [record, setRecord] = useState<QCPesoRecord | null>(null)
   const [suspending, setSuspending] = useState(false)
   const [unsuspending, setUnsuspending] = useState(false)
+  const toast = useToastStore()
 
   useEffect(() => {
     if (id) {
@@ -57,10 +64,17 @@ export function AdminQCPesoDetailsPage() {
     return <main className={detailStyles.feedback}>Loading QC PESO profile...</main>
   }
 
-  const updateStatus = async (status: QCPesoRecord['status']) => {
+  const updateStatus = async (status: QCPesoRecord['status'], suspensionDaysRemaining?: number) => {
     if (!id) return
-    const updated = await adminService.updateQCPesoRecord(id, { status })
-    if (updated) setRecord(updated)
+    try {
+      const updated = await adminService.updateQCPesoRecord(id, { status, suspensionDaysRemaining })
+      if (updated) {
+        setRecord(updated)
+        toast.success(`QC PESO account ${status.toLowerCase()}.`)
+      }
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update QC PESO account status.'))
+    }
   }
 
   const name = fullNameOf(record)
@@ -86,7 +100,7 @@ export function AdminQCPesoDetailsPage() {
           <div className={detailStyles.body}>
             <section className={detailStyles.summary}>
               <span className={detailStyles.avatar}>
-                <UserRound size={30} />
+                {record.profileImageUrl ? <img src={record.profileImageUrl} alt={`${name} profile`} /> : <UserRound size={30} />}
               </span>
               <div className={detailStyles.summaryInfo}>
                 <h2>{name}</h2>
@@ -117,13 +131,18 @@ export function AdminQCPesoDetailsPage() {
 
             <Card icon={<Mail size={21} />} title="Contact Information">
               <Row label="Email" value={record.contactEmail || record.email} />
-              <Row label="Mobile Number" value={record.contactNumber} />
+              <Row label="Contact Number" value={record.contactNumber} />
             </Card>
 
             <Card icon={<BriefcaseBusiness size={21} />} title="Work Information">
               <Row label="Employee ID" value={record.employeeId} />
               <Row label="Department" value={record.department} />
               <Row label="Position" value={record.position} />
+            </Card>
+
+            <Card icon={<LockKeyhole size={21} />} title="Account Information">
+              <Row label="Account Email Address" value={record.email} />
+              <Row label="Account User Code" value={record.accountCode || 'Not provided'} />
             </Card>
           </div>
 
@@ -162,12 +181,12 @@ export function AdminQCPesoDetailsPage() {
             onClose={() => setSuspending(false)}
             onConfirm={(days) => {
               if (!id) return
-              adminService.updateQCPesoRecord(id, { status: 'Suspended', suspensionDaysRemaining: days }).then((updated) => { if (updated) setRecord(updated) })
+              void updateStatus('Suspended', days)
               setSuspending(false)
             }}
           />
         )}
-        {unsuspending && <UnsuspendDialog subject={name} days={record.suspensionDaysRemaining ?? 0} onClose={() => setUnsuspending(false)} onConfirm={() => { if (!id) return; adminService.updateQCPesoRecord(id, { status: 'Active', suspensionDaysRemaining: undefined }).then((updated) => { if (updated) setRecord(updated) }); setUnsuspending(false) }} />}
+        {unsuspending && <UnsuspendDialog subject={name} days={record.suspensionDaysRemaining ?? 0} onClose={() => setUnsuspending(false)} onConfirm={() => { void updateStatus('Active'); setUnsuspending(false) }} />}
       </div>
     </main>
   )
@@ -178,6 +197,7 @@ export function AdminQCPesoEditorPage() {
   const navigate = useNavigate()
   const [form, setForm] = useState<QCPesoRecord | null>(null)
   const [saving, setSaving] = useState(false)
+  const toast = useToastStore()
 
   useEffect(() => {
     if (id) {
@@ -206,6 +226,11 @@ export function AdminQCPesoEditorPage() {
   const save = async (event: React.FormEvent) => {
     event.preventDefault()
     if (!id || !form) return
+    const contactNumberError = getContactNumberError(form.contactNumber)
+    if (contactNumberError) {
+      toast.error(contactNumberError)
+      return
+    }
     setSaving(true)
     try {
       const fullName = fullNameOf(form)
@@ -214,8 +239,11 @@ export function AdminQCPesoEditorPage() {
         fullName,
       })
       if (updated) {
+        toast.success('QC PESO profile updated successfully.')
         navigate(`/admin/manage-qcpeso/${updated.id}`)
       }
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update QC PESO profile.'))
     } finally {
       setSaving(false)
     }
@@ -245,7 +273,7 @@ export function AdminQCPesoEditorPage() {
                 <input
                   required
                   value={form.firstName}
-                  placeholder="Enter first name"
+                  placeholder="e.g., Juan"
                   onChange={(e) => letters('firstName', e.target.value)}
                 />
               </Field>
@@ -253,7 +281,7 @@ export function AdminQCPesoEditorPage() {
               <Field label="Middle Name">
                 <input
                   value={form.middleName}
-                  placeholder="Enter middle name"
+                  placeholder="e.g., Santos"
                   onChange={(e) => letters('middleName', e.target.value)}
                 />
               </Field>
@@ -262,7 +290,7 @@ export function AdminQCPesoEditorPage() {
                 <input
                   required
                   value={form.lastName}
-                  placeholder="Enter last name"
+                  placeholder="e.g., Dela Cruz"
                   onChange={(e) => letters('lastName', e.target.value)}
                 />
               </Field>
@@ -281,7 +309,7 @@ export function AdminQCPesoEditorPage() {
                 <input
                   required
                   value={form.addressLine || ''}
-                  placeholder="Enter house / block no. / street"
+                  placeholder="e.g., 200 Development Avenue"
                   onChange={(e) => change('addressLine', e.target.value)}
                 />
               </Field>
@@ -290,16 +318,14 @@ export function AdminQCPesoEditorPage() {
                 <input
                   required
                   value={form.barangay || ''}
-                  placeholder="Enter barangay"
+                  placeholder="e.g., Central"
                   onChange={(e) => change('barangay', e.target.value)}
                 />
               </Field>
 
               <Field label="District" required>
-                <input
-                  required
-                  value={form.district || ''}
-                  placeholder="If none, type N/A"
+                <DistrictSelect
+                  value={form.district}
                   onChange={(e) => change('district', e.target.value)}
                 />
               </Field>
@@ -308,7 +334,7 @@ export function AdminQCPesoEditorPage() {
                 <input
                   required
                   value={form.city || ''}
-                  placeholder="Enter city"
+                  placeholder="e.g., Quezon City"
                   onChange={(e) => change('city', e.target.value)}
                 />
               </Field>
@@ -319,6 +345,8 @@ export function AdminQCPesoEditorPage() {
                 <input
                   required
                   type="date"
+                  max={birthdateMaximum()}
+                  title="Birthdate must be before today."
                   value={form.birthdate}
                   onChange={(e) => change('birthdate', e.target.value)}
                 />
@@ -358,20 +386,20 @@ export function AdminQCPesoEditorPage() {
                 <input
                   required
                   type="email"
-                  placeholder="Enter email address"
+                  placeholder="e.g., juan.delacruz@quezoncity.gov.ph"
                   value={form.contactEmail || form.email}
                   onChange={(e) => change('contactEmail', e.target.value)}
                 />
               </Field>
 
-              <Field label="Mobile Number" required>
+              <Field label="Contact Number" required>
                 <input
                   required
                   type="tel"
-                  placeholder="Enter contact number"
+                  placeholder={CONTACT_NUMBER_PLACEHOLDER}
                   value={form.contactNumber}
                   onChange={(e) =>
-                    change('contactNumber', e.target.value.replace(/\D/g, ''))
+                    change('contactNumber', sanitizeContactNumberInput(e.target.value))
                   }
                 />
               </Field>
@@ -383,7 +411,7 @@ export function AdminQCPesoEditorPage() {
               <Field label="Employee ID" required>
                 <input
                   required
-                  placeholder="Enter employee ID"
+                  placeholder="e.g., PESO-001"
                   value={form.employeeId}
                   onChange={(e) => change('employeeId', e.target.value)}
                 />
@@ -392,7 +420,7 @@ export function AdminQCPesoEditorPage() {
               <Field label="Department" required>
                 <input
                   required
-                  placeholder="Enter department"
+                  placeholder="e.g., Employment Services Division"
                   value={form.department}
                   onChange={(e) => change('department', e.target.value)}
                 />
@@ -401,7 +429,7 @@ export function AdminQCPesoEditorPage() {
               <Field label="Position" required>
                 <input
                   required
-                  placeholder="Enter position"
+                  placeholder="e.g., Employment Officer"
                   value={form.position}
                   onChange={(e) => change('position', e.target.value)}
                 />

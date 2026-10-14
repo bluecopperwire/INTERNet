@@ -18,7 +18,9 @@ export const internshipPortalService = {
     };
   },
 
-  async searchOpportunities(params: OpportunitySearchParams): Promise<InternshipPortalData> {
+  async searchOpportunities(
+    params: OpportunitySearchParams,
+  ): Promise<InternshipPortalData> {
     const store = useStudentStore.getState();
     await store.fetchOpportunities({
       search: params.query,
@@ -43,11 +45,17 @@ export const internshipPortalService = {
     return useStudentStore.getState().profile!;
   },
 
+  async uploadProfilePicture(file: File): Promise<UserProfile> {
+    return useStudentStore.getState().uploadProfilePicture(file);
+  },
+
   async getUserResumes(): Promise<Resume[]> {
     const trackingStore = useStudentTrackingStore.getState();
     await trackingStore.fetchRequirements();
     const reqs = useStudentTrackingStore.getState().requirements;
-    const resumeReq = reqs.find((r) => r.id === 'curriculum_vitae_resume' && r.document);
+    const resumeReq = reqs.find(
+      (r) => r.id === 'curriculum_vitae_resume' && r.document,
+    );
 
     if (resumeReq && resumeReq.document) {
       return [

@@ -1,11 +1,14 @@
 import { useQCPesoStore } from '../stores/useQCPesoStore';
 import { qcpesoApiService } from './qcpeso-api.service';
+import { referenceService } from '../../../services/reference.service';
+import { normalizeDistrictOption } from '../../../utils/district';
 import {
   adaptMonitoredStudent,
   adaptMonitoredCompany,
   adaptPesoApplication,
   adaptPesoReferral,
   adaptPesoIntern,
+  adaptPesoDtr,
 } from '../adapters/qcpeso.adapters';
 import type {
   QCPesoDashboardSummary,
@@ -19,32 +22,67 @@ import type {
   StudentApplication,
   QCPesoOpportunity,
   CreateEmployerPayload,
+  QCPesoInternshipHistorySummary,
+  QCPesoFinalizationSummary,
 } from '../types/qcpeso.types';
+import { todayDateOnly } from '../../../utils/date-only';
 
 export const qcpesoService = {
   async getDashboardSummary(): Promise<QCPesoDashboardSummary> {
     const store = useQCPesoStore.getState();
     await store.fetchMetrics();
     return (
-      store.metrics || {
+      useQCPesoStore.getState().metrics || {
         pendingApplications: 0,
         activeEmployers: 0,
         verifiedRequirements: 0,
         availableOpportunities: 0,
+        activeInternships: 0,
+        awaitingFinalization: 0,
+        totalApplications: 0,
+        activeApplications: 0,
+        activePercentage: 0,
+        closedPercentage: 0,
       }
     );
   },
 
   async getRecentApplications(): Promise<QCPesoReviewApplicant[]> {
     const store = useQCPesoStore.getState();
-    await store.fetchApplications({ page: 1, limit: 5 });
+    await store.fetchApplications({ view: 'review', page: 1, limit: 5 });
     return useQCPesoStore.getState().applications;
   },
 
   async getReviewApplicants(): Promise<QCPesoReviewApplicant[]> {
-    const store = useQCPesoStore.getState();
-    await store.fetchApplications();
-    return useQCPesoStore.getState().applications;
+    const records: QCPesoReviewApplicant[] = [];
+    let page = 1;
+    do {
+      const result = await qcpesoApiService.getApplications({ view: 'review', page, limit: 15 });
+      records.push(...result.data.map(adaptPesoApplication));
+      if (page >= result.meta.totalPages) break;
+      page++;
+    } while (true);
+    return records;
+  },
+
+  async getApplicationHistory(): Promise<QCPesoReviewApplicant[]> {
+    const records: QCPesoReviewApplicant[] = [];
+    let page = 1;
+    do {
+      const result = await qcpesoApiService.getApplications({ view: 'history', page, limit: 15 });
+      records.push(...result.data.map(adaptPesoApplication));
+      if (page >= result.meta.totalPages) break;
+      page++;
+    } while (true);
+    return records;
+  },
+
+  async getInternshipHistorySummary(): Promise<QCPesoInternshipHistorySummary> {
+    return qcpesoApiService.getInternshipHistorySummary();
+  },
+
+  async getFinalizationSummary(): Promise<QCPesoFinalizationSummary> {
+    return qcpesoApiService.getFinalizationSummary();
   },
 
   async getReviewApplicant(id: string): Promise<QCPesoReviewApplicant | null> {
@@ -57,28 +95,35 @@ export const qcpesoService = {
     status: QCPesoReviewApplicant['status'],
     remark?: string,
   ): Promise<QCPesoReviewApplicant | null> {
-    const apiStatus =
-      status === 'Accepted'
-        ? 'approved_for_referral'
-        : 'rejected_for_referral';
+    const apiStatus = status === 'Accepted' ? 'approved_for_referral' : 'rejected_for_referral';
     const store = useQCPesoStore.getState();
-    const updated = await store.updateApplicationStatus(
-      Number(id),
-      apiStatus,
-      remark,
-    );
+    const updated = await store.updateApplicationStatus(Number(id), apiStatus, remark);
     return updated;
   },
 
+  async deleteApplication(id: string): Promise<void> {
+    await qcpesoApiService.hideApplication(Number(id));
+  },
+
   async getReferrals(): Promise<QCPesoReferral[]> {
-    const store = useQCPesoStore.getState();
-    await store.fetchReferrals();
-    return useQCPesoStore.getState().referrals;
+    const records: QCPesoReferral[] = [];
+    let page = 1;
+    do {
+      const result = await qcpesoApiService.getReferrals({ page, limit: 15 });
+      records.push(...result.data.map(adaptPesoReferral));
+      if (page >= result.meta.totalPages) break;
+      page++;
+    } while (true);
+    return records;
   },
 
   async getReferral(id: string): Promise<QCPesoReferral | null> {
     const raw = await qcpesoApiService.getReferralDetail(Number(id));
     return adaptPesoReferral(raw);
+  },
+
+  async deleteReferral(id: string): Promise<void> {
+    await qcpesoApiService.hideReferral(Number(id));
   },
 
   async getInternships(): Promise<QCPesoInternshipRecord[]> {
@@ -96,16 +141,34 @@ export const qcpesoService = {
     return adaptPesoIntern(raw);
   },
 
-  async getAttendanceRecords(): Promise<QCPesoAttendanceRecord[]> {
+  async getAttendanceRecords(params?: any): Promise<QCPesoAttendanceRecord[]> {
     const store = useQCPesoStore.getState();
-    await store.fetchAttendance();
+    await store.fetchAttendance(params);
     return useQCPesoStore.getState().attendanceRecords;
   },
 
+  async getAssignmentAttendance(assignmentId: string | number): Promise<QCPesoAttendanceRecord[]> {
+    try {
+      const res = await qcpesoApiService.getAttendanceDetail(Number(assignmentId));
+      if (res && Array.isArray(res.dtrEntries)) {
+        return res.dtrEntries.map(adaptPesoDtr);
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  },
+
   async getStudentUsers(): Promise<MonitoredStudentUser[]> {
-    const store = useQCPesoStore.getState();
-    await store.fetchStudents();
-    return useQCPesoStore.getState().students;
+    const records: MonitoredStudentUser[] = [];
+    let page = 1;
+    do {
+      const result = await qcpesoApiService.getStudents({ page, limit: 100 });
+      records.push(...result.data.map(adaptMonitoredStudent));
+      if (page >= result.meta.totalPages) break;
+      page++;
+    } while (true);
+    return records;
   },
 
   async getMonitoredStudents(): Promise<MonitoredStudentUser[]> {
@@ -118,9 +181,15 @@ export const qcpesoService = {
   },
 
   async getCompanyUsers(): Promise<MonitoredCompanyUser[]> {
-    const store = useQCPesoStore.getState();
-    await store.fetchCompanies();
-    return useQCPesoStore.getState().companies;
+    const records: MonitoredCompanyUser[] = [];
+    let page = 1;
+    do {
+      const result = await qcpesoApiService.getEmployers({ page, limit: 100 });
+      records.push(...result.data.map(adaptMonitoredCompany));
+      if (page >= result.meta.totalPages) break;
+      page++;
+    } while (true);
+    return records;
   },
 
   async getMonitoredCompanies(): Promise<MonitoredCompanyUser[]> {
@@ -132,9 +201,61 @@ export const qcpesoService = {
     return adaptMonitoredCompany(raw);
   },
 
-  async createEmployer(_payload: CreateEmployerPayload): Promise<void> {
-    // Bridge to create employer
-    return Promise.resolve();
+  async createEmployer(payload: CreateEmployerPayload): Promise<void> {
+    const industries = await referenceService.getIndustries();
+    const normalize = (v: string) =>
+      v
+        .toLowerCase()
+        .replace(/\s*\/\s*/g, '/')
+        .trim();
+    const match = industries.find((item) => normalize(item.industryName) === normalize(payload.industry));
+    if (!match) {
+      throw new Error(`Unknown industry: ${payload.industry}`);
+    }
+
+    const rawWebsite = payload.websiteUrl?.trim() || null;
+    let websiteUrl = rawWebsite;
+    if (websiteUrl && !/^https?:\/\//i.test(websiteUrl)) {
+      websiteUrl = `https://${websiteUrl}`;
+    }
+
+    const apiPayload: Record<string, unknown> = {
+      accountEmail: payload.loginEmail.trim(),
+      initialPassword: payload.password,
+      companyName: payload.companyName.trim(),
+      companyType: payload.companyType.toLowerCase(),
+      industryId: match.industryId,
+      description: payload.description.trim(),
+      websiteUrl,
+      addressLine: payload.addressLine.trim(),
+      addressBarangay: payload.barangay.trim(),
+      addressDistrict: normalizeDistrictOption(payload.district),
+      addressCity: payload.city.trim(),
+      contactPersonFirstName: payload.contactFirstName.trim(),
+      contactPersonMiddleName: payload.contactMiddleName?.trim() || null,
+      contactPersonLastName: payload.contactLastName.trim(),
+      contactPersonExtensionName: payload.contactSuffix?.trim() || null,
+      contactEmail: payload.contactEmail.trim(),
+      contactNumber: payload.contactNumber.trim(),
+    };
+
+    if (payload.companySize && payload.companySize.trim() !== '') {
+      const parsedSize = Number(payload.companySize);
+      if (!Number.isNaN(parsedSize) && parsedSize > 0) {
+        apiPayload.companySize = parsedSize;
+      }
+    }
+    if (payload.yearEstablished && payload.yearEstablished.trim() !== '') {
+      const parsedYear = Number(payload.yearEstablished);
+      if (!Number.isNaN(parsedYear) && parsedYear >= 1800) {
+        apiPayload.yearEstablished = parsedYear;
+      }
+    }
+
+    await qcpesoApiService.createEmployer(apiPayload);
+    // Refresh company list cache in store
+    const store = useQCPesoStore.getState();
+    await store.fetchCompanies();
   },
 
   async getRecentStudents(): Promise<StudentApplication[]> {
@@ -151,6 +272,7 @@ export const qcpesoService = {
       gwa: 'N/A',
       submittedDocuments: [],
       appliedFor: a.jobTitle,
+      applicationStatus: a.applicationStatus,
     }));
   },
 
@@ -167,7 +289,7 @@ export const qcpesoService = {
       slots: 5,
       duration: match.requiredHours || 200,
       allowance: 'Provided',
-      applicationDeadline: new Date().toISOString().split('T')[0],
+      applicationDeadline: todayDateOnly(),
       jobDescription: 'Internship position under partner employer.',
       qualifications: 'Currently enrolled student.',
     };
@@ -183,5 +305,9 @@ export const qcpesoService = {
     const store = useQCPesoStore.getState();
     await store.updateProfile(updates);
     return useQCPesoStore.getState().profile!;
+  },
+
+  async uploadProfilePicture(file: File): Promise<QCPesoProfile> {
+    return useQCPesoStore.getState().uploadProfilePicture(file);
   },
 };

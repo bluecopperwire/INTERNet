@@ -2,13 +2,15 @@ export interface InternshipOpportunity {
   id: string
   companyId: string
   companyName: string
+  companyLogoUrl?: string
+  companyIndustry: string
+  companyDescription: string
   position: string
   location: string
   workSetup: 'On-site' | 'Remote' | 'Hybrid'
   postedAt: string
   tags: string[]
   isApplied: boolean
-  isExclusive: boolean
   details: OpportunityDetails
 }
 
@@ -26,9 +28,10 @@ export interface OpportunityDetails {
 export interface PartnerCompany {
   id: string
   name: string
-  summary: string
-  description: string
+  industry: string
+  about: string
   tags: string[]
+  logoUrl?: string
 }
 
 export interface InternshipPortalData {
@@ -59,13 +62,14 @@ export interface UserProfile {
   contactNumber: string
   address: { street: string; barangay: string; district: string; city: string }
   inquiryVia: string
+  photoUrl?: string
   academic: { schoolName: string; program: string; yearLevel: string }
   preferences: {
     requiredHours: number | ''
     willingToAssignOutside: boolean | null
     preferredIndustries: string[]
     otherPreferredField?: string
-    schedule: string[]
+    schedule: number[]
     startDate: string
     hostOrgType: string
   }

@@ -15,6 +15,47 @@
   padding: 32px 48px 48px;
 }
 
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 30px;
+}
+
+.summaryCard {
+  display: flex;
+  min-height: 118px;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px 28px;
+  border-radius: 8px;
+  color: #ffffff;
+  background: #160e6f;
+  transition: transform 160ms ease;
+}
+
+.summaryCard:hover {
+  transform: translateY(-2px);
+}
+
+.summaryCard h2,
+.summaryCard p {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+.summaryCard h2 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.summaryCard p {
+  margin-top: 4px;
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .controls {
   display: flex;
   align-items: center;
@@ -107,7 +148,7 @@
   width: 100%;
   min-width: 920px;
   border-collapse: collapse;
-  text-align: left;
+  table-layout: auto;
 }
 
 .table th {
@@ -116,6 +157,8 @@
   background: #f8fafc;
   font-size: 14px;
   font-weight: 600;
+  text-align: center;
+  white-space: normal;
 }
 
 .table td {
@@ -123,6 +166,9 @@
   border-bottom: 1px solid #e2e8f0;
   color: #1e293b;
   font-size: 14px;
+  text-align: center;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
 }
 
 .table tr:last-child td {
@@ -131,11 +177,6 @@
 
 .table tbody tr:hover {
   background: #f8fafc;
-}
-
-.nameCell {
-  color: #160e6f !important;
-  font-weight: 600;
 }
 
 .statusPill {
@@ -159,7 +200,11 @@
 
 .viewButton {
   display: inline-flex;
+  box-sizing: border-box;
+  width: 120px;
+  min-width: 120px;
   min-height: 36px;
+  flex: none;
   align-items: center;
   justify-content: center;
   gap: 7px;
@@ -171,6 +216,7 @@
   font: inherit;
   font-size: 13px;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition: color 160ms ease, background-color 160ms ease;
 }
@@ -406,6 +452,10 @@
   .pagination {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .summaryGrid {
+    grid-template-columns: 1fr;
   }
 
   .detailGrid {

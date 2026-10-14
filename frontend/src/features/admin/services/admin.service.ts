@@ -16,6 +16,7 @@ import type {
   AdminDashboardSummary,
   AdminNotification,
 } from '../types/admin.types';
+import { normalizeDistrictOption } from '../../../utils/district';
 
 export const adminService = {
   getStudentRecords: async (): Promise<StudentRecord[]> => {
@@ -40,7 +41,7 @@ export const adminService = {
       sex: updates.sex,
       addressLine: updates.addressStreet,
       addressBarangay: updates.addressBarangay,
-      addressDistrict: updates.addressDistrict,
+      addressDistrict: updates.addressDistrict === undefined ? undefined : normalizeDistrictOption(updates.addressDistrict),
       addressCity: updates.addressCity,
       contactNumber: updates.contactNumber,
       linkedinUrl: updates.linkedinUrl,
@@ -48,7 +49,7 @@ export const adminService = {
       yearLevel: mapYearLevel(updates.yearLevel),
       strandProgram: updates.programStrand,
       requiredHours: updates.requiredHours ? Number(updates.requiredHours) : undefined,
-      availableDays: updates.scheduleAvailability?.[0]?.toLowerCase(),
+      availableDays: updates.scheduleAvailability,
       startDate: updates.startDate,
       preferredCompanyType: updates.hostOrgType?.toLowerCase(),
       allowsOutsidePreferredField: updates.flexibleAssignment,
@@ -88,7 +89,7 @@ export const adminService = {
       description: updates.description,
       addressLine: updates.addressLine,
       addressBarangay: updates.addressBarangay,
-      addressDistrict: updates.addressDistrict,
+      addressDistrict: updates.addressDistrict === undefined ? undefined : normalizeDistrictOption(updates.addressDistrict),
       addressCity: updates.addressCity,
       contactPersonFirstName: updates.contactFirstName,
       contactPersonMiddleName: updates.contactMiddleName,
@@ -108,19 +109,22 @@ export const adminService = {
   },
 
   createEmployerRecord: async (record: any): Promise<EmployerRecord> => {
-    const raw = await adminApiService.createCompanyUser({
+    let websiteUrl = record.companyWebsite?.trim() || null;
+    if (websiteUrl && !/^https?:\/\//i.test(websiteUrl)) {
+      websiteUrl = `https://${websiteUrl}`;
+    }
+
+    const payload: Record<string, unknown> = {
       accountEmail: record.email,
       initialPassword: record.temporaryPassword,
       companyName: record.companyName,
       companyType: record.companyType.toLowerCase(),
       industryId: await industryIdFor(record.industry),
-      companySize: Number(record.companySize),
-      yearEstablished: Number(record.yearEstablished),
-      websiteUrl: record.companyWebsite || null,
+      websiteUrl,
       description: record.description,
       addressLine: record.addressLine,
       addressBarangay: record.addressBarangay,
-      addressDistrict: record.addressDistrict || null,
+      addressDistrict: normalizeDistrictOption(record.addressDistrict),
       addressCity: record.addressCity,
       contactPersonFirstName: record.contactFirstName,
       contactPersonMiddleName: record.contactMiddleName || null,
@@ -128,7 +132,23 @@ export const adminService = {
       contactPersonExtensionName: record.contactSuffix || null,
       contactEmail: record.contactEmail,
       contactNumber: record.contactNumber,
-    });
+    };
+
+    if (record.companySize && String(record.companySize).trim() !== '') {
+      const parsedSize = Number(record.companySize);
+      if (!Number.isNaN(parsedSize) && parsedSize > 0) {
+        payload.companySize = parsedSize;
+      }
+    }
+
+    if (record.yearEstablished && String(record.yearEstablished).trim() !== '') {
+      const parsedYear = Number(record.yearEstablished);
+      if (!Number.isNaN(parsedYear) && parsedYear >= 1800) {
+        payload.yearEstablished = parsedYear;
+      }
+    }
+
+    const raw = await adminApiService.createCompanyUser(payload);
     return adaptAdminEmployerItem(raw);
   },
 
@@ -154,7 +174,7 @@ export const adminService = {
       sex: updates.sex,
       addressLine: updates.addressLine,
       addressBarangay: updates.barangay,
-      addressDistrict: updates.district,
+      addressDistrict: updates.district === undefined ? undefined : normalizeDistrictOption(updates.district),
       addressCity: updates.city,
       contactEmail: updates.contactEmail,
       contactNumber: updates.contactNumber,
@@ -179,7 +199,7 @@ export const adminService = {
       extensionName: record.suffix || null,
       addressLine: record.addressLine,
       addressBarangay: record.barangay,
-      addressDistrict: record.district,
+      addressDistrict: normalizeDistrictOption(record.district),
       addressCity: record.city,
       birthDate: record.birthdate,
       sex: record.sex,
@@ -197,18 +217,10 @@ export const adminService = {
     await store.fetchDashboard();
     return (
       store.summary || {
-        totalStudents: 0,
-        activeStudents: 0,
-        totalEmployers: 0,
-        totalAvailableOpportunities: 0,
-        systemHealth: {
-          serverStatus: 'Operational',
-          uptime: '100%',
-          databaseLoad: 'Normal',
-          activeSessions: 0,
-          lastBackup: 'N/A',
-          storageUsedPercent: 0,
-        },
+        totalAccounts: 0,
+        studentAccounts: { total: 0, active: 0, suspended: 0, deactivated: 0 },
+        pesoAccounts: { total: 0, active: 0, suspended: 0, deactivated: 0 },
+        employerAccounts: { total: 0, active: 0, suspended: 0, deactivated: 0 },
       }
     );
   },
@@ -268,9 +280,6 @@ export const adminService = {
     return [];
   },
 
-  triggerManualBackup: async (): Promise<{ success: boolean; message: string }> => {
-    return { success: false, message: 'Database backup is not configured on this server.' };
-  },
 };
 
 export default adminService;
@@ -290,6 +299,10 @@ function mapYearLevel(value?: string): string | undefined {
     '2nd Year': 'second_year_college',
     '3rd Year': 'third_year_college',
     '4th Year': 'fourth_year_college',
+    'First Year College': 'first_year_college',
+    'Second Year College': 'second_year_college',
+    'Third Year College': 'third_year_college',
+    'Fourth Year College': 'fourth_year_college',
   };
   return levels[value] || value;
 }

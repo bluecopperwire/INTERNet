@@ -115,6 +115,53 @@
   cursor: pointer;
 }
 
+.assignmentWorkingDays {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.assignmentWorkingDays legend {
+  margin-bottom: 7px;
+  padding: 0;
+}
+
+.dayOptions {
+  display: flex;
+  box-sizing: border-box;
+  min-height: 52px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  padding: 8px 12px;
+  border: 1px solid #cfd5e6;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.dayOptions label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.dayOptions input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  accent-color: #087ff5;
+  cursor: pointer;
+}
+
+.assignmentWorkingDays:disabled .dayOptions label,
+.dayOptions input:disabled {
+  cursor: not-allowed;
+}
+
 .assignmentRejected .assignmentField input:disabled,
 .assignmentRejected .assignmentField select:disabled {
   color: #8a8fa1;
@@ -259,7 +306,7 @@
   width: 100%;
   min-width: 920px;
   border-collapse: collapse;
-  text-align: left;
+  table-layout: auto;
 }
 
 .assignmentTable th {
@@ -270,7 +317,8 @@
   font-family: 'Poppins', sans-serif;
   font-size: 14px;
   font-weight: 600;
-  white-space: nowrap;
+  text-align: center;
+  white-space: normal;
 }
 
 .assignmentTable td {
@@ -279,6 +327,16 @@
   color: #1e293b;
   font-family: 'Poppins', sans-serif;
   font-size: 14px;
+  text-align: center;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+
+.assignmentTable th:first-child,
+.assignmentTable td:first-child,
+.assignmentTable th:nth-child(2),
+.assignmentTable td:nth-child(2) {
+  min-width: 220px;
 }
 
 .assignmentTable tbody tr:last-child td {
@@ -287,10 +345,6 @@
 
 .assignmentTable tbody tr:hover {
   background: #f8fafc;
-}
-
-.assignmentTable td strong {
-  color: #160e6f;
 }
 
 .responsePill {
@@ -320,7 +374,11 @@
 
 .reviewButton {
   display: inline-flex;
+  box-sizing: border-box;
+  width: 120px;
+  min-width: 120px;
   min-height: 36px;
+  flex: none;
   align-items: center;
   justify-content: center;
   gap: 7px;
@@ -332,6 +390,7 @@
   font-family: 'Poppins', sans-serif;
   font-size: 13px;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition: color 160ms ease, background-color 160ms ease;
 }
@@ -339,6 +398,13 @@
 .reviewButton:hover {
   color: #ffffff;
   background: #160e6f;
+}
+
+.assignmentRowActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 7px;
 }
 
 .assignmentEmpty {

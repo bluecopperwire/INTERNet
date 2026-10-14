@@ -4,17 +4,20 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { employerService, formatOpportunityDeadline, isOpportunityDeadlineExpired } from '../services/employer.service'
 import type { Opportunity } from '../types/employer.types'
 import styles from './OpportunityDetailsPage.module.css'
+import { useToastStore } from '../../../stores/useToastStore'
+import { getErrorMessage } from '../../../utils/error-message'
 
 interface FieldProps {
   label: string
   children: ReactNode
   className?: string
+  required?: boolean
 }
 
-function Field({ label, children, className }: FieldProps) {
+function Field({ label, children, className, required = false }: FieldProps) {
   return (
     <label className={`${styles.field} ${className ?? ''}`}>
-      <span>{label}</span>
+      <span>{label}{required && <> <em className={styles.requiredMark}>*</em></>}</span>
       {children}
     </label>
   )
@@ -26,6 +29,7 @@ export function OpportunityDetailsPage() {
   const [opportunity, setOpportunity] = useState<Opportunity | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isUpdating, setIsUpdating] = useState(false)
+  const toast = useToastStore()
 
   useEffect(() => {
     if (!id) {
@@ -36,22 +40,29 @@ export function OpportunityDetailsPage() {
     employerService
       .getOpportunityById(id)
       .then((data) => setOpportunity(data ?? null))
+      .catch(() => setOpportunity(null))
       .finally(() => setIsLoading(false))
   }, [id])
 
   const isExpired = opportunity ? isOpportunityDeadlineExpired(opportunity.applicationDeadline) : false
 
   const handleStatusToggle = async () => {
-    if (!opportunity || isExpired) return
+    if (!opportunity) return
+    if (opportunity.status === 'Closed' && isExpired) {
+      toast.error('The application deadline has passed. Update it before reopening this opportunity.')
+      return
+    }
 
     setIsUpdating(true)
     try {
-      const updatedOpportunity: Opportunity = {
-        ...opportunity,
-        status: opportunity.status === 'Open' ? 'Closed' : 'Open',
-      }
-      await employerService.saveOpportunity(updatedOpportunity)
+      const nextStatus = opportunity.status === 'Open' ? 'Closed' : 'Open'
+      if (nextStatus === 'Closed') await employerService.closeOpportunity(opportunity.id)
+      else await employerService.reopenOpportunity(opportunity.id)
+      const updatedOpportunity: Opportunity = { ...opportunity, status: nextStatus }
       setOpportunity(updatedOpportunity)
+      toast.success(`Opportunity ${nextStatus === 'Open' ? 'reopened' : 'closed'}.`)
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update opportunity status.'))
     } finally {
       setIsUpdating(false)
     }
@@ -63,7 +74,10 @@ export function OpportunityDetailsPage() {
     setIsUpdating(true)
     try {
       await employerService.deleteOpportunity(opportunity.id)
+      toast.success('Opportunity deleted.')
       navigate('/employer/opportunities')
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to delete opportunity.'))
     } finally {
       setIsUpdating(false)
     }
@@ -93,25 +107,25 @@ export function OpportunityDetailsPage() {
         </header>
 
         <div className={styles.formGrid}>
-          <Field label="Position Title *">
+          <Field label="Position Title" required>
             <input value={opportunity.title} readOnly />
           </Field>
-          <Field label="Department *">
+          <Field label="Department" required>
             <input value={opportunity.department} readOnly />
           </Field>
-          <Field label="Work Arrangement *">
+          <Field label="Work Arrangement" required>
             <input value={opportunity.workArrangement} readOnly />
           </Field>
-          <Field label="Internship Duration *">
+          <Field label="Internship Duration" required>
             <input value={`${opportunity.duration} hours`} readOnly />
           </Field>
-          <Field label="Number of Slots *">
+          <Field label="Number of Slots" required>
             <input value={opportunity.slots} readOnly />
           </Field>
           <Field label="Allowance">
             <input value={opportunity.allowance || 'N/A'} readOnly />
           </Field>
-          <Field label="Job Description *" className={styles.fullWidth}>
+          <Field label="Job Description" required className={styles.fullWidth}>
             <textarea value={opportunity.jobDescription} rows={6} readOnly />
           </Field>
           <Field label="Qualifications" className={styles.fullWidth}>
@@ -131,19 +145,19 @@ export function OpportunityDetailsPage() {
             className={styles.editButton}
             onClick={() => navigate(`/employer/opportunities/${opportunity.id}/edit`)}
           >
-            Edit
+            Edit Opportunity
           </button>
           <button
             type="button"
             className={styles.closeButton}
-            disabled={isUpdating || isExpired}
+            disabled={isUpdating}
             onClick={handleStatusToggle}
           >
-            {isExpired ? 'Deadline Passed' : opportunity.status === 'Open' ? 'Close' : 'Open'}
+            {opportunity.status === 'Open' ? 'Close Opportunity' : 'Reopen Opportunity'}
           </button>
-          <button type="button" className={styles.deleteButton} disabled={isUpdating} onClick={handleDelete}>
-            Delete
-          </button>
+          {opportunity.status === 'Closed' && <button type="button" className={styles.deleteButton} disabled={isUpdating} onClick={handleDelete}>
+            Delete Opportunity
+          </button>}
         </footer>
       </section>
     </main>

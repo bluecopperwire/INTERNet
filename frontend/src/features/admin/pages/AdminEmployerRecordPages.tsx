@@ -1,10 +1,16 @@
 import React, { useEffect, useState } from 'react'
-import { ArrowLeft, Building2, Edit3, Mail, MapPin, Phone, UserRound, X } from 'lucide-react'
+import { ArrowLeft, Building2, Edit3, LockKeyhole, Mail, MapPin, Phone, UserRound, X } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { adminService } from '../services/admin.service'
 import type { EmployerRecord } from '../types/admin.types'
 import detailStyles from './AdminStudentDetailsPage.module.css'
 import formStyles from '../../intern-seeker/pages/ProfileEditorPage.module.css'
+import { useToastStore } from '../../../stores/useToastStore'
+import { getErrorMessage } from '../../../utils/error-message'
+import { CONTACT_NUMBER_PLACEHOLDER, getContactNumberError, sanitizeContactNumberInput } from '../../../utils/input-validation'
+import { DistrictSelect } from '../../../components/DistrictSelect'
+import { districtAddressPart } from '../../../utils/district'
+import { CompanyAvatar } from '../../../components/CompanyAvatar'
 
 const INDUSTRIES = [
   'Office Administration',
@@ -18,7 +24,7 @@ const INDUSTRIES = [
 ]
 
 const addressOf = (record: EmployerRecord) =>
-  [record.addressLine, record.addressBarangay, record.addressDistrict, record.addressCity].filter(Boolean).join(', ') ||
+  [record.addressLine, record.addressBarangay, districtAddressPart(record.addressDistrict), record.addressCity].filter(Boolean).join(', ') ||
   record.location
 
 const contactNameOf = (record: EmployerRecord) =>
@@ -57,6 +63,7 @@ export function AdminEmployerDetailsPage() {
   const [record, setRecord] = useState<EmployerRecord | null>(null)
   const [suspending, setSuspending] = useState(false)
   const [unsuspending, setUnsuspending] = useState(false)
+  const toast = useToastStore()
 
   useEffect(() => {
     if (id) {
@@ -68,10 +75,17 @@ export function AdminEmployerDetailsPage() {
     return <main className={detailStyles.feedback}>Loading employer profile...</main>
   }
 
-  const updateStatus = async (status: EmployerRecord['status']) => {
+  const updateStatus = async (status: EmployerRecord['status'], suspensionDaysRemaining?: number) => {
     if (!id) return
-    const updated = await adminService.updateEmployerRecord(id, { status })
-    if (updated) setRecord(updated)
+    try {
+      const updated = await adminService.updateEmployerRecord(id, { status, suspensionDaysRemaining })
+      if (updated) {
+        setRecord(updated)
+        toast.success(`Employer account ${status.toLowerCase()}.`)
+      }
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update employer account status.'))
+    }
   }
 
   return (
@@ -94,9 +108,13 @@ export function AdminEmployerDetailsPage() {
 
           <div className={detailStyles.body}>
             <section className={detailStyles.summary}>
-              <span className={detailStyles.avatar}>
-                <Building2 size={30} />
-              </span>
+              <CompanyAvatar
+                name={record.companyName}
+                src={record.profileImageUrl}
+                size={70}
+                fontSize={28}
+                className={detailStyles.avatar}
+              />
               <div className={detailStyles.summaryInfo}>
                 <h2>{record.companyName}</h2>
                 <div>
@@ -138,6 +156,11 @@ export function AdminEmployerDetailsPage() {
               <Row label="Contact Email" value={record.contactEmail || record.email} />
               <Row label="Contact Number" value={record.contactNumber} />
             </Card>
+
+            <Card icon={<LockKeyhole size={21} />} title="Account Information">
+              <Row label="Account Email Address" value={record.email} />
+              <Row label="Account User Code" value={record.accountCode || 'Not provided'} />
+            </Card>
           </div>
 
           <footer className={detailStyles.actions}>
@@ -175,12 +198,12 @@ export function AdminEmployerDetailsPage() {
             onClose={() => setSuspending(false)}
             onConfirm={(days) => {
               if (!id) return
-              adminService.updateEmployerRecord(id, { status: 'Suspended', suspensionDaysRemaining: days }).then((updated) => { if (updated) setRecord(updated) })
+              void updateStatus('Suspended', days)
               setSuspending(false)
             }}
           />
         )}
-        {unsuspending && <UnsuspendDialog subject={record.companyName} days={record.suspensionDaysRemaining ?? 0} onClose={() => setUnsuspending(false)} onConfirm={() => { if (!id) return; adminService.updateEmployerRecord(id, { status: 'Active', suspensionDaysRemaining: undefined }).then((updated) => { if (updated) setRecord(updated) }); setUnsuspending(false) }} />}
+        {unsuspending && <UnsuspendDialog subject={record.companyName} days={record.suspensionDaysRemaining ?? 0} onClose={() => setUnsuspending(false)} onConfirm={() => { void updateStatus('Active'); setUnsuspending(false) }} />}
       </div>
     </main>
   )
@@ -191,6 +214,7 @@ export function AdminEmployerEditorPage() {
   const navigate = useNavigate()
   const [form, setForm] = useState<EmployerRecord | null>(null)
   const [saving, setSaving] = useState(false)
+  const toast = useToastStore()
 
   useEffect(() => {
     if (id) {
@@ -219,6 +243,11 @@ export function AdminEmployerEditorPage() {
   const save = async (event: React.FormEvent) => {
     event.preventDefault()
     if (!id || !form) return
+    const contactNumberError = getContactNumberError(form.contactNumber)
+    if (contactNumberError) {
+      toast.error(contactNumberError)
+      return
+    }
     setSaving(true)
     try {
       const location = addressOf(form)
@@ -229,8 +258,11 @@ export function AdminEmployerEditorPage() {
         contactPerson,
       })
       if (updated) {
+        toast.success('Employer profile updated successfully.')
         navigate(`/admin/manage-employers/${updated.id}`)
       }
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update employer profile.'))
     } finally {
       setSaving(false)
     }
@@ -260,7 +292,7 @@ export function AdminEmployerEditorPage() {
                 <input
                   required
                   value={form.companyName}
-                  placeholder="Enter company name"
+                  placeholder="e.g., ABC Technologies Inc."
                   onChange={(e) => change('companyName', e.target.value)}
                 />
               </Field>
@@ -293,7 +325,7 @@ export function AdminEmployerEditorPage() {
               <Field label="Company Size">
                 <input
                   inputMode="numeric"
-                  placeholder="Enter number of employees"
+                  placeholder="e.g., 50"
                   value={form.companySize || ''}
                   onChange={(e) => change('companySize', e.target.value.replace(/\D/g, ''))}
                 />
@@ -323,7 +355,7 @@ export function AdminEmployerEditorPage() {
                 <input
                   required
                   value={form.addressLine || ''}
-                  placeholder="Enter house / building / street"
+                  placeholder="e.g., 200 Development Avenue"
                   onChange={(e) => change('addressLine', e.target.value)}
                 />
               </Field>
@@ -332,15 +364,14 @@ export function AdminEmployerEditorPage() {
                 <input
                   required
                   value={form.addressBarangay || ''}
-                  placeholder="Enter barangay"
+                  placeholder="e.g., Central"
                   onChange={(e) => change('addressBarangay', e.target.value)}
                 />
               </Field>
 
-              <Field label="District">
-                <input
-                  value={form.addressDistrict || ''}
-                  placeholder="If none, type N/A"
+              <Field label="District" required>
+                <DistrictSelect
+                  value={form.addressDistrict}
                   onChange={(e) => change('addressDistrict', e.target.value)}
                 />
               </Field>
@@ -349,7 +380,7 @@ export function AdminEmployerEditorPage() {
                 <input
                   required
                   value={form.addressCity || ''}
-                  placeholder="Enter city"
+                  placeholder="e.g., Quezon City"
                   onChange={(e) => change('addressCity', e.target.value)}
                 />
               </Field>
@@ -359,7 +390,7 @@ export function AdminEmployerEditorPage() {
               <textarea
                 required
                 value={form.description || ''}
-                placeholder="Describe your company"
+                placeholder="e.g., A technology company providing software services."
                 onChange={(e) => change('description', e.target.value)}
               />
             </Field>
@@ -371,7 +402,7 @@ export function AdminEmployerEditorPage() {
                 <input
                   required
                   value={form.contactFirstName || ''}
-                  placeholder="Enter first name"
+                  placeholder="e.g., Juan"
                   onChange={(e) => letters('contactFirstName', e.target.value)}
                 />
               </Field>
@@ -379,7 +410,7 @@ export function AdminEmployerEditorPage() {
               <Field label="Contact Person Middle Name">
                 <input
                   value={form.contactMiddleName || ''}
-                  placeholder="Enter middle name"
+                  placeholder="e.g., Santos"
                   onChange={(e) => letters('contactMiddleName', e.target.value)}
                 />
               </Field>
@@ -388,7 +419,7 @@ export function AdminEmployerEditorPage() {
                 <input
                   required
                   value={form.contactLastName || ''}
-                  placeholder="Enter last name"
+                  placeholder="e.g., Dela Cruz"
                   onChange={(e) => letters('contactLastName', e.target.value)}
                 />
               </Field>
@@ -407,7 +438,7 @@ export function AdminEmployerEditorPage() {
                 <input
                   required
                   type="email"
-                  placeholder="Enter company email"
+                  placeholder="e.g., hr@example.com"
                   value={form.contactEmail || form.email || ''}
                   onChange={(e) => change('contactEmail', e.target.value)}
                 />
@@ -417,10 +448,10 @@ export function AdminEmployerEditorPage() {
                 <input
                   required
                   type="tel"
-                  placeholder="Enter contact number"
+                  placeholder={CONTACT_NUMBER_PLACEHOLDER}
                   value={form.contactNumber || ''}
                   onChange={(e) =>
-                    change('contactNumber', e.target.value.replace(/[^0-9()+ -]/g, ''))
+                    change('contactNumber', sanitizeContactNumberInput(e.target.value))
                   }
                 />
               </Field>

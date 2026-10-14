@@ -11,6 +11,47 @@
   padding: 32px 48px;
 }
 
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 30px;
+}
+
+.summaryCard {
+  display: flex;
+  min-height: 118px;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px 28px;
+  border-radius: 8px;
+  color: #ffffff;
+  background: #160e6f;
+  transition: transform 160ms ease;
+}
+
+.summaryCard:hover {
+  transform: translateY(-2px);
+}
+
+.summaryCard h2,
+.summaryCard p {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+.summaryCard h2 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.summaryCard p {
+  margin-top: 4px;
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .toolbar {
   display: flex;
   align-items: center;
@@ -93,9 +134,9 @@
 
 .table {
   width: 100%;
-  min-width: 920px;
+  min-width: 1120px;
   border-collapse: collapse;
-  text-align: left;
+  table-layout: auto;
 }
 
 .table th {
@@ -106,7 +147,8 @@
   font-family: 'Poppins', sans-serif;
   font-size: 14px;
   font-weight: 600;
-  white-space: nowrap;
+  text-align: center;
+  white-space: normal;
 }
 
 .table td {
@@ -115,6 +157,23 @@
   color: #1e293b;
   font-family: 'Poppins', sans-serif;
   font-size: 14px;
+  text-align: center;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+
+.table th:nth-last-child(-n + 4),
+.table td:nth-last-child(-n + 4) {
+  min-width: 132px;
+}
+
+.table th:first-child,
+.table td:first-child,
+.table th:nth-child(2),
+.table td:nth-child(2),
+.table th:nth-child(3),
+.table td:nth-child(3) {
+  min-width: 180px;
 }
 
 .table tbody tr:hover {
@@ -154,8 +213,13 @@
 
 .reviewBtn {
   display: inline-flex;
+  box-sizing: border-box;
+  width: 120px;
+  min-width: 120px;
   min-height: 36px;
+  flex: none;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   padding: 0 14px;
   border: 1px solid #160e6f;
@@ -165,6 +229,7 @@
   font-family: 'Poppins', sans-serif;
   font-size: 13px;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition: background-color 150ms ease, color 150ms ease;
 }
@@ -180,6 +245,56 @@
   background: #160e6f;
   color: #fff;
 }
+
+.reviewBtn span {
+  white-space: nowrap;
+}
+
+.applicationsHistoryTable {
+  min-width: 1460px;
+}
+
+.applicationsHistoryTable th:nth-child(3),
+.applicationsHistoryTable td:nth-child(3) {
+  min-width: 230px;
+}
+
+.applicationsHistoryTable th:nth-child(4),
+.applicationsHistoryTable td:nth-child(4) {
+  min-width: 260px;
+}
+
+.actionButtons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 7px;
+}
+
+.deleteBtn {
+  display: inline-flex;
+  box-sizing: border-box;
+  width: 120px;
+  min-width: 120px;
+  min-height: 36px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid #d92d20;
+  border-radius: 6px;
+  color: #b42318;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.deleteBtn:hover { color: #fff; background: #d92d20; }
+.deleteBtn svg { width: 16px; height: 16px; }
 
 .paginationRow {
   display: flex;
@@ -286,6 +401,9 @@
   .toolbar, .paginationRow {
     align-items: stretch;
     flex-direction: column;
+  }
+  .summaryGrid {
+    grid-template-columns: 1fr;
   }
   .statusFilter {
     width: 100%;

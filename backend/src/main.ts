@@ -14,6 +14,10 @@ async function bootstrap() {
     prefix: '/uploads/',
   });
 
+  app.useStaticAssets(join(process.cwd(), 'docs', 'uploads'), {
+    prefix: '/docs/uploads/',
+  });
+
   app.use(cookieParser());
 
   app.useGlobalPipes(

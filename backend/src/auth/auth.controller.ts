@@ -276,6 +276,7 @@ export class AuthController {
     if (!current) throw new UnauthorizedException();
     return {
       userAccountId: current.account.userAccountId,
+      accountCode: current.account.accountCode,
       email: current.account.email,
       userRole: current.account.userRole,
       accountStatus: current.account.accountStatus,

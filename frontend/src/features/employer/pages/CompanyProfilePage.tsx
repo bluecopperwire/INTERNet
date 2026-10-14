@@ -4,38 +4,46 @@ import {
   Building2,
   User,
   Mail,
-  Phone,
-  Globe,
-  Calendar,
-  Users,
   Camera,
-  Tag,
+  LockKeyhole,
 } from 'lucide-react'
 import { EmployerHero } from '../components/EmployerHero'
 import { employerService } from '../services/employer.service'
 import type { CompanyProfile } from '../types/employer.types'
+import { CompanyAvatar } from '../../../components/CompanyAvatar'
 import styles from './CompanyProfilePage.module.css'
 import { useNavigate } from 'react-router-dom'
+import { useToastStore } from '../../../stores/useToastStore'
+import { districtAddressPart } from '../../../utils/district'
+import { useAuthStore } from '../../../stores/useAuthStore'
 
-const formatAddress = (profile: CompanyProfile) => [
-  profile.address_line,
-  profile.address_barangay,
-  profile.address_district,
-  profile.address_city,
-].filter(Boolean).join(', ')
+const formatAddress = (profile: CompanyProfile) =>
+  [
+    profile.address_line,
+    profile.address_barangay,
+    districtAddressPart(profile.address_district),
+    profile.address_city,
+  ]
+    .filter(Boolean)
+    .join(', ')
 
-const formatContactPerson = (profile: CompanyProfile) => [
-  profile.contact_person_first_name,
-  profile.contact_person_middle_name,
-  profile.contact_person_last_name,
-  profile.contact_person_extension_name,
-].filter(Boolean).join(' ')
+const formatContactPerson = (profile: CompanyProfile) =>
+  [
+    profile.contact_person_first_name,
+    profile.contact_person_middle_name,
+    profile.contact_person_last_name,
+    profile.contact_person_extension_name,
+  ]
+    .filter(Boolean)
+    .join(' ')
 
 export function CompanyProfilePage() {
   const [profile, setProfile] = useState<CompanyProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
+  const toast = useToastStore()
+  const account = useAuthStore((state) => state.user)
 
   const fetchProfile = async () => {
     setIsLoading(true)
@@ -57,19 +65,27 @@ export function CompanyProfilePage() {
     fileInputRef.current?.click()
   }
 
-  const handlePfpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePfpChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = async (event) => {
-        const imageUrl = event.target?.result as string
-        if (imageUrl && profile) {
-          const updated = { ...profile, logoUrl: imageUrl }
-          setProfile(updated)
-          await employerService.updateCompanyProfile(updated)
-        }
-      }
-      reader.readAsDataURL(file)
+    e.target.value = ''
+    if (!file) return
+    if (
+      !['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(
+        file.type,
+      )
+    ) {
+      toast.error('Profile picture must be JPEG, PNG, WebP, or GIF.')
+      return
+    }
+    try {
+      setProfile(await employerService.uploadCompanyProfilePicture(file))
+      toast.success('Profile picture updated successfully!')
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Profile picture upload failed.',
+      )
     }
   }
 
@@ -87,17 +103,13 @@ export function CompanyProfilePage() {
       <input
         type="file"
         ref={fileInputRef}
-        accept="image/*"
+        accept="image/png,image/jpeg,image/webp,image/gif"
         style={{ display: 'none' }}
         onChange={handlePfpChange}
       />
 
       {/* Top Hero Banner */}
-      <EmployerHero
-        title=""
-        subtitle=""
-        comfortableSpacing={false}
-      />
+      <EmployerHero title="" subtitle="" comfortableSpacing={false} />
 
       {/* White Header Section below Hero Banner */}
       <section className={styles.headerSection}>
@@ -111,17 +123,13 @@ export function CompanyProfilePage() {
               role="button"
               tabIndex={0}
             >
-              {profile.logoUrl ? (
-                <img
-                  src={profile.logoUrl}
-                  alt={profile.company_name}
-                  className={styles.pfpImage}
-                />
-              ) : (
-                <div className={styles.pfpPlaceholder}>
-                  <Building2 size={68} />
-                </div>
-              )}
+              <CompanyAvatar
+                name={profile.company_name}
+                src={profile.logoUrl}
+                size={160}
+                fontSize={64}
+                className={styles.pfpImage}
+              />
               {/* Permanent camera badge icon at bottom right */}
               <div className={styles.cameraBadge}>
                 <Camera size={18} />
@@ -136,8 +144,14 @@ export function CompanyProfilePage() {
             <div className={styles.companyMeta}>
               <h1 className={styles.companyTitle}>{profile.company_name}</h1>
               <div className={styles.contactDetails}>
-                <span><MapPin size={16} />{formatAddress(profile)}</span>
-                <span><Mail size={16} />{profile.contact_email}</span>
+                <span>
+                  <MapPin size={16} />
+                  {formatAddress(profile)}
+                </span>
+                <span>
+                  <Mail size={16} />
+                  {profile.contact_email}
+                </span>
               </div>
             </div>
           </div>
@@ -159,38 +173,104 @@ export function CompanyProfilePage() {
             <p className={styles.aboutText}>{profile.description}</p>
           </ProfileSection>
 
-          <ProfileSection icon={<Building2 size={24} />} title="Company Information">
+          <ProfileSection
+            icon={<Building2 size={24} />}
+            title="Company Information"
+          >
             <div className={styles.detailsList}>
-              <DetailItem icon={<Building2 size={20} />} label="Company Name" value={profile.company_name} />
-              <DetailItem icon={<Tag size={20} />} label="Company Type" value={profile.company_type} />
-              <DetailItem icon={<Tag size={20} />} label="Industry" value={profile.industry} />
-              <DetailItem icon={<MapPin size={20} />} label="Company Address" value={formatAddress(profile)} />
-              <DetailItem icon={<Users size={20} />} label="Company Size" value={profile.company_size ?? 'Not provided'} />
-              <DetailItem icon={<Calendar size={20} />} label="Company Year Established" value={profile.year_established ?? 'Not provided'} />
-              <DetailItem icon={<Globe size={20} />} label="Website URL" value={profile.website_url ?? 'Not provided'} />
+              <DetailItem
+                label="Company Name"
+                value={profile.company_name}
+              />
+              <DetailItem
+                label="Company Type"
+                value={profile.company_type}
+              />
+              <DetailItem
+                label="Industry"
+                value={profile.industry}
+              />
+              <DetailItem
+                label="Company Address"
+                value={formatAddress(profile)}
+              />
+              <DetailItem
+                label="Company Size"
+                value={profile.company_size ?? 'Not provided'}
+              />
+              <DetailItem
+                label="Company Year Established"
+                value={profile.year_established ?? 'Not provided'}
+              />
+              <DetailItem
+                label="Website URL"
+                value={profile.website_url ?? 'Not provided'}
+              />
             </div>
           </ProfileSection>
 
           <ProfileSection icon={<User size={24} />} title="Contact Information">
             <div className={styles.detailsList}>
-              <DetailItem icon={<User size={20} />} label="Contact Person" value={formatContactPerson(profile)} />
-              <DetailItem icon={<Mail size={20} />} label="Contact Email" value={profile.contact_email} />
-              <DetailItem icon={<Phone size={20} />} label="Contact Number" value={profile.contact_number} />
+              <DetailItem
+                label="Contact Person"
+                value={formatContactPerson(profile)}
+              />
+              <DetailItem
+                label="Contact Email"
+                value={profile.contact_email}
+              />
+              <DetailItem
+                label="Contact Number"
+                value={profile.contact_number}
+              />
+            </div>
+          </ProfileSection>
+
+          <ProfileSection icon={<LockKeyhole size={24} />} title="Account Information">
+            <div className={styles.detailsList}>
+              <DetailItem label="Account Email Address" value={account?.email ?? 'Not provided'} />
+              <DetailItem label="Account User Code" value={account?.accountCode || 'Not provided'} />
             </div>
           </ProfileSection>
         </div>
       </div>
-
     </main>
   )
 }
 
 export default CompanyProfilePage
 
-function ProfileSection({ children, icon, title }: { children: React.ReactNode; icon: React.ReactNode; title: string }) {
-  return <section className={styles.card}><header className={styles.cardHeader}><span className={styles.iconCircle}>{icon}</span><h2 className={styles.cardTitle}>{title}</h2></header>{children}</section>
+function ProfileSection({
+  children,
+  icon,
+  title,
+}: {
+  children: React.ReactNode
+  icon: React.ReactNode
+  title: string
+}) {
+  return (
+    <section className={styles.card}>
+      <header className={styles.cardHeader}>
+        <span className={styles.iconCircle}>{icon}</span>
+        <h2 className={styles.cardTitle}>{title}</h2>
+      </header>
+      {children}
+    </section>
+  )
 }
 
-function DetailItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return <div className={styles.detailItem}><div className={styles.itemLabelGroup}><span className={styles.itemIcon}>{icon}</span><span className={styles.itemLabel}>{label}</span></div><span className={styles.itemValue}>{value}</span></div>
+function DetailItem({
+  label,
+  value,
+}: {
+  label: string
+  value: string
+}) {
+  return (
+    <div className={styles.detailItem}>
+      <span className={styles.itemLabel}>{label}</span>
+      <strong className={styles.itemValue}>{value}</strong>
+    </div>
+  )
 }

@@ -126,7 +126,7 @@ export class EmployerFixtureFactory {
       await m.query(
         `INSERT INTO public.internship_preference
           (student_id, required_hours, available_days, allows_outside_preferred_field, start_date, preferred_company_type)
-         VALUES ($1,400,'weekdays',true,CURRENT_DATE,'private')`,
+         VALUES ($1,400,ARRAY[1, 2, 3, 4, 5]::smallint[],true,CURRENT_DATE,'private')`,
         [studentId],
       );
       await m.query(
@@ -268,6 +268,14 @@ export class EmployerFixtureFactory {
         `UPDATE public.application SET student_response=$2, student_responded_at=CURRENT_TIMESTAMP WHERE application_id=$1`,
         [applicationId, options.studentResponse],
       );
+      await this.db.query(
+        `UPDATE public.referral SET referral_status='closed' WHERE referral_id=$1`,
+        [referralId],
+      );
+      await this.db.query(
+        `UPDATE public.application SET application_status='closed' WHERE application_id=$1`,
+        [applicationId],
+      );
     }
     return { opportunityId, applicationId, referralId, student };
   }
@@ -305,7 +313,14 @@ export class EmployerFixtureFactory {
       );
       await this.db.query(
         `UPDATE public.referral SET referral_status='closed', company_response='rejected',
-          company_responded_at=CURRENT_TIMESTAMP WHERE referral_id=$1`,
+          company_responded_at=CURRENT_TIMESTAMP, remark='Not selected for this role.'
+          WHERE referral_id=$1`,
+        [referralId],
+      );
+      await this.db.query(
+        `UPDATE public.application a SET application_status='closed'
+         FROM public.referral r
+         WHERE r.referral_id=$1 AND a.application_id=r.application_id`,
         [referralId],
       );
     }
@@ -391,15 +406,15 @@ export class EmployerFixtureFactory {
   ): Promise<number> {
     const rows = await this.db.query(
       `INSERT INTO public.attendance_record
-        (internship_assignment_id,attendance_date,time_in,time_out,time_in_status,hours_rendered,rendered_hours_status)
-       VALUES ($1,$2,$3,$4,'on_time',$5,CASE WHEN $4::time IS NULL THEN 'incomplete'::public.rendered_hours_status_enum ELSE 'complete'::public.rendered_hours_status_enum END)
+        (internship_assignment_id,attendance_date,attendance_status,time_in,time_out,rendered_minutes)
+       VALUES ($1,$2,CASE WHEN $4::time IS NULL THEN 'incomplete'::public.attendance_status_enum ELSE 'present'::public.attendance_status_enum END,$3,$4,$5)
        RETURNING attendance_record_id`,
       [
         assignmentId,
         date,
         timeIn,
         timeOut,
-        timeOut ? (storedHours ?? 99) : null,
+        timeOut ? (storedHours ?? 99) * 60 : 0,
       ],
     );
     return Number(rows[0].attendance_record_id);

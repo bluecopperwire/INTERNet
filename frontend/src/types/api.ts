@@ -2,7 +2,6 @@ export type UserRole = 'student' | 'company' | 'peso_personnel' | 'admin';
 export type AccountStatus = 'active' | 'suspended' | 'archived';
 export type CompanyType = 'government' | 'private';
 export type WorkArrangement = 'onsite' | 'remote' | 'hybrid';
-export type WorkSchedule = 'weekdays' | 'weekends' | 'flexible';
 
 export type ApplicationStatus =
   | 'submitted'
@@ -13,28 +12,18 @@ export type ApplicationStatus =
   | 'withdrawn'
   | 'expired';
 
-export type ReferralStatus =
-  | 'sent'
-  | 'under_review'
-  | 'closed'
-  | 'withdrawn'
-  | 'expired';
+export type ReferralStatus = 'sent' | 'under_review' | 'closed' | 'withdrawn' | 'expired';
 
 export type CompanyResponse = 'pending' | 'for_interview' | 'accepted' | 'rejected';
 export type StudentResponse = 'pending' | 'accepted' | 'declined';
 export type AssignmentStatus =
   | 'pending'
   | 'ongoing'
-  | 'completed'
+  | 'complete_company'
+  | 'complete_student'
   | 'withdrawn'
-  | 'cancelled';
-
-export type TimeInStatus = 'on_time' | 'late';
-export type RenderedHoursStatus =
-  | 'complete'
-  | 'undertime'
-  | 'overtime'
-  | 'incomplete';
+  | 'cancelled'
+  | 'finalized';
 
 export interface PageMeta {
   page: number;
@@ -53,6 +42,8 @@ export interface EmployerAssignmentCandidateDto {
   applicationId: number;
   studentId: number;
   studentFullName: string;
+  studentAccountCode?: string | null;
+  strandProgram: string;
   opportunityId: number;
   jobTitle: string;
   companyName: string;
@@ -92,6 +83,7 @@ export interface AuthTokenResponse {
 
 export interface CurrentUserResponse {
   userAccountId: number;
+  accountCode: string;
   email: string;
   userRole: UserRole;
   accountStatus: AccountStatus;
@@ -106,11 +98,58 @@ export interface IndustryItemDto {
   isCustomText: boolean;
 }
 
+export interface EmployerProfileDto {
+  companyId: number;
+  companyName: string;
+  companyType: CompanyType;
+  industryId: number;
+  industryName: string;
+  description: string;
+  websiteUrl: string | null;
+  yearEstablished: number | null;
+  companySize: number | null;
+  addressLine: string;
+  addressBarangay: string;
+  addressDistrict: string | null;
+  addressCity: string;
+  contactEmail: string;
+  contactNumber: string;
+  contactPersonFirstName: string;
+  contactPersonMiddleName: string | null;
+  contactPersonLastName: string;
+  contactPersonExtensionName: string | null;
+  logoFilePath: string | null;
+  updatedAt: string;
+}
+
+export interface UpdateEmployerProfileRequest {
+  companyName?: string;
+  companyType?: CompanyType;
+  industryName?: string;
+  description?: string;
+  websiteUrl?: string | null;
+  yearEstablished?: number | null;
+  companySize?: number | null;
+  addressLine?: string;
+  addressBarangay?: string;
+  addressDistrict?: string;
+  addressCity?: string;
+  contactEmail?: string;
+  contactNumber?: string;
+  contactPersonFirstName?: string;
+  contactPersonMiddleName?: string | null;
+  contactPersonLastName?: string;
+  contactPersonExtensionName?: string | null;
+}
+
 export interface OpportunitySummaryDto {
   opportunityId: number;
   companyId: number;
   companyName: string;
   companyType: CompanyType;
+  companyDescription: string;
+  companyLogoFilePath?: string | null;
+  companyProfileUpdatedAt?: string;
   companyAddressCity: string;
   title: string;
   department: string;
@@ -152,6 +191,8 @@ export interface StudentProfileResponse {
     address_city: string;
     inquiry_method: string;
     linkedin_url?: string | null;
+    photo_file_path?: string | null;
+    updated_at?: string;
   };
   academic: {
     school_name: string;
@@ -162,7 +203,7 @@ export interface StudentProfileResponse {
     required_hours: number;
     allows_outside_preferred_field: boolean;
     preferred_company_type: string;
-    available_days: string;
+    available_days: number[];
     start_date: string;
   } | null;
   preferredIndustries: Array<{
@@ -193,6 +234,8 @@ export interface StudentApplicationDto {
     companyName: string;
     companyType: CompanyType;
     industryName?: string | null;
+    logoFilePath?: string | null;
+    profileUpdatedAt?: string | null;
   };
   referral?: {
     referralId: number;
@@ -200,6 +243,7 @@ export interface StudentApplicationDto {
     companyResponse: CompanyResponse;
     referredAt: string;
     companyRespondedAt?: string | null;
+    remark?: string | null;
   } | null;
   assignment?: {
     internshipAssignmentId: number;
@@ -211,16 +255,34 @@ export interface StudentApplicationDto {
   } | null;
 }
 
+export interface StudentApplicationEligibilityDto {
+  canApply: boolean;
+  blocker: 'accepted_offer' | 'active_assignment' | null;
+  message: string | null;
+}
+
 export interface StudentApplicationStatusDto extends StudentApplicationDto {
   remark?: string | null;
   interview?: {
-    interview_schedule_id: number;
-    interview_mode: string;
+    interview_id: number;
+    interview_mode: 'online' | 'physical';
     scheduled_at: string;
     physical_location?: string | null;
     online_meeting_url?: string | null;
     remark?: string | null;
+    created_at?: string | null;
+    updated_at?: string | null;
   } | null;
+  timeline?: StatusHistoryDto[];
+  referralTimeline?: StatusHistoryDto[];
+}
+
+export interface StatusHistoryDto {
+  statusHistoryId: number;
+  previousStatus: string | null;
+  newStatus: string;
+  changedAt: string;
+  changedByRole?: UserRole | null;
 }
 
 export interface StudentRequirementsResponse {
@@ -238,34 +300,123 @@ export interface StudentAttendanceResponse {
     internshipAssignmentId: number;
     companyName: string;
     jobTitle: string;
-    workingDays: string;
+    workingDays: number[];
+    requiredMinutes: number;
     requiredHours: number;
+    totalRenderedMinutes: number;
     totalRenderedHours: number;
+    remainingMinutes: number;
     remainingHours: number;
     startDate: string;
     expectedEndDate?: string | null;
+    endDate?: string | null;
+    endedAt?: string | null;
     startShift: string;
     endShift: string;
-    assignmentStatus: string;
+    assignmentStatus: AssignmentStatus;
   } | null;
   today: {
-    time_in?: string | null;
-    time_out?: string | null;
-    time_in_status?: string | null;
-  } | null;
-  records: Array<{
+    attendanceRecordId: number;
     date: string;
-    status: 'present' | 'absent' | 'late';
+    attendanceStatus: AttendanceStatus;
     timeIn?: string | null;
     timeOut?: string | null;
-    hoursRendered?: number | null;
+    renderedMinutes: number;
+  } | null;
+  records: Array<{
+    attendanceRecordId: number;
+    date: string;
+    status: AttendanceStatus;
+    timeIn?: string | null;
+    timeOut?: string | null;
+    renderedMinutes: number;
   }>;
   summary: {
     daysPresent: number;
-    absences: number;
-    lateArrivals: number;
-    attendanceRate: number;
+    daysAbsent: number;
+    renderedMinutes: number;
+    remainingMinutes: number;
   };
+}
+
+export type AttendanceStatus = 'present' | 'absent' | 'incomplete';
+
+export interface StudentAttendanceHistoryResponse {
+  assignment: {
+    internshipAssignmentId: number;
+    studentFullName: string;
+    studentContactEmail?: string | null;
+    studentContactNumber?: string | null;
+    studentAddress?: string | null;
+    studentPhotoFilePath?: string | null;
+    studentProfileUpdatedAt?: string | null;
+    companyName: string;
+    jobTitle: string;
+    assignmentStatus: AssignmentStatus;
+    requiredMinutes: number;
+    startDate: string;
+    expectedEndDate?: string | null;
+    endedAt?: string | null;
+    workingDays: number[];
+    startShift: string;
+    endShift: string;
+  };
+  summary: {
+    daysPresent: number;
+    daysAbsent: number;
+    renderedMinutes: number;
+    remainingMinutes: number;
+  };
+  records: Array<{
+    attendanceRecordId: number;
+    date: string;
+    timeIn: string | null;
+    timeOut: string | null;
+    renderedMinutes: number;
+    status: AttendanceStatus;
+  }>;
+  meta: { page: number; limit: number; total: number; totalPages: number };
+}
+
+export interface StudentInternshipDto {
+  internshipAssignmentId: number;
+  studentFullName: string;
+  studentContactEmail: string;
+  studentContactNumber: string;
+  studentAddress: string;
+  studentPhotoFilePath?: string | null;
+  studentProfileUpdatedAt?: string | null;
+  strandProgram?: string | null;
+  yearLevel?: string | null;
+  schoolName?: string | null;
+  companyId: number;
+  companyName: string;
+  companyLogoFilePath?: string | null;
+  opportunityId: number;
+  jobTitle: string;
+  workingDays: number[];
+  requiredMinutes: number;
+  renderedMinutes: number;
+  remainingMinutes: number;
+  requiredHours: number;
+  renderedHours: number;
+  remainingHours: number;
+  startDate: string;
+  expectedEndDate?: string | null;
+  endDate?: string | null;
+  endedAt?: string | null;
+  startShift: string;
+  endShift: string;
+  assignmentStatus: AssignmentStatus;
+  companyCompletionRemark?: string | null;
+  companyCancellationRemark?: string | null;
+  studentWithdrawalRemark?: string | null;
+  studentReview?: {
+    rating: number;
+    remark: string;
+    reviewedAt: string;
+  } | null;
+  createdAt: string;
 }
 
 export interface PesoStudentMetricsDto {
@@ -294,6 +445,7 @@ export interface DashboardApplicationDto {
   companyName: string;
   studentId: number;
   studentFullName: string;
+  studentAccountCode?: string | null;
   studentContactEmail: string;
   studentContactNumber: string;
   schoolName?: string | null;
@@ -301,6 +453,11 @@ export interface DashboardApplicationDto {
   yearLevel?: string | null;
   submittedAt: string;
   applicationStatus: ApplicationStatus;
+  referralId?: number | null;
+  referredAt?: string | null;
+  referralStatus?: ReferralStatus | null;
+  companyResponse?: CompanyResponse | null;
+  studentResponse?: StudentResponse | null;
 }
 
 export interface PesoReferralDto {
@@ -343,7 +500,7 @@ export interface PesoDtrEntryDto {
   dtrDate: string;
   timeIn?: string | null;
   timeOut?: string | null;
-  timeInStatus: string;
+  attendanceStatus: AttendanceStatus;
   totalHours: number;
 }
 
@@ -398,33 +555,159 @@ export interface UpdateOpportunityRequest {
 
 export interface EmployerReferralListItemDto {
   referralId: number;
+  applicationId: number;
   opportunityId: number;
   opportunityTitle: string;
   studentFullName: string;
+  studentAccountCode?: string | null;
+  schoolName?: string | null;
   strandProgram?: string | null;
   yearLevel?: string | null;
   submittedAt: string;
+  referredAt: string;
+  applicationStatus: ApplicationStatus;
+  referralStatus: ReferralStatus;
   companyResponse: CompanyResponse;
+  studentResponse: StudentResponse;
 }
 
 export interface EmployerAttendanceItemDto {
   internshipAssignmentId: number;
+  studentId: number;
   studentFullName: string;
+  studentAccountCode?: string | null;
   jobTitle: string;
+  strandProgram: string | null;
   date: string;
   timeIn?: string | null;
   timeOut?: string | null;
-  status: 'present' | 'absent' | 'late';
+  status: AttendanceStatus | 'pending';
   renderedHours: number;
+  renderedMinutes: number;
 }
 
 export interface EmployerInternshipListItemDto {
   internshipAssignmentId: number;
+  studentId: number;
   studentFullName: string;
+  studentAccountCode?: string | null;
   jobTitle: string;
+  strandProgram: string | null;
+  startDate: string;
+  expectedEndDate?: string | null;
+  endDate?: string | null;
   requiredHours: number;
+  requiredMinutes: number;
   renderedHours: number;
+  renderedMinutes: number;
+  remainingHours: number;
+  remainingMinutes: number;
   assignmentStatus: AssignmentStatus;
+  displayStatus: string;
+}
+
+export interface EmployerManageInternshipSummaryDto {
+  activeInternships: number;
+  pendingInternships: number;
+  ongoingInternships: number;
+  awaitingCompletion: number;
+}
+
+export interface EmployerInternshipHistorySummaryDto {
+  totalInternships: number;
+  activeInternships: number;
+  closedInternships: number;
+}
+
+export interface EmployerInternshipDetailDto {
+  intern: {
+    studentId: number;
+    studentFullName: string;
+    studentContactEmail: string | null;
+    studentContactNumber: string | null;
+    studentAddress: string | null;
+    studentPhotoFilePath: string | null;
+    studentProfileUpdatedAt: string | null;
+    strandProgram: string | null;
+    yearLevel: string | null;
+    schoolName: string | null;
+    jobTitle: string;
+    requiredHours: number;
+    requiredMinutes: number;
+    renderedHours: number;
+    renderedMinutes: number;
+    remainingHours: number;
+    remainingMinutes: number;
+  };
+  assignment: {
+    internshipAssignmentId: number;
+    companyName: string;
+    jobTitle: string;
+    workingDays: number[];
+    requiredHours: number;
+    requiredMinutes: number;
+    startDate: string;
+    expectedEndDate: string | null;
+    endDate: string | null;
+    endedAt: string | null;
+    startShift: string;
+    endShift: string;
+  };
+  status: {
+    assignmentStatus: AssignmentStatus;
+    displayStatus: string;
+    renderedMinutes: number;
+    remainingMinutes: number;
+    canEdit: boolean;
+    canComplete: boolean;
+    canCancel: boolean;
+    canDelete: boolean;
+  };
+  remarks: {
+    studentWithdrawalRemark: string | null;
+    companyCancellationRemark: string | null;
+    companyCompletionRemark: string | null;
+  };
+  readOnly: boolean;
+}
+
+export interface EmployerAttendanceSummaryDto {
+  ongoingInterns: number;
+  presentInterns: number;
+  absentInterns: number;
+}
+
+export interface EmployerAttendanceHistoryItemDto {
+  attendanceRecordId: number;
+  date: string;
+  timeIn: string | null;
+  timeOut: string | null;
+  renderedHours: number;
+  renderedMinutes: number;
+  attendanceStatus: AttendanceStatus;
+}
+
+export interface EmployerAttendanceHistoryDto {
+  header: {
+    internshipAssignmentId: number;
+    studentFullName: string;
+    studentContactEmail?: string | null;
+    studentContactNumber?: string | null;
+    studentAddress?: string | null;
+    studentPhotoFilePath?: string | null;
+    studentProfileUpdatedAt?: string | null;
+    strandProgram: string | null;
+    jobTitle: string;
+    companyName: string;
+    assignmentStatus: AssignmentStatus;
+  };
+  summary: {
+    daysPresent: number;
+    daysAbsent: number;
+    renderedMinutes: number;
+    remainingMinutes: number;
+  };
+  history: PaginatedResponse<EmployerAttendanceHistoryItemDto>;
 }
 
 export interface AdminMetricsDto {
@@ -436,26 +719,31 @@ export interface AdminMetricsDto {
 
 export interface AdminStudentListItemDto {
   userAccountId: number;
+  accountCode: string;
   studentId: number;
   fullName: string;
   accountEmail: string;
   accountStatus: AccountStatus;
   createdAt: string;
   suspendedUntil?: string | null;
+  strandProgram?: string | null;
 }
 
 export interface AdminEmployerListItemDto {
   userAccountId: number;
+  accountCode: string;
   companyId: number;
   companyName: string;
   accountEmail: string;
   accountStatus: AccountStatus;
   createdAt: string;
   suspendedUntil?: string | null;
+  industryName?: string | null;
 }
 
 export interface AdminPesoListItemDto {
   userAccountId: number;
+  accountCode: string;
   pesoPersonnelId: number;
   employeeId: string;
   fullName: string;

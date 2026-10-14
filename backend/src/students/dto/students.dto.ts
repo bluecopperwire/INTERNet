@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   ArrayNotEmpty,
+  ArrayUnique,
   IsArray,
   IsBoolean,
   IsDateString,
@@ -9,15 +10,16 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Max,
+  Matches,
   Min,
   ValidateNested,
 } from 'class-validator';
 import { YearLevel } from '../../common/enums/year-level.enum';
-import { WorkSchedule } from '../../common/enums/work-schedule.enum';
 import { CompanyType } from '../../common/enums/company-type.enum';
 import { InquiryMethod } from '../../common/enums/student-inquiry-method.enum';
 import { StudentResponse } from '../../common/enums/student-response.enum';
-
+import { IsValidContactNumber, IsValidDistrict } from '../../common/validation/input-validation';
 
 // DTO layer: request/response contract for the API, not the database model.
 export class StudentAcademicProfileDto {
@@ -40,10 +42,13 @@ export class InternshipPreferenceDto {
   @Min(1)
   requiredHours!: number;
 
-  @IsEnum(WorkSchedule, {
-    message: `availableDays must be one of: ${Object.values(WorkSchedule).join(', ')}`,
-  })
-  availableDays!: WorkSchedule;
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayUnique()
+  @IsInt({ each: true })
+  @Min(0, { each: true })
+  @Max(6, { each: true })
+  availableDays!: number[];
 
   @IsEnum(CompanyType, {
     message: `preferredCompanyType must be one of: ${Object.values(CompanyType).join(', ')}`,
@@ -64,6 +69,7 @@ export class StudentPreferredIndustryDto {
 
   @IsOptional()
   @IsString()
+  @IsNotEmpty()
   customIndustryName?: string;
 }
 
@@ -93,6 +99,7 @@ export class StudentProfileUpdateDto {
 
   @IsString()
   @IsNotEmpty()
+  @IsValidContactNumber()
   contactNumber!: string;
 
   @IsString()
@@ -113,6 +120,7 @@ export class StudentProfileUpdateDto {
 
   @IsString()
   @IsNotEmpty()
+  @IsValidDistrict()
   addressDistrict!: string;
 
   @IsString()
@@ -160,10 +168,6 @@ export class CreateStudentApplicationDto {
   @IsInt()
   @Min(1)
   opportunityId!: number;
-
-  @IsOptional()
-  @IsString()
-  remark?: string;
 }
 
 export class StudentApplicationResponseDto {
@@ -183,17 +187,18 @@ export class StudentAttendanceClockDto {
   @IsInt()
   @Min(1)
   internshipAssignmentId!: number;
-
-  @IsOptional()
-  @IsString()
-  timeIn?: string;
-
-  @IsOptional()
-  @IsString()
-  timeOut?: string;
-
-  @IsOptional()
-  @IsString()
-  photoFilePath?: string;
 }
 
+export class StudentAssignmentRemarkDto {
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/\S/, { message: 'remark must contain non-whitespace text' })
+  remark!: string;
+}
+
+export class StudentCompanyReviewDto extends StudentAssignmentRemarkDto {
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  rating!: number;
+}

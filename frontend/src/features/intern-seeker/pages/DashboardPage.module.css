@@ -67,6 +67,7 @@
 
 .avatarButton {
   position: relative;
+  z-index: 3;
   display: grid;
   width: 160px;
   height: 160px;
@@ -176,21 +177,25 @@
 
 .identityCopy h1 {
   margin: 0;
+  color: #160e6f;
   font-size: clamp(28px, 3vw, 36px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
   line-height: 1.1;
 }
 
 .contactDetails {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 16px;
+  gap: 0;
+  margin-top: 0;
 }
 
 .contactDetails span {
   display: flex;
   align-items: center;
   gap: 6px;
+  margin-top: 8px;
   color: #160e6f;
   font-size: 14px;
   line-height: 1.35;
@@ -249,7 +254,7 @@
   gap: 14px;
   padding: 14px 20px;
   border-bottom: 2px solid #160e6f;
-  background: #f7f8fb;
+  background: #f8fafc;
 }
 
 .cardIcon {
@@ -270,7 +275,9 @@
 
 .cardHeader h2 {
   margin: 0;
+  color: #160e6f;
   font-size: 1.05rem;
+  font-weight: 700;
 }
 
 .detailsList {
@@ -297,12 +304,13 @@
 }
 
 .detailRow dt {
-  color: #160e6f;
+  color: #65718a;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .detailRow dd {
+  max-width: 64%;
   min-width: 0;
   margin: 0;
   color: #160e6f;
@@ -367,11 +375,13 @@
   }
 
   .detailRow {
-    grid-template-columns: 1fr;
+    align-items: flex-start;
+    flex-direction: column;
     gap: 5px;
   }
 
   .detailRow dd {
+    max-width: 100%;
     text-align: left;
   }
 }

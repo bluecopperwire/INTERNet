@@ -2,10 +2,12 @@ import { Type } from 'class-transformer';
 import {
   IsEnum,
   IsInt,
+  IsIn,
+  IsNotEmpty,
   IsOptional,
   IsString,
-  Max,
   Min,
+  ValidateIf,
 } from 'class-validator';
 import { DateFilterDto } from '../../common/dto/date-filter.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
@@ -20,6 +22,11 @@ export enum ApplicationStatusFilter {
   EXPIRED = 'expired',
 }
 
+export enum ApplicationListView {
+  REVIEW = 'review',
+  HISTORY = 'history',
+}
+
 export enum ReferralResponseFilter {
   PENDING = 'pending',
   FOR_INTERVIEW = 'for_interview',
@@ -28,6 +35,14 @@ export enum ReferralResponseFilter {
 }
 
 export class QueryApplicationsDto extends DateFilterDto {
+  @IsOptional()
+  @IsEnum(ApplicationListView)
+  view?: ApplicationListView = ApplicationListView.HISTORY;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
+
   @IsOptional()
   @IsEnum(ApplicationStatusFilter)
   status?: ApplicationStatusFilter;
@@ -42,8 +57,8 @@ export class QueryApplicationsDto extends DateFilterDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
-  limit?: number = 20;
+  @IsIn([5, 10, 15])
+  limit?: number = 10;
 }
 
 export class QueryReferralsDto extends DateFilterDto {
@@ -61,14 +76,107 @@ export class QueryReferralsDto extends DateFilterDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
-  limit?: number = 20;
+  @IsIn([5, 10, 15])
+  limit?: number = 10;
 }
 
 export class QueryCompanyEmployersDto extends PaginationDto {
   @IsOptional()
-  @IsString()
+  @IsIn(['active', 'suspended'])
   accountStatus?: string;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
+}
+
+export class QueryAttendanceDto extends DateFilterDto {
+  @IsOptional()
+  @IsString()
+  date?: string;
+
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
+}
+
+export const QC_WORKFLOW_PAGE_SIZES = [5, 10, 15] as const;
+
+export class QcWorkflowPaginationDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @IsIn(QC_WORKFLOW_PAGE_SIZES)
+  limit = 10;
+}
+
+export enum QcAssignmentStatusFilter {
+  ACTIVE = 'active',
+  CLOSED = 'closed',
+  PENDING = 'pending',
+  ONGOING = 'ongoing',
+  COMPLETE_COMPANY = 'complete_company',
+  COMPLETE_STUDENT = 'complete_student',
+  WITHDRAWN = 'withdrawn',
+  CANCELLED = 'cancelled',
+  FINALIZED = 'finalized',
+}
+
+export class QcInternshipListQueryDto extends QcWorkflowPaginationDto {
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsEnum(QcAssignmentStatusFilter)
+  status?: QcAssignmentStatusFilter;
+}
+
+export enum QcAttendanceStatusFilter {
+  PENDING = 'pending',
+  PRESENT = 'present',
+  ABSENT = 'absent',
+  INCOMPLETE = 'incomplete',
+}
+
+export class QcAttendanceListQueryDto extends QcWorkflowPaginationDto {
+  @IsOptional()
+  @IsString()
+  date?: string;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsEnum(QcAttendanceStatusFilter)
+  status?: QcAttendanceStatusFilter;
+}
+
+export enum QcAttendanceHistoryStatusFilter {
+  PRESENT = 'present',
+  ABSENT = 'absent',
+  INCOMPLETE = 'incomplete',
+}
+
+export class QcAttendanceHistoryQueryDto extends QcWorkflowPaginationDto {
+  @IsOptional()
+  @IsString()
+  date?: string;
+
+  @IsOptional()
+  @IsEnum(QcAttendanceHistoryStatusFilter)
+  status?: QcAttendanceHistoryStatusFilter;
 }
 
 export class PesoStudentDashboardMetricsDto {
@@ -102,8 +210,11 @@ export class UpdateApplicationStatusDto {
   @IsEnum(ApplicationStatusFilter)
   status: ApplicationStatusFilter;
 
-  @IsOptional()
+  @ValidateIf(
+    (dto: UpdateApplicationStatusDto) =>
+      dto.status === ApplicationStatusFilter.REJECTED_FOR_REFERRAL,
+  )
   @IsString()
+  @IsNotEmpty()
   remark?: string;
 }
-
